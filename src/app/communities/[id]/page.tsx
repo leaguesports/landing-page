@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { API_ENDPOINTS } from "@/config/api";
 
 interface Event {
   id: string;
@@ -647,7 +648,7 @@ export default function CommunityLandingPage() {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/communities/${params.id}`,
+          API_ENDPOINTS.COMMUNITY(params.id as string),
           {
             method: "GET",
             credentials: "include",

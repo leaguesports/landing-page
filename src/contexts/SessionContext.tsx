@@ -9,6 +9,7 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
+import { API_ENDPOINTS } from "@/config/api";
 
 export interface Session {
   id: string;
@@ -103,7 +104,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   // Fetch active session on mount
   const fetchActiveSession = useCallback(async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/sessions", {
+      const response = await fetch(API_ENDPOINTS.SESSIONS, {
         method: "GET",
         credentials: "include",
       });
@@ -220,7 +221,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:3000/api/sessions", {
+        const response = await fetch(API_ENDPOINTS.SESSIONS, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -302,17 +303,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/sessions/${session.id}/end`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ score: scoreData }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.SESSION_END(session.id), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ score: scoreData }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

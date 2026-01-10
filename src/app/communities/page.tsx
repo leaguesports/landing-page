@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { API_ENDPOINTS } from "@/config/api";
 
 interface Community {
   id: string;
@@ -18,7 +19,7 @@ export default function CommunitiesPage() {
   useEffect(() => {
     async function fetchCommunities() {
       try {
-        const response = await fetch("http://localhost:3000/api/communities", {
+        const response = await fetch(API_ENDPOINTS.COMMUNITIES, {
           method: "GET",
           credentials: "include",
         });

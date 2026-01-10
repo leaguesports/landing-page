@@ -8,6 +8,7 @@ import {
   useCallback,
   useRef,
 } from "react";
+import { API_ENDPOINTS } from "@/config/api";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -50,7 +51,7 @@ export function useAuthCheck() {
 
   const logout = useCallback(async () => {
     try {
-      await fetch("http://localhost:3000/api/auth/logout", {
+      await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
         method: "POST",
         credentials: "include",
       });
@@ -70,7 +71,7 @@ export function useAuthCheck() {
     setAuthState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         method: "GET",
         credentials: "include",
       });
@@ -116,7 +117,7 @@ export function useAuthCheck() {
 
     async function checkAuth() {
       try {
-        const response = await fetch("http://localhost:3000/api/auth/me", {
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
           method: "GET",
           credentials: "include",
         });

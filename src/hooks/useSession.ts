@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API_ENDPOINTS } from "@/config/api";
 
 export interface Session {
   id: string;
@@ -88,7 +89,7 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:3000/api/sessions", {
+        const response = await fetch(API_ENDPOINTS.SESSIONS, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -144,17 +145,14 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
       setError(null);
 
       try {
-        const response = await fetch(
-          `http://localhost:3000/api/sessions/${session.id}/end`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({ score }),
-          }
-        );
+        const response = await fetch(API_ENDPOINTS.SESSION_END(session.id), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ score }),
+        });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -221,7 +219,7 @@ export function useLogMatch(): UseLogMatchReturn {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:3000/api/matches", {
+        const response = await fetch(API_ENDPOINTS.MATCHES, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

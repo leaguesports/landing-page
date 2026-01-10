@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { API_ENDPOINTS } from "@/config/api";
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -66,7 +67,7 @@ export default function LoginPage() {
 
             {/* Google Sign In Button */}
             <a
-              href="http://localhost:3000/api/auth/providers/google/signin"
+              href={API_ENDPOINTS.AUTH_GOOGLE_SIGNIN}
               className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-white/10 hover:-translate-y-0.5 group"
             >
               {/* Google Logo */}

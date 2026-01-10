@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_ENDPOINTS } from "@/config/api";
 
 export default function CreateCommunityPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function CreateCommunityPage() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/communities", {
+      const response = await fetch(API_ENDPOINTS.COMMUNITIES, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
