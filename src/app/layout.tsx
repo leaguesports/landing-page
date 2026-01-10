@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Manrope } from "next/font/google";
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -19,6 +20,12 @@ export const metadata: Metadata = {
   title: {
     default: "LeagueSports | Create & Manage Tournaments for Any Activity",
     template: "%s | LeagueSports",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    viewportFit: "cover",
   },
   description:
     "Build thriving communities around your passion. Create tournaments and leagues for sim golf, padel, sim racing, and more. Join thousands of players competing worldwide.",
@@ -89,7 +96,7 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${manrope.variable} antialiased bg-slate-950 text-white`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

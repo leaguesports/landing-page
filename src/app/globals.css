@@ -77,6 +77,7 @@ h1, h2, h3, h4, h5, h6 {
   filter: blur(80px);
   opacity: 0.4;
   animation: float 20s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .orb-1 {
@@ -273,6 +274,16 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Number counter animation */
