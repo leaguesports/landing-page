@@ -1,19 +1,18 @@
 /**
  * API Configuration
  *
- * The API base URL can be configured via the NEXT_PUBLIC_API_URL environment variable.
- * If not set, it defaults to http://localhost:3000
+ * API requests are proxied through Next.js rewrites (configured in next.config.ts)
+ * to avoid cross-origin cookie issues on mobile browsers.
  *
- * Usage:
- *   - In development: Set NEXT_PUBLIC_API_URL in .env.local
- *   - In production: Set NEXT_PUBLIC_API_URL in your deployment environment
+ * The actual backend URL is set via NEXT_PUBLIC_API_URL environment variable
+ * and used in next.config.ts for the proxy destination.
  *
  * Example .env.local:
- *   NEXT_PUBLIC_API_URL=http://localhost:3000
+ *   NEXT_PUBLIC_API_URL=http://192.168.1.100:3000
  */
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+// Use empty string for same-origin requests (proxied through Next.js)
+export const API_BASE_URL = "";
 
 // Helper function to construct API endpoints
 export function apiUrl(path: string): string {
