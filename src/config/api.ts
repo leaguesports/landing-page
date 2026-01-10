@@ -12,7 +12,7 @@
  */
 
 // Use empty string for same-origin requests (proxied through Next.js)
-export const API_BASE_URL = "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Helper function to construct API endpoints
 export function apiUrl(path: string): string {
