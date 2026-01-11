@@ -11,12 +11,28 @@ import React, {
 } from "react";
 import { API_ENDPOINTS } from "@/config/api";
 
+export type MatchType = "casual" | "practice" | "competitive";
+
+export interface PracticeDrill {
+  id: string;
+  name: string;
+  config: Record<string, number>;
+  progress?: number; // 0-100 for completion tracking
+  completed?: boolean;
+}
+
+export interface PracticeData {
+  drills: PracticeDrill[];
+}
+
 export interface Session {
   id: string;
   activityType: string;
+  matchType: MatchType;
   players: string[];
   startedAt: Date;
   status: "active" | "completed";
+  practiceData?: PracticeData;
 }
 
 export interface SessionScore {
@@ -47,10 +63,19 @@ interface SessionContextValue {
   isPanelMinimized: boolean;
   setPanelMinimized: (minimized: boolean) => void;
 
+  // Practice mode
+  updateDrillProgress: (
+    drillId: string,
+    progress: number,
+    completed?: boolean
+  ) => void;
+
   // Actions
   startSession: (
     activityType: string,
-    players: string[]
+    players: string[],
+    matchType?: MatchType,
+    practiceData?: PracticeData
   ) => Promise<Session | null>;
   endSession: () => Promise<boolean>;
   refreshSession: () => Promise<void>;
@@ -131,6 +156,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         activeSession = {
           id: "test-session",
           activityType: "padel",
+          matchType: "casual",
           players: [],
           startedAt: new Date().toISOString(),
           status: "active",
@@ -141,6 +167,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         setSession({
           id: activeSession.id || activeSession.sessionId,
           activityType: activeSession.activityType,
+          matchType: activeSession.matchType || "casual",
           players: activeSession.players || [],
           startedAt: new Date(
             activeSession.startedAt || activeSession.createdAt
@@ -212,10 +239,32 @@ export function SessionProvider({ children }: SessionProviderProps) {
     setScore((prev) => ({ ...prev, ...updates }));
   }, []);
 
+  const updateDrillProgress = useCallback(
+    (drillId: string, progress: number, completed?: boolean) => {
+      setSession((prev) => {
+        if (!prev || !prev.practiceData) return prev;
+
+        const updatedDrills = prev.practiceData.drills.map((drill) =>
+          drill.id === drillId
+            ? { ...drill, progress, completed: completed ?? drill.completed }
+            : drill
+        );
+
+        return {
+          ...prev,
+          practiceData: { ...prev.practiceData, drills: updatedDrills },
+        };
+      });
+    },
+    []
+  );
+
   const startSession = useCallback(
     async (
       activityType: string,
-      players: string[]
+      players: string[],
+      matchType: MatchType = "casual",
+      practiceData?: PracticeData
     ): Promise<Session | null> => {
       setIsLoading(true);
       setError(null);
@@ -229,7 +278,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
           credentials: "include",
           body: JSON.stringify({
             activityType,
+            matchType,
             players,
+            practiceData: practiceData
+              ? {
+                  drills: practiceData.drills.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    config: d.config,
+                  })),
+                }
+              : undefined,
           }),
         });
 
@@ -240,12 +299,25 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
         const data = await response.json();
 
+        // Initialize drills with 0 progress if practice mode
+        const initializedPracticeData = practiceData
+          ? {
+              drills: practiceData.drills.map((d) => ({
+                ...d,
+                progress: 0,
+                completed: false,
+              })),
+            }
+          : undefined;
+
         const newSession: Session = {
           id: data.sessionId,
           activityType,
+          matchType,
           players,
           startedAt: new Date(),
           status: "active",
+          practiceData: initializedPracticeData,
         };
 
         // Reset score for new session
@@ -346,6 +418,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     elapsedTimeFormatted: formatElapsedTime(elapsedTime),
     score,
     updateScore,
+    updateDrillProgress,
     isPanelExpanded,
     setPanelExpanded,
     isPanelMinimized,

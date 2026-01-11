@@ -1,9 +1,9 @@
 "use client";
 
-import { useSessionContext } from "@/contexts/SessionContext";
+import { useSessionContext, PracticeDrill } from "@/contexts/SessionContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const activityConfig: Record<
   string,
@@ -61,11 +61,24 @@ export default function SessionPage() {
     elapsedTimeFormatted,
     score,
     updateScore,
+    updateDrillProgress,
     isEnding,
     endSession,
     error,
     clearError,
   } = useSessionContext();
+
+  const [activeDrillId, setActiveDrillId] = useState<string | null>(() => {
+    // Initialize with first incomplete drill if available
+    return null;
+  });
+
+  // Compute default drill ID when session data is available
+  const defaultDrillId =
+    session?.practiceData?.drills?.find((d) => !d.completed)?.id ?? null;
+
+  // Use the default if no drill has been explicitly selected
+  const effectiveDrillId = activeDrillId ?? defaultDrillId;
 
   // Redirect to home if no active session
   useEffect(() => {
@@ -130,11 +143,23 @@ export default function SessionPage() {
               <span className="text-sm font-medium">Back</span>
             </Link>
 
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">
-                Live Session
-              </span>
+            <div className="flex items-center gap-3">
+              {session?.matchType === "practice" && (
+                <span className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium">
+                  Practice
+                </span>
+              )}
+              {session?.matchType === "competitive" && (
+                <span className="px-2 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium">
+                  Competitive
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">
+                  Live
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -192,6 +217,239 @@ export default function SessionPage() {
                 />
               </svg>
             </button>
+          </div>
+        )}
+
+        {/* Practice Mode: Drill Tracking */}
+        {session.matchType === "practice" && session.practiceData?.drills && (
+          <div className="glass-card rounded-3xl p-6 sm:p-8 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-3xl">🎯</span>
+              <div>
+                <h2 className="text-xl font-bold font-heading">
+                  Practice Drills
+                </h2>
+                <p className="text-sm text-slate-400">
+                  {
+                    session.practiceData.drills.filter((d) => d.completed)
+                      .length
+                  }{" "}
+                  of {session.practiceData.drills.length} completed
+                </p>
+              </div>
+            </div>
+
+            {/* Overall Progress */}
+            <div className="mb-6">
+              <div className="h-3 rounded-full bg-slate-700 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                  style={{
+                    width: `${
+                      (session.practiceData.drills.filter((d) => d.completed)
+                        .length /
+                        session.practiceData.drills.length) *
+                      100
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Drill Cards */}
+            <div className="space-y-4">
+              {session.practiceData.drills.map((drill: PracticeDrill) => {
+                const isActive = effectiveDrillId === drill.id;
+                return (
+                  <div
+                    key={drill.id}
+                    className={`rounded-2xl border-2 transition-all overflow-hidden ${
+                      drill.completed
+                        ? "border-emerald-500/50 bg-emerald-500/10"
+                        : isActive
+                        ? "border-amber-500 bg-amber-500/10"
+                        : "border-slate-700 bg-slate-800/30"
+                    }`}
+                  >
+                    <button
+                      onClick={() =>
+                        setActiveDrillId(isActive ? null : drill.id)
+                      }
+                      className="w-full p-4 text-left flex items-center gap-4"
+                    >
+                      {/* Completion Status */}
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          drill.completed
+                            ? "bg-emerald-500 text-white"
+                            : isActive
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-slate-700 text-slate-400"
+                        }`}
+                      >
+                        {drill.completed ? (
+                          <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        ) : (
+                          <span className="text-lg font-bold">
+                            {session.practiceData!.drills.indexOf(drill) + 1}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className={`font-medium ${
+                            drill.completed ? "text-emerald-300" : "text-white"
+                          }`}
+                        >
+                          {drill.name}
+                        </div>
+                        {Object.keys(drill.config).length > 0 && (
+                          <div className="text-sm text-slate-400 flex flex-wrap gap-2 mt-1">
+                            {Object.entries(drill.config).map(
+                              ([key, value]) => (
+                                <span
+                                  key={key}
+                                  className="px-2 py-0.5 rounded bg-slate-700/50"
+                                >
+                                  {key}: {value}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress */}
+                      {!drill.completed &&
+                        drill.progress !== undefined &&
+                        drill.progress > 0 && (
+                          <div className="text-right shrink-0">
+                            <div className="text-lg font-bold text-amber-400">
+                              {drill.progress}%
+                            </div>
+                          </div>
+                        )}
+
+                      <svg
+                        className={`w-5 h-5 text-slate-500 transition-transform ${
+                          isActive ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* Expanded Drill Controls */}
+                    {isActive && !drill.completed && (
+                      <div className="px-4 pb-4 border-t border-slate-700/50">
+                        {/* Progress Slider */}
+                        <div className="py-4">
+                          <label className="block text-sm text-slate-400 mb-2">
+                            Track your progress
+                          </label>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              value={drill.progress || 0}
+                              onChange={(e) =>
+                                updateDrillProgress(
+                                  drill.id,
+                                  parseInt(e.target.value)
+                                )
+                              }
+                              className="flex-1 h-2 rounded-full bg-slate-700 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+                            />
+                            <span className="w-12 text-right font-mono text-amber-400">
+                              {drill.progress || 0}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              updateDrillProgress(drill.id, 100, true)
+                            }
+                            className="flex-1 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 font-medium transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Mark Complete
+                          </button>
+                          <button
+                            onClick={() => {
+                              const nextDrill =
+                                session.practiceData?.drills.find(
+                                  (d, idx) =>
+                                    idx >
+                                      session.practiceData!.drills.indexOf(
+                                        drill
+                                      ) && !d.completed
+                                );
+                              if (nextDrill) {
+                                setActiveDrillId(nextDrill.id);
+                              }
+                            }}
+                            className="px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 transition-colors"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* All Drills Complete */}
+            {session.practiceData.drills.every((d) => d.completed) && (
+              <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <div className="text-4xl mb-2">🎉</div>
+                <div className="text-lg font-bold text-emerald-400">
+                  All drills completed!
+                </div>
+                <p className="text-sm text-slate-400 mt-1">
+                  Great practice session. You can end the session or continue
+                  practicing.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

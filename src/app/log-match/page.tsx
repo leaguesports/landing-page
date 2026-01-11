@@ -6,6 +6,35 @@ import { useRouter } from "next/navigation";
 import { useLogMatch } from "@/hooks/useSession";
 
 type ActivityType = "racing" | "golf" | "padel" | "esports" | "darts" | "pool";
+type MatchType = "casual" | "practice" | "competitive";
+
+interface MatchTypeConfig {
+  icon: string;
+  label: string;
+  description: string;
+  color: string;
+}
+
+const matchTypeConfig: Record<MatchType, MatchTypeConfig> = {
+  casual: {
+    icon: "😊",
+    label: "Casual",
+    description: "Just for fun",
+    color: "from-emerald-500 to-green-600",
+  },
+  practice: {
+    icon: "🎯",
+    label: "Practice",
+    description: "Training session",
+    color: "from-amber-500 to-orange-600",
+  },
+  competitive: {
+    icon: "🏆",
+    label: "Competitive",
+    description: "Ranked match",
+    color: "from-red-500 to-rose-600",
+  },
+};
 
 interface ActivityConfig {
   icon: string;
@@ -102,6 +131,7 @@ export default function LogMatchPage() {
 
   // Form state
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
+  const [matchType, setMatchType] = useState<MatchType>("casual");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [playerSearch, setPlayerSearch] = useState("");
 
@@ -177,7 +207,8 @@ export default function LogMatchPage() {
     const success = await logMatch(
       activityType,
       selectedPlayers,
-      getScoreData()
+      getScoreData(),
+      matchType
     );
     if (success) {
       router.push("/");
@@ -454,6 +485,33 @@ export default function LogMatchPage() {
                   >
                     Change activity
                   </button>
+                </div>
+              </div>
+
+              {/* Match Type Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Match Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.keys(matchTypeConfig) as MatchType[]).map((type) => {
+                    const cfg = matchTypeConfig[type];
+                    const isSelected = matchType === type;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => setMatchType(type)}
+                        className={`p-3 rounded-xl border-2 transition-all text-center ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-slate-700 hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="text-xl mb-1">{cfg.icon}</div>
+                        <div className="text-sm font-medium">{cfg.label}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

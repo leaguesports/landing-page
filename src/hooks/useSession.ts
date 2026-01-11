@@ -194,13 +194,16 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
 }
 
 // Helper hook for logging completed matches (non-live)
+type MatchType = "casual" | "practice" | "competitive";
+
 interface UseLogMatchReturn {
   isLogging: boolean;
   error: string | null;
   logMatch: (
     activityType: string,
     players: string[],
-    score: Record<string, unknown>
+    score: Record<string, unknown>,
+    matchType?: MatchType
   ) => Promise<boolean>;
   clearError: () => void;
 }
@@ -213,7 +216,8 @@ export function useLogMatch(): UseLogMatchReturn {
     async (
       activityType: string,
       players: string[],
-      score: Record<string, unknown>
+      score: Record<string, unknown>,
+      matchType: MatchType = "casual"
     ): Promise<boolean> => {
       setIsLogging(true);
       setError(null);
@@ -227,6 +231,7 @@ export function useLogMatch(): UseLogMatchReturn {
           credentials: "include",
           body: JSON.stringify({
             activityType,
+            matchType,
             players,
             score,
             playedAt: new Date().toISOString(),
