@@ -1,202 +1,35 @@
 "use client";
 
 import Link from "next/link";
-
-const activities = [
-  {
-    name: "Sim Golf",
-    description: "Virtual fairways, real competition",
-    icon: "⛳",
-    gradient: "from-emerald-500 to-green-600",
-    players: "12K+",
-  },
-  {
-    name: "Padel",
-    description: "Fast-paced court action",
-    icon: "🎾",
-    gradient: "from-amber-500 to-orange-600",
-    players: "8K+",
-  },
-  {
-    name: "Sim Racing",
-    description: "High-octane virtual motorsport",
-    icon: "🏎️",
-    gradient: "from-red-500 to-rose-600",
-    players: "25K+",
-  },
-  {
-    name: "Esports",
-    description: "Competitive gaming leagues",
-    icon: "🎮",
-    gradient: "from-violet-500 to-purple-600",
-    players: "50K+",
-  },
-  {
-    name: "Darts",
-    description: "Precision throwing tournaments",
-    icon: "🎯",
-    gradient: "from-sky-500 to-blue-600",
-    players: "5K+",
-  },
-  {
-    name: "Pool",
-    description: "Cue sports championships",
-    icon: "🎱",
-    gradient: "from-slate-500 to-gray-600",
-    players: "7K+",
-  },
-];
-
-const features = [
-  {
-    title: "30-Second Match Logging",
-    description:
-      "Quickplay lets you log any match in seconds. Select activity, add opponents, record score—done.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M13 10V3L4 14h7v7l9-11h-7z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Activity-Specific Scoring",
-    description:
-      "Golf strokes, padel sets, racing positions—each activity has its own intuitive scoring interface.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Personal Stats & History",
-    description:
-      "Track your wins, losses, improvement over time, and head-to-head records against friends.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Community Events",
-    description:
-      "Join or create communities to participate in organized tournaments, leagues, and recurring events.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Leaderboards & Challenges",
-    description:
-      "Compete on community leaderboards and take on challenges to earn achievements and bragging rights.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Works Everywhere",
-    description:
-      "Log matches on the go from your phone, or manage communities from desktop. Your data syncs everywhere.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  },
-];
+import { sportsList } from "@/config/sports";
 
 const stats = [
-  { value: "500K+", label: "Matches Logged" },
+  { value: "500K+", label: "Sessions Tracked" },
   { value: "100K+", label: "Active Players" },
   { value: "5K+", label: "Communities" },
-  { value: "6", label: "Activity Types" },
+  { value: "5", label: "Sports & Growing" },
 ];
 
 const testimonials = [
   {
     quote:
-      "LeagueSports transformed how we run our sim golf league. What used to take hours now takes minutes.",
+      "Finally, one place for all my sports. I track my sim racing, golf rounds, and padel matches all in LeagueSports.",
     author: "Marcus Chen",
-    role: "Sim Golf League Organizer",
+    role: "Multi-Sport Enthusiast",
     avatar: "MC",
   },
   {
     quote:
-      "The best platform for managing our padel club tournaments. The scheduling feature alone is worth it.",
+      "The practice drills transformed my game. I can actually see my improvement over time with real data.",
     author: "Sofia Rodriguez",
-    role: "Padel Club Manager",
+    role: "Competitive Padel Player",
     avatar: "SR",
   },
   {
     quote:
-      "We've grown our sim racing community from 50 to 500 members thanks to the tools LeagueSports provides.",
+      "It's like Steam for sports. I love launching into my racing app and having everything right there.",
     author: "James Wilson",
-    role: "Racing League Admin",
+    role: "Sim Racing League Admin",
     avatar: "JW",
   },
 ];
@@ -225,10 +58,16 @@ export default function LandingPage() {
             </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link
-                href="/communities"
+                href="#sports"
                 className="text-slate-300 hover:text-white transition-colors"
               >
-                Communities
+                Sports
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="text-slate-300 hover:text-white transition-colors"
+              >
+                How It Works
               </Link>
               <Link
                 href="#features"
@@ -237,44 +76,13 @@ export default function LandingPage() {
                 Features
               </Link>
               <Link
-                href="#activities"
+                href="/communities"
                 className="text-slate-300 hover:text-white transition-colors"
               >
-                Activities
-              </Link>
-              <Link
-                href="#testimonials"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                Testimonials
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                Pricing
+                Communities
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/quickplay"
-                className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90 transition-opacity"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                <span>Quickplay</span>
-              </Link>
               <Link
                 href="/login"
                 className="text-slate-300 hover:text-white transition-colors hidden sm:block"
@@ -285,7 +93,7 @@ export default function LandingPage() {
                 href="/signup"
                 className="btn-primary px-5 py-2.5 rounded-full text-sm"
               >
-                <span>Get Started</span>
+                <span>Get Started Free</span>
               </Link>
             </div>
           </div>
@@ -297,25 +105,25 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8 animate-fade-in-up">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm text-slate-300">
-                Track every match • Build your stats • Compete with friends
+                Your complete sports companion platform
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold font-heading leading-tight mb-6 animate-fade-in-up animation-delay-100">
-              Your Sports Life,
+              One Hub.
               <br />
-              <span className="gradient-text">All in One Place.</span>
+              <span className="gradient-text">All Your Sports.</span>
             </h1>
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 animate-fade-in-up animation-delay-200">
-              Log matches in seconds with Quickplay, track your personal stats,
-              and join communities to compete in organized events—whether
-              it&apos;s padel, sim golf, racing, or any activity you love.
+              LeagueSports is like Steam for your sports life. Each sport gets
+              its own dedicated app—with practice drills, casual play,
+              competitive matches, stats, and communities—all in one place.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
               <Link
-                href="/quickplay"
-                className="px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/25"
+                href="/signup"
+                className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-5 h-5"
@@ -327,13 +135,19 @@ export default function LandingPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span>Log a Match Now</span>
+                <span>Launch Your Library</span>
               </Link>
               <Link
-                href="/communities"
+                href="/activities"
                 className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
@@ -346,10 +160,10 @@ export default function LandingPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
                   />
                 </svg>
-                Explore Communities
+                Browse Sports
               </Link>
             </div>
           </div>
@@ -368,7 +182,120 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Two Ways to Play Section */}
+      {/* Sports Library Preview */}
+      <section id="sports" className="py-20 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
+              Your Sports <span className="gradient-text">Library</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Each sport is a complete app with its own dashboard, practice
+              modes, competitive play, and stats. Launch any sport and dive in.
+            </p>
+          </div>
+
+          {/* Sports Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sportsList.map((sport) => (
+              <Link
+                key={sport.id}
+                href={`/play/${sport.slug}`}
+                className="glass-card rounded-2xl overflow-hidden group hover:border-slate-600 transition-all"
+                style={{ background: sport.bgPattern }}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${sport.gradient} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
+                    >
+                      <svg
+                        className="w-7 h-7 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d={sport.icon}
+                        />
+                      </svg>
+                    </div>
+                    <div
+                      className={`px-3 py-1.5 rounded-lg bg-gradient-to-r ${sport.gradient} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1`}
+                    >
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-white">
+                        Launch
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {sport.name}
+                  </h3>
+                  <p className="text-sm text-slate-400 mb-4">
+                    {sport.description}
+                  </p>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                      Practice
+                    </span>
+                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                      Casual
+                    </span>
+                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                      Compete
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+
+            {/* Coming Soon Card */}
+            <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-dashed border-slate-700 min-h-[200px]">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
+                <svg
+                  className="w-7 h-7 text-slate-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </div>
+              <span className="font-medium text-slate-400 mb-1">
+                More Sports Coming
+              </span>
+              <span className="text-xs text-slate-500">
+                Tennis, Bowling, Squash...
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Three Modes Section */}
       <section className="py-20 md:py-32 relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -376,17 +303,16 @@ export default function LandingPage() {
               Play Your Way
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Whether you&apos;re tracking personal matches or competing in
-              organized events
+              Every sport comes with three distinct modes to match your mood
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-            {/* Quickplay Card */}
-            <div className="glass-card rounded-3xl p-8 md:p-10 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-500/10 to-transparent blur-3xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+            {/* Practice Mode */}
+            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-amber-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6">
                   <svg
                     className="w-8 h-8 text-white"
                     fill="none"
@@ -397,21 +323,21 @@ export default function LandingPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold font-heading mb-3">
-                  Quickplay
+                <h3 className="text-2xl font-bold font-heading mb-3">
+                  Practice
                 </h3>
                 <p className="text-slate-400 mb-6">
-                  Just finished a match? Log it in seconds. Track your personal
-                  stats, win rates, and progress over time—no community needed.
+                  Structured drills designed to improve specific skills. Track
+                  your consistency, set goals, and watch yourself get better.
                 </p>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3 text-slate-300">
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-amber-500"
+                      className="w-4 h-4 text-amber-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -423,11 +349,11 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Log matches in under 30 seconds
+                    Sport-specific drills
                   </li>
-                  <li className="flex items-center gap-3 text-slate-300">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-amber-500"
+                      className="w-4 h-4 text-amber-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -439,11 +365,11 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Activity-specific scoring (strokes, sets, positions)
+                    Progress tracking
                   </li>
-                  <li className="flex items-center gap-3 text-slate-300">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-amber-500"
+                      className="w-4 h-4 text-amber-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -455,38 +381,19 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Build your personal match history
+                    Skill improvement metrics
                   </li>
                 </ul>
-                <Link
-                  href="/quickplay"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:opacity-90 transition-opacity"
-                >
-                  <span>Try Quickplay</span>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </Link>
               </div>
             </div>
 
-            {/* Communities Card */}
-            <div className="glass-card rounded-3xl p-8 md:p-10 relative overflow-hidden group hover:border-primary/30 transition-colors">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent blur-3xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center mb-6">
+            {/* Casual Mode */}
+            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-6">
                   <svg
-                    className="w-8 h-8 text-slate-950"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -495,22 +402,19 @@ export default function LandingPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold font-heading mb-3">
-                  Communities
-                </h3>
+                <h3 className="text-2xl font-bold font-heading mb-3">Casual</h3>
                 <p className="text-slate-400 mb-6">
-                  Create or join groups of players. Organize events, run
-                  tournaments, track leaderboards, and take on challenges
-                  together.
+                  Play for fun with no pressure. Perfect for friendly matches
+                  that don&apos;t affect your ranking or competitive stats.
                 </p>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3 text-slate-300">
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-primary"
+                      className="w-4 h-4 text-emerald-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -522,11 +426,11 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Organize recurring events and tournaments
+                    No ranking impact
                   </li>
-                  <li className="flex items-center gap-3 text-slate-300">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-primary"
+                      className="w-4 h-4 text-emerald-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -538,11 +442,11 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Live leaderboards and rankings
+                    Solo or with friends
                   </li>
-                  <li className="flex items-center gap-3 text-slate-300">
+                  <li className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-primary"
+                      className="w-4 h-4 text-emerald-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -554,16 +458,19 @@ export default function LandingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Community challenges and achievements
+                    Quick session logging
                   </li>
                 </ul>
-                <Link
-                  href="/communities"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl btn-primary"
-                >
-                  <span>Browse Communities</span>
+              </div>
+            </div>
+
+            {/* Competitive Mode */}
+            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-red-500/30 transition-colors">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-red-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mb-6">
                   <svg
-                    className="w-4 h-4"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -572,104 +479,289 @@ export default function LandingPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
                     />
                   </svg>
-                </Link>
+                </div>
+                <h3 className="text-2xl font-bold font-heading mb-3">
+                  Compete
+                </h3>
+                <p className="text-slate-400 mb-6">
+                  Ranked matches that count. Climb leaderboards, earn your rank,
+                  and prove you&apos;re the best among your peers.
+                </p>
+                <ul className="space-y-2 text-slate-300 text-sm">
+                  <li className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Affects your ranking
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Global leaderboards
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Match format options
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Activities Section */}
-      <section id="activities" className="py-20 md:py-32 relative">
+      {/* How It Works */}
+      <section
+        id="how-it-works"
+        className="py-20 md:py-32 relative overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Works With{" "}
-              <span className="gradient-text">Your Favorite Activities</span>
+              How It <span className="gradient-text">Works</span>
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              From virtual sports to real-world games, track matches and compete
-              in the activities you love.
+              Get started in minutes and build your sports journey
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            {activities.map((activity, idx) => (
-              <div
-                key={activity.name}
-                className={`activity-card glass-card rounded-2xl p-6 md:p-8 cursor-pointer group ${
-                  idx === 0 ? "md:col-span-2 md:row-span-2" : ""
-                }`}
-              >
-                <div
-                  className={`activity-icon w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br ${activity.gradient} flex items-center justify-center text-2xl md:text-3xl mb-4`}
-                >
-                  {activity.icon}
+          <div className="grid md:grid-cols-4 gap-8 relative">
+            {/* Connection line */}
+            <div className="hidden md:block absolute top-14 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-primary via-accent to-secondary" />
+
+            {[
+              {
+                step: "01",
+                title: "Create Your Account",
+                description:
+                  "Sign up free and set up your player profile in seconds",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                ),
+              },
+              {
+                step: "02",
+                title: "Choose Your Sports",
+                description:
+                  "Add your favorite sports to your personal library",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
+                ),
+              },
+              {
+                step: "03",
+                title: "Launch & Play",
+                description:
+                  "Open any sport and start practicing, playing, or competing",
+                icon: (
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </>
+                ),
+              },
+              {
+                step: "04",
+                title: "Track & Improve",
+                description:
+                  "See your stats grow and unlock achievements over time",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                ),
+              },
+            ].map((item) => (
+              <div key={item.step} className="relative text-center">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-primary flex items-center justify-center mx-auto mb-6 relative z-10">
+                  <svg
+                    className="w-6 h-6 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    {item.icon}
+                  </svg>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold font-heading mb-2 group-hover:text-primary transition-colors">
-                  {activity.name}
+                <div className="text-xs text-primary font-bold mb-2">
+                  STEP {item.step}
+                </div>
+                <h3 className="text-lg font-bold font-heading mb-2">
+                  {item.title}
                 </h3>
-                <p className="text-slate-400 text-sm md:text-base mb-4">
-                  {activity.description}
-                </p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-primary font-semibold">
-                    {activity.players}
-                  </span>
-                  <span className="text-slate-500">active players</span>
-                </div>
+                <p className="text-sm text-slate-400">{item.description}</p>
               </div>
             ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link
-              href="/activities"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary-light transition-colors font-medium"
-            >
-              Explore all activities
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 8l4 4m0 0l-4 4m4-4H3"
-                />
-              </svg>
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Grid */}
       <section id="features" className="py-20 md:py-32 relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Everything You Need to{" "}
-              <span className="gradient-text-alt">Compete</span>
+              Everything a <span className="gradient-text-alt">Sports Hub</span>{" "}
+              Should Be
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Powerful tools designed to make running competitions effortless.
+              Powerful features that make LeagueSports your ultimate companion
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
+            {[
+              {
+                title: "Unified Dashboard",
+                description:
+                  "See all your sports, recent activity, and stats in one beautiful library view",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
+                ),
+              },
+              {
+                title: "Sport-Specific Apps",
+                description:
+                  "Each sport has its own dedicated experience with custom scoring, drills, and stats",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                  />
+                ),
+              },
+              {
+                title: "Detailed Analytics",
+                description:
+                  "Track your improvement with charts, trends, and performance insights",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                ),
+              },
+              {
+                title: "Achievements & Goals",
+                description:
+                  "Earn achievements, set weekly goals, and unlock milestones as you play",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                  />
+                ),
+              },
+              {
+                title: "Communities",
+                description:
+                  "Join or create groups to play with friends, run tournaments, and compete",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                ),
+              },
+              {
+                title: "Cross-Platform",
+                description:
+                  "Play on any device—your data syncs seamlessly everywhere",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                ),
+              },
+            ].map((feature) => (
               <div
                 key={feature.title}
                 className="feature-card glass-card rounded-2xl p-6 md:p-8"
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary mb-5">
-                  {feature.icon}
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    {feature.icon}
+                  </svg>
                 </div>
                 <h3 className="text-xl font-bold font-heading mb-3">
                   {feature.title}
@@ -683,67 +775,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20 md:py-32 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Up and Running in <span className="gradient-text">3 Steps</span>
-            </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Get your first tournament live in under 5 minutes.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Connection line */}
-            <div className="hidden md:block absolute top-16 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-primary via-accent to-secondary" />
-
-            {[
-              {
-                step: "01",
-                title: "Create Your Space",
-                description:
-                  "Set up your community in seconds. Add a name, description, and invite your first members.",
-              },
-              {
-                step: "02",
-                title: "Launch a Tournament",
-                description:
-                  "Choose your format, set the rules, and open registration. Our smart scheduler handles the rest.",
-              },
-              {
-                step: "03",
-                title: "Watch It Unfold",
-                description:
-                  "Real-time updates, automatic standings, and instant notifications keep everyone in the loop.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="relative text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-primary flex items-center justify-center mx-auto mb-6 relative z-10">
-                  <span className="text-xl font-bold gradient-text">
-                    {item.step}
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold font-heading mb-3">
-                  {item.title}
-                </h3>
-                <p className="text-slate-400">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 md:py-32 relative">
+      <section className="py-20 md:py-32 relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Loved by <span className="gradient-text">Organizers</span>
+              Loved by <span className="gradient-text">Players</span>
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Join thousands of community leaders who trust LeagueSports.
+              Join thousands who&apos;ve made LeagueSports their sports
+              companion
             </p>
           </div>
 
@@ -795,28 +836,42 @@ export default function LandingPage() {
 
             <div className="relative z-10">
               <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-                Ready to Build Your Community?
+                Ready to Level Up Your Sports Life?
               </h2>
               <p className="text-slate-400 text-lg max-w-xl mx-auto mb-8">
-                Join thousands of organizers running successful tournaments and
-                leagues. Start free, upgrade when you need.
+                Join the ultimate sports companion platform. Track every match,
+                improve your skills, and compete with friends across all your
+                favorite sports.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/signup"
-                  className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto"
+                  className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
                 >
-                  <span>Create Your First Tournament</span>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  <span>Get Started Free</span>
                 </Link>
                 <Link
-                  href="/contact"
+                  href="/activities"
                   className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto"
                 >
-                  Talk to Sales
+                  Explore Sports
                 </Link>
               </div>
               <p className="text-sm text-slate-500 mt-6">
-                No credit card required • Free forever for small communities
+                Free forever • No credit card required
               </p>
             </div>
           </div>
@@ -837,8 +892,8 @@ export default function LandingPage() {
                 </span>
               </Link>
               <p className="text-slate-400 text-sm max-w-xs mb-4">
-                The ultimate platform for creating and managing tournaments,
-                leagues, and competitions for any activity.
+                Your ultimate sports companion. Track, practice, and compete
+                across all your favorite activities in one place.
               </p>
               <div className="flex gap-4">
                 <a
@@ -888,8 +943,31 @@ export default function LandingPage() {
               </div>
             </div>
             <div>
+              <h4 className="font-semibold mb-4">Sports</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                {sportsList.map((sport) => (
+                  <li key={sport.id}>
+                    <Link
+                      href={`/play/${sport.slug}`}
+                      className="hover:text-primary transition-colors"
+                    >
+                      {sport.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-400">
+                <li>
+                  <Link
+                    href="/activities"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Browse Sports
+                  </Link>
+                </li>
                 <li>
                   <Link
                     href="/communities"
@@ -914,59 +992,6 @@ export default function LandingPage() {
                     Pricing
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Integrations
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Changelog
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    API Reference
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Guides
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Blog
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>
@@ -985,6 +1010,14 @@ export default function LandingPage() {
                     href="#"
                     className="hover:text-primary transition-colors"
                   >
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#"
+                    className="hover:text-primary transition-colors"
+                  >
                     Careers
                   </Link>
                 </li>
@@ -994,14 +1027,6 @@ export default function LandingPage() {
                     className="hover:text-primary transition-colors"
                   >
                     Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Privacy
                   </Link>
                 </li>
               </ul>

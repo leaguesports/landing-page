@@ -75,6 +75,12 @@ export default function HomePageClient() {
                   <span>Quickplay</span>
                 </Link>
                 <Link
+                  href="/activities"
+                  className="text-slate-300 hover:text-white transition-colors hidden sm:block"
+                >
+                  Activities
+                </Link>
+                <Link
                   href="/communities"
                   className="text-slate-300 hover:text-white transition-colors hidden sm:block"
                 >
@@ -207,6 +213,13 @@ export default function HomePageClient() {
                     />
                   </svg>
                   Quickplay
+                </Link>
+                <Link
+                  href="/activities"
+                  className="block px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Activities
                 </Link>
                 <Link
                   href="/communities"
