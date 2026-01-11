@@ -14,13 +14,15 @@ export default function ActivitiesPage() {
     { id: "simulation", name: "Simulation" },
     { id: "racket", name: "Racket Sports" },
     { id: "precision", name: "Precision" },
+    { id: "team", name: "Team Sports" },
   ];
 
   // Map sports to categories
   const sportCategories: Record<string, string[]> = {
     simulation: ["racing", "golf"],
-    racket: ["padel"],
-    precision: ["darts", "pool"],
+    racket: ["padel", "tennis", "squash"],
+    precision: ["darts", "pool", "bowling"],
+    team: ["soccer", "rugby", "netball", "cricket"],
   };
 
   // Filter sports based on search and category
@@ -46,6 +48,13 @@ export default function ActivitiesPage() {
     padel: { players: "15.8K", matches: "67K", communities: "234" },
     darts: { players: "6.4K", matches: "28K", communities: "76" },
     pool: { players: "4.9K", matches: "19K", communities: "52" },
+    cricket: { players: "9.3K", matches: "38K", communities: "112" },
+    bowling: { players: "5.7K", matches: "24K", communities: "68" },
+    tennis: { players: "18.2K", matches: "72K", communities: "198" },
+    squash: { players: "7.1K", matches: "31K", communities: "84" },
+    soccer: { players: "25.4K", matches: "89K", communities: "312" },
+    rugby: { players: "11.8K", matches: "42K", communities: "156" },
+    netball: { players: "8.9K", matches: "35K", communities: "94" },
   };
 
   return (
