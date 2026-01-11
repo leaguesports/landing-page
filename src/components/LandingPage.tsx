@@ -3,37 +3,6 @@
 import Link from "next/link";
 import { sportsList } from "@/config/sports";
 
-const stats = [
-  { value: "500K+", label: "Sessions Tracked" },
-  { value: "100K+", label: "Active Players" },
-  { value: "5K+", label: "Communities" },
-  { value: "5", label: "Sports & Growing" },
-];
-
-const testimonials = [
-  {
-    quote:
-      "Finally, one place for all my sports. I track my sim racing, golf rounds, and padel matches all in LeagueSports.",
-    author: "Marcus Chen",
-    role: "Multi-Sport Enthusiast",
-    avatar: "MC",
-  },
-  {
-    quote:
-      "The practice drills transformed my game. I can actually see my improvement over time with real data.",
-    author: "Sofia Rodriguez",
-    role: "Competitive Padel Player",
-    avatar: "SR",
-  },
-  {
-    quote:
-      "It's like Steam for sports. I love launching into my racing app and having everything right there.",
-    author: "James Wilson",
-    role: "Sim Racing League Admin",
-    avatar: "JW",
-  },
-];
-
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen noise">
@@ -46,13 +15,15 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-                <span className="text-slate-950 font-bold text-lg">L</span>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+                <span className="text-slate-950 font-bold text-base sm:text-lg">
+                  L
+                </span>
               </div>
-              <span className="text-xl font-bold font-heading">
+              <span className="text-lg sm:text-xl font-bold font-heading">
                 League<span className="gradient-text">Sports</span>
               </span>
             </Link>
@@ -75,25 +46,13 @@ export default function LandingPage() {
               >
                 Features
               </Link>
-              <Link
-                href="/communities"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                Communities
-              </Link>
             </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-slate-300 hover:text-white transition-colors hidden sm:block"
-              >
-                Sign In
-              </Link>
+            <div className="flex items-center">
               <Link
                 href="/waitlist"
-                className="btn-primary px-5 py-2.5 rounded-full text-sm"
+                className="btn-primary px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm"
               >
-                <span>Join Waitlist</span>
+                <span className="hidden xs:inline">Join </span>Waitlist
               </Link>
             </div>
           </div>
@@ -101,29 +60,30 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-44 md:pb-32">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 md:pt-44 md:pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full glass-card mb-6 sm:mb-8 animate-fade-in-up">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-sm text-slate-300">
-                Your complete sports companion platform
+              <span className="text-xs sm:text-sm text-slate-300">
+                Track, Practice, Compete — All in One Place
               </span>
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold font-heading leading-tight mb-6 animate-fade-in-up animation-delay-100">
-              One Hub.
+            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold font-heading leading-tight mb-4 sm:mb-6 animate-fade-in-up animation-delay-100">
+              Your Personal
               <br />
-              <span className="gradient-text">All Your Sports.</span>
+              <span className="gradient-text">Sports Hub.</span>
             </h1>
-            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 animate-fade-in-up animation-delay-200">
-              LeagueSports is like Steam for your sports life. Each sport gets
-              its own dedicated app—with practice drills, casual play,
-              competitive matches, stats, and communities—all in one place.
+            <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8 sm:mb-10 px-2 animate-fade-in-up animation-delay-200">
+              One app for all your favorite sports. Get dedicated tools for
+              practice drills, friendly matches, competitive play, detailed
+              stats, and vibrant communities — everything you need to improve
+              and have fun.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0 animate-fade-in-up animation-delay-300">
               <Link
                 href="/waitlist"
-                className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
+                className="btn-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-5 h-5"
@@ -142,7 +102,7 @@ export default function LandingPage() {
               </Link>
               <a
                 href="#sports"
-                className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
+                className="btn-secondary px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-5 h-5"
@@ -161,50 +121,38 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 max-w-4xl mx-auto animate-fade-in-up animation-delay-400">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold font-heading gradient-text stat-number">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-slate-400 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* Sports Library Preview */}
-      <section id="sports" className="py-20 md:py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Your Sports <span className="gradient-text">Library</span>
+      <section id="sports" className="py-16 sm:py-20 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+              Choose Your <span className="gradient-text">Sports</span>
             </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Each sport is a complete app with its own dashboard, practice
-              modes, competitive play, and stats. Launch any sport and dive in.
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Pick the sports you love. Each one comes with tailored practice
+              drills, match tracking, performance stats, and a community of
+              fellow players.
             </p>
           </div>
 
           {/* Sports Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {sportsList.map((sport) => (
-              <Link
+              <div
                 key={sport.id}
-                href={`/play/${sport.slug}`}
-                className="glass-card rounded-2xl overflow-hidden group hover:border-slate-600 transition-all"
+                className="glass-card rounded-xl sm:rounded-2xl overflow-hidden"
                 style={{ background: sport.bgPattern }}
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <div className="p-4 sm:p-5 lg:p-6">
+                  <div className="flex items-center gap-3 sm:gap-4 mb-3">
                     <div
-                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${sport.gradient} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br ${sport.gradient} flex items-center justify-center shadow-lg shrink-0`}
                     >
                       <svg
-                        className="w-7 h-7 text-white"
+                        className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -217,55 +165,39 @@ export default function LandingPage() {
                         />
                       </svg>
                     </div>
-                    <div
-                      className={`px-3 py-1.5 rounded-lg bg-gradient-to-r ${sport.gradient} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1`}
-                    >
-                      <svg
-                        className="w-4 h-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium text-white">
-                        Launch
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white">
+                        {sport.name}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-400 truncate">
+                        {sport.description}
+                      </p>
+                    </div>
+                    <div className="px-2 py-1 rounded-md bg-primary/20 text-primary text-[10px] sm:text-xs font-medium shrink-0">
+                      Soon
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {sport.name}
-                  </h3>
-                  <p className="text-sm text-slate-400 mb-4">
-                    {sport.description}
-                  </p>
-
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-500">
+                    <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-slate-800/50">
                       Practice
                     </span>
-                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                    <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-slate-800/50">
                       Casual
                     </span>
-                    <span className="px-2 py-1 rounded bg-slate-800/50">
+                    <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-slate-800/50">
                       Compete
                     </span>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
 
             {/* Coming Soon Card */}
-            <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-dashed border-slate-700 min-h-[200px]">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 flex items-center sm:flex-col gap-3 sm:gap-0 sm:justify-center border-2 border-dashed border-slate-700 sm:min-h-[180px]">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-slate-800 flex items-center justify-center sm:mb-3 shrink-0">
                 <svg
-                  className="w-7 h-7 text-slate-500"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-slate-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -278,32 +210,35 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <span className="font-medium text-slate-400 mb-1">
-                More Sports Coming
-              </span>
-              <span className="text-xs text-slate-500">
-                Tennis, Bowling, Squash...
-              </span>
+              <div className="sm:text-center">
+                <span className="block font-medium text-slate-400 text-sm sm:text-base sm:mb-1">
+                  More Sports Coming
+                </span>
+                <span className="text-xs text-slate-500">
+                  Snooker, Badminton, Hockey...
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Three Modes Section */}
-      <section className="py-20 md:py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
+      <section className="py-16 sm:py-20 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
               Play Your Way
             </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Every sport comes with three distinct modes to match your mood
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Whether you want to train, have fun with friends, or compete
+              seriously — there&apos;s a mode for every moment
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {/* Practice Mode */}
-            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
               <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-amber-500/10 to-transparent blur-3xl" />
               <div className="relative">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6">
@@ -382,7 +317,7 @@ export default function LandingPage() {
             </div>
 
             {/* Casual Mode */}
-            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
               <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-500/10 to-transparent blur-3xl" />
               <div className="relative">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-6">
@@ -459,7 +394,7 @@ export default function LandingPage() {
             </div>
 
             {/* Competitive Mode */}
-            <div className="glass-card rounded-3xl p-8 relative overflow-hidden group hover:border-red-500/30 transition-colors">
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 relative overflow-hidden group hover:border-red-500/30 transition-colors">
               <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-red-500/10 to-transparent blur-3xl" />
               <div className="relative">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mb-6">
@@ -543,28 +478,28 @@ export default function LandingPage() {
       {/* How It Works */}
       <section
         id="how-it-works"
-        className="py-20 md:py-32 relative overflow-hidden"
+        className="py-16 sm:py-20 md:py-32 relative overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              How It <span className="gradient-text">Works</span>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+              Simple to <span className="gradient-text">Get Started</span>
             </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Get started in minutes and build your sports journey
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Set up in minutes. Start tracking and improving right away.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-8 relative">
-            {/* Connection line */}
-            <div className="hidden md:block absolute top-14 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-primary via-accent to-secondary" />
+          {/* Steps - Vertical on mobile, Horizontal on desktop */}
+          <div className="space-y-8 md:space-y-0 md:grid md:grid-cols-4 md:gap-8 relative">
+            {/* Connection line - only on desktop */}
+            <div className="hidden md:block absolute top-10 left-[calc(12.5%+28px)] right-[calc(12.5%+28px)] h-[2px] bg-gradient-to-r from-primary via-accent to-secondary" />
 
             {[
               {
-                step: "01",
-                title: "Create Your Account",
-                description:
-                  "Sign up free and set up your player profile in seconds",
+                step: "1",
+                title: "Sign Up Free",
+                description: "Create your account in seconds",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -575,10 +510,9 @@ export default function LandingPage() {
                 ),
               },
               {
-                step: "02",
-                title: "Choose Your Sports",
-                description:
-                  "Add your favorite sports to your personal library",
+                step: "2",
+                title: "Pick Your Sports",
+                description: "Select the sports you play",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -589,10 +523,9 @@ export default function LandingPage() {
                 ),
               },
               {
-                step: "03",
-                title: "Launch & Play",
-                description:
-                  "Open any sport and start practicing, playing, or competing",
+                step: "3",
+                title: "Start Playing",
+                description: "Track matches and practice",
                 icon: (
                   <>
                     <path
@@ -611,10 +544,9 @@ export default function LandingPage() {
                 ),
               },
               {
-                step: "04",
-                title: "Track & Improve",
-                description:
-                  "See your stats grow and unlock achievements over time",
+                step: "4",
+                title: "See Progress",
+                description: "Watch yourself improve over time",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -624,25 +556,41 @@ export default function LandingPage() {
                   />
                 ),
               },
-            ].map((item) => (
-              <div key={item.step} className="relative text-center">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-primary flex items-center justify-center mx-auto mb-6 relative z-10">
-                  <svg
-                    className="w-6 h-6 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    {item.icon}
-                  </svg>
+            ].map((item, index) => (
+              <div
+                key={item.step}
+                className="flex md:flex-col items-center md:items-center gap-4 md:gap-0 md:text-center"
+              >
+                {/* Step number circle */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full glass-card border-2 border-primary/50 flex items-center justify-center relative z-10">
+                    <svg
+                      className="w-7 h-7 md:w-8 md:h-8 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      {item.icon}
+                    </svg>
+                  </div>
+                  {/* Mobile vertical line */}
+                  {index < 3 && (
+                    <div className="md:hidden absolute left-1/2 top-full w-[2px] h-8 bg-gradient-to-b from-primary/50 to-transparent -translate-x-1/2" />
+                  )}
                 </div>
-                <div className="text-xs text-primary font-bold mb-2">
-                  STEP {item.step}
+
+                {/* Content */}
+                <div className="flex-1 md:mt-5">
+                  <div className="flex items-center gap-2 md:justify-center mb-1">
+                    <span className="text-xs font-bold text-primary/70">
+                      STEP {item.step}
+                    </span>
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold font-heading text-white mb-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-slate-400">{item.description}</p>
                 </div>
-                <h3 className="text-lg font-bold font-heading mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-slate-400">{item.description}</p>
               </div>
             ))}
           </div>
@@ -650,24 +598,25 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-20 md:py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Everything a <span className="gradient-text-alt">Sports Hub</span>{" "}
-              Should Be
+      <section id="features" className="py-16 sm:py-20 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+              Everything You Need to{" "}
+              <span className="gradient-text-alt">Improve</span>
             </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Powerful features that make LeagueSports your ultimate companion
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Tools designed to help you track progress, stay motivated, and
+              connect with others who share your passion
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
-                title: "Unified Dashboard",
+                title: "Everything in One Place",
                 description:
-                  "See all your sports, recent activity, and stats in one beautiful library view",
+                  "See all your sports, recent games, and progress at a glance",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -678,9 +627,9 @@ export default function LandingPage() {
                 ),
               },
               {
-                title: "Sport-Specific Apps",
+                title: "Made for Your Sport",
                 description:
-                  "Each sport has its own dedicated experience with custom scoring, drills, and stats",
+                  "Golf, padel, racing — each sport works exactly how you'd expect it to",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -769,81 +718,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 md:py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-              Loved by <span className="gradient-text">Players</span>
-            </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Join thousands who&apos;ve made LeagueSports their sports
-              companion
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div
-                key={testimonial.author}
-                className="glass-card rounded-2xl p-6 md:p-8"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="w-5 h-5 text-amber-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-slate-300 mb-6 leading-relaxed">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-slate-950">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-semibold">{testimonial.author}</div>
-                    <div className="text-sm text-slate-400">
-                      {testimonial.role}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 md:py-32 relative">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="glass-card rounded-3xl p-8 md:p-16 text-center relative overflow-hidden">
+      <section className="py-16 sm:py-20 md:py-32 relative">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-16 text-center relative overflow-hidden">
             {/* Decorative elements */}
             <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary text-xs sm:text-sm font-medium mb-4 sm:mb-6">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 Coming Soon
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
-                Ready to Level Up Your Sports Life?
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+                Ready to Transform How You Play?
               </h2>
-              <p className="text-slate-400 text-lg max-w-xl mx-auto mb-8">
-                Be among the first to experience the ultimate sports companion.
-                Join our waitlist to get early access when we launch.
+              <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto mb-6 sm:mb-8 px-2">
+                Join thousands of players who want a better way to track their
+                progress and enjoy their favorite sports. Sign up for early
+                access.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Link
                   href="/waitlist"
-                  className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
+                  className="btn-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg w-full sm:w-auto flex items-center justify-center gap-2"
                 >
                   <svg
                     className="w-5 h-5"
@@ -862,12 +761,12 @@ export default function LandingPage() {
                 </Link>
                 <a
                   href="#sports"
-                  className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto"
+                  className="btn-secondary px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg w-full sm:w-auto"
                 >
                   Explore Sports
                 </a>
               </div>
-              <p className="text-sm text-slate-500 mt-6">
+              <p className="text-xs sm:text-sm text-slate-500 mt-4 sm:mt-6">
                 No spam, ever. We&apos;ll only email you about launch updates.
               </p>
             </div>
@@ -876,19 +775,21 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+      <footer className="border-t border-slate-800/50 py-10 sm:py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8 mb-8 sm:mb-12">
             <div className="col-span-2">
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-                  <span className="text-slate-950 font-bold text-lg">L</span>
+              <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+                  <span className="text-slate-950 font-bold text-base sm:text-lg">
+                    L
+                  </span>
                 </div>
-                <span className="text-xl font-bold font-heading">
+                <span className="text-lg sm:text-xl font-bold font-heading">
                   League<span className="gradient-text">Sports</span>
                 </span>
               </Link>
-              <p className="text-slate-400 text-sm max-w-xs mb-4">
+              <p className="text-slate-400 text-xs sm:text-sm max-w-xs mb-3 sm:mb-4">
                 Your ultimate sports companion. Track, practice, and compete
                 across all your favorite activities in one place.
               </p>
@@ -943,14 +844,7 @@ export default function LandingPage() {
               <h4 className="font-semibold mb-4">Sports</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 {sportsList.map((sport) => (
-                  <li key={sport.id}>
-                    <Link
-                      href={`/play/${sport.slug}`}
-                      className="hover:text-primary transition-colors"
-                    >
-                      {sport.name}
-                    </Link>
-                  </li>
+                  <li key={sport.id}>{sport.name}</li>
                 ))}
               </ul>
             </div>
@@ -958,36 +852,28 @@ export default function LandingPage() {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 <li>
-                  <Link
-                    href="/activities"
+                  <a
+                    href="#sports"
                     className="hover:text-primary transition-colors"
                   >
                     Browse Sports
-                  </Link>
+                  </a>
                 </li>
                 <li>
-                  <Link
-                    href="/communities"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Communities
-                  </Link>
-                </li>
-                <li>
-                  <Link
+                  <a
                     href="#features"
                     className="hover:text-primary transition-colors"
                   >
                     Features
-                  </Link>
+                  </a>
                 </li>
                 <li>
-                  <Link
-                    href="#"
+                  <a
+                    href="#how-it-works"
                     className="hover:text-primary transition-colors"
                   >
-                    Pricing
-                  </Link>
+                    How It Works
+                  </a>
                 </li>
               </ul>
             </div>

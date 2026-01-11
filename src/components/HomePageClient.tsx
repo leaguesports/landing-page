@@ -17,19 +17,10 @@ export default function HomePageClient() {
   };
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  // Show landing page during auth check for SEO - crawlers will see full content
+  // Once auth completes, authenticated users will see the dashboard
   if (isLoading) {
-    return (
-      <div className="relative min-h-screen noise flex items-center justify-center">
-        <div className="mesh-gradient" />
-        <div className="fixed inset-0 grid-pattern pointer-events-none" />
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-            <span className="text-slate-950 font-bold text-2xl">L</span>
-          </div>
-          <div className="text-slate-400">Loading...</div>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   if (isAuthenticated) {
