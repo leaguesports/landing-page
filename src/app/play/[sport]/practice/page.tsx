@@ -42,7 +42,7 @@ export default function SportPracticePage() {
         .map((d) => ({
           id: d.id,
           name: d.name,
-          targetValue: 100,
+          config: { targetValue: 100 },
           progress: 0,
         }));
 
@@ -148,7 +148,9 @@ export default function SportPracticePage() {
                         {drill.difficulty}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-400">{drill.description}</p>
+                    <p className="text-sm text-slate-400">
+                      {drill.description}
+                    </p>
                   </div>
                   <div
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -232,7 +234,11 @@ export default function SportPracticePage() {
         >
           {isStarting || isLoading ? (
             <>
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -279,4 +285,3 @@ export default function SportPracticePage() {
     </div>
   );
 }
-

@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { getSportBySlug, sportDrills, type SportType, type Drill } from "@/config/sports";
+import {
+  getSportBySlug,
+  sportDrills,
+  type SportType,
+  type Drill,
+} from "@/config/sports";
 import { useSessionContext } from "@/contexts/SessionContext";
 
 export default function PracticePage() {
@@ -12,7 +17,7 @@ export default function PracticePage() {
   const sportSlug = params.sport as string;
   const sport = getSportBySlug(sportSlug);
   const { startSession, isLoading } = useSessionContext();
-  
+
   const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
   const [isStarting, setIsStarting] = useState(false);
 
@@ -20,7 +25,9 @@ export default function PracticePage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Sport not found</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Sport not found
+          </h1>
           <Link href="/" className="text-primary hover:text-primary-light">
             Return to dashboard
           </Link>
@@ -41,7 +48,7 @@ export default function PracticePage() {
 
   const handleStartPractice = async () => {
     if (selectedDrills.length === 0) return;
-    
+
     setIsStarting(true);
     try {
       const selectedDrillData = drills
@@ -49,7 +56,7 @@ export default function PracticePage() {
         .map((d) => ({
           id: d.id,
           name: d.name,
-          targetValue: 100,
+          config: { targetValue: 100 },
           progress: 0,
         }));
 
@@ -86,27 +93,54 @@ export default function PracticePage() {
                 href="/"
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
                 <span className="hidden sm:inline">Dashboard</span>
               </Link>
               <div className="h-6 w-px bg-slate-700" />
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}>
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sport.icon} />
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}
+                >
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={sport.icon}
+                    />
                   </svg>
                 </div>
                 <div>
-                  <h1 className="font-bold text-white">{sport.name} Practice</h1>
-                  <p className="text-xs text-slate-400">Select drills to practice</p>
+                  <h1 className="font-bold text-white">
+                    {sport.name} Practice
+                  </h1>
+                  <p className="text-xs text-slate-400">
+                    Select drills to practice
+                  </p>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-400">
-                {selectedDrills.length} drill{selectedDrills.length !== 1 ? "s" : ""} selected
+                {selectedDrills.length} drill
+                {selectedDrills.length !== 1 ? "s" : ""} selected
               </span>
             </div>
           </div>
@@ -139,13 +173,21 @@ export default function PracticePage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white">Available Drills</h2>
             <button
-              onClick={() => setSelectedDrills(selectedDrills.length === drills.length ? [] : drills.map((d) => d.id))}
+              onClick={() =>
+                setSelectedDrills(
+                  selectedDrills.length === drills.length
+                    ? []
+                    : drills.map((d) => d.id)
+                )
+              }
               className="text-sm text-primary hover:text-primary-light"
             >
-              {selectedDrills.length === drills.length ? "Deselect All" : "Select All"}
+              {selectedDrills.length === drills.length
+                ? "Deselect All"
+                : "Select All"}
             </button>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
             {drills.map((drill) => {
               const isSelected = selectedDrills.includes(drill.id);
@@ -162,39 +204,79 @@ export default function PracticePage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white">{drill.name}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border ${getDifficultyColor(drill.difficulty)}`}>
+                        <h3 className="font-semibold text-white">
+                          {drill.name}
+                        </h3>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full border ${getDifficultyColor(
+                            drill.difficulty
+                          )}`}
+                        >
                           {drill.difficulty}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-400">{drill.description}</p>
+                      <p className="text-sm text-slate-400">
+                        {drill.description}
+                      </p>
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      isSelected
-                        ? `bg-gradient-to-br ${sport.gradient} border-transparent`
-                        : "border-slate-600"
-                    }`}>
+                    <div
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? `bg-gradient-to-br ${sport.gradient} border-transparent`
+                          : "border-slate-600"
+                      }`}
+                    >
                       {isSelected && (
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-xs text-slate-500">
                     {drill.duration && (
                       <div className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                         {drill.duration}
                       </div>
                     )}
                     {drill.metrics && (
                       <div className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
                         </svg>
                         {drill.metrics.slice(0, 2).join(", ")}
                       </div>
@@ -213,14 +295,44 @@ export default function PracticePage() {
           </div>
           <div className="p-4 space-y-3">
             {[
-              { drill: "Lap Consistency", result: "8/10 laps within target", improvement: "+5%", time: "2 days ago" },
-              { drill: "Qualifying Pace", result: "New PB: 1:32.456", improvement: "-0.3s", time: "3 days ago" },
-              { drill: "Tire Management", result: "Completed 15 lap stint", improvement: "+8%", time: "5 days ago" },
+              {
+                drill: "Lap Consistency",
+                result: "8/10 laps within target",
+                improvement: "+5%",
+                time: "2 days ago",
+              },
+              {
+                drill: "Qualifying Pace",
+                result: "New PB: 1:32.456",
+                improvement: "-0.3s",
+                time: "3 days ago",
+              },
+              {
+                drill: "Tire Management",
+                result: "Completed 15 lap stint",
+                improvement: "+8%",
+                time: "5 days ago",
+              },
             ].map((session, idx) => (
-              <div key={idx} className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30">
-                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}>
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              <div
+                key={idx}
+                className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30"
+              >
+                <div
+                  className={`w-10 h-10 rounded-lg bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}
+                >
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -228,7 +340,9 @@ export default function PracticePage() {
                   <div className="text-sm text-slate-400">{session.result}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-emerald-400">{session.improvement}</div>
+                  <div className="text-sm font-medium text-emerald-400">
+                    {session.improvement}
+                  </div>
                   <div className="text-xs text-slate-500">{session.time}</div>
                 </div>
               </div>
@@ -250,19 +364,50 @@ export default function PracticePage() {
         >
           {isStarting || isLoading ? (
             <>
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <svg
+                className="w-5 h-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
               Starting...
             </>
           ) : (
             <>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              Start Practice ({selectedDrills.length} drill{selectedDrills.length !== 1 ? "s" : ""})
+              Start Practice ({selectedDrills.length} drill
+              {selectedDrills.length !== 1 ? "s" : ""})
             </>
           )}
         </button>
@@ -270,4 +415,3 @@ export default function PracticePage() {
     </div>
   );
 }
-

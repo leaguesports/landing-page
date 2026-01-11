@@ -90,10 +90,10 @@ export default function LandingPage() {
                 Sign In
               </Link>
               <Link
-                href="/signup"
+                href="/waitlist"
                 className="btn-primary px-5 py-2.5 rounded-full text-sm"
               >
-                <span>Get Started Free</span>
+                <span>Join Waitlist</span>
               </Link>
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
               <Link
-                href="/signup"
+                href="/waitlist"
                 className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
@@ -135,19 +135,13 @@ export default function LandingPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
-                <span>Launch Your Library</span>
+                <span>Join the Waitlist</span>
               </Link>
-              <Link
-                href="/activities"
+              <a
+                href="#sports"
                 className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <svg
@@ -163,8 +157,8 @@ export default function LandingPage() {
                     d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
                   />
                 </svg>
-                Browse Sports
-              </Link>
+                Explore Sports
+              </a>
             </div>
           </div>
 
@@ -835,17 +829,20 @@ export default function LandingPage() {
             <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
             <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-medium mb-6">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Coming Soon
+              </div>
               <h2 className="text-3xl md:text-5xl font-bold font-heading mb-4">
                 Ready to Level Up Your Sports Life?
               </h2>
               <p className="text-slate-400 text-lg max-w-xl mx-auto mb-8">
-                Join the ultimate sports companion platform. Track every match,
-                improve your skills, and compete with friends across all your
-                favorite sports.
+                Be among the first to experience the ultimate sports companion.
+                Join our waitlist to get early access when we launch.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
-                  href="/signup"
+                  href="/waitlist"
                   className="btn-primary px-8 py-4 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2"
                 >
                   <svg
@@ -858,20 +855,20 @@ export default function LandingPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                  <span>Get Started Free</span>
+                  <span>Join the Waitlist</span>
                 </Link>
-                <Link
-                  href="/activities"
+                <a
+                  href="#sports"
                   className="btn-secondary px-8 py-4 rounded-full text-lg w-full sm:w-auto"
                 >
                   Explore Sports
-                </Link>
+                </a>
               </div>
               <p className="text-sm text-slate-500 mt-6">
-                Free forever • No credit card required
+                No spam, ever. We&apos;ll only email you about launch updates.
               </p>
             </div>
           </div>
