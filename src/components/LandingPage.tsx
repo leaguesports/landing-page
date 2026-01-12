@@ -9,13 +9,15 @@ export default function LandingPage() {
     "darts"
   );
   return (
-    <div className="relative min-h-screen noise overflow-x-hidden">
+    <div className="relative min-h-screen noise">
       {/* Background effects */}
       <div className="mesh-gradient" />
       <div className="fixed inset-0 grid-pattern pointer-events-none" />
-      <div className="orb orb-1" />
-      <div className="orb orb-2" />
-      <div className="orb orb-3" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+        <div className="orb orb-3" />
+      </div>
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-slate-800/50">
@@ -418,7 +420,7 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full glass-card mb-4 sm:mb-6">
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="text-xs sm:text-sm text-slate-300">
-                Zero Manual Entry
+                Reduce Manual Entry
               </span>
             </div>
             <h2 className="text-xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
