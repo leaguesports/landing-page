@@ -39,4 +39,7 @@ export const API_ENDPOINTS = {
   // Communities
   COMMUNITIES: apiUrl("/api/communities"),
   COMMUNITY: (id: string) => apiUrl(`/api/communities/${id}`),
+
+  // Waitlist
+  WAITLIST: apiUrl("/api/waitlist"),
 } as const;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { sportsList } from "@/config/sports";
+import { API_ENDPOINTS } from "@/config/api";
 
 const existingApps = [
   { id: "strava", name: "Strava", icon: "🏃" },
@@ -78,12 +79,14 @@ const painPoints = [
 export default function WaitlistPage() {
   const [step, setStep] = useState(0); // Start at 0 for the intro question
   const [primarySport, setPrimarySport] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [otherSports, setOtherSports] = useState("");
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
   const [otherApp, setOtherApp] = useState("");
   const [likedFeatures, setLikedFeatures] = useState<string[]>([]);
+  const [otherFeatures, setOtherFeatures] = useState("");
   const [selectedPainPoints, setSelectedPainPoints] = useState<string[]>([]);
   const [additionalFeedback, setAdditionalFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,6 +120,10 @@ export default function WaitlistPage() {
         }
         break;
       case 1:
+        if (!name.trim()) {
+          setError("Please enter your name");
+          return false;
+        }
         if (!email) {
           setError("Please enter your email address");
           return false;
@@ -191,24 +198,42 @@ export default function WaitlistPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      console.log("Waitlist submission:", {
+      const payload = {
         email,
-        primarySport,
-        sports: selectedSports,
-        otherSports: otherSports || undefined,
-        currentApps: selectedApps,
-        otherApp: otherApp || undefined,
-        likedFeatures,
-        painPoints: selectedPainPoints,
-        additionalFeedback: additionalFeedback || undefined,
+        name,
+        data: {
+          primarySport,
+          sports: selectedSports,
+          otherSports: otherSports || undefined,
+          currentApps: selectedApps,
+          otherApp: otherApp || undefined,
+          likedFeatures,
+          otherFeatures: otherFeatures || undefined,
+          painPoints: selectedPainPoints,
+          additionalFeedback: additionalFeedback || undefined,
+        },
+      };
+
+      const response = await fetch(API_ENDPOINTS.WAITLIST, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to submit");
+      }
+
       setIsSubmitted(true);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -449,24 +474,42 @@ export default function WaitlistPage() {
                   </div>
                 )}
 
-                {/* Step 1: Email & Sports */}
+                {/* Step 1: Name, Email & Sports */}
                 {step === 1 && (
                   <div className="space-y-6 sm:space-y-8 animate-fade-in">
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-white mb-2"
-                      >
-                        Email Address <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base sm:text-lg"
-                      />
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="name"
+                          className="block text-sm font-medium text-white mb-2"
+                        >
+                          Your Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="John Doe"
+                          className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base sm:text-lg"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="email"
+                          className="block text-sm font-medium text-white mb-2"
+                        >
+                          Email Address <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base sm:text-lg"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -671,6 +714,24 @@ export default function WaitlistPage() {
                             </button>
                           );
                         })}
+                      </div>
+
+                      {/* Other features input */}
+                      <div className="mt-4">
+                        <label
+                          htmlFor="otherFeatures"
+                          className="block text-sm font-medium text-slate-400 mb-2"
+                        >
+                          Other features you&apos;d like to see?
+                        </label>
+                        <input
+                          type="text"
+                          id="otherFeatures"
+                          value={otherFeatures}
+                          onChange={(e) => setOtherFeatures(e.target.value)}
+                          placeholder="e.g., AI coaching, voice commands..."
+                          className="w-full px-3 sm:px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
+                        />
                       </div>
                     </div>
                   </div>
