@@ -76,7 +76,8 @@ const painPoints = [
 ];
 
 export default function WaitlistPage() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Start at 0 for the intro question
+  const [primarySport, setPrimarySport] = useState("");
   const [email, setEmail] = useState("");
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [otherSports, setOtherSports] = useState("");
@@ -89,7 +90,7 @@ export default function WaitlistPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const totalSteps = 4;
+  const totalSteps = 5; // Including the intro question
 
   const toggleItem = (
     id: string,
@@ -109,6 +110,12 @@ export default function WaitlistPage() {
   const validateStep = () => {
     setError("");
     switch (step) {
+      case 0:
+        if (!primarySport) {
+          setError("Please select your primary sport");
+          return false;
+        }
+        break;
       case 1:
         if (!email) {
           setError("Please enter your email address");
@@ -141,12 +148,20 @@ export default function WaitlistPage() {
 
   const handleNext = () => {
     if (validateStep()) {
-      setStep((prev) => Math.min(prev + 1, totalSteps));
+      // When moving from step 0, auto-select the primary sport in the sports list
+      if (
+        step === 0 &&
+        primarySport &&
+        !selectedSports.includes(primarySport)
+      ) {
+        setSelectedSports([primarySport]);
+      }
+      setStep((prev) => Math.min(prev + 1, totalSteps - 1));
     }
   };
 
   const handleBack = () => {
-    setStep((prev) => Math.max(prev - 1, 1));
+    setStep((prev) => Math.max(prev - 1, 0));
     setError("");
   };
 
@@ -162,7 +177,7 @@ export default function WaitlistPage() {
       e.preventDefault();
 
       // If on a step other than the last and it's an input field, advance to next step
-      if (step < totalSteps && e.target instanceof HTMLInputElement) {
+      if (step < totalSteps - 1 && e.target instanceof HTMLInputElement) {
         handleNext();
       }
       // On the last step, do nothing - user must click the submit button
@@ -181,6 +196,7 @@ export default function WaitlistPage() {
 
       console.log("Waitlist submission:", {
         email,
+        primarySport,
         sports: selectedSports,
         otherSports: otherSports || undefined,
         currentApps: selectedApps,
@@ -321,14 +337,16 @@ export default function WaitlistPage() {
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-center justify-between text-xs sm:text-sm text-slate-400 mb-2">
                   <span>
-                    Step {step} of {totalSteps}
+                    Step {step + 1} of {totalSteps}
                   </span>
-                  <span>{Math.round((step / totalSteps) * 100)}% complete</span>
+                  <span>
+                    {Math.round(((step + 1) / totalSteps) * 100)}% complete
+                  </span>
                 </div>
                 <div className="h-1.5 sm:h-2 bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-primary to-primary-light transition-all duration-300"
-                    style={{ width: `${(step / totalSteps) * 100}%` }}
+                    style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
                   />
                 </div>
               </div>
@@ -338,6 +356,99 @@ export default function WaitlistPage() {
                 onKeyDown={handleKeyDown}
                 className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10"
               >
+                {/* Step 0: Primary Sport - Engagement Hook */}
+                {step === 0 && (
+                  <div className="space-y-6 sm:space-y-8 animate-fade-in">
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mx-auto mb-6 border border-primary/30">
+                        <svg
+                          className="w-10 h-10 sm:w-12 sm:h-12 text-primary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold font-heading text-white mb-2">
+                        What&apos;s your primary sport?
+                      </h2>
+                      <p className="text-slate-400 text-sm sm:text-base">
+                        We&apos;ll personalize your experience from day one
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                      {sportsList.map((sport) => {
+                        const isSelected = primarySport === sport.id;
+                        return (
+                          <button
+                            key={sport.id}
+                            type="button"
+                            onClick={() => setPrimarySport(sport.id)}
+                            className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl text-sm font-medium transition-all transform hover:scale-[1.02] ${
+                              isSelected
+                                ? `bg-gradient-to-br ${sport.gradient} text-white shadow-lg ring-2 ring-white/20`
+                                : "bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-700"
+                            }`}
+                          >
+                            <div
+                              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center ${
+                                isSelected ? "bg-white/20" : "bg-slate-700/50"
+                              }`}
+                            >
+                              <svg
+                                className="w-6 h-6 sm:w-7 sm:h-7"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d={sport.icon}
+                                />
+                              </svg>
+                            </div>
+                            <span className="font-semibold">{sport.name}</span>
+                            {isSelected && (
+                              <div className="absolute top-2 right-2">
+                                <svg
+                                  className="w-5 h-5 text-white"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {primarySport && (
+                      <div className="text-center pt-2">
+                        <p className="text-sm text-primary">
+                          Great choice! We&apos;ll tailor your{" "}
+                          {sportsList.find((s) => s.id === primarySport)?.name}{" "}
+                          experience.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Step 1: Email & Sports */}
                 {step === 1 && (
                   <div className="space-y-6 sm:space-y-8 animate-fade-in">
@@ -669,7 +780,7 @@ export default function WaitlistPage() {
 
                 {/* Navigation Buttons */}
                 <div className="flex items-center justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-800">
-                  {step > 1 ? (
+                  {step > 0 ? (
                     <button
                       type="button"
                       onClick={handleBack}
@@ -694,7 +805,7 @@ export default function WaitlistPage() {
                     <div />
                   )}
 
-                  {step < totalSteps ? (
+                  {step < totalSteps - 1 ? (
                     <button
                       type="button"
                       onClick={handleNext}
@@ -773,8 +884,9 @@ export default function WaitlistPage() {
               </div>
 
               {/* Step Indicators */}
-              <div className="flex justify-center gap-3 sm:gap-6 mt-6 sm:mt-8">
+              <div className="flex justify-center gap-2 sm:gap-4 mt-6 sm:mt-8">
                 {[
+                  { num: 0, label: "Sport" },
                   { num: 1, label: "About You" },
                   { num: 2, label: "Apps" },
                   { num: 3, label: "Features" },
@@ -787,7 +899,7 @@ export default function WaitlistPage() {
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all ${
+                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-sm font-medium transition-all ${
                         step > s.num
                           ? "bg-primary text-white"
                           : step === s.num
@@ -810,7 +922,7 @@ export default function WaitlistPage() {
                           />
                         </svg>
                       ) : (
-                        s.num
+                        s.num + 1
                       )}
                     </div>
                     <span className="text-[10px] sm:text-xs">{s.label}</span>
