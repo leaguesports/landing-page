@@ -9,7 +9,7 @@ export default function LandingPage() {
     "darts"
   );
   return (
-    <div className="relative min-h-screen noise">
+    <div className="relative min-h-screen noise overflow-x-hidden">
       {/* Background effects */}
       <div className="mesh-gradient" />
       <div className="fixed inset-0 grid-pattern pointer-events-none" />
@@ -136,8 +136,8 @@ export default function LandingPage() {
       >
         {/* Background elements */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/50 to-transparent" />
-        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-secondary/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-primary/5 rounded-full blur-3xl -translate-x-1/2" />
+        <div className="absolute bottom-1/4 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-secondary/5 rounded-full blur-3xl translate-x-1/2" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           {/* Header */}
@@ -1032,9 +1032,9 @@ export default function LandingPage() {
       <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
         {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/20 via-transparent to-emerald-950/10" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-0 sm:left-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
         <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-1/4 right-0 sm:right-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-sky-500/5 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
 
@@ -1404,7 +1404,7 @@ export default function LandingPage() {
       <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
         {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-b from-amber-950/10 via-transparent to-transparent" />
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-0 sm:right-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-amber-500/5 rounded-full blur-3xl" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           {/* Header */}
@@ -1675,7 +1675,7 @@ export default function LandingPage() {
       <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
         {/* Broadcast-style background */}
         <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-transparent to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-red-500/5 rounded-full blur-3xl" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           {/* Header */}
@@ -2556,8 +2556,8 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-16 text-center relative overflow-hidden">
             {/* Decorative elements */}
-            <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+            <div className="absolute top-0 left-0 w-32 sm:w-64 h-32 sm:h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-32 sm:w-64 h-32 sm:h-64 bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary text-xs sm:text-sm font-medium mb-4 sm:mb-6">
