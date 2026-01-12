@@ -1,13 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sportsList } from "@/config/sports";
 
 export default function LandingPage() {
-  const [activeDashboard, setActiveDashboard] = useState<"darts" | "racing">(
-    "darts"
-  );
+  const [activeDashboard, setActiveDashboard] = useState<
+    "darts" | "racing" | "golf"
+  >("darts");
+  const [deviceView, setDeviceView] = useState<"mobile" | "desktop">("desktop");
+  const [showSubNav, setShowSubNav] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+
+  const dashboards = [
+    {
+      id: "darts" as const,
+      label: "Darts",
+      icon: "🎯",
+      color: "sky",
+      gradient: "from-sky-500 to-blue-600",
+    },
+    {
+      id: "racing" as const,
+      label: "Racing",
+      icon: "🏎️",
+      color: "red",
+      gradient: "from-red-500 to-orange-600",
+    },
+    {
+      id: "golf" as const,
+      label: "Golf",
+      icon: "⛳",
+      color: "emerald",
+      gradient: "from-emerald-500 to-green-600",
+    },
+  ];
+
+  const dashboardIndex = dashboards.findIndex((d) => d.id === activeDashboard);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowSubNav(window.scrollY > 600);
+
+      // Update active section based on scroll position
+      const sections = [
+        "sports",
+        "integrations",
+        "roles",
+        "tournaments",
+        "live-mode",
+        "dashboards",
+      ];
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            setActiveSection(section);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div className="relative min-h-screen noise">
       {/* Background effects */}
@@ -65,6 +124,43 @@ export default function LandingPage() {
           </div>
         </div>
       </nav>
+
+      {/* Sticky Sub-Navigation */}
+      <div
+        className={`fixed top-[52px] sm:top-[60px] left-0 right-0 z-40 transition-all duration-300 ${
+          showSubNav
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800/50">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6">
+            <div className="flex items-center gap-1 sm:gap-2 py-2 overflow-x-auto scrollbar-hide">
+              {[
+                { id: "sports", label: "Sports", icon: "🎯" },
+                { id: "integrations", label: "Integrations", icon: "⚡" },
+                { id: "roles", label: "Roles", icon: "👤" },
+                { id: "tournaments", label: "Tournaments", icon: "🏆" },
+                { id: "live-mode", label: "Live Mode", icon: "📺" },
+                { id: "dashboards", label: "Dashboards", icon: "📊" },
+              ].map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
+                    activeSection === item.id
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  }`}
+                >
+                  <span className="hidden sm:inline">{item.icon}</span>
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Hero Section */}
       <section className="relative pt-20 pb-12 sm:pt-32 sm:pb-20 md:pt-44 md:pb-32">
@@ -413,7 +509,10 @@ export default function LandingPage() {
       </section>
 
       {/* Smart Integrations Section */}
-      <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
+      <section
+        id="integrations"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-8 sm:mb-12">
@@ -505,6 +604,36 @@ export default function LandingPage() {
                     </svg>
                   </div>
                 ))}
+              </div>
+
+              {/* Compatible With Logo Cloud */}
+              <div className="mt-6 sm:mt-8 pt-6 border-t border-slate-700/50">
+                <p className="text-xs text-slate-500 text-center mb-4 uppercase tracking-wider">
+                  Works with your gear
+                </p>
+                <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
+                  {[
+                    { name: "Fanatec", category: "Sim Racing" },
+                    { name: "SimuCube", category: "Sim Racing" },
+                    { name: "TrackMan", category: "Golf" },
+                    { name: "Garmin", category: "Fitness" },
+                    { name: "Winmau", category: "Darts" },
+                    { name: "Playtomic", category: "Padel" },
+                  ].map((brand) => (
+                    <div
+                      key={brand.name}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-colors group"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs sm:text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                        {brand.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-[10px] text-slate-600 mt-3">
+                  + many more manufacturers supported
+                </p>
               </div>
 
               {/* Bottom note */}
@@ -772,7 +901,10 @@ export default function LandingPage() {
       </section>
 
       {/* Role-Based Use Cases Section */}
-      <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
+      <section
+        id="roles"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/50 to-transparent" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-10 sm:mb-16">
@@ -913,8 +1045,11 @@ export default function LandingPage() {
                   <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider mb-1">
                     Key Tool
                   </p>
-                  <p className="text-sm sm:text-base font-semibold text-white">
+                  <p className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
                     📊 Telemetry & Analytics View
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      PRO
+                    </span>
                   </p>
                 </div>
 
@@ -939,6 +1074,9 @@ export default function LandingPage() {
                   <div className="flex items-start gap-2">
                     <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-pink-500/20 text-pink-400 shrink-0">
                       ANALYZE
+                      <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-400">
+                        PRO
+                      </span>
                     </span>
                     <p className="text-[11px] sm:text-xs text-slate-400">
                       Heatmaps for shot placement or track positioning
@@ -1031,7 +1169,10 @@ export default function LandingPage() {
       </section>
 
       {/* Leagues & Tournaments Section */}
-      <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
+      <section
+        id="tournaments"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
         {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/20 via-transparent to-emerald-950/10" />
         <div className="absolute top-1/4 left-0 sm:left-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
@@ -1365,13 +1506,15 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Viral Hook - More Prominent */}
-          <div className="text-center">
-            <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-emerald-500/10 border border-emerald-500/20">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+          {/* Viral Hook + CTA */}
+          <div className="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-500/10 to-transparent blur-3xl" />
+            <div className="relative flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+              {/* Left: Stats */}
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
                   <svg
-                    className="w-5 h-5 text-emerald-400"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1384,19 +1527,108 @@ export default function LandingPage() {
                     />
                   </svg>
                 </div>
-                <div className="text-left">
-                  <span className="text-emerald-400 font-bold text-lg sm:text-xl">
-                    1 Organizer = 32 Players
-                  </span>
-                  <p className="text-[10px] sm:text-xs text-slate-400">
-                    Your growth engine
+                <div>
+                  <p className="text-3xl sm:text-4xl font-bold text-emerald-400 font-heading">
+                    1 → 32
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    One organizer, 32 new players
                   </p>
                 </div>
               </div>
-              <div className="h-8 w-[1px] bg-slate-700 hidden sm:block" />
-              <p className="text-xs sm:text-sm text-slate-300">
-                Free tools that fill your venue
-              </p>
+
+              {/* Divider */}
+              <div className="hidden lg:block w-px h-16 bg-slate-700" />
+              <div className="lg:hidden w-full h-px bg-slate-700" />
+
+              {/* Right: CTA */}
+              <div className="flex-1 text-center lg:text-left">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                  Running a league?
+                </h3>
+                <p className="text-sm text-slate-400 mb-4">
+                  Get our &quot;Digital Commissioner&quot; toolkit free during
+                  early access. Brackets, scheduling, and live displays
+                  included.
+                </p>
+                <Link
+                  href="/waitlist"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 text-slate-950 font-semibold text-sm hover:bg-emerald-400 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Claim Free Organizer Access
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Communities Callout */}
+          <div className="mt-10 sm:mt-16">
+            <div className="glass-card rounded-2xl p-5 sm:p-8 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-violet-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  {/* Left: Group Visual */}
+                  <div className="flex items-center">
+                    <div className="flex -space-x-3">
+                      {["🎯", "🏎️", "🎾", "⛳"].map((emoji, i) => (
+                        <div
+                          key={i}
+                          className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border-2 border-slate-600 flex items-center justify-center text-lg shadow-lg"
+                          style={{ zIndex: 4 - i }}
+                        >
+                          {emoji}
+                        </div>
+                      ))}
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 border-2 border-violet-400 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+                        +28
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Content */}
+                  <div className="flex-1 text-center md:text-left">
+                    <h4 className="text-lg sm:text-xl font-bold text-white mb-2">
+                      Don&apos;t play alone
+                    </h4>
+                    <p className="text-sm text-slate-400 mb-3">
+                      Join communities like{" "}
+                      <span className="text-violet-400 font-medium">
+                        &quot;London Darts Social&quot;
+                      </span>{" "}
+                      or
+                      <span className="text-red-400 font-medium">
+                        {" "}
+                        &quot;US GT7 League&quot;
+                      </span>{" "}
+                      directly in the app.
+                    </p>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs bg-slate-800 text-slate-400 border border-slate-700">
+                        🎯 12 Darts Groups
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs bg-slate-800 text-slate-400 border border-slate-700">
+                        🏎️ 8 Racing Leagues
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs bg-slate-800 text-slate-400 border border-slate-700">
+                        🎾 5 Padel Clubs
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1453,6 +1685,9 @@ export default function LandingPage() {
                     </svg>
                   </span>
                   Skill Ratings
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    PRO
+                  </span>
                 </h3>
 
                 {/* Multiple skill bars */}
@@ -1674,7 +1909,10 @@ export default function LandingPage() {
       </section>
 
       {/* Live Spectator Section */}
-      <section className="py-12 sm:py-20 md:py-32 relative overflow-hidden">
+      <section
+        id="live-mode"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
         {/* Broadcast-style background */}
         <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-transparent to-transparent" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-red-500/5 rounded-full blur-3xl" />
@@ -1694,13 +1932,42 @@ export default function LandingPage() {
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold font-heading mb-4">
               Broadcast Your <span className="text-red-400">Match</span> Live
             </h2>
-            <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto">
+            <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto mb-6">
               Share a live link with anyone. They watch your scores update in
               real-time — no login required.
             </p>
+
+            {/* Live Pulse Stats */}
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-card">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-sm font-medium text-white">582</span>
+                <span className="text-xs text-slate-400">sessions live</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-card">
+                <svg
+                  className="w-4 h-4 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-white">0.02s</span>
+                <span className="text-xs text-slate-400">sync latency</span>
+              </div>
+            </div>
           </div>
 
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto mt-10 sm:mt-16">
             {/* Main Live Preview Card */}
             <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red-500/10 to-transparent blur-3xl" />
@@ -1895,7 +2162,10 @@ export default function LandingPage() {
       </section>
 
       {/* Sport-Specific Dashboard Tease */}
-      <section className="py-16 sm:py-20 md:py-32 relative overflow-hidden">
+      <section
+        id="dashboards"
+        className="py-16 sm:py-20 md:py-32 relative overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
@@ -1908,189 +2178,655 @@ export default function LandingPage() {
           </div>
 
           {/* Dashboard Switcher */}
-          <div className="max-w-4xl mx-auto">
-            {/* Toggle */}
-            <div className="flex justify-center mb-8">
-              <div className="inline-flex p-1 rounded-xl glass-card">
+          <div className="max-w-5xl mx-auto">
+            {/* Sport Toggle + Device View Toggle */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+              {/* Sport Tabs */}
+              <div className="inline-flex p-1.5 rounded-2xl glass-card">
+                {dashboards.map((dashboard) => (
+                  <button
+                    key={dashboard.id}
+                    onClick={() => setActiveDashboard(dashboard.id)}
+                    className={`relative px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                      activeDashboard === dashboard.id
+                        ? `bg-gradient-to-r ${dashboard.gradient} text-white shadow-lg`
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <span className="text-lg">{dashboard.icon}</span>
+                    <span className="hidden sm:inline">{dashboard.label}</span>
+                    {activeDashboard === dashboard.id && (
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Device View Toggle */}
+              <div className="inline-flex p-1 rounded-lg glass-card">
                 <button
-                  onClick={() => setActiveDashboard("darts")}
-                  className={`px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeDashboard === "darts"
-                      ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30"
+                  onClick={() => setDeviceView("mobile")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                    deviceView === "mobile"
+                      ? "bg-slate-700 text-white"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  🎯 Darts Dashboard
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Mobile
                 </button>
                 <button
-                  onClick={() => setActiveDashboard("racing")}
-                  className={`px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeDashboard === "racing"
-                      ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
+                  onClick={() => setDeviceView("desktop")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                    deviceView === "desktop"
+                      ? "bg-slate-700 text-white"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  🏎️ Racing Dashboard
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Desktop
                 </button>
               </div>
             </div>
 
-            {/* Dashboard Preview */}
-            <div className="relative">
-              {/* Darts Dashboard */}
+            {/* Dashboard Preview - Device Frame */}
+            <div
+              className={`relative mx-auto transition-all duration-500 ${
+                deviceView === "mobile" ? "max-w-sm" : "max-w-full"
+              }`}
+            >
+              {/* Device Frame */}
               <div
-                className={`transition-all duration-500 ${
-                  activeDashboard === "darts"
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4 absolute inset-0 pointer-events-none"
+                className={`relative transition-all duration-500 ${
+                  deviceView === "mobile"
+                    ? "rounded-[2.5rem] border-[8px] border-slate-700 bg-slate-900 p-2 shadow-2xl"
+                    : "rounded-2xl border-2 border-slate-700 bg-slate-900 shadow-2xl"
                 }`}
               >
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 border-sky-500/20">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center">
-                        <span className="text-xl">🎯</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white">
-                          Darts Session Live
-                        </h4>
-                        <p className="text-xs text-slate-500">501 Double Out</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 text-xs font-medium">
-                      Leg 3 of 5
-                    </span>
-                  </div>
+                {/* Mobile Notch */}
+                {deviceView === "mobile" && (
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-slate-800 rounded-full z-10" />
+                )}
 
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                    <div className="text-center p-4 rounded-xl bg-slate-800/50">
-                      <p className="text-4xl sm:text-5xl font-bold text-sky-400 font-heading">
-                        167
-                      </p>
-                      <p className="text-slate-500 text-sm mt-1">Remaining</p>
-                      <p className="text-xs text-emerald-400 mt-2">
-                        ✓ T20 → T19 → D25
-                      </p>
+                {/* Desktop Browser Bar */}
+                {deviceView === "desktop" && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-t-xl border-b border-slate-700">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
                     </div>
-                    <div className="text-center p-4 rounded-xl bg-slate-800/50">
-                      <p className="text-4xl sm:text-5xl font-bold text-white font-heading">
-                        87.4
-                      </p>
-                      <p className="text-slate-500 text-sm mt-1">3-Dart Avg</p>
-                      <p className="text-xs text-primary mt-2">
-                        ↑ 4.2 vs last game
-                      </p>
+                    <div className="flex-1 flex justify-center">
+                      <div className="px-4 py-1 rounded-md bg-slate-700 text-xs text-slate-400 font-mono">
+                        app.leaguesports.io/{activeDashboard}
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    {[
-                      { label: "180s", value: "2" },
-                      { label: "140+", value: "5" },
-                      { label: "100+", value: "8" },
-                      { label: "Checkout %", value: "42%" },
-                    ].map((stat) => (
+                {/* Dashboard Content */}
+                <div
+                  className={`relative overflow-hidden ${
+                    deviceView === "mobile"
+                      ? "rounded-[1.5rem] pt-4"
+                      : "rounded-b-xl"
+                  }`}
+                >
+                  <div
+                    className="flex transition-transform duration-500 ease-out"
+                    style={{
+                      transform: `translateX(-${dashboardIndex * 100}%)`,
+                    }}
+                  >
+                    {/* === DARTS DASHBOARD === */}
+                    <div className="w-full flex-shrink-0">
                       <div
-                        key={stat.label}
-                        className="p-2 rounded-lg bg-slate-800/30"
+                        className={`${
+                          deviceView === "mobile" ? "p-4" : "p-6 sm:p-8"
+                        } bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/30`}
                       >
-                        <p className="text-lg font-bold text-white">
-                          {stat.value}
-                        </p>
-                        <p className="text-xs text-slate-500">{stat.label}</p>
+                        {/* Dartboard Pattern Background */}
+                        <div className="absolute inset-0 opacity-5">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border-8 border-red-500" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border-8 border-emerald-500" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border-8 border-red-500" />
+                        </div>
+
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                                <span className="text-xl">🎯</span>
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-white">
+                                  Darts Match
+                                </h4>
+                                <p className="text-xs text-slate-500">
+                                  501 Double Out • Best of 5
+                                </p>
+                              </div>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 text-xs font-bold border border-sky-500/30">
+                              LEG 3/5
+                            </span>
+                          </div>
+
+                          {/* Score Display - Dartboard Themed */}
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-emerald-500/10 border border-slate-700">
+                              <div className="w-full h-1 bg-gradient-to-r from-red-500 via-emerald-500 to-red-500 rounded-full mb-3" />
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-4xl"
+                                    : "text-5xl"
+                                } font-bold text-sky-400 font-heading`}
+                              >
+                                167
+                              </p>
+                              <p className="text-slate-500 text-sm mt-1">
+                                Remaining
+                              </p>
+                              <div className="mt-2 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-mono">
+                                T20 → T19 → D25
+                              </div>
+                            </div>
+                            <div className="text-center p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                              <p className="text-xs text-slate-500 mb-2">
+                                3-DART AVG
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-4xl"
+                                    : "text-5xl"
+                                } font-bold text-white font-heading`}
+                              >
+                                87.4
+                              </p>
+                              <p className="text-xs text-primary mt-2">
+                                ↑ 4.2 vs last
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-4 gap-2 text-center">
+                            {[
+                              {
+                                label: "180s",
+                                value: "2",
+                                color: "text-red-400",
+                              },
+                              {
+                                label: "140+",
+                                value: "5",
+                                color: "text-amber-400",
+                              },
+                              {
+                                label: "100+",
+                                value: "8",
+                                color: "text-emerald-400",
+                              },
+                              {
+                                label: "D%",
+                                value: "42%",
+                                color: "text-sky-400",
+                              },
+                            ].map((stat) => (
+                              <div
+                                key={stat.label}
+                                className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50"
+                              >
+                                <p
+                                  className={`${
+                                    deviceView === "mobile"
+                                      ? "text-base"
+                                      : "text-lg"
+                                  } font-bold ${stat.color}`}
+                                >
+                                  {stat.value}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {stat.label}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* === RACING DASHBOARD === */}
+                    <div className="w-full flex-shrink-0">
+                      <div
+                        className={`${
+                          deviceView === "mobile" ? "p-4" : "p-6 sm:p-8"
+                        } bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30`}
+                      >
+                        {/* Racing Stripe Background */}
+                        <div className="absolute inset-0 opacity-5">
+                          <div className="absolute top-0 left-1/4 w-2 h-full bg-red-500" />
+                          <div className="absolute top-0 left-1/4 w-1 h-full bg-white ml-3" />
+                        </div>
+
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+                                <span className="text-xl">🏎️</span>
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-white">
+                                  ACC Session
+                                </h4>
+                                <p className="text-xs text-slate-500">
+                                  Monza • GT3 • Dry
+                                </p>
+                              </div>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center gap-1.5 border border-green-500/30">
+                              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                              LIVE
+                            </span>
+                          </div>
+
+                          {/* Lap Times */}
+                          <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="text-center p-3 rounded-xl bg-purple-500/10 border-2 border-purple-500/30">
+                              <p className="text-[10px] text-purple-400 font-bold mb-1">
+                                BEST LAP
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-xl"
+                                    : "text-2xl"
+                                } font-bold text-purple-400 font-mono`}
+                              >
+                                1:47.234
+                              </p>
+                              <p className="text-xs text-emerald-400 mt-1">
+                                -0.342 PB
+                              </p>
+                            </div>
+                            <div className="text-center p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+                              <p className="text-[10px] text-slate-500 font-bold mb-1">
+                                LAST LAP
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-xl"
+                                    : "text-2xl"
+                                } font-bold text-white font-mono`}
+                              >
+                                1:48.012
+                              </p>
+                              <p className="text-xs text-amber-400 mt-1">
+                                +0.778
+                              </p>
+                            </div>
+                            <div className="text-center p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+                              <p className="text-[10px] text-slate-500 font-bold mb-1">
+                                DELTA
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-xl"
+                                    : "text-2xl"
+                                } font-bold text-emerald-400 font-mono`}
+                              >
+                                -0.156
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                Sector 2
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* F1-Style Tire Visualization */}
+                          <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-700">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs text-slate-500 font-bold">
+                                TIRE STATUS
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                                  SOFT
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  Lap 12/25
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* F1-Style Car Outline with Tires */}
+                            <div className="relative flex items-center justify-center py-4">
+                              {/* Car silhouette hint */}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                                <div className="w-16 h-32 border-2 border-slate-400 rounded-lg" />
+                              </div>
+
+                              {/* Tire Grid */}
+                              <div className="grid grid-cols-2 gap-x-20 gap-y-6">
+                                {/* Front Tires */}
+                                <div className="flex flex-col items-center">
+                                  <div className="w-10 h-14 rounded-md bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 border-2 border-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                    <span className="text-xs font-bold text-white">
+                                      94°
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 mt-1">
+                                    FL
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <div className="w-10 h-14 rounded-md bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                    <span className="text-xs font-bold text-white">
+                                      91°
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 mt-1">
+                                    FR
+                                  </span>
+                                </div>
+                                {/* Rear Tires */}
+                                <div className="flex flex-col items-center">
+                                  <div className="w-10 h-14 rounded-md bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                    <span className="text-xs font-bold text-white">
+                                      88°
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 mt-1">
+                                    RL
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <div className="w-10 h-14 rounded-md bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                    <span className="text-xs font-bold text-white">
+                                      87°
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 mt-1">
+                                    RR
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Tire compound legend */}
+                            <div className="flex justify-center gap-4 mt-2 pt-2 border-t border-slate-700">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-sm bg-red-500" />
+                                <span className="text-[10px] text-slate-400">
+                                  Soft
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-sm bg-amber-500" />
+                                <span className="text-[10px] text-slate-400">
+                                  Medium
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-sm bg-slate-300" />
+                                <span className="text-[10px] text-slate-400">
+                                  Hard
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* === GOLF DASHBOARD === */}
+                    <div className="w-full flex-shrink-0">
+                      <div
+                        className={`${
+                          deviceView === "mobile" ? "p-4" : "p-6 sm:p-8"
+                        } bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30`}
+                      >
+                        {/* Golf Course Pattern Background */}
+                        <div className="absolute inset-0 opacity-5">
+                          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-emerald-500 to-transparent" />
+                        </div>
+
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                <span className="text-xl">⛳</span>
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-white">
+                                  TrackMan Session
+                                </h4>
+                                <p className="text-xs text-slate-500">
+                                  Pebble Beach • Par 72
+                                </p>
+                              </div>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                              HOLE 7 • PAR 4
+                            </span>
+                          </div>
+
+                          {/* Score Card */}
+                          <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="text-center p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30">
+                              <p className="text-[10px] text-emerald-400 font-bold mb-1">
+                                ROUND SCORE
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-2xl"
+                                    : "text-3xl"
+                                } font-bold text-emerald-400 font-heading`}
+                              >
+                                -2
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                Under Par
+                              </p>
+                            </div>
+                            <div className="text-center p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+                              <p className="text-[10px] text-slate-500 font-bold mb-1">
+                                THRU
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-2xl"
+                                    : "text-3xl"
+                                } font-bold text-white font-heading`}
+                              >
+                                6
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                Holes
+                              </p>
+                            </div>
+                            <div className="text-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                              <p className="text-[10px] text-amber-400 font-bold mb-1">
+                                FIR %
+                              </p>
+                              <p
+                                className={`${
+                                  deviceView === "mobile"
+                                    ? "text-2xl"
+                                    : "text-3xl"
+                                } font-bold text-amber-400 font-heading`}
+                              >
+                                71%
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                Fairways
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Shot Data - Launch Monitor Style */}
+                          <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-700">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs text-slate-500 font-bold">
+                                LAST SHOT • DRIVER
+                              </p>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                                TRACKMAN
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2 text-center">
+                              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                                <p
+                                  className={`${
+                                    deviceView === "mobile"
+                                      ? "text-lg"
+                                      : "text-xl"
+                                  } font-bold text-emerald-400 font-mono`}
+                                >
+                                  287
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  CARRY (YD)
+                                </p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                                <p
+                                  className={`${
+                                    deviceView === "mobile"
+                                      ? "text-lg"
+                                      : "text-xl"
+                                  } font-bold text-purple-400 font-mono`}
+                                >
+                                  172
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  BALL SPD
+                                </p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                <p
+                                  className={`${
+                                    deviceView === "mobile"
+                                      ? "text-lg"
+                                      : "text-xl"
+                                  } font-bold text-amber-400 font-mono`}
+                                >
+                                  12.4°
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  LAUNCH
+                                </p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-sky-500/10 border border-sky-500/30">
+                                <p
+                                  className={`${
+                                    deviceView === "mobile"
+                                      ? "text-lg"
+                                      : "text-xl"
+                                  } font-bold text-sky-400 font-mono`}
+                                >
+                                  2,847
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  SPIN
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Shot shape indicator */}
+                            <div className="mt-3 pt-3 border-t border-slate-700">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-400">
+                                    Shot Shape:
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
+                                    DRAW
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-slate-500">
+                                    Club Path:
+                                  </span>
+                                  <span className="text-xs text-emerald-400 font-mono">
+                                    +2.1°
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Mobile Home Indicator */}
+                {deviceView === "mobile" && (
+                  <div className="flex justify-center py-2">
+                    <div className="w-24 h-1 bg-slate-600 rounded-full" />
+                  </div>
+                )}
               </div>
 
-              {/* Racing Dashboard */}
-              <div
-                className={`transition-all duration-500 ${
-                  activeDashboard === "racing"
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4 absolute inset-0 pointer-events-none"
-                }`}
-              >
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 border-red-500/20 bg-slate-950/50">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                        <span className="text-xl">🏎️</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white">
-                          ACC Practice Session
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          Monza • GT3 • Dry
-                        </p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      Connected
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 rounded-xl bg-slate-800/50 border border-slate-700">
-                      <p className="text-xs text-slate-500 mb-1">Best Lap</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-primary font-mono">
-                        1:47.234
-                      </p>
-                      <p className="text-xs text-emerald-400 mt-1">-0.342 PB</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-slate-800/50 border border-slate-700">
-                      <p className="text-xs text-slate-500 mb-1">Last Lap</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-white font-mono">
-                        1:48.012
-                      </p>
-                      <p className="text-xs text-amber-400 mt-1">+0.778</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-slate-800/50 border border-slate-700">
-                      <p className="text-xs text-slate-500 mb-1">Consistency</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-sky-400 font-mono">
-                        98.2%
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">12 laps</p>
-                    </div>
-                  </div>
-
-                  {/* Tire temps visualization */}
-                  <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-700">
-                    <p className="text-xs text-slate-500 mb-3">
-                      Tire Temperatures
-                    </p>
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2 rounded bg-amber-500/20 border border-amber-500/30">
-                        <p className="text-xs text-slate-400">FL</p>
-                        <p className="text-sm font-mono text-amber-400">94°C</p>
-                      </div>
-                      <div className="p-2 rounded bg-emerald-500/20 border border-emerald-500/30">
-                        <p className="text-xs text-slate-400">FR</p>
-                        <p className="text-sm font-mono text-emerald-400">
-                          91°C
-                        </p>
-                      </div>
-                      <div className="p-2 rounded bg-emerald-500/20 border border-emerald-500/30">
-                        <p className="text-xs text-slate-400">RL</p>
-                        <p className="text-sm font-mono text-emerald-400">
-                          88°C
-                        </p>
-                      </div>
-                      <div className="p-2 rounded bg-emerald-500/20 border border-emerald-500/30">
-                        <p className="text-xs text-slate-400">RR</p>
-                        <p className="text-sm font-mono text-emerald-400">
-                          87°C
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Navigation Dots */}
+              <div className="flex justify-center gap-2 mt-4">
+                {dashboards.map((dashboard, i) => {
+                  const activeColors: Record<string, string> = {
+                    sky: "bg-sky-500",
+                    red: "bg-red-500",
+                    emerald: "bg-emerald-500",
+                  };
+                  return (
+                    <button
+                      key={dashboard.id}
+                      onClick={() => setActiveDashboard(dashboard.id)}
+                      className={`h-2 rounded-full transition-all ${
+                        dashboardIndex === i
+                          ? `${activeColors[dashboard.color]} w-6`
+                          : "bg-slate-600 hover:bg-slate-500 w-2"
+                      }`}
+                    />
+                  );
+                })}
               </div>
             </div>
+
+            {/* Hint text */}
+            <p className="text-center text-xs text-slate-500 mt-4">
+              Click tabs or dots to explore different sport dashboards
+            </p>
           </div>
         </div>
       </section>
@@ -2478,6 +3214,7 @@ export default function LandingPage() {
                 title: "Detailed Analytics",
                 description:
                   "Track your improvement with charts, trends, and performance insights",
+                isPro: true,
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -2526,29 +3263,41 @@ export default function LandingPage() {
                   />
                 ),
               },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="feature-card glass-card rounded-2xl p-6 md:p-8"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary mb-5">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    {feature.icon}
-                  </svg>
+            ].map(
+              (feature: {
+                title: string;
+                description: string;
+                icon: React.ReactNode;
+                isPro?: boolean;
+              }) => (
+                <div
+                  key={feature.title}
+                  className="feature-card glass-card rounded-2xl p-6 md:p-8"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary mb-5">
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      {feature.icon}
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold font-heading mb-3 flex items-center gap-2">
+                    {feature.title}
+                    {feature.isPro && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        PRO
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-slate-400 leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold font-heading mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-slate-400 leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </div>
       </section>
