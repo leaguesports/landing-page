@@ -46,6 +46,8 @@ export default function LandingPage() {
       const sections = [
         "sports",
         "integrations",
+        "equipment",
+        "shop",
         "roles",
         "tournaments",
         "live-mode",
@@ -127,18 +129,20 @@ export default function LandingPage() {
 
       {/* Sticky Sub-Navigation */}
       <div
-        className={`fixed top-[52px] sm:top-[60px] left-0 right-0 z-40 transition-all duration-300 ${
+        className={`fixed top-[56px] sm:top-[72px] left-0 right-0 z-40 transition-all duration-300 ${
           showSubNav
             ? "translate-y-0 opacity-100"
             : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
         <div className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800/50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6">
-            <div className="flex items-center gap-1 sm:gap-2 py-2 overflow-x-auto scrollbar-hide">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-6 py-2.5 overflow-x-auto scrollbar-hide">
               {[
                 { id: "sports", label: "Sports", icon: "🎯" },
                 { id: "integrations", label: "Integrations", icon: "⚡" },
+                { id: "equipment", label: "Equipment", icon: "🧰" },
+                { id: "shop", label: "Shop", icon: "🛒" },
                 { id: "roles", label: "Roles", icon: "👤" },
                 { id: "tournaments", label: "Tournaments", icon: "🏆" },
                 { id: "live-mode", label: "Live Mode", icon: "📺" },
@@ -147,7 +151,7 @@ export default function LandingPage() {
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
                     activeSection === item.id
                       ? "bg-primary/20 text-primary border border-primary/30"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/50"
@@ -537,15 +541,14 @@ export default function LandingPage() {
               <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 {[
                   {
-                    name: "Sim Racing UDP",
-                    desc: "ACC, iRacing, GT7, F1 — auto lap times & telemetry",
-                    icon: "🏎️",
-                    highlight: true,
-                  },
-                  {
                     name: "Launch Monitors",
                     desc: "TrackMan, GCQuad, Mevo+ shot data",
                     icon: "⛳",
+                  },
+                  {
+                    name: "Smart Dartboards",
+                    desc: "Auto-scoring from connected boards",
+                    icon: "🎯",
                   },
                   {
                     name: "Fitness APIs",
@@ -563,18 +566,14 @@ export default function LandingPage() {
                     icon: "🌤️",
                   },
                   {
-                    name: "Smart Dartboards",
-                    desc: "Auto-scoring from connected boards",
-                    icon: "🎯",
+                    name: "Sim Racing UDP",
+                    desc: "ACC, iRacing, GT7, F1 — auto lap times & telemetry",
+                    icon: "🏎️",
                   },
                 ].map((integration) => (
                   <div
                     key={integration.name}
-                    className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-colors ${
-                      integration.highlight
-                        ? "bg-red-500/10 border-red-500/30 hover:border-red-500/50"
-                        : "bg-slate-800/50 border-slate-700/50 hover:border-accent/30"
-                    }`}
+                    className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-colors bg-slate-800/50 border-slate-700/50 hover:border-accent/30"
                   >
                     <span className="text-xl sm:text-2xl shrink-0">
                       {integration.icon}
@@ -588,9 +587,7 @@ export default function LandingPage() {
                       </p>
                     </div>
                     <svg
-                      className={`w-4 h-4 shrink-0 ${
-                        integration.highlight ? "text-red-400" : "text-accent"
-                      }`}
+                      className="w-4 h-4 shrink-0 text-accent"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -643,6 +640,443 @@ export default function LandingPage() {
                   Let us know
                 </a>
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Equipment Tracking Section */}
+      <section
+        id="equipment"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-950/10 to-transparent" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-6">
+              <svg
+                className="w-4 h-4 text-cyan-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                />
+              </svg>
+              <span className="text-sm text-cyan-400 font-medium">
+                For Players
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+              Your <span className="gradient-text">Equipment Vault</span>
+            </h2>
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Track your performance gear. Shop for equipment and it&apos;s
+              automatically added to your vault — compare performance and find
+              your perfect setup.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+            {/* Equipment Showcase */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-cyan-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <h3 className="text-xl sm:text-2xl font-bold font-heading mb-6">
+                  Your Equipment Profile
+                </h3>
+
+                {/* Equipment Cards */}
+                <div className="space-y-3">
+                  {[
+                    {
+                      name: "Target Darts Voltage",
+                      type: "Darts",
+                      icon: "🎯",
+                      stats: { sessions: 47, throws: "3,200+" },
+                      status: "Active",
+                    },
+                    {
+                      name: "Fanatec DD Pro",
+                      type: "Wheel Base",
+                      icon: "🎮",
+                      stats: { sessions: 23, hours: "156h" },
+                      status: "Active",
+                    },
+                    {
+                      name: "TaylorMade Stealth 2",
+                      type: "Driver",
+                      icon: "🏌️",
+                      stats: { rounds: 18, shots: "540" },
+                      status: "Active",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/30 transition-colors group"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                        {item.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-white truncate">
+                            {item.name}
+                          </p>
+                          <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            {item.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">{item.type}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-cyan-400">
+                          {Object.values(item.stats)[0]}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          {Object.keys(item.stats)[0]}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Equipment Button */}
+                <button className="w-full mt-4 p-3 rounded-xl border-2 border-dashed border-slate-700 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors flex items-center justify-center gap-2">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add Equipment
+                </button>
+              </div>
+            </div>
+
+            {/* Equipment Features */}
+            <div className="space-y-4 sm:space-y-6">
+              {[
+                {
+                  title: "Performance Correlation",
+                  description:
+                    "See how different gear affects your game. Compare results across equipment to find your perfect setup.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  ),
+                  color: "cyan",
+                },
+                {
+                  title: "Usage Tracking",
+                  description:
+                    "Log hours, throws, rounds, or laps. Know when equipment needs maintenance or replacement.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  ),
+                  color: "blue",
+                },
+                {
+                  title: "Gear History",
+                  description:
+                    "Track every piece of equipment you've owned. See how your setup evolved over time.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  ),
+                  color: "violet",
+                },
+                {
+                  title: "Shop & Sync",
+                  description:
+                    "Buy equipment through our shop and it's automatically added to your vault. Start tracking instantly.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  ),
+                  color: "emerald",
+                },
+              ].map((feature) => (
+                <div
+                  key={feature.title}
+                  className="glass-card rounded-xl sm:rounded-2xl p-5 sm:p-6 hover:border-cyan-500/30 transition-colors group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${feature.color}-500/20 to-${feature.color}-600/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}
+                    >
+                      <svg
+                        className={`w-6 h-6 text-${feature.color}-400`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        {feature.icon}
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">
+                        {feature.title}
+                      </h4>
+                      <p className="text-sm text-slate-400">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Merchandise / Fan Shop Section */}
+      <section
+        id="shop"
+        className="py-12 sm:py-20 md:py-32 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+          {/* Centered Header */}
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
+              <svg
+                className="w-4 h-4 text-purple-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              <span className="text-sm text-purple-400 font-medium">
+                For Fans
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading mb-3 sm:mb-4">
+              The <span className="gradient-text">Fan Shop</span>
+            </h2>
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Rep your favourite teams. Official jerseys, apparel, and gear from
+              F1, football, rugby, and more — all in one place.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+            {/* Shop Preview */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/10 to-transparent blur-3xl" />
+              <div className="relative">
+                <h3 className="text-xl sm:text-2xl font-bold font-heading mb-6">
+                  Featured Merch
+                </h3>
+
+                {/* Product Grid */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {[
+                    {
+                      name: "Red Bull Racing Tee",
+                      price: "R1,299",
+                      icon: "🏎️",
+                      tag: "Best Seller",
+                      team: "F1",
+                    },
+                    {
+                      name: "Man United Jersey",
+                      price: "R1,899",
+                      icon: "⚽",
+                      tag: "New",
+                      team: "Football",
+                    },
+                    {
+                      name: "Ferrari Team Cap",
+                      price: "R649",
+                      icon: "🧢",
+                      tag: null,
+                      team: "F1",
+                    },
+                    {
+                      name: "Springbok Rugby Shirt",
+                      price: "R1,499",
+                      icon: "🏉",
+                      tag: "Sale",
+                      team: "Rugby",
+                    },
+                  ].map((product) => (
+                    <div
+                      key={product.name}
+                      className="bg-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-700/50 hover:border-purple-500/30 transition-colors group cursor-pointer"
+                    >
+                      <div className="relative mb-3">
+                        <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center text-4xl sm:text-5xl group-hover:scale-105 transition-transform">
+                          {product.icon}
+                        </div>
+                        {product.tag && (
+                          <span
+                            className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                              product.tag === "Best Seller"
+                                ? "bg-amber-500/20 text-amber-400"
+                                : product.tag === "New"
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-rose-500/20 text-rose-400"
+                            }`}
+                          >
+                            {product.tag}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-medium text-white text-sm truncate">
+                        {product.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mb-1">
+                        {product.team}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-purple-400 font-bold text-sm">
+                          {product.price}
+                        </p>
+                        <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg
+                            className="w-3 h-3 text-purple-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Fan Shop Benefits */}
+            <div className="space-y-4 sm:space-y-6">
+              {[
+                {
+                  title: "Official League Merch",
+                  description:
+                    "Authentic apparel and gear from your favourite leagues and teams.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                    />
+                  ),
+                  color: "purple",
+                },
+                {
+                  title: "Player Customisation",
+                  description:
+                    "Add your name, number, or favourite player to select items.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  ),
+                  color: "amber",
+                },
+                {
+                  title: "Fast Delivery",
+                  description:
+                    "Quick shipping nationwide. Track your order in real-time.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                    />
+                  ),
+                  color: "emerald",
+                },
+                {
+                  title: "Exclusive Fan Drops",
+                  description:
+                    "Limited edition items and early access for active community members.",
+                  icon: (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                    />
+                  ),
+                  color: "rose",
+                },
+              ].map((feature) => (
+                <div
+                  key={feature.title}
+                  className="glass-card rounded-xl sm:rounded-2xl p-5 sm:p-6 hover:border-purple-500/30 transition-colors group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${feature.color}-500/20 to-${feature.color}-600/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}
+                    >
+                      <svg
+                        className={`w-6 h-6 text-${feature.color}-400`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        {feature.icon}
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">
+                        {feature.title}
+                      </h4>
+                      <p className="text-sm text-slate-400">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
