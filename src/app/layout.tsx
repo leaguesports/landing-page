@@ -16,7 +16,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://leaguesports.io"),
+  metadataBase: new URL("https://leaguesports.co.za"),
   title: {
     default: "LeagueSports | Create & Manage Tournaments for Any Activity",
     template: "%s | LeagueSports",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://leaguesports.io",
+    url: "https://leaguesports.co.za",
     siteName: "LeagueSports",
     title: "LeagueSports | Create & Manage Tournaments for Any Activity",
     description:
@@ -91,8 +91,8 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "LeagueSports",
-  url: "https://leaguesports.io",
-  logo: "https://leaguesports.io/logo.png",
+  url: "https://leaguesports.co.za",
+  logo: "https://leaguesports.co.za/logo.png",
   description:
     "The all-in-one platform for recreational sports. Track stats, run tournaments, and build communities for darts, padel, sim racing, and more.",
   sameAs: [
@@ -102,7 +102,7 @@ const organizationSchema = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
-    email: "hello@leaguesports.io",
+    email: "hello@leaguesports.co.za",
   },
 };
 

@@ -89,7 +89,7 @@ export default function DashboardsPage() {
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="px-4 py-1 rounded-md bg-slate-700 text-xs text-slate-400 font-mono">
-                    app.leaguesports.io/{activeDashboard}
+                    app.leaguesports.co.za/{activeDashboard}
                   </div>
                 </div>
               </div>

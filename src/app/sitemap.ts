@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://leaguesports.io";
+  const baseUrl = "https://leaguesports.co.za";
   const currentDate = new Date();
 
   return [

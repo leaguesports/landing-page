@@ -243,7 +243,7 @@ export default function IntegrationsPage() {
                   curl <span className="text-slate-300">-X GET \</span>
                 </div>
                 <div className="text-slate-300 ml-2">
-                  &quot;api.leaguesports.io/v1/players/123/stats&quot;
+                  &quot;api.leaguesports.co.za/v1/players/123/stats&quot;
                 </div>
                 <div className="text-slate-500 mt-4"># Response</div>
                 <div className="text-emerald-400">

@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/login", "/session/"],
     },
-    sitemap: "https://leaguesports.io/sitemap.xml",
+    sitemap: "https://leaguesports.co.za/sitemap.xml",
   };
 }
