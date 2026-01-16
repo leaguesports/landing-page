@@ -2,7 +2,7 @@
 
 import { useAuthCheck } from "@/hooks/useAuth";
 import Dashboard from "./Dashboard";
-import LandingPage from "./LandingPage";
+import LandingPageNew from "./LandingPageNew";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ export default function HomePageClient() {
   // Show landing page during auth check for SEO - crawlers will see full content
   // Once auth completes, authenticated users will see the dashboard
   if (isLoading) {
-    return <LandingPage />;
+    return <LandingPageNew />;
   }
 
   if (isAuthenticated) {
@@ -259,5 +259,5 @@ export default function HomePageClient() {
   }
 
   // Not authenticated - show landing page
-  return <LandingPage />;
+  return <LandingPageNew />;
 }

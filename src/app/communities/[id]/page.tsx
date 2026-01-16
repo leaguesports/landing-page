@@ -1256,6 +1256,20 @@ export default function CommunityLandingPage() {
                   <span className="hidden sm:inline">Share</span>
                 </button>
                 <Link
+                  href={`/communities/${params.id}/tournaments/create`}
+                  className="px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 text-sm sm:text-base bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 transition-opacity font-medium"
+                >
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2L9 9H2l6 4.5L5.5 22 12 17l6.5 5-2.5-8.5L22 9h-7l-3-7z" />
+                  </svg>
+                  <span className="hidden sm:inline">Tournament</span>
+                  <span className="sm:hidden">🏆</span>
+                </Link>
+                <Link
                   href={`/communities/${params.id}/events/create`}
                   className="btn-primary px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 text-sm sm:text-base"
                 >

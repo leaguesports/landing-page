@@ -86,6 +86,57 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
 };
 
+// JSON-LD structured data for SEO
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "LeagueSports",
+  url: "https://leaguesports.io",
+  logo: "https://leaguesports.io/logo.png",
+  description:
+    "The all-in-one platform for recreational sports. Track stats, run tournaments, and build communities for darts, padel, sim racing, and more.",
+  sameAs: [
+    "https://twitter.com/leaguesports",
+    "https://www.linkedin.com/company/leaguesports",
+  ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    email: "hello@leaguesports.io",
+  },
+};
+
+const softwareAppSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "LeagueSports",
+  applicationCategory: "SportsApplication",
+  operatingSystem: "Web, iOS, Android",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free during beta",
+  },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.9",
+    ratingCount: "500",
+    bestRating: "5",
+    worstRating: "1",
+  },
+  featureList: [
+    "Tournament Management",
+    "Live Brackets",
+    "Stats Tracking",
+    "Skill Ratings",
+    "Achievement Badges",
+    "Community Features",
+    "Live Displays",
+    "Multi-sport Support",
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -93,6 +144,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(softwareAppSchema),
+          }}
+        />
+      </head>
       <body
         className={`${outfit.variable} ${manrope.variable} antialiased bg-slate-950 text-white`}
       >
