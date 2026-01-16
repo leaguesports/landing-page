@@ -208,12 +208,6 @@ export default function Navigation() {
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
               <Link
-                href="/login"
-                className="hidden sm:block px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
                 href="/waitlist"
                 className="btn-primary px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm whitespace-nowrap"
               >
@@ -519,13 +513,6 @@ export default function Navigation() {
               className="block px-4 py-3 rounded-xl text-white hover:bg-slate-800/50 transition-colors font-medium"
             >
               Pricing
-            </Link>
-            <Link
-              href="/login"
-              onClick={() => setShowMobileMenu(false)}
-              className="block px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
-            >
-              Sign In
             </Link>
           </div>
         </div>
