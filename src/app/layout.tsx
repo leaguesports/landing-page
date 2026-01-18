@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Manrope } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -18,52 +18,55 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL("https://leaguesports.co.za"),
   title: {
-    default: "LeagueSports | Create & Manage Tournaments for Any Activity",
-    template: "%s | LeagueSports",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: "cover",
+    default: "LeagueSports | South Africa's Tournament Management & Live Scoring Platform",
+    template: "%s | LeagueSports South Africa",
   },
   description:
-    "Build thriving communities around your passion. Create tournaments and leagues for sim golf, padel, sim racing, and more. Join thousands of players competing worldwide.",
+    "South Africa's leading sports platform. Create tournaments and leagues for padel, sim golf, darts, cricket, and more. Join thousands of SA players competing nationwide.",
   keywords: [
-    "tournament management",
-    "league management",
-    "sim golf tournaments",
-    "padel leagues",
-    "sim racing leagues",
-    "esports tournaments",
-    "sports community platform",
-    "competition management",
+    "South Africa sports",
+    "SA tournament management",
+    "South African leagues",
+    "padel South Africa",
+    "darts leagues SA",
+    "cricket tournaments South Africa",
+    "sim golf South Africa",
+    "sim racing SA",
+    "sports community South Africa",
+    "live scoring SA",
+    "leaderboards South Africa",
+    "Johannesburg sports leagues",
+    "Cape Town tournaments",
+    "Durban sports",
   ],
   authors: [{ name: "LeagueSports" }],
   creator: "LeagueSports",
   publisher: "LeagueSports",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "en_ZA",
     url: "https://leaguesports.co.za",
-    siteName: "LeagueSports",
-    title: "LeagueSports | Create & Manage Tournaments for Any Activity",
+    siteName: "LeagueSports South Africa",
+    title: "LeagueSports | South Africa's Tournament Management & Live Scoring Platform",
     description:
-      "Build thriving communities around your passion. Create tournaments and leagues for sim golf, padel, sim racing, and more.",
+      "South Africa's leading sports platform. Create tournaments and leagues for padel, sim golf, darts, cricket, and more.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "LeagueSports - Tournament & League Management Platform",
+        alt: "LeagueSports - South Africa's Tournament & League Management Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeagueSports | Create & Manage Tournaments for Any Activity",
+    title: "LeagueSports | South Africa's Sports Platform",
     description:
-      "Build thriving communities around your passion. Create tournaments and leagues for sim golf, padel, sim racing, and more.",
+      "South Africa's leading sports platform. Create tournaments and leagues for padel, sim golf, darts, cricket, and more.",
     images: ["/og-image.png"],
     creator: "@leaguesports",
   },
@@ -79,11 +82,21 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/logo-icon.svg",
   },
   manifest: "/site.webmanifest",
+};
+
+// Viewport configuration (Next.js 14+ recommended export)
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 // JSON-LD structured data for SEO
@@ -94,7 +107,7 @@ const organizationSchema = {
   url: "https://leaguesports.co.za",
   logo: "https://leaguesports.co.za/logo.png",
   description:
-    "The all-in-one platform for recreational sports. Track stats, run tournaments, and build communities for darts, padel, sim racing, and more.",
+    "South Africa's all-in-one platform for recreational sports. Track stats, run tournaments, and build communities for darts, padel, cricket, sim racing, and more.",
   sameAs: [
     "https://twitter.com/leaguesports",
     "https://www.linkedin.com/company/leaguesports",
@@ -103,6 +116,14 @@ const organizationSchema = {
     "@type": "ContactPoint",
     contactType: "customer support",
     email: "hello@leaguesports.co.za",
+  },
+  areaServed: {
+    "@type": "Country",
+    name: "South Africa",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "ZA",
   },
 };
 
@@ -115,8 +136,12 @@ const softwareAppSchema = {
   offers: {
     "@type": "Offer",
     price: "0",
-    priceCurrency: "USD",
+    priceCurrency: "ZAR",
     description: "Free during beta",
+    availableAtOrFrom: {
+      "@type": "Country",
+      name: "South Africa",
+    },
   },
   aggregateRating: {
     "@type": "AggregateRating",

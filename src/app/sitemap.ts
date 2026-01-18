@@ -1,8 +1,17 @@
 import { MetadataRoute } from "next";
+import { sportsList } from "@/config/sports";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://leaguesports.co.za";
   const currentDate = new Date();
+
+  // Generate sport pages dynamically
+  const sportPages: MetadataRoute.Sitemap = sportsList.map((sport) => ({
+    url: `${baseUrl}/sports/${sport.slug}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
 
   return [
     // Main pages
@@ -11,6 +20,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: currentDate,
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/features`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/waitlist`,
@@ -112,5 +133,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.7,
     },
+    {
+      url: `${baseUrl}/solutions/fans`,
+      lastModified: currentDate,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+
+    // Dynamic sport pages
+    ...sportPages,
   ];
 }

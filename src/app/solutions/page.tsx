@@ -91,6 +91,20 @@ const solutions = [
       "Engagement analytics",
     ],
   },
+  {
+    title: "For Fans",
+    description:
+      "Follow live matches from anywhere. Real-time scores, instant updates, and detailed stats—never miss a moment of the action.",
+    href: "/solutions/fans",
+    icon: "👀",
+    gradient: "from-amber-500 to-yellow-600",
+    features: [
+      "Live match tracking",
+      "Smart notifications",
+      "Follow favorite players",
+      "Shareable match links",
+    ],
+  },
 ];
 
 export default function SolutionsPage() {

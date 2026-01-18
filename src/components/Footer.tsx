@@ -8,9 +8,12 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-                <span className="text-slate-950 font-bold text-lg">L</span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-icon.svg"
+                alt="LeagueSports"
+                className="w-10 h-10"
+              />
               <span className="text-xl font-bold font-heading">
                 League<span className="gradient-text">Sports</span>
               </span>

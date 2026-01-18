@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { sportsList } from "@/config/sports";
 
-type DropdownId = "product" | "solutions" | null;
+type DropdownId = "product" | "solutions" | "sports" | null;
+
+// Featured sports to show in the dropdown (first 6)
+const featuredSports = sportsList.slice(0, 6);
 
 const productItems = [
   {
@@ -86,6 +90,13 @@ const solutionItems = [
     icon: "📈",
     gradient: "from-pink-500 to-rose-600",
   },
+  {
+    title: "For Fans",
+    description: "Follow live matches & track favorites",
+    href: "/solutions/fans",
+    icon: "👀",
+    gradient: "from-amber-500 to-yellow-600",
+  },
 ];
 
 export default function Navigation() {
@@ -120,11 +131,12 @@ export default function Navigation() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-                <span className="text-slate-950 font-bold text-base sm:text-lg">
-                  L
-                </span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-icon.svg"
+                alt="LeagueSports"
+                className="w-9 h-9 sm:w-10 sm:h-10"
+              />
               <span className="text-lg sm:text-xl font-bold font-heading">
                 League<span className="gradient-text">Sports</span>
               </span>
@@ -132,6 +144,38 @@ export default function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
+              {/* Sports Dropdown Trigger */}
+              <button
+                onClick={() =>
+                  setActiveDropdown(
+                    activeDropdown === "sports" ? null : "sports"
+                  )
+                }
+                onMouseEnter={() => setActiveDropdown("sports")}
+                className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeDropdown === "sports"
+                    ? "text-white bg-slate-800/50"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                Sports
+                <svg
+                  className={`w-4 h-4 transition-transform ${
+                    activeDropdown === "sports" ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
               {/* Product Dropdown Trigger */}
               <button
                 onClick={() =>
@@ -295,15 +339,15 @@ export default function Navigation() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                    Overview
+                    Made for SA 🇿🇦
                   </p>
                   <div className="glass-card rounded-xl p-5 bg-gradient-to-br from-primary/5 to-transparent">
                     <h4 className="font-bold text-white mb-2">
-                      All-in-one platform
+                      Built for South Africa
                     </h4>
                     <p className="text-sm text-slate-400 mb-4">
-                      Everything you need to track, practice, and compete — all
-                      in one place.
+                      Everything you need to track, practice, and compete —
+                      designed for SA sports communities.
                     </p>
                     <Link
                       href="/product"
@@ -369,8 +413,8 @@ export default function Navigation() {
                   <div className="glass-card rounded-xl p-5 bg-gradient-to-br from-emerald-500/5 to-transparent">
                     <h4 className="font-bold text-white mb-2">Find your fit</h4>
                     <p className="text-sm text-slate-400 mb-4">
-                      Whether you run a pub league or manage a sports club,
-                      we&apos;ve got you covered.
+                      Whether you run a pub league in Joburg or a sports club
+                      in Cape Town, we&apos;ve got you covered.
                     </p>
                     <Link
                       href="/solutions"
@@ -378,6 +422,122 @@ export default function Navigation() {
                       className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
                       View all solutions
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sports Dropdown Content */}
+            {activeDropdown === "sports" && (
+              <div className="grid grid-cols-3 gap-x-12 gap-y-6">
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                    Popular Sports
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {featuredSports.map((sport) => (
+                      <Link
+                        key={sport.slug}
+                        href={`/sports/${sport.slug}`}
+                        onClick={() => setActiveDropdown(null)}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800/50 transition-colors group"
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-lg bg-gradient-to-br ${sport.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}
+                        >
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d={sport.icon}
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-medium text-white text-sm">
+                            {sport.name}
+                          </div>
+                          <div className="text-xs text-slate-400 line-clamp-1">
+                            {sport.description}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {/* More sports link */}
+                  <div className="mt-4 pt-4 border-t border-slate-800/50">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                      More Sports
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {sportsList.slice(6).map((sport) => (
+                        <Link
+                          key={sport.slug}
+                          href={`/sports/${sport.slug}`}
+                          onClick={() => setActiveDropdown(null)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm text-slate-300 hover:text-white"
+                        >
+                          <div
+                            className={`w-5 h-5 rounded bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}
+                          >
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d={sport.icon}
+                              />
+                            </svg>
+                          </div>
+                          {sport.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                    South Africa 🇿🇦
+                  </p>
+                  <div className="glass-card rounded-xl p-5 bg-gradient-to-br from-amber-500/5 to-transparent">
+                    <h4 className="font-bold text-white mb-2">
+                      12+ Sports Across SA
+                    </h4>
+                    <p className="text-sm text-slate-400 mb-4">
+                      From padel in Sandton to darts in Stellenbosch — track
+                      stats and compete in tournaments across all 9 provinces.
+                    </p>
+                    <Link
+                      href="/waitlist"
+                      onClick={() => setActiveDropdown(null)}
+                      className="inline-flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      Join the waitlist
                       <svg
                         className="w-4 h-4"
                         fill="none"
@@ -404,6 +564,73 @@ export default function Navigation() {
       {showMobileMenu && (
         <div className="lg:hidden border-t border-slate-800/50 bg-slate-900/98 backdrop-blur-xl max-h-[80vh] overflow-y-auto">
           <div className="px-4 py-4 space-y-2">
+            {/* Sports Accordion */}
+            <div>
+              <button
+                onClick={() =>
+                  setMobileExpanded(
+                    mobileExpanded === "sports" ? null : "sports"
+                  )
+                }
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-white hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="font-medium">Sports</span>
+                <svg
+                  className={`w-5 h-5 transition-transform ${
+                    mobileExpanded === "sports" ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              {mobileExpanded === "sports" && (
+                <div className="mt-2 ml-4 space-y-1">
+                  {sportsList.map((sport) => (
+                    <Link
+                      key={sport.slug}
+                      href={`/sports/${sport.slug}`}
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                    >
+                      <div
+                        className={`w-6 h-6 rounded bg-gradient-to-br ${sport.gradient} flex items-center justify-center`}
+                      >
+                        <svg
+                          className="w-3.5 h-3.5 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d={sport.icon}
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm">{sport.name}</span>
+                    </Link>
+                  ))}
+                  <Link
+                    href="/waitlist"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-primary hover:bg-slate-800/50 transition-colors text-sm"
+                  >
+                    Join the waitlist →
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {/* Product Accordion */}
             <div>
               <button
