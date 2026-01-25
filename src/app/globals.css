@@ -1,27 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #00d4aa;
-  --primary-light: #00ffcc;
-  --secondary: #ff6b4a;
-  --accent: #a855f7;
-  --background: #020617;
-  --background-light: #0f172a;
-  --foreground: #f8fafc;
-  --muted: #94a3b8;
-}
-
-@theme inline {
-  --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
-  --color-background: var(--background);
-  --color-background-light: var(--background-light);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --font-heading: var(--font-outfit);
-  --font-body: var(--font-manrope);
+  --primary: #ffffff;
+  --primary-hover: #f3f4f6;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --background: #0f0f0f;
+  --background-secondary: #1a1a1a;
+  --foreground: #ffffff;
+  --foreground-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -35,352 +23,94 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-manrope), system-ui, sans-serif;
-  overflow-x: hidden;
-  position: relative;
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-outfit), system-ui, sans-serif;
+/* Smooth transitions */
+a,
+button {
+  transition: all 0.2s ease;
 }
 
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.gradient-text-alt {
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Mesh gradient background */
-.mesh-gradient {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: 
-    radial-gradient(ellipse 80% 50% at 20% -20%, rgba(0, 212, 170, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 80% 0%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 50% at 50% 100%, rgba(255, 107, 74, 0.08) 0%, transparent 40%),
-    var(--background);
-}
-
-/* Animated gradient orbs */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.orb-1 {
-  width: 150px;
-  height: 150px;
-  background: linear-gradient(135deg, var(--primary) 0%, transparent 70%);
-  top: -50px;
-  left: 0;
-  animation-delay: 0s;
-}
-
-.orb-2 {
-  width: 100px;
-  height: 100px;
-  background: linear-gradient(135deg, var(--accent) 0%, transparent 70%);
-  top: 30%;
-  right: 0;
-  animation-delay: -5s;
-}
-
-.orb-3 {
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(135deg, var(--secondary) 0%, transparent 70%);
-  bottom: -50px;
-  left: 20%;
-  animation-delay: -10s;
-}
-
-@media (min-width: 768px) {
-  .orb {
-    filter: blur(80px);
-    opacity: 0.4;
-  }
-  
-  .orb-1 {
-    width: 600px;
-    height: 600px;
-    top: -200px;
-    left: -100px;
-  }
-
-  .orb-2 {
-    width: 400px;
-    height: 400px;
-    right: -100px;
-  }
-
-  .orb-3 {
-    width: 500px;
-    height: 500px;
-    bottom: -150px;
-    left: 30%;
-  }
-}
-
+/* Hero animations */
 @keyframes float {
   0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(30px, -30px) scale(1.05);
+    transform: translate(0, 0);
   }
   50% {
-    transform: translate(-20px, 20px) scale(0.95);
-  }
-  75% {
-    transform: translate(20px, 10px) scale(1.02);
+    transform: translate(20px, -20px);
   }
 }
 
-/* Glass card effect */
-.glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.glass-card:hover {
-  background: rgba(15, 23, 42, 0.8);
-  border-color: rgba(0, 212, 170, 0.3);
-}
-
-/* Glow effects */
-.glow-primary {
-  box-shadow: 0 0 40px rgba(0, 212, 170, 0.3);
-}
-
-.glow-secondary {
-  box-shadow: 0 0 40px rgba(255, 107, 74, 0.3);
-}
-
-/* Button styles */
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #00b894 100%);
-  color: var(--background);
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 40px rgba(0, 212, 170, 0.4);
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  color: var(--foreground);
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  border-color: var(--primary);
-  background: rgba(0, 212, 170, 0.1);
-  transform: translateY(-2px);
-}
-
-/* Activity card hover */
-.activity-card {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.activity-card:hover {
-  transform: translateY(-8px) scale(1.02);
-}
-
-.activity-card:hover .activity-icon {
-  transform: scale(1.1) rotate(5deg);
-}
-
-.activity-icon {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Feature card animation */
-.feature-card {
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-}
-
-/* Scroll reveal animation */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease forwards;
-}
-
-.animation-delay-100 { animation-delay: 0.1s; }
-.animation-delay-200 { animation-delay: 0.2s; }
-.animation-delay-300 { animation-delay: 0.3s; }
-.animation-delay-400 { animation-delay: 0.4s; }
-.animation-delay-500 { animation-delay: 0.5s; }
-.animation-delay-600 { animation-delay: 0.6s; }
-
-/* Grid pattern overlay */
-.grid-pattern {
-  background-image: 
-    linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
-/* Noise texture */
-.noise::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.02;
-  pointer-events: none;
-  z-index: 100;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
-}
-
-/* Hide scrollbar utility */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Number counter animation */
-@keyframes countUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.stat-number {
-  animation: countUp 0.8s ease forwards;
-}
-
-/* Pulse animation for CTA */
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(0, 212, 170, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(0, 212, 170, 0.6);
-  }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Ecosystem section animations */
-@keyframes flow-right {
-  0% {
-    left: 0;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    left: 100%;
-    opacity: 0;
-  }
-}
-
-.animate-flow-right {
-  animation: flow-right 3s ease-in-out infinite;
-}
-
-.animation-delay-500 {
-  animation-delay: 1.5s;
-}
-
-@keyframes pulse-flow {
   0%, 100% {
     opacity: 0.3;
   }
   50% {
-    opacity: 0.8;
+    opacity: 0.6;
   }
 }
 
-.animate-pulse-flow {
-  animation: pulse-flow 2s ease-in-out infinite;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-@keyframes ping-slow {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Toast notification animations */
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
   }
-  75%, 100% {
-    transform: scale(1.5);
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-top {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
     opacity: 0;
   }
 }
 
-.animate-ping-slow {
-  animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+@keyframes push-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-60px);
+  }
 }
 
-/* Fade in animation */
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0;
   }
@@ -389,43 +119,23 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-/* Slide animations for sync indicator */
-@keyframes slideRight {
-  0%, 100% {
-    left: -6px;
-    opacity: 0;
-  }
-  10% {
+@keyframes fade-out {
+  from {
     opacity: 1;
   }
-  50% {
-    left: calc(100% + 6px);
-    opacity: 1;
-  }
-  60%, 100% {
-    left: calc(100% + 6px);
+  to {
     opacity: 0;
   }
 }
 
-@keyframes slideLeft {
-  0%, 100% {
-    right: -6px;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  50% {
-    right: calc(100% + 6px);
-    opacity: 1;
-  }
-  60%, 100% {
-    right: calc(100% + 6px);
-    opacity: 0;
-  }
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.slide-in-from-left {
+  animation-name: slide-in-from-left;
+}
+
+.fade-in {
+  animation-name: fade-in;
 }
