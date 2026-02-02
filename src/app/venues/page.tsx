@@ -1,8 +1,7 @@
 import { Venue } from "@/types/venue";
 
 export default async function VenuesPage() {
-  const venuesResponse = await fetch("http://localhost:3000/api/venues")
-  const venues: Venue[] = await venuesResponse.json()
+  const venues: Venue[] = []
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
