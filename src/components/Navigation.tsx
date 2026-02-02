@@ -8,29 +8,30 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="text-xl font-bold tracking-tight text-white">
-              LeagueSports
+              <span>League</span>
+              <span className="text-green-400">Sports</span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-8">
             <Link
-              href="/venues"
+              href="/play"
               className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
             >
-              Venues
+              Play
             </Link>
             <Link
-              href="/events"
+              href="/watch"
               className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
             >
-              Events
+              Watch
             </Link>
             <Link
-              href="/features"
+              href="/athletes"
               className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
             >
-              Features
+              Athletes
             </Link>
             <Link
               href="/about"

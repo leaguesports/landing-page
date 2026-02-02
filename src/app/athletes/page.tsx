@@ -169,7 +169,7 @@ export default function FeaturesPage() {
                     }}
                   />
 
-                  <div 
+                  <div
                     className="relative mx-auto h-[600px] w-[300px] rounded-[2.5rem] bg-gray-800 p-1.5"
                     style={{
                       boxShadow: `
@@ -195,14 +195,14 @@ export default function FeaturesPage() {
 
                     <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-black">
                       <div className="absolute inset-0 rounded-[2rem] ring-[0.5px] ring-white/5" />
-                      
+
                       <div className="absolute left-3 top-44 z-30 w-[calc(100%-1.5rem)] max-w-[260px]">
                         {notificationQueue.map((toastIndex, idx) => {
                           const toast = toastNotifications[toastIndex];
                           const isNew = idx === notificationQueue.length - 1;
                           const isExiting = exitingIndex === toastIndex && idx === 0;
                           const positionFromBottom = notificationQueue.length - 1 - idx;
-                          
+
                           return (
                             <div
                               key={`${toast.id}-${toastIndex}-${notificationQueue.length}`}
@@ -212,8 +212,8 @@ export default function FeaturesPage() {
                                 animation: isNew
                                   ? `slide-in-from-left 0.5s ease-out, fade-in 0.5s ease-out`
                                   : isExiting
-                                  ? `slide-out-to-top 0.5s ease-out, fade-out 0.5s ease-out`
-                                  : undefined,
+                                    ? `slide-out-to-top 0.5s ease-out, fade-out 0.5s ease-out`
+                                    : undefined,
                                 zIndex: 30 + idx,
                               }}
                             >
@@ -239,7 +239,7 @@ export default function FeaturesPage() {
                           );
                         })}
                       </div>
-                      
+
                       <div className="flex items-center justify-between px-6 pt-3 text-xs text-white">
                         <span>9:41</span>
                         <div className="flex items-center gap-1">
@@ -301,9 +301,8 @@ export default function FeaturesPage() {
                                     <div className="text-xs text-gray-400">{activity.time}</div>
                                   </div>
                                   <div
-                                    className={`text-sm font-semibold ${
-                                      activity.result === "Win" ? "text-green-400" : "text-red-400"
-                                    }`}
+                                    className={`text-sm font-semibold ${activity.result === "Win" ? "text-green-400" : "text-red-400"
+                                      }`}
                                   >
                                     {activity.result}
                                   </div>
@@ -374,31 +373,60 @@ export default function FeaturesPage() {
                     <h3 className="text-xl font-bold">Darts Match</h3>
                     <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-400">Live</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-white/5 p-4">
-                      <div className="text-sm text-gray-400">Player 1</div>
-                      <div className="mt-2 text-3xl font-bold">301</div>
-                      <div className="mt-1 text-xs text-gray-500">Remaining</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-l-lg bg-red-500 p-4">
+                      <div className="text-sm text-black">Player 1</div>
+                      <div className="mt-2 text-5xl font-bold">301</div>
+                      <div className="mt-1 text-xs text-black">Remaining</div>
                     </div>
-                    <div className="rounded-lg bg-white/5 p-4">
-                      <div className="text-sm text-gray-400">Player 2</div>
-                      <div className="mt-2 text-3xl font-bold">287</div>
-                      <div className="mt-1 text-xs text-gray-500">Remaining</div>
+                    <div className="rounded-r-lg bg-orange-500 p-4">
+                      <div className="text-sm text-black">Player 2</div>
+                      <div className="mt-2 text-5xl font-bold">287</div>
+                      <div className="mt-1 text-xs text-black">Remaining</div>
                     </div>
                   </div>
-                  <div className="space-y-2 rounded-lg bg-white/5 p-4">
-                    <div className="text-sm font-semibold text-gray-300">Recent Scores</div>
-                    <div className="flex gap-2">
-                      {[60, 45, 57, 40].map((score, i) => (
-                        <div key={i} className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">
-                          {score}
-                        </div>
+                  <div className="space-y-2 rounded-lg bg-white/5">
+                    <div className="flex gap-1 justify-around">
+                      <div className="text-lg font-semibold text-gray-300 bg-white/10 p-4 flex-1 rounded-l-lg"></div>
+                      <div className="text-lg font-semibold text-gray-300 bg-white/10 p-4 w-20">1</div>
+                      <div className="text-lg font-semibold text-gray-300 bg-white/10 p-4 w-20">20</div>
+                      <div className="text-lg font-semibold text-gray-300 bg-white/10 p-4 w-20">14</div>
+                      <div className="text-lg font-semibold text-gray-300 bg-white/10 p-4 flex-1">
+                        <button className="p-4 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 rounded-xs transition-colors"> Submit</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className=" mx-auto rounded-xl">
+                    <div className="grid grid-cols-5 gap-2">
+                      {/* Multipliers - Top Row */}
+                      {['Single', 'Double', 'Treble'].map((m) => (
+                        <button key={m} className="p-4 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 rounded-xs transition-colors">
+                          {m}
+                        </button>
                       ))}
+                      <button className="p-4 text-sm font-bold bg-orange-600 hover:bg-orange-500 rounded-xs">Bull</button>
+                      <button className="p-4 text-sm font-bold bg-green-600 hover:bg-green-500 rounded-xs">Outer</button>
+
+                      {/* Number Grid - 1 to 20 */}
+                      {[...Array(20)].map((_, i) => (
+                        <button
+                          key={i}
+                          className="p-4 text-lg bg-white/10 hover:bg-white/20 border border-white/5 rounded-xs transition-all active:scale-95"
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      {/* Bottom Actions */}
+                      <button className="col-span-2 p-4 font-bold bg-red-900/40 hover:bg-red-800/60 text-red-200 rounded-xs">
+                        Back
+                      </button>
+                      <div></div>
+                      <button className="col-span-2 p-4 font-bold bg-slate-700 hover:bg-slate-600 rounded-xs">
+                        Miss
+                      </button>
                     </div>
                   </div>
-                  <button className="w-full rounded-lg bg-white/10 px-4 py-3 text-sm font-medium transition-colors hover:bg-white/20">
-                    Record Score
-                  </button>
                 </div>
               </div>
             </div>
@@ -436,7 +464,7 @@ export default function FeaturesPage() {
                           <stop offset="100%" stopColor="rgba(59, 130, 246, 0.05)" />
                         </linearGradient>
                       </defs>
-                      
+
                       {/* Horizontal Grid Lines */}
                       {[0, 1, 2, 3, 4].map((i) => (
                         <line
@@ -449,7 +477,7 @@ export default function FeaturesPage() {
                           strokeWidth="1"
                         />
                       ))}
-                      
+
                       {/* Data Points */}
                       {(() => {
                         const data = [45, 52, 48, 58, 55, 62, 59, 65, 68, 64, 70, 72];
@@ -464,13 +492,13 @@ export default function FeaturesPage() {
                           const y = 40 + height - ((value - minValue) / range) * height;
                           return `${x},${y}`;
                         }).join(' ');
-                        
+
                         // Area under the curve
                         const areaPath = `M 20,160 ${points} L ${20 + (data.length - 1) * stepX},160 Z`;
-                        
+
                         // Line path
                         const linePath = `M ${points.split(' ')[0]} ${points.split(' ').slice(1).map(p => `L ${p}`).join(' ')}`;
-                        
+
                         return (
                           <>
                             {/* Area fill */}
@@ -524,7 +552,7 @@ export default function FeaturesPage() {
                           </>
                         );
                       })()}
-                      
+
                       {/* Y-axis labels */}
                       {[0, 1, 2, 3, 4].map((i) => {
                         const value = 80 - i * 10;
@@ -541,7 +569,7 @@ export default function FeaturesPage() {
                         );
                       })}
                     </svg>
-                    
+
                     {/* X-axis labels */}
                     <div className="absolute bottom-0 left-0 right-0 flex justify-between px-5 pb-1">
                       <span className="text-xs text-gray-500">Week 1</span>
@@ -664,18 +692,18 @@ export default function FeaturesPage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
                   </div>
                 </div>
-                
+
                 {/* Featured Legendary Badge - Premium Design */}
                 <div className="mb-8 flex justify-center">
                   <div className="group relative">
                     {/* Multiple glow layers for depth */}
                     <div className="absolute inset-0 -m-6 rounded-full bg-gradient-to-r from-amber-400/60 via-yellow-400/60 to-amber-500/60 blur-2xl opacity-50 transition-opacity duration-500 group-hover:opacity-70" />
                     <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-r from-yellow-300/40 via-amber-300/40 to-yellow-400/40 blur-xl opacity-30 transition-opacity duration-500 group-hover:opacity-50" />
-                    
+
                     {/* Premium 3D badge */}
                     <div className="relative transition-all duration-700 group-hover:scale-110 group-hover:-rotate-6">
                       {/* Outer gold ring with bevel */}
-                      <div 
+                      <div
                         className="relative h-24 w-24 rounded-full"
                         style={{
                           background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 25%, #d97706 50%, #f59e0b 75%, #fbbf24 100%)',
@@ -689,7 +717,7 @@ export default function FeaturesPage() {
                         }}
                       >
                         {/* Inner badge surface */}
-                        <div 
+                        <div
                           className="absolute inset-[4px] rounded-full"
                           style={{
                             background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(251,191,36,0.2), rgba(217,119,6,0.3))',
@@ -698,7 +726,7 @@ export default function FeaturesPage() {
                         >
                           {/* Shine highlight */}
                           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/50 via-transparent to-transparent" />
-                          
+
                           {/* Icon with premium styling */}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-4xl drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
@@ -707,13 +735,13 @@ export default function FeaturesPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Floating particles */}
                       <div className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-yellow-300 shadow-[0_0_6px_rgba(251,191,36,0.8)] animate-ping" />
                       <div className="absolute -bottom-1 -left-1 h-1 w-1 rounded-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.8)] animate-ping" style={{ animationDelay: '0.3s' }} />
                       <div className="absolute top-1/2 -left-2 h-0.5 w-0.5 rounded-full bg-yellow-200 shadow-[0_0_3px_rgba(251,191,36,0.8)] animate-ping" style={{ animationDelay: '0.6s' }} />
                     </div>
-                    
+
                     <div className="mt-3 text-center">
                       <div className="text-base font-bold tracking-wider text-yellow-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]">Master</div>
                       <div className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/90">Legendary</div>
@@ -760,9 +788,9 @@ export default function FeaturesPage() {
                         label: "text-purple-400",
                       },
                     };
-                    
+
                     const style = rarityStyles[badge.rarity as keyof typeof rarityStyles];
-                    
+
                     return (
                       <div
                         key={i}
@@ -772,18 +800,18 @@ export default function FeaturesPage() {
                         {(badge.rarity === "rare" || badge.rarity === "epic") && (
                           <div className={`absolute inset-0 -m-1.5 rounded-full bg-gradient-to-r ${style.glow} opacity-0 blur-lg transition-opacity duration-500 group-hover:opacity-60`} />
                         )}
-                        
+
                         {/* Premium 3D badge */}
                         <div className="relative">
                           {/* Outer ring */}
-                          <div 
+                          <div
                             className={`h-16 w-16 rounded-full bg-gradient-to-br ${style.outer} transition-all duration-500 group-hover:brightness-110`}
                             style={{
                               boxShadow: style.shadow
                             }}
                           >
                             {/* Inner surface */}
-                            <div 
+                            <div
                               className={`absolute inset-[3px] rounded-full bg-gradient-to-br ${style.inner} border ${style.border}`}
                               style={{
                                 boxShadow: 'inset 0 1px 4px rgba(255,255,255,0.15), inset 0 -1px 4px rgba(0,0,0,0.3)'
@@ -791,7 +819,7 @@ export default function FeaturesPage() {
                             >
                               {/* Shine */}
                               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 via-transparent to-transparent" />
-                              
+
                               {/* Icon */}
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="text-2xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
@@ -801,7 +829,7 @@ export default function FeaturesPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Label */}
                         <div className="mt-2 text-center">
                           <div className={`text-[10px] font-bold tracking-wide ${style.text} drop-shadow-sm`}>
@@ -817,7 +845,7 @@ export default function FeaturesPage() {
                     );
                   })}
                 </div>
-                
+
                 {/* Premium progress indicator */}
                 <div className="mt-6 flex items-center justify-between rounded-xl border border-white/20 bg-gradient-to-r from-white/10 via-white/5 to-transparent px-5 py-3 backdrop-blur-sm shadow-lg">
                   <div className="text-xs font-semibold text-gray-300">Collection Progress</div>
@@ -828,7 +856,7 @@ export default function FeaturesPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 text-center">
                   <button className="group text-sm font-semibold tracking-wide text-gray-400 transition-all duration-300 hover:text-white">
                     <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -863,19 +891,17 @@ export default function FeaturesPage() {
                     ].map((exercise, i) => (
                       <div
                         key={i}
-                        className={`flex items-center justify-between rounded-lg border p-4 ${
-                          exercise.completed
-                            ? "border-green-500/50 bg-green-500/10"
-                            : "border-white/10 bg-white/5"
-                        }`}
+                        className={`flex items-center justify-between rounded-lg border p-4 ${exercise.completed
+                          ? "border-green-500/50 bg-green-500/10"
+                          : "border-white/10 bg-white/5"
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                              exercise.completed
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-white/10 text-gray-400"
-                            }`}
+                            className={`flex h-8 w-8 items-center justify-center rounded-full ${exercise.completed
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-white/10 text-gray-400"
+                              }`}
                           >
                             {exercise.completed ? (
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1059,11 +1085,10 @@ export default function FeaturesPage() {
                     ].map((service, i) => (
                       <div
                         key={i}
-                        className={`flex items-center justify-between rounded-lg border p-4 ${
-                          service.status === "connected"
-                            ? "border-green-500/50 bg-green-500/10"
-                            : "border-white/10 bg-white/5"
-                        }`}
+                        className={`flex items-center justify-between rounded-lg border p-4 ${service.status === "connected"
+                          ? "border-green-500/50 bg-green-500/10"
+                          : "border-white/10 bg-white/5"
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="text-2xl">{service.icon}</div>
@@ -1075,11 +1100,10 @@ export default function FeaturesPage() {
                           </div>
                         </div>
                         <div
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            service.status === "connected"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-white/10 text-gray-400"
-                          }`}
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${service.status === "connected"
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-white/10 text-gray-400"
+                            }`}
                         >
                           {service.status === "connected" ? "Active" : "Connect"}
                         </div>
