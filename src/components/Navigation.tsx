@@ -28,6 +28,12 @@ export default function Navigation() {
               Watch
             </Link>
             <Link
+              href="/sports"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+            >
+              Sports
+            </Link>
+            <Link
               href="/athletes"
               className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
             >

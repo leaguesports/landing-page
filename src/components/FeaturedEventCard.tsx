@@ -53,7 +53,7 @@ export function FeaturedEventCard({ title, sport, date, location, description, i
                     </div>
                 </div>
                 <button className="bg-white text-gray-900 px-8 py-3 rounded-full flex items-center gap-2 w-fit transition-transform group-hover:scale-105">
-                    Get Tickets
+                    See Details
                     <ArrowRightIcon />
                 </button>
             </div>
