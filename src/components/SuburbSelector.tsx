@@ -1,12 +1,13 @@
 "use client";
 
 import { MapPin } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SUBURB_GROUPS, toSlug } from "@/data/suburbs";
 import { useSuburb } from "@/context/SuburbContext";
 
 export default function SuburbSelector() {
-  const { suburb, setSuburb, isReady } = useSuburb();
+  const { suburb, isReady } = useSuburb();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -82,22 +83,18 @@ export default function SuburbSelector() {
             </p>
           </div>
           <div className="max-h-[min(70vh,360px)] overflow-y-auto p-3">
-            <button
-              type="button"
+            <Link
+              href="/"
+              onClick={close}
               role="option"
               aria-selected={!suburb}
-              onClick={() => {
-                setSuburb(null);
-                close();
-              }}
-              className={`mb-3 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                !suburb
+              className={`mb-3 block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${!suburb
                   ? "bg-green-500/15 text-green-400"
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
+                }`}
             >
               All areas
-            </button>
+            </Link>
             {SUBURB_GROUPS.map((group, i) => (
               <div
                 key={group.label}
@@ -107,26 +104,26 @@ export default function SuburbSelector() {
                   {group.label}
                 </p>
                 <ul className="space-y-0.5" role="group">
-                  {group.suburbs.map((name) => (
-                    <li key={name}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={suburb === name}
-                        onClick={() => {
-                          setSuburb(toSlug(name));
-                          close();
-                        }}
-                        className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                          suburb === name
-                            ? "bg-green-500/15 text-green-400"
-                            : "text-gray-300 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        {name}
-                      </button>
-                    </li>
-                  ))}
+                  {group.suburbs.map((name) => {
+                    const slug = toSlug(name);
+                    const isActive = suburb === name;
+                    return (
+                      <li key={name}>
+                        <Link
+                          href={`/${slug}`}
+                          onClick={close}
+                          role="option"
+                          aria-selected={isActive}
+                          className={`block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${isActive
+                              ? "bg-green-500/15 text-green-400"
+                              : "text-gray-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                        >
+                          {name}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
