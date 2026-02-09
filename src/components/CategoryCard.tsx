@@ -1,13 +1,17 @@
+import Link from "next/link";
+
 interface CategoryCardProps {
     title: string;
     count: string;
     image: string;
+    href: string;
 }
 
-export function CategoryCard({ title, count, image }: CategoryCardProps) {
+export function CategoryCard({ title, count, image, href }: CategoryCardProps) {
     return (
-        <button
-            className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105"
+        <Link
+            href={href}
+            className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105 border border-white/10"
         >
             <div className="absolute inset-0">
                 <img
@@ -23,6 +27,6 @@ export function CategoryCard({ title, count, image }: CategoryCardProps) {
                 <h3 className="text-white mb-1">{title}</h3>
                 <p className="text-white/80 text-sm">{count}</p>
             </div>
-        </button>
+        </Link>
     );
 }

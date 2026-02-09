@@ -1,0 +1,55 @@
+import { ChevronRight, MapPin, Tv } from "lucide-react";
+import Link from "next/link";
+
+export interface SportVenueCardProps {
+    href: string;
+    image: string;
+    name: string;
+    type: string;
+    /** Short line e.g. "Showing F1" or "Live every race weekend" */
+    showing?: string;
+    /** Optional address or area */
+    area?: string;
+}
+
+export function SportVenueCard({ href, image, name, type, showing = "Showing F1", area }: SportVenueCardProps) {
+    return (
+        <Link
+            href={href}
+            className="group relative flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-white/5 transition-all duration-300 hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-950/20 hover:-translate-y-0.5"
+        >
+            <div className="relative aspect-5/3 overflow-hidden">
+                <img
+                    src={image}
+                    alt={name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500/90 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
+                        <Tv className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                        {showing}
+                    </span>
+                    <span className="rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm">
+                        {type}
+                    </span>
+                </div>
+            </div>
+            <div className="relative flex flex-1 flex-col p-5">
+                <h3 className="font-bold text-lg text-white">
+                    {name}
+                </h3>
+                {area && (
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-white/70">
+                        <MapPin className="h-4 w-4 shrink-0 text-orange-400/90" strokeWidth={2} />
+                        {area}
+                    </p>
+                )}
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-400 transition-colors group-hover:text-orange-300">
+                    View venue
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+                </span>
+            </div>
+        </Link>
+    );
+}
