@@ -1,10 +1,8 @@
 import { CategoryCard } from "@/components/CategoryCard";
 import { FeaturedEventCard } from "@/components/FeaturedEventCard";
 import { WatchCard } from "@/components/WatchCard";
-import { SPORTS_SA } from "@/data/events";
 
 export default async function F1RacesPage() {
-    const races = SPORTS_SA.filter((race) => race.sport === "Formula 1");
 
     return (
         <div className="min-h-screen bg-[#0f0f0f]">
@@ -22,7 +20,7 @@ export default async function F1RacesPage() {
             </section>
             <section className="py-12 space-y-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         {races.map((race) => (
                             <WatchCard
                                 key={race.id}
@@ -34,7 +32,7 @@ export default async function F1RacesPage() {
                                 time={race.timeSAST}
                             />
                         ))}
-                    </div>
+                    </div> */}
                 </div>
             </section>
             <section className="py-12 space-y-6">
