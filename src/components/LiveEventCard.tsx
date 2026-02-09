@@ -11,17 +11,7 @@ interface LiveEventCardProps {
     image: string;
 }
 
-function MapPinIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M20 10c0 5.523-4.477 10-10 10S0 15.523 0 10C0 4.477 4.477 0 10 0s10 4.477 10 10"></path><circle cx="10" cy="10" r="3"></circle></svg>
-    )
-}
-
-function UsersIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-users"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-    )
-}
+import { MapPin, Users } from "lucide-react";
 
 export function LiveEventCard({
     title,
@@ -77,11 +67,11 @@ export function LiveEventCard({
                 {/* Details */}
                 <div className="space-y-2 text-white/80 text-sm">
                     <div className="flex items-center gap-2">
-                        <MapPinIcon />
+                        <MapPin className="h-4 w-4 shrink-0" strokeWidth={2} />
                         <span>{location}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <UsersIcon />
+                        <Users className="h-4 w-4 shrink-0" strokeWidth={2} />
                         <span>{viewers} watching live</span>
                     </div>
                 </div>

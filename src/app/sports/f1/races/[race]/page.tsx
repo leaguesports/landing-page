@@ -3,6 +3,7 @@ import { FeaturedEventCard } from "@/components/FeaturedEventCard";
 
 export default async function F1RacePage({ params }: { params: Promise<{ race: string }> }) {
     const { race } = await params;
+
     return (
         <div className="min-h-screen bg-[#0f0f0f]">
             <section className="py-12 space-y-6">
@@ -36,16 +37,19 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
 
                                 <CategoryCard
+                                    href="/sports/f1/races/australian-grand-prix"
                                     image="/assets/benchwarmers.webp"
                                     title="Benchwarmers Sports Bar"
                                     count="100"
                                 />
                                 <CategoryCard
+                                    href="/sports/f1/races/chinese-grand-prix"
                                     image="/assets/hogshead.webp"
                                     title="Hogshead Illovo"
                                     count="100"
                                 />
                                 <CategoryCard
+                                    href="/sports/f1/races/japanese-grand-prix"
                                     image="/assets/ridgeway-racebar.webp"
                                     title="Ridgeway Racebar"
                                     count="100"

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { SuburbProvider } from "@/context/SuburbContext";
 
 export const metadata: Metadata = {
   title: {
@@ -19,9 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="flex min-h-screen flex-col bg-[#0f0f0f] text-white antialiased">
-        <Navigation />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <SuburbProvider>
+          <Navigation />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </SuburbProvider>
       </body>
     </html>
   );

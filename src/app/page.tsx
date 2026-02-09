@@ -1,6 +1,12 @@
+import { WhatsShowingGrid } from "@/components/WhatsShowingGrid";
+import { getWatchItemsFromEvents } from "@/data/events";
+import { toSlug } from "@/data/suburbs";
+import { Tv } from "lucide-react";
 import Link from "next/link";
 
-export default function Home() {
+type HomeContentProps = { city?: string | null };
+
+export function HomeContent({ city }: HomeContentProps) {
   return (
     <>
       <div className="relative flex min-h-screen flex-col overflow-hidden">
@@ -26,14 +32,16 @@ export default function Home() {
             {/* Main Heading */}
             <h1 className="text-6xl font-bold tracking-tight sm:text-7xl lg:text-8xl">
               <span className="block">Find Your</span>
-              <span className="block bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
+              <span className="block bg-linear-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
                 Next Game
               </span>
             </h1>
 
             {/* Subheading */}
             <p className="mx-auto mt-8 max-w-2xl text-xl leading-8 text-gray-400 sm:text-2xl">
-              Discover venues and events near you. Connect with players and start competing.
+              {city
+                ? `Find venues, join events, and connect with players in ${city}`
+                : "Find venues, join events, and connect with players"}
             </p>
 
             {/* Stats */}
@@ -57,17 +65,17 @@ export default function Home() {
             {/* CTA Buttons */}
             <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
               <Link
-                href="/venues"
+                href="/watch"
                 className="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
               >
-                <span className="relative z-10">Browse Venues</span>
+                <span className="relative z-10">Watch Games</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
               </Link>
               <Link
-                href="/events"
+                href="/play"
                 className="group rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
               >
-                View Events
+                Play Now
                 <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">
                   →
                 </span>
@@ -75,7 +83,7 @@ export default function Home() {
             </div>
 
             {/* Search Bar Preview */}
-            <div className="mt-16 mx-auto max-w-2xl">
+            {/* <div className="mt-16 mx-auto max-w-2xl">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
                 <div className="flex items-center gap-3 text-left">
                   <svg
@@ -102,7 +110,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </section>
 
@@ -125,9 +133,8 @@ export default function Home() {
       </div>
 
       {/* Featured Events Section */}
-      <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
+      {/* <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
           <div className="mb-12 text-center">
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Featured Events
@@ -137,25 +144,20 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Events Grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Event Card 1 */}
             <Link
               href="/events/1"
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
               <div className="relative">
-                {/* Event Badge */}
                 <div className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs">
                   <span className="mr-2 h-1.5 w-1.5 rounded-full bg-green-400"></span>
                   <span>Upcoming</span>
                 </div>
 
-                {/* Event Title */}
                 <h3 className="mb-2 text-xl font-bold">Weekend Darts Championship</h3>
 
-                {/* Event Details */}
                 <div className="space-y-2 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,7 +180,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Event Footer */}
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
                   <span className="text-sm font-medium text-white">Free Entry</span>
                   <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
@@ -188,7 +189,6 @@ export default function Home() {
               </div>
             </Link>
 
-            {/* Event Card 2 */}
             <Link
               href="/events/2"
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
@@ -230,7 +230,6 @@ export default function Home() {
               </div>
             </Link>
 
-            {/* Event Card 3 */}
             <Link
               href="/events/3"
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
@@ -273,7 +272,6 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* View All Link */}
           <div className="mt-12 text-center">
             <Link
               href="/events"
@@ -285,6 +283,50 @@ export default function Home() {
               </svg>
             </Link>
           </div>
+        </div>
+      </section> */}
+
+      {/* Sports to watch */}
+      <section className="relative py-24 overflow-hidden">
+        {/* Section background: depth + glow */}
+        <div className="absolute inset-0 bg-[#121218]" />
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16, 185, 129, 0.15) 0%, transparent 50%), radial-gradient(ellipse 60% 80% at 100% 100%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "4rem 4rem",
+          }}
+        />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="mx-auto max-w-7xl">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className=" p-3 rounded-xl shadow-lg border border-white/20">
+                  <Tv className="h-6 w-6" strokeWidth={2} />
+                </div>
+                <div>
+                  <h2 className="font-black text-3xl text-white">Showing soon</h2>
+                  <p className="text-white/75">Top events to watch today</p>
+                </div>
+              </div>
+              <button className="text-white/85 hover:text-white transition-colors font-bold cursor-pointer">View All →</button>
+            </div>
+          </div>
+
+          {/* Quick sport filters + watch grid */}
+          <WhatsShowingGrid
+            items={getWatchItemsFromEvents(city ? toSlug(city) : null)}
+          />
+
         </div>
       </section>
 
@@ -470,10 +512,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Sign Up Section */}
-      <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
+      {/* <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
           <div className="mb-16 text-center">
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Why Join LeagueSports?
@@ -483,9 +523,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Features Grid */}
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Feature 1: Player Profile */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -497,7 +535,6 @@ export default function Home() {
                 Create a personalized profile showcasing your sports interests, achievements, and playing style.
               </p>
             </div>
-            {/* Feature 2: Player Profile */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -510,7 +547,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 3: Digital Scorecards */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -523,7 +559,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 4: Progress Tracking */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -536,7 +571,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 5: Custom Training */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -549,7 +583,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 6: Badges */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -562,7 +595,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 7: Share Results */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -575,7 +607,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 8: Communities */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -588,7 +619,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 9: Integrations */}
             <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -602,7 +632,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CTA Section */}
           <div className="mt-16 text-center">
             <div className="mx-auto max-w-2xl">
               <h3 className="text-3xl font-bold">Ready to Elevate Your Game?</h3>
@@ -630,7 +659,11 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
+}
+
+export default function Home() {
+  return <HomeContent />;
 }
