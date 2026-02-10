@@ -16,8 +16,7 @@ export const RIDGEWAY_RACEBAR: Venue = {
   slug: "ridgeway-racebar",
   name: "Ridgeway Racebar",
   area: "Ridgeway, Johannesburg",
-  image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  image: "https://pbs.twimg.com/media/FUub3zBXsAEpIGZ.jpg",
   description: "Ridgeway Racebar is a racebar in Johannesburg, South Africa.",
   watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP],
 };
@@ -28,10 +27,10 @@ export const BENCHEWARMERS_SPORTS_BAR: Venue = {
   name: "Benchwarmers Sports Bar",
   area: "Rosebank, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://res.cloudinary.com/spothopper/image/fetch/f_auto,q_auto:best,c_fit,h_1200/http://static.spotapps.co/spots/41/6798d757b142ee82e52f6f5d7c34cd/:original",
   description:
     "Benchwarmers Sports Bar is a sports bar in Johannesburg, South Africa.",
-  watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP],
+  watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP, ACTIVITIES.RUGBY],
 };
 
 export const HOGSHED_ILLOVO: Venue = {
@@ -39,8 +38,7 @@ export const HOGSHED_ILLOVO: Venue = {
   slug: "hogshead-illovo",
   name: "Hogshead Illovo",
   area: "Illovo, Johannesburg",
-  image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  image: "https://sspartnervenues.com/wp-content/uploads/2024/11/HHRC-4.jpg",
   description:
     "Hogshead Illovo is a pub & grill in Johannesburg, South Africa.",
   watch: [ACTIVITIES.RUGBY, ACTIVITIES.SOCCER],
@@ -52,7 +50,7 @@ export const THE_WANDERS_CLUB: Venue = {
   name: "The Wanders Club",
   area: "Illovo, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://res.cloudinary.com/playtomic/image/upload/v1706862477/pro/tenants/137ac129-c935-4504-80e9-82a7b7243f2b/1706862476357.jpg",
   description: "The Wanders Club is a club in Johannesburg, South Africa.",
   watch: [ACTIVITIES.CRICKET, ACTIVITIES.RUGBY, ACTIVITIES.SOCCER],
 };
@@ -63,7 +61,7 @@ export const KIMIAD_GOLF_COURSE: Venue = {
   name: "Kimiad Golf Course",
   area: "Moreleta Park, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://golf-pass.brightspotcdn.com/dims4/default/4517432/2147483647/strip/true/crop/1280x720+0+120/resize/590x332!/quality/90/?url=https%3A%2F%2Fgolf-pass-brightspot.s3.amazonaws.com%2Fd0%2Fc6%2Fc59b1682b565676dbac3a39c1dbf%2F18936.jpg",
   description:
     "Kimiad Golf Course is a golf course in Johannesburg, South Africa.",
   watch: [ACTIVITIES.GOLF],
@@ -76,7 +74,7 @@ export const HUDDLE_PARK: Venue = {
   name: "Huddle Park",
   area: "Linksfield, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://golf-pass.brightspotcdn.com/8c/f7/065814c1e715b1d5a9429b9cd469/53120.jpg",
   description: "Huddle Park is a park in Johannesburg, South Africa.",
   play: [ACTIVITIES.GOLF],
 };
@@ -87,7 +85,7 @@ export const PIRATES_SPORTS_CLUB: Venue = {
   name: "Pirates Sports Club",
   area: "Greenside, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROFLjN2x-0VYXnIgZbVHyNfyxSea9xKPnrKQ&s",
   description:
     "Pirates Sports Club is a sports club in Johannesburg, South Africa.",
   watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP],
@@ -124,7 +122,7 @@ export const MOLLY_MALONE_S: Venue = {
   image:
     "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   description: "Molly Malone's is a pub in Johannesburg, South Africa.",
-  watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP],
+  watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP, ACTIVITIES.RUGBY],
 };
 
 export const VENUES = {
