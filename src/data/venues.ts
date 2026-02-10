@@ -108,7 +108,7 @@ export const MODDERFONTEIN_GC: Venue = {
   name: "Modderfontein GC",
   area: "Modderfontein, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9KpzmTWoJuosptHwwkjhCYWxJIaYwjy--QA&s",
   description:
     "Modderfontein GC is a golf course in Johannesburg, South Africa.",
   watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP],
@@ -120,7 +120,7 @@ export const MOLLY_MALONE_S: Venue = {
   name: "Molly Malone's",
   area: "Fourways, Johannesburg",
   image:
-    "https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://www.useyourlocal.com/imgs/pubs/1200x630/190522-123329_186396540-489751019105649-956477783579296535-n.jpg",
   description: "Molly Malone's is a pub in Johannesburg, South Africa.",
   watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP, ACTIVITIES.RUGBY],
 };
