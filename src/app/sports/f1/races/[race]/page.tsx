@@ -1,20 +1,28 @@
 import { CategoryCard } from "@/components/CategoryCard";
 import { FeaturedEventCard } from "@/components/FeaturedEventCard";
+import { EVENT_LIST } from "@/data/events";
+import { notFound } from "next/navigation";
 
 export default async function F1RacePage({ params }: { params: Promise<{ race: string }> }) {
     const { race } = await params;
+
+    const event = EVENT_LIST.find((event) => event.slug === race);
+
+    if (!event) {
+        return notFound();
+    }
 
     return (
         <div className="min-h-screen bg-[#0f0f0f]">
             <section className="py-12 space-y-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <FeaturedEventCard
-                        image="https://images.unsplash.com/photo-1742744652734-d5ec6598b5da?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                        title="FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026"
-                        sport={'F1™'}
-                        date="2026-03-15"
-                        location="Melbourne, Australia"
-                        description="The first race of the 2026 F1 season"
+                        image={event.imageUrl ?? ""}
+                        title={event.name}
+                        sport={event.activity.name}
+                        date={event.date}
+                        location={event.areas?.[0] ?? ""}
+                        description={`Watch the ${event.name} at ${event.areas?.[0] ?? ""}`}
                     />
                 </div>
             </section>
