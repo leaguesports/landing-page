@@ -1,10 +1,10 @@
 import { ACTIVITIES, Activity } from "./activity";
+import { toSlug } from "./suburbs";
 
 export type SportsEvent = {
   id: string;
   imageUrl?: string;
   slug: string;
-  url: string;
   name: string;
   date: string;
   utcTime: string;
@@ -18,7 +18,6 @@ export const IRELAND_VS_ITALY: SportsEvent = {
   imageUrl:
     "https://rugbytravelireland.com/wp-content/uploads/2021/04/inpho_02421809-scaled.jpg",
   slug: "ireland-vs-italy",
-  url: "/sports/rugby/matches/ireland-vs-italy",
   name: "Six Nations: Ireland vs Italy",
   date: "2026-02-14",
   utcTime: "18:40",
@@ -31,7 +30,6 @@ const SCOTLAND_VS_ENGLAND: SportsEvent = {
   imageUrl:
     "https://images.unsplash.com/photo-1574602904329-56e2f95fb15e?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   slug: "scotland-vs-england",
-  url: "/sports/rugby/matches/scotland-vs-england",
   name: "Six Nations: Scotland vs England",
   date: "2026-02-14",
   utcTime: "18:40",
@@ -44,7 +42,6 @@ export const AUSTRALIAN_GRAND_PRIX: SportsEvent = {
   imageUrl:
     "https://www.gtplanet.net/wp-content/uploads/2018/03/1521955695594.jpg",
   slug: "australian-grand-prix",
-  url: "/sports/f1/races/australian-grand-prix",
   name: "Australian Grand Prix",
   date: "2026-03-08",
   utcTime: "05:00",
@@ -57,7 +54,6 @@ export const CHINESE_GRAND_PRIX: SportsEvent = {
   imageUrl:
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTm44DWwVMjBOgMso1tMd-NRNXz8o2q5jZeuA&s",
   slug: "chinese-grand-prix",
-  url: "/sports/f1/races/chinese-grand-prix",
   name: "Chinese Grand Prix",
   date: "2026-03-15",
   utcTime: "06:00",
@@ -70,7 +66,6 @@ export const JAPANESE_GRAND_PRIX: SportsEvent = {
   imageUrl:
     "https://www.blackbookmotorsport.com/wp-content/uploads/2024/02/f1-japanese-grand-prix-suzuka-2029.jpg",
   slug: "japanese-grand-prix",
-  url: "/sports/f1/races/japanese-grand-prix",
   name: "Japanese Grand Prix",
   date: "2026-03-29",
   utcTime: "07:00",
@@ -83,7 +78,6 @@ export const BAHRAIN_GRAND_PRIX: SportsEvent = {
   imageUrl:
     "https://media.formula1.com/image/upload/t_16by9North/c_lfill,w_3392/q_auto/v1740000000/trackside-images/2024/F1_Grand_Prix_of_Bahrain/2053162835.webp",
   slug: "bahrain-grand-prix",
-  url: "/sports/f1/races/bahrain-grand-prix",
   name: "Bahrain Grand Prix",
   date: "2026-04-12",
   utcTime: "08:00",
@@ -96,7 +90,6 @@ export const THAILAND_MOTO_GP: SportsEvent = {
   imageUrl:
     "https://www.blackbookmotorsport.com/wp-content/uploads/2024/08/motogp-thailand-buriram-chang-international-circuit-2025.jpg",
   slug: "thailand-motogp",
-  url: "/sports/motogp/races/thailand-motogp",
   name: "Thailand MotoGP",
   date: "2026-04-12",
   utcTime: "08:00",
@@ -109,7 +102,6 @@ export const BRAZIL_MOTO_GP: SportsEvent = {
   imageUrl:
     "https://resources.motogp.pulselive.com/photo-resources/2023/03/29/dacb17bf-93ee-4ba0-afa8-5e61283382d5/TmOS7xyv.jpg?width=1440&height=810",
   slug: "brazil-motogp",
-  url: "/sports/motogp/races/brazil-motogp",
   name: "Brazil MotoGP",
   date: "2026-04-12",
   utcTime: "08:00",
@@ -122,7 +114,6 @@ export const KAIZER_CHIEFS_VS_STELLENBOSCH: SportsEvent = {
   imageUrl:
     "https://image-prod.iol.co.za/16x9/800?source=https://iol-prod.appspot.com/image/63ecb7426d79240cccf389e843695ac8da204a8d/5052&operation=CROP&offset=0x0&resize=5052x2842",
   slug: "kaizer-chiefs-vs-stellenbosch",
-  url: "/sports/soccer/matches/kaizer-chiefs-vs-stellenbosch",
   name: "Betway Premiership: Kaizer Chiefs vs Stellenbosch",
   date: "2026-02-14",
   utcTime: "18:45",
@@ -135,7 +126,6 @@ export const ORLANDO_PIRATE_VS_ORLANDO_MARUMO_GALLANTS: SportsEvent = {
   imageUrl:
     "https://www.orlandopiratesfc.com/storage/2025/08/B25HLSS0495-e1755030186330.jpg",
   slug: "orlando-pirate-vs-orlando-marumo-gallants",
-  url: "/sports/soccer/matches/orlando-pirate-vs-orlando-marumo-gallants",
   name: "Betway Premiership: Orlando Pirates vs Marumo Gallants",
   date: "2026-02-15",
   utcTime: "15:30",
@@ -180,8 +170,13 @@ export function getWatchItemsFromEvents(citySlug: string | null): WatchItem[] {
     : EVENT_LIST.filter(
         (e) => !e.areas || e.areas.length === 0 || e.areas.includes(citySlug),
       );
+
+  const baseUrl = citySlug
+    ? `/${toSlug(citySlug)}/watch/sports`
+    : "/watch/sports";
+
   return filtered.map((e) => ({
-    href: e.url,
+    href: `${baseUrl}/${e.activity.slug}/${e.slug}`,
     sport: e.activity.name,
     image: e.imageUrl ?? DEFAULT_EVENT_IMAGE,
     title: e.name,

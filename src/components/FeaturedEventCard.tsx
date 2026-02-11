@@ -36,10 +36,10 @@ export function FeaturedEventCard({ title, sport, date, location, description, i
                         <span>{location}</span>
                     </div>
                 </div>
-                <button className="bg-white text-gray-900 px-8 py-3 rounded-full flex items-center gap-2 w-fit transition-transform group-hover:scale-105">
+                {/* <button className="bg-white text-gray-900 px-8 py-3 rounded-full flex items-center gap-2 w-fit transition-transform group-hover:scale-105">
                     See Details
                     <ArrowRight className="h-5 w-5 shrink-0" strokeWidth={2} />
-                </button>
+                </button> */}
             </div>
         </div>
     );

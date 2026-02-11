@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomeLink from "@/components/HomeLink";
 import SuburbSelector from "@/components/SuburbSelector";
 
 export default function Navigation() {
@@ -6,13 +7,8 @@ export default function Navigation() {
     <nav className="sticky top-0 z-50 w-full border-b border-gray-800/50 bg-[#0f0f0f]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          {/* Logo */}
-          <Link href="/" className="flex shrink-0 items-center space-x-2">
-            <div className="text-xl font-bold tracking-tight text-white">
-              <span>League</span>
-              <span className="text-green-400">Sports</span>
-            </div>
-          </Link>
+          {/* Logo — home goes to /[area] when an area is selected */}
+          <HomeLink />
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-8">
