@@ -125,8 +125,8 @@ export const MODDERFONTEIN_GC: Venue = {
 };
 
 export const MOLLY_MALONE_S: Venue = {
-  id: "molly-malone-s",
-  slug: "molly-malone-s",
+  id: "molly-malones",
+  slug: "molly-malones",
   name: "Molly Malone's",
   area: "Fourways, Johannesburg",
   suburb: "fourways",
@@ -134,6 +134,53 @@ export const MOLLY_MALONE_S: Venue = {
     "https://www.useyourlocal.com/imgs/pubs/1200x630/190522-123329_186396540-489751019105649-956477783579296535-n.jpg",
   description: "Molly Malone's is a pub in Johannesburg, South Africa.",
   watch: [ACTIVITIES.FORMULA_1, ACTIVITIES.MOTOGP, ACTIVITIES.RUGBY],
+};
+
+// Moreleta Park Sports Hub – watch venues
+export const HENNIES: Venue = {
+  id: "hennies",
+  slug: "hennies",
+  name: "Hennie's",
+  area: "Moreleta Park, Johannesburg",
+  suburb: "moreleta-park",
+  image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80",
+  description: "Hennie's is a sports bar in Moreleta Park, South Africa.",
+  watch: [ACTIVITIES.RUGBY, ACTIVITIES.SOCCER],
+};
+
+export const ROCK_88: Venue = {
+  id: "rock-88",
+  slug: "rock-88",
+  name: "Rock@88",
+  area: "Moreleta Park, Johannesburg",
+  suburb: "moreleta-park",
+  image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&q=80",
+  description: "Rock@88 is a sports bar in Moreleta Park, South Africa.",
+  watch: [ACTIVITIES.RUGBY, ACTIVITIES.SOCCER],
+};
+
+export const RAFTERS_PUB: Venue = {
+  id: "rafters-pub",
+  slug: "rafters-pub",
+  name: "Rafters Pub",
+  area: "Moreleta Park, Johannesburg",
+  suburb: "moreleta-park",
+  image: "https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=800&q=80",
+  description: "Rafters Pub is a pub in Moreleta Park, South Africa.",
+  watch: [ACTIVITIES.RUGBY, ACTIVITIES.SOCCER],
+};
+
+// Moreleta Park Sports Hub – play venue
+export const WINGATE_PARK_COUNTRY_CLUB: Venue = {
+  id: "wingate-park-country-club",
+  slug: "wingate-park-country-club",
+  name: "Wingate Park Country Club",
+  area: "Moreleta Park, Johannesburg",
+  suburb: "moreleta-park",
+  image: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80",
+  description:
+    "Wingate Park Country Club is a sports club in Moreleta Park, South Africa.",
+  play: [ACTIVITIES.GOLF],
 };
 
 export const VENUES = {
@@ -147,6 +194,10 @@ export const VENUES = {
   OLD_PARKS_CLUB,
   MODDERFONTEIN_GC,
   MOLLY_MALONE_S,
+  HENNIES,
+  ROCK_88,
+  RAFTERS_PUB,
+  WINGATE_PARK_COUNTRY_CLUB,
 };
 
 export const VENUE_LIST = Object.values(VENUES);

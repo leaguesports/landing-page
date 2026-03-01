@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  /* Permanent Marker from next/font (--font-permanent-marker set on <html>) */
+  --font-marker: var(--font-permanent-marker);
+}
+
 :root {
   --primary: #ffffff;
   --primary-hover: #f3f4f6;
@@ -10,6 +15,13 @@
   --foreground: #ffffff;
   --foreground-muted: #9ca3af;
   --border: rgba(255, 255, 255, 0.1);
+
+  /* ── Sport colour DNA ──────────────────────────────────────────────────── */
+  --color-f1:     #FF1801;
+  --color-rugby:  #2d6a2d;
+  --color-soccer: #1a6fb5;
+  --color-cricket:#c8a84b;
+  --color-default:#6b7280;
 }
 
 * {
@@ -215,4 +227,38 @@ button {
 /* Radial gradient utility */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* ── Sport image treatments ────────────────────────────────────────────── */
+
+/* F1 — speed blur on left/right edges via mask */
+.img-treatment-f1 {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+}
+
+/* Rugby — high contrast + subtle grain */
+.img-treatment-rugby {
+  filter: contrast(1.25) saturate(0.85);
+}
+.img-treatment-rugby::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.35;
 }

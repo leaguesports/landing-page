@@ -1,515 +1,666 @@
-import { WhatsShowingGrid } from "@/components/WhatsShowingGrid";
-import { getWatchItemsFromEvents } from "@/data/events";
-import { toSlug } from "@/data/suburbs";
-import { Tv } from "lucide-react";
+"use client";
+
+import { VENUE_LIST } from "@/data/venues";
+import {
+  ArrowRight,
+  Calendar,
+  ChevronRight,
+  Clock,
+  Flag,
+  MapPin,
+  Trophy,
+  Tv,
+  Users,
+  Zap,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import React from "react";
 
-type HomeContentProps = { city?: string | null };
+// ─── Upcoming events ───────────────────────────────────────────────────────
+const UPCOMING_EVENTS = [
+  {
+    id: "evt-1",
+    title: "Monaco Grand Prix",
+    series: "Formula 1",
+    sport: "Formula 1",
+    date: "25 May 2025",
+    time: "15:00",
+    href: "/events",
+    round: "R08",
+    image: "https://images.sportschau.de/image/2d5995ba-55ad-4b31-8df7-b20be7fb5a17/AAABmIT5oOs/AAABmyZE3MM/1x1-1400/norris-piastri-108.jpg",
+  },
+  {
+    id: "evt-2",
+    title: "Lions vs Bulls",
+    series: "Super Rugby",
+    sport: "Rugby",
+    date: "1 Jun 2025",
+    time: "17:00",
+    href: "/events",
+    image: "https://images.unsplash.com/photo-1574602904329-56e2f95fb15e?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    id: "evt-3",
+    title: "Manchester United vs Liverpool",
+    series: "Premier League",
+    sport: "Soccer",
+    date: "8 Jun 2025",
+    time: "19:30",
+    href: "/events",
+    image: "https://images.unsplash.com/flagged/photo-1550413231-202a9d53a331?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    id: "evt-4",
+    title: "Canadian Grand Prix",
+    series: "MotoGP",
+    sport: "Formula 1",
+    date: "15 Jun 2025",
+    time: "20:00",
+    href: "/events",
+    round: "R09",
+    image: "https://img.redbull.com/images/c_crop,w_3840,h_1920,x_0,y_194/c_auto,w_1200,h_630/f_auto,q_auto/redbullcom/2025/6/1/ukxsn3eamlsz9ji2okdt/extreme-f1-tracks-zandvoort",
+  },
+];
 
-export function HomeContent({ city }: HomeContentProps) {
+// ─── Skewed section heading badge ─────────────────────────────────────────
+function SectionBadge({
+  label,
+  color,
+}: {
+  label: string;
+  color: "blue" | "green" | "red";
+}) {
+  const bg = { blue: "bg-blue-600", green: "bg-green-600", red: "bg-red-600" }[color];
   return (
-    <>
-      <div className="relative flex min-h-screen flex-col overflow-hidden">
-        {/* Background Gradient Effects */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
-          <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400/10 blur-3xl" />
-        </div>
+    <div className={`${bg} inline-block px-6 py-1.5 transform -skew-x-6 mb-3`}>
+      <h2 className="text-white font-black italic uppercase text-2xl transform skew-x-6">
+        {label}
+      </h2>
+    </div>
+  );
+}
 
-        {/* Grid Pattern Overlay */}
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+// ─── Watch venue card ──────────────────────────────────────────────────────
+function WatchVenueCard({ venue }: { venue: (typeof VENUE_LIST)[number] }) {
+  return (
+    <Link
+      href={`/venues/${venue.slug}`}
+      className="group relative cursor-pointer transition-all duration-300 block"
+    >
+      {/* Offset shadow */}
+      <div className="absolute inset-0 transform -skew-x-3 translate-x-2 translate-y-2 transition-transform duration-300 group-hover:translate-x-3 group-hover:translate-y-3 bg-blue-600/40" />
 
-        {/* Hero Section */}
-        <section className="flex flex-1 items-center justify-center px-4 py-24 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl text-center">
-            {/* Badge */}
-            <div className="mb-8 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm backdrop-blur-sm">
-              <span className="mr-2 h-2 w-2 rounded-full bg-green-400"></span>
-              <span className="text-gray-300">Competitive Sports</span>
-            </div>
+      <div className="relative bg-zinc-950 transform -skew-x-3 overflow-hidden border border-zinc-800 group-hover:border-blue-600/50 transition-colors duration-300">
+        {/* Top accent */}
+        <div className="h-1 w-full bg-blue-600 group-hover:bg-blue-400 transition-colors duration-300" />
 
-            {/* Main Heading */}
-            <h1 className="text-6xl font-bold tracking-tight sm:text-7xl lg:text-8xl">
-              <span className="block">Find Your</span>
-              <span className="block bg-linear-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
-                Next Game
-              </span>
-            </h1>
-
-            {/* Subheading */}
-            <p className="mx-auto mt-8 max-w-2xl text-xl leading-8 text-gray-400 sm:text-2xl">
-              {city
-                ? `Find venues, join events, and connect with players in ${city}`
-                : "Find venues, join events, and connect with players"}
-            </p>
-
-            {/* Stats */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-400">
-              <div>
-                <div className="text-2xl font-bold text-white">500+</div>
-                <div>Active Venues</div>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div>
-                <div className="text-2xl font-bold text-white">1,200+</div>
-                <div>Upcoming Events</div>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div>
-                <div className="text-2xl font-bold text-white">10K+</div>
-                <div>Active Players</div>
-              </div>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-              <Link
-                href="/watch"
-                className="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
-              >
-                <span className="relative z-10">Watch Games</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
-              <Link
-                href="/play"
-                className="group rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-              >
-                Play Now
-                <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">
-                  →
-                </span>
-              </Link>
-            </div>
-
-            {/* Search Bar Preview */}
-            {/* <div className="mt-16 mx-auto max-w-2xl">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <div className="flex items-center gap-3 text-left">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search venues, events, or locations..."
-                    className="flex-1 bg-transparent text-white placeholder-gray-500 focus:outline-none"
-                    readOnly
-                  />
-                  <button className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20">
-                    Search
-                  </button>
-                </div>
-              </div>
-            </div> */}
+        <div className="transform skew-x-3 p-5">
+          {/* Badge */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 flex items-center gap-1.5">
+              <Tv className="w-3 h-3" />
+              Watch
+            </span>
           </div>
-        </section>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <svg
-            className="h-6 w-6 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
-          </svg>
+          <h3 className="font-black italic uppercase leading-tight text-xl text-white mb-2">
+            {venue.name}
+          </h3>
+
+          <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3">
+            <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
+            <span>{venue.area}</span>
+          </div>
+
+          {venue.watch && venue.watch.length > 0 && (
+            <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-4">
+              {venue.watch.map((a) => a.name).join(" · ")}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-zinc-800">
+            <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest group-hover:text-blue-300 transition-colors">
+              View Venue →
+            </span>
+          </div>
         </div>
+
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-blue-500 group-hover:w-full transition-all duration-300" />
+      </div>
+    </Link>
+  );
+}
+
+// ─── Play venue card ───────────────────────────────────────────────────────
+function PlayVenueCard({ venue }: { venue: (typeof VENUE_LIST)[number] }) {
+  return (
+    <Link
+      href={`/venues/${venue.slug}`}
+      className="group relative cursor-pointer transition-all duration-300 block"
+    >
+      <div className="absolute inset-0 transform -skew-x-3 translate-x-2 translate-y-2 transition-transform duration-300 group-hover:translate-x-3 group-hover:translate-y-3 bg-green-600/40" />
+
+      <div className="relative bg-zinc-950 transform -skew-x-3 overflow-hidden border border-zinc-800 group-hover:border-green-600/50 transition-colors duration-300">
+        <div className="h-1 w-full bg-green-600 group-hover:bg-green-400 transition-colors duration-300" />
+
+        <div className="transform skew-x-3 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-500 flex items-center gap-1.5">
+              <Trophy className="w-3 h-3" />
+              Play
+            </span>
+          </div>
+
+          <h3 className="font-black italic uppercase leading-tight text-xl text-white mb-2">
+            {venue.name}
+          </h3>
+
+          <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3">
+            <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
+            <span>{venue.area}</span>
+          </div>
+
+          {venue.play && venue.play.length > 0 && (
+            <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-4">
+              {venue.play.map((a) => a.name).join(" · ")}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-zinc-800">
+            <span className="text-green-400 text-[10px] font-black uppercase tracking-widest group-hover:text-green-300 transition-colors">
+              Book Session →
+            </span>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-green-500 group-hover:w-full transition-all duration-300" />
+      </div>
+    </Link>
+  );
+}
+
+// ─── Sport DNA config ──────────────────────────────────────────────────────
+const SPORT_DNA: Record<
+  string,
+  {
+    cssVar: string;
+    hex: string;
+    shadowBg: string;
+    borderHover: string;
+    topBorder: string;
+    tagColor: string;
+    btnColor: string;
+    btnHover: string;
+    bottomLine: string;
+    imgClass: string;
+    watermark: React.ReactNode;
+    dnaBadge: (event: (typeof UPCOMING_EVENTS)[number]) => React.ReactNode;
+  }
+> = {
+  "Formula 1": {
+    cssVar: "var(--color-f1)",
+    hex: "#FF1801",
+    shadowBg: "bg-[#FF1801]/30",
+    borderHover: "group-hover:border-[#FF1801]/50",
+    topBorder: "bg-[#FF1801]",
+    tagColor: "text-[#FF1801]",
+    btnColor: "text-[#FF1801]",
+    btnHover: "group-hover:text-red-300",
+    bottomLine: "bg-[#FF1801]",
+    imgClass: "img-treatment-f1",
+    watermark: (
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {/* Steering wheel */}
+        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="7" />
+        <circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" strokeWidth="6" />
+        {/* Spokes */}
+        <line x1="50" y1="40" x2="50" y2="18" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+        <line x1="50" y1="60" x2="37" y2="79" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+        <line x1="50" y1="60" x2="63" y2="79" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+        {/* Flat bottom of wheel */}
+        <path d="M 20 68 Q 50 80 80 68" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
+      </svg>
+    ),
+    dnaBadge: (event) =>
+      event.round ? (
+        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#FF1801]">
+          {event.round}
+        </span>
+      ) : null,
+  },
+
+  Rugby: {
+    cssVar: "var(--color-rugby)",
+    hex: "#2d6a2d",
+    shadowBg: "bg-[#2d6a2d]/30",
+    borderHover: "group-hover:border-[#2d6a2d]/60",
+    topBorder: "bg-[#2d6a2d]",
+    tagColor: "text-[#4ade80]",
+    btnColor: "text-[#4ade80]",
+    btnHover: "group-hover:text-green-300",
+    bottomLine: "bg-[#2d6a2d]",
+    imgClass: "img-treatment-rugby",
+    watermark: (
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {/* Rugby ball */}
+        <ellipse cx="50" cy="50" rx="36" ry="22" fill="none" stroke="currentColor" strokeWidth="5" />
+        {/* Seam */}
+        <path d="M 14 50 Q 50 30 86 50" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="4 3" />
+        <path d="M 14 50 Q 50 70 86 50" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="4 3" />
+        {/* Lace */}
+        <line x1="50" y1="32" x2="50" y2="68" stroke="currentColor" strokeWidth="3" />
+        <line x1="44" y1="40" x2="56" y2="40" stroke="currentColor" strokeWidth="2.5" />
+        <line x1="44" y1="50" x2="56" y2="50" stroke="currentColor" strokeWidth="2.5" />
+        <line x1="44" y1="60" x2="56" y2="60" stroke="currentColor" strokeWidth="2.5" />
+      </svg>
+    ),
+    dnaBadge: (event) => (
+      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#4ade80]">
+        KO {event.time}
+      </span>
+    ),
+  },
+
+  Soccer: {
+    cssVar: "var(--color-soccer)",
+    hex: "#1a6fb5",
+    shadowBg: "bg-[#1a6fb5]/30",
+    borderHover: "group-hover:border-[#1a6fb5]/50",
+    topBorder: "bg-[#1a6fb5]",
+    tagColor: "text-[#60a5fa]",
+    btnColor: "text-[#60a5fa]",
+    btnHover: "group-hover:text-blue-300",
+    bottomLine: "bg-[#1a6fb5]",
+    imgClass: "",
+    watermark: (
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {/* Soccer ball */}
+        <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" strokeWidth="5" />
+        {/* Pentagon patches */}
+        <polygon points="50,20 58,30 55,42 45,42 42,30" fill="none" stroke="currentColor" strokeWidth="3" />
+        <polygon points="50,80 58,70 55,58 45,58 42,70" fill="none" stroke="currentColor" strokeWidth="3" />
+        <polygon points="22,38 32,32 42,40 38,52 26,52" fill="none" stroke="currentColor" strokeWidth="3" />
+        <polygon points="78,38 68,32 58,40 62,52 74,52" fill="none" stroke="currentColor" strokeWidth="3" />
+      </svg>
+    ),
+    dnaBadge: (event) => (
+      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#60a5fa]">
+        KO {event.time}
+      </span>
+    ),
+  },
+};
+
+const DEFAULT_DNA = {
+  cssVar: "var(--color-default)",
+  hex: "#6b7280",
+  shadowBg: "bg-zinc-600/30",
+  borderHover: "group-hover:border-zinc-600/50",
+  topBorder: "bg-zinc-600",
+  tagColor: "text-zinc-400",
+  btnColor: "text-zinc-400",
+  btnHover: "group-hover:text-zinc-300",
+  bottomLine: "bg-zinc-600",
+  imgClass: "",
+  watermark: null,
+  dnaBadge: () => null,
+};
+
+// ─── Event card ────────────────────────────────────────────────────────────
+function EventCard({ event }: { event: (typeof UPCOMING_EVENTS)[number] }) {
+  const dna = SPORT_DNA[event.sport] ?? DEFAULT_DNA;
+
+  return (
+    <Link
+      href={event.href}
+      className="group block bg-zinc-900 overflow-hidden hover:bg-zinc-800/80 transition-colors duration-200 rounded-sm border-b"
+      style={{ borderColor: dna.hex }}
+    >
+      {/* Image with title overlay */}
+      <div className="relative aspect-video overflow-hidden bg-zinc-800">
+        {event.image ? (
+          <Image
+            src={event.image}
+            alt={event.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          />
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: `${dna.hex}18` }}
+          >
+            <div style={{ opacity: 0.15, color: dna.hex, width: "5rem", height: "5rem" }}>
+              {dna.watermark}
+            </div>
+          </div>
+        )}
+
+        {/* Scrim */}
+        <div className="absolute inset-0 bg-black/30" />
       </div>
 
-      {/* Sports to watch */}
-      <section className="relative py-24 overflow-hidden">
-        {/* Section background: depth + glow */}
-        <div className="absolute inset-0 bg-[#121218]" />
+      {/* Meta panel */}
+      <div className="px-4 py-4 flex flex-col gap-2">
+        <div>
+
+          <p className="text-xs tracking-wide uppercase" style={{ color: dna.hex }}>
+            {event.series}
+          </p>
+          <h3
+            className="text-md h-14 leading-snug text-white drop-shadow-lg font-black uppercase"
+          >
+            {event.title}
+          </h3>
+        </div>
+        <div className=" text-zinc-500 text-xs ">
+          <span className="flex items-center gap-1.5 mb-1">
+            <Calendar className="w-3 h-3 shrink-0" />
+            {event.date} @ {event.time}
+          </span>
+          <span className="flex items-center gap-1.5 mb-1">
+            <Clock className="w-3 h-3 shrink-0" />
+            {event.time}
+          </span>
+          {/* {dna.dnaBadge(event)} */}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ─── Main page ─────────────────────────────────────────────────────────────
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-[#0f0f0f] text-white">
+
+      {/* ─── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden min-h-[88vh] flex items-end">
+
+        {/* Background */}
+        <div className="absolute inset-0 bg-linear-to-br from-green-950/60 via-[#0f0f0f] to-[#0f0f0f]" />
+
+        {/* Speed lines */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-px bg-linear-to-r from-transparent via-green-600/30 to-transparent"
+              style={{
+                top: `${10 + i * 12}%`,
+                left: "-10%",
+                right: "-10%",
+                transform: `skewY(-${1 + i * 0.5}deg)`,
+                opacity: 0.4 - i * 0.04,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Grid */}
         <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16, 185, 129, 0.15) 0%, transparent 50%), radial-gradient(ellipse 60% 80% at 100% 100%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-60"
+          className="absolute inset-0 opacity-30"
           style={{
             backgroundImage:
               "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)",
             backgroundSize: "4rem 4rem",
           }}
         />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="mx-auto max-w-7xl">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className=" p-3 rounded-xl shadow-lg border border-white/20">
-                  <Tv className="h-6 w-6" strokeWidth={2} />
+
+        {/* Watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+          <span
+            className="text-[20vw] font-black italic uppercase text-white/2 leading-none tracking-tighter"
+            style={{ fontStretch: "condensed" }}
+          >
+            League
+          </span>
+        </div>
+
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-green-700 via-green-500 to-green-700" />
+
+        {/* Glow orb */}
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-green-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Content */}
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20 pt-16 w-full">
+
+          {/* Platform headline */}
+          <h1 className="text-6xl sm:text-8xl lg:text-[10rem] font-black italic uppercase leading-none tracking-tighter mb-4">
+            <span className="text-white text-2xl sm:text-4xl lg:text-[6rem] tracking-tight">The Home of</span>
+            <br />
+            <span className="text-green-400">Sport</span>
+            <span className="text-white">.</span>
+          </h1>
+
+          <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-sm mb-10 max-w-2xl">
+            The all in one sports platform. <br /> Follow the season, find local sports venues, and book your next game all in one place.
+          </p>
+
+          {/* Sport of the Week strip */}
+          {/* <div className="flex items-center gap-4 mb-10">
+            <div className="flex items-center gap-3 border border-zinc-800 bg-zinc-950 px-4 py-3 transform -skew-x-3">
+              <span className="text-xl transform skew-x-3">{s.nextEvent.flag}</span>
+              <div className="transform skew-x-3">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className={`${s.accentBg} px-2 py-0.5 transform -skew-x-6`}>
+                    <span className="transform skew-x-6 block text-[9px] font-black uppercase tracking-[0.2em] text-white">
+                      Sport of the Week
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                    <span className={`${s.accentText} text-[9px] font-black uppercase tracking-widest`}>
+                      {s.sport}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-black text-3xl text-white">Showing soon</h2>
-                  <p className="text-white/75">Top events to watch today</p>
-                </div>
+                <p className="font-black italic uppercase text-white text-sm leading-tight">
+                  {s.nextEvent.name}
+                </p>
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
+                  {s.nextEvent.round} · {s.nextEvent.date} · {s.nextEvent.time}
+                </p>
               </div>
-              <button className="text-white/85 hover:text-white transition-colors font-bold cursor-pointer">View All →</button>
+            </div>
+          </div> */}
+
+          {/* Dual CTAs */}
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/discover"
+              className="group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-green-600 text-white hover:bg-green-500"
+            >
+              <span className="transform skew-x-6 flex items-center gap-3">
+                Find your sport
+                <ArrowRight className="w-4 h-4" strokeWidth={3} />
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
+      </section>
+
+      {/* ─── What's Happening Feed ────────────────────────────────────────── */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+
+          {/* ── Upcoming Sports ── */}
+          <div className="mb-16">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <SectionBadge label="Upcoming Sports" color="red" />
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs ml-4">
+                  Top sports happening around the world
+                </p>
+              </div>
+              <Link
+                href="/events"
+                className="text-red-400 text-[10px] font-black uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
+              {UPCOMING_EVENTS.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
             </div>
           </div>
 
-          {/* Quick sport filters + watch grid */}
-          <WhatsShowingGrid
-            items={getWatchItemsFromEvents(city ? toSlug(city) : null)}
-          />
+          {/* ── Watch Venues ── */}
+          <div className="mb-16">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <SectionBadge label="Watch Venues" color="blue" />
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs ml-4">
+                  Bars &amp; fan zones screening live sport
+                </p>
+              </div>
+              <Link
+                href="/venues"
+                className="text-blue-400 text-[10px] font-black uppercase tracking-widest hover:text-blue-300 transition-colors flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
+              {VENUE_LIST.map((v) => (
+                <WatchVenueCard key={v.id} venue={v} />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Play Venues ── */}
+          <div>
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <SectionBadge label="Play Venues" color="green" />
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs ml-4">
+                  Courts, clubs &amp; facilities to book
+                </p>
+              </div>
+              <Link
+                href="/play"
+                className="text-green-400 text-[10px] font-black uppercase tracking-widest hover:text-green-300 transition-colors flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
+              {VENUE_LIST.map((v) => (
+                <PlayVenueCard key={v.id} venue={v} />
+              ))}
+            </div>
+          </div>
 
         </div>
       </section>
 
-      {/* Featured Venues Section */}
-      <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="mb-12 text-center">
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Featured Venues
-            </h2>
-            <p className="mt-4 text-lg text-gray-400">
-              Discover the best places to play and compete
-            </p>
-          </div>
+      {/* ─── Stats banner ─────────────────────────────────────────────────── */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-zinc-950 pointer-events-none" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-px bg-linear-to-r from-transparent via-white/5 to-transparent"
+              style={{ top: `${20 + i * 15}%`, left: "-10%", right: "-10%", transform: "skewY(-2deg)" }}
+            />
+          ))}
+        </div>
 
-          {/* Venues Grid */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Venue Card 1 */}
-            <Link
-              href="/venues/1"
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                {/* Venue Badge */}
-                <div className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs">
-                  <span className="mr-2 h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                  <span>Open Now</span>
-                </div>
-
-                {/* Venue Title */}
-                <h3 className="mb-2 text-xl font-bold">The Sports Bar</h3>
-
-                {/* Venue Details */}
-                <div className="space-y-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Cape Town, Western Cape</span>
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { icon: <Tv className="w-6 h-6" />, value: "500+", label: "Watch Venues", color: "text-blue-500", shadow: "bg-blue-600" },
+              { icon: <Trophy className="w-6 h-6" />, value: "200+", label: "Play Venues", color: "text-green-500", shadow: "bg-green-600" },
+              { icon: <Calendar className="w-6 h-6" />, value: "1,200+", label: "Events / Year", color: "text-red-500", shadow: "bg-red-600" },
+              { icon: <Users className="w-6 h-6" />, value: "10K+", label: "Active Players", color: "text-zinc-400", shadow: "bg-zinc-600" },
+            ].map((stat) => (
+              <div key={stat.label} className="group relative">
+                <div className={`absolute inset-0 ${stat.shadow} transform -skew-x-6 translate-x-1 translate-y-1 transition-transform group-hover:translate-x-2 group-hover:translate-y-2`} />
+                <div className="relative bg-zinc-950 border border-zinc-800 p-6 transform -skew-x-6 hover:border-zinc-700 transition-all">
+                  <div className="transform skew-x-6 flex flex-col items-center text-center gap-3">
+                    <div className={stat.color}>{stat.icon}</div>
+                    <div>
+                      <p className="text-white text-2xl font-black italic leading-none">{stat.value}</p>
+                      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mt-1">{stat.label}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Darts, Pool, Snooker</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Mon-Sun: 10:00 - 22:00</span>
-                  </div>
-                </div>
-
-                {/* Venue Footer */}
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                  <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-medium text-white">4.8</span>
-                    <span className="text-xs text-gray-400">(124)</span>
-                  </div>
-                  <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
-                    View Details →
-                  </span>
                 </div>
               </div>
-            </Link>
-
-            {/* Venue Card 2 */}
-            <Link
-              href="/venues/2"
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs">
-                  <span className="mr-2 h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                  <span>Open Now</span>
-                </div>
-                <h3 className="mb-2 text-xl font-bold">Padel Club</h3>
-                <div className="space-y-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Johannesburg, Gauteng</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Padel, Tennis</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Mon-Sun: 07:00 - 21:00</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                  <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-medium text-white">4.9</span>
-                    <span className="text-xs text-gray-400">(89)</span>
-                  </div>
-                  <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
-                    View Details →
-                  </span>
-                </div>
-              </div>
-            </Link>
-
-            {/* Venue Card 3 */}
-            <Link
-              href="/venues/3"
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs">
-                  <span className="mr-2 h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                  <span>Open Now</span>
-                </div>
-                <h3 className="mb-2 text-xl font-bold">Racing Hub</h3>
-                <div className="space-y-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Durban, KwaZulu-Natal</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Sim Racing, Esports</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Mon-Sun: 12:00 - 00:00</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                  <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-medium text-white">4.7</span>
-                    <span className="text-xs text-gray-400">(203)</span>
-                  </div>
-                  <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
-                    View Details →
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          {/* View All Link */}
-          <div className="mt-12 text-center">
-            <Link
-              href="/venues"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-            >
-              View All Venues
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* <section className="relative border-t border-white/10 bg-[#0f0f0f] py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Why Join LeagueSports?
-            </h2>
-            <p className="mt-4 text-lg text-gray-400">
-              Everything you need to elevate your game, all in one place
-            </p>
-          </div>
+      {/* ─── CTA banner ───────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-zinc-950">
+        <div className="absolute inset-0 bg-linear-to-r from-green-950/30 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-green-600 via-green-400 to-transparent" />
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+        <div className="mx-auto max-w-7xl relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <Flag className="w-6 h-6 text-green-500" />
+                <span className="text-green-400 text-xs font-black uppercase tracking-[0.3em]">
+                  LeagueSports
+                </span>
               </div>
-              <h3 className="mb-2 text-lg font-bold">Your Player Profile</h3>
-              <p className="text-sm text-gray-400">
-                Create a personalized profile showcasing your sports interests, achievements, and playing style.
-              </p>
-            </div>
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Stay Updated</h3>
-              <p className="text-sm text-gray-400">
-                Get notified about events happening near you.
+              <h2 className="text-4xl sm:text-5xl font-black italic uppercase leading-none tracking-tighter text-white mb-3">
+                Find Your <span className="text-green-400">Game</span>
+              </h2>
+              <p className="text-zinc-500 font-bold text-sm max-w-md">
+                Discover venues, join events, and connect with players in your area.
               </p>
             </div>
 
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Digital Scorecards</h3>
-              <p className="text-sm text-gray-400">
-                Track every game with our digital scorecards. Never lose a score again.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Track Your Progress</h3>
-              <p className="text-sm text-gray-400">
-                Watch your skills improve over time with detailed analytics and performance insights.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Custom Training Drills</h3>
-              <p className="text-sm text-gray-400">
-                Design and follow personalized training routines tailored to your goals.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Earn Badges</h3>
-              <p className="text-sm text-gray-400">
-                Unlock achievements and badges as you reach milestones and improve your game.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Share Your Wins</h3>
-              <p className="text-sm text-gray-400">
-                Celebrate your victories and share results with friends and the community.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Join Communities</h3>
-              <p className="text-sm text-gray-400">
-                Connect with like-minded players, join local clubs, and build your network.
-              </p>
-            </div>
-
-            <div className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-lg font-bold">Smart Integrations</h3>
-              <p className="text-sm text-gray-400">
-                Seamlessly connect with Trackman, Autodarts, and other systems for automatic data sync.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-16 text-center">
-            <div className="mx-auto max-w-2xl">
-              <h3 className="text-3xl font-bold">Ready to Elevate Your Game?</h3>
-              <p className="mt-4 text-lg text-gray-400">
-                Join thousands of players already tracking their progress, earning badges, and connecting with communities.
-              </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-                <Link
-                  href="/signup"
-                  className="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
-                >
-                  <span className="relative z-10">Become a League Sports Athlete</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
-                </Link>
-                <Link
-                  href="/athletes"
-                  className="group rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
-                >
-                  Learn More
-                  <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">
-                    →
-                  </span>
-                </Link>
-              </div>
+            <div className="flex flex-col gap-3 shrink-0">
+              <Link
+                href="/venues"
+                className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm bg-green-600 text-white hover:bg-green-500 transition-all transform -skew-x-6"
+              >
+                <span className="transform skew-x-6 flex items-center gap-3">
+                  <Zap className="w-4 h-4" />
+                  Explore Venues
+                </span>
+              </Link>
+              <Link
+                href="/events"
+                className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm border border-zinc-700 text-zinc-400 hover:border-green-600 hover:text-green-400 transition-all transform -skew-x-6"
+              >
+                <span className="transform skew-x-6 flex items-center gap-3">
+                  <Calendar className="w-4 h-4" />
+                  Browse Events
+                </span>
+              </Link>
             </div>
           </div>
         </div>
-      </section> */}
-    </>
+      </section>
+
+    </div>
   );
-}
-
-export default function Home() {
-  return <HomeContent />;
 }

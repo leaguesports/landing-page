@@ -16,6 +16,10 @@ export const SUBURB_GROUPS: SuburbGroup[] = [
     label: "East",
     suburbs: ["Edenvale", "Bedfordview", "Kensington"],
   },
+  {
+    label: "South",
+    suburbs: ["Moreleta Park", "Morningside", "Kensington", "Parkhurst"],
+  },
 ];
 
 export const ALL_SUBURBS = SUBURB_GROUPS.flatMap((g) => g.suburbs);
@@ -25,9 +29,7 @@ export function toSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-");
 }
 
-const SLUG_TO_NAME = new Map(
-  ALL_SUBURBS.map((name) => [toSlug(name), name])
-);
+const SLUG_TO_NAME = new Map(ALL_SUBURBS.map((name) => [toSlug(name), name]));
 
 /** Display name from URL slug, or null if invalid */
 export function getSuburbNameBySlug(slug: string): string | null {
