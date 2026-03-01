@@ -71,11 +71,6 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
 function Map() {
     return <div className="relative group overflow-hidden border border-slate-200">
         {/* The Map Image */}
-        <img
-            src="https://maps.googleapis.com/maps/api/staticmap?center=Kimiad+Golf+Course,Moreleta+Park&zoom=15&size=600x400&key=AIzaSyCWuKzVDFUbPFy53OlCGkmXiw1B-ghYlEo"
-            alt="Map of Kimiad Golf Course in Moreleta Park"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
 
         {/* Overlay Link */}
         <a

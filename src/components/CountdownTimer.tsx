@@ -72,7 +72,7 @@ export function CountdownTimer({
             {units.map(({ value, label }) => (
                 <div
                     key={label}
-                    className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 min-w-16 sm:min-w-20 backdrop-blur-sm"
+                    className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm"
                 >
                     <span className="text-2xl sm:text-3xl font-bold tabular-nums text-white">
                         {pad(value)}

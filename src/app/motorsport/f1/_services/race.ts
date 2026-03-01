@@ -1,8 +1,10 @@
 import { sanityClient } from "@/sanity/client";
+import type { TypedObject } from "@portabletext/types";
 
 type SanityRace = {
   id: string;
   title: string;
+  description: TypedObject | TypedObject[];
   slug: string;
   dateTime: string;
   round: number;
@@ -17,6 +19,7 @@ export async function getRaceBySlug(slug: string) {
         "id": _id,
         "title": title,
         "slug": slug.current,
+        "description": f1Details.description,
         "dateTime": f1Details.dateTime,
         "round": f1Details.round,
         "track": f1Details.track,
