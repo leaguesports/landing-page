@@ -31,3 +31,11 @@ export async function getRaceBySlug(slug: string) {
 
   return race;
 }
+
+/** Fetch all F1 race slugs for sitemap and static generation. */
+export async function getAllRaceSlugs(): Promise<string[]> {
+  const races = await sanityClient.fetch<{ slug: string }[]>(
+    `*[_type == "event" && defined(slug.current)].slug.current`,
+  );
+  return races?.map((race) => race.slug) ?? [];
+}
