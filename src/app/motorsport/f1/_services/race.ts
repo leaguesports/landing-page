@@ -34,8 +34,8 @@ export async function getRaceBySlug(slug: string) {
 
 /** Fetch all F1 race slugs for sitemap and static generation. */
 export async function getAllRaceSlugs(): Promise<string[]> {
-  const races = await sanityClient.fetch<{ slug: string }[]>(
+  const races = await sanityClient.fetch<string[]>(
     `*[_type == "event" && defined(slug.current)].slug.current`,
   );
-  return races?.map((race) => race.slug) ?? [];
+  return races?.map((slug) => slug) ?? [];
 }
