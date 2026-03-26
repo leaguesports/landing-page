@@ -1,13 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
-import { Venue } from "@/services/venues";
-import { urlFor } from "@/sanity/client";
-import { listVenues } from "@/services/venues";
-import Image from "next/image";
+import { listVenues, Venue } from "@/services/venues";
 
 function VenueCard({ venue }: { venue: Venue }) {
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-            <Image src={urlFor(venue.image)?.url() ?? ""} alt={venue.name} className="w-full h-48 object-cover" width={500} height={500} />
+            {/* <Image src={urlFor(venue.image)?.url() ?? ""} alt={venue.name} className="w-full h-48 object-cover" width={500} height={500} /> */}
             <div className="p-4">
                 <h3 className="text-md text-slate-700">{venue.name}</h3>
             </div>
