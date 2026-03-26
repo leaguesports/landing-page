@@ -230,9 +230,11 @@ export default async function F1Page() {
                                         {/* Round + flag */}
                                         <div className="flex items-center justify-between mb-4">
                                             <span className={`text-[10px] font-black uppercase tracking-[0.2em]`}>
-                                                {broadcast.series.name}
+                                                {broadcast.series}
                                             </span>
-                                            <span className="text-2xl">{broadcast.series.sport.name}</span>
+                                            <span className="text-2xl">
+                                                <Flag className="w-4 h-4" />
+                                            </span>
                                         </div>
 
                                         {/* Race name */}

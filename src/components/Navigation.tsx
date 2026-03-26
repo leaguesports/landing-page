@@ -5,7 +5,7 @@ import HomeLink from "@/components/HomeLink";
 import { Tv, Trophy, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
-function VenuesDropdown() {
+function Dropdown({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -35,7 +35,7 @@ function VenuesDropdown() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        Venues
+        {title}
         <ChevronDown
           className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180 text-green-400" : "text-gray-500"}`}
         />
@@ -51,36 +51,11 @@ function VenuesDropdown() {
         >
           <div className="border-b border-white/10 px-4 py-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-              Venues
+              {title}
             </p>
           </div>
           <div className="p-2">
-            <Link
-              href="/play"
-              onClick={close}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-green-500/10 hover:text-green-300"
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-green-500/30 bg-green-500/10">
-                <Trophy className="h-3.5 w-3.5 text-green-400" strokeWidth={2} />
-              </div>
-              <div>
-                <div className="font-bold">Play</div>
-                <div className="text-[11px] text-gray-500">Courts &amp; clubs</div>
-              </div>
-            </Link>
-            <Link
-              href="/venues"
-              onClick={close}
-              className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-blue-500/10 hover:text-blue-300"
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10">
-                <Tv className="h-3.5 w-3.5 text-blue-400" strokeWidth={2} />
-              </div>
-              <div>
-                <div className="font-bold">Watch</div>
-                <div className="text-[11px] text-gray-500">Bars &amp; fan zones</div>
-              </div>
-            </Link>
+            {children}
           </div>
         </div>
       )}
@@ -104,18 +79,51 @@ export default function Navigation() {
             >
               Discover
             </Link>
-            <Link
-              href="/sports"
-              className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
-            >
-              Sports
-            </Link>
-            <VenuesDropdown />
+            <Dropdown title="Sports">
+              <Link
+                href="/motorsport"
+                className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
+              >
+                Motorsport
+              </Link>
+            </Dropdown>
+            <Dropdown title="Venues">
+              <Link
+                href="/play"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-green-500/10 hover:text-green-300"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-green-500/30 bg-green-500/10">
+                  <Trophy className="h-3.5 w-3.5 text-green-400" strokeWidth={2} />
+                </div>
+                <div>
+                  <div className="font-bold">Play</div>
+                  <div className="text-[11px] text-gray-500">Courts &amp; clubs</div>
+                </div>
+              </Link>
+              <Link
+                href="/venues"
+                className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-blue-500/10 hover:text-blue-300"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10">
+                  <Tv className="h-3.5 w-3.5 text-blue-400" strokeWidth={2} />
+                </div>
+                <div>
+                  <div className="font-bold">Watch</div>
+                  <div className="text-[11px] text-gray-500">Bars &amp; fan zones</div>
+                </div>
+              </Link>
+            </Dropdown>
             <Link
               href="/events"
               className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
             >
               Events
+            </Link>
+            <Link
+              href="/login"
+              className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
+            >
+              Log in
             </Link>
           </div>
           <div></div>

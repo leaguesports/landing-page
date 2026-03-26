@@ -2,16 +2,17 @@
 
 import { VENUE_LIST } from "@/data/venues";
 import {
-  ArrowRight,
+  Bell,
   Calendar,
   ChevronRight,
   Clock,
   Flag,
+  Heart,
   MapPin,
   Trophy,
   Tv,
   Users,
-  Zap,
+  Zap
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -431,131 +432,36 @@ export default function Home() {
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[10rem] font-black italic uppercase leading-none tracking-tighter mb-3 sm:mb-4">
             <span className="text-white text-xl sm:text-3xl md:text-4xl lg:text-[6rem] tracking-tight">The Home of</span>
             <br />
-            <span className="text-green-400">Sport</span>
-            <span className="text-white">.</span>
+            <span className="text-green-400">Sports</span>
           </h1>
 
           <p className="text-zinc-400 font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-xs sm:text-sm mb-8 sm:mb-10 max-w-2xl">
             The all in one sports platform. <br className="hidden sm:block" /> Follow the season, find local sports venues, and book your next game all in one place.
           </p>
 
-          {/* Sport of the Week strip */}
-          {/* <div className="flex items-center gap-4 mb-10">
-            <div className="flex items-center gap-3 border border-zinc-800 bg-zinc-950 px-4 py-3 transform -skew-x-3">
-              <span className="text-xl transform skew-x-3">{s.nextEvent.flag}</span>
-              <div className="transform skew-x-3">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <div className={`${s.accentBg} px-2 py-0.5 transform -skew-x-6`}>
-                    <span className="transform skew-x-6 block text-[9px] font-black uppercase tracking-[0.2em] text-white">
-                      Sport of the Week
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                    <span className={`${s.accentText} text-[9px] font-black uppercase tracking-widest`}>
-                      {s.sport}
-                    </span>
-                  </div>
-                </div>
-                <p className="font-black italic uppercase text-white text-sm leading-tight">
-                  {s.nextEvent.name}
-                </p>
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
-                  {s.nextEvent.round} · {s.nextEvent.date} · {s.nextEvent.time}
-                </p>
-              </div>
-            </div>
-          </div> */}
-
-          {/* Dual CTAs */}
-          <div className="flex flex-wrap gap-3 sm:gap-4">
-            <Link
-              href="/discover"
-              className="inline-flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 font-black uppercase italic tracking-wider text-xs sm:text-sm transition-colors bg-green-600 text-white hover:bg-green-500 rounded-lg"
+          {/* CTA buttons */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <button
+              className={`group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-white text-black hover:bg-green-500 hover:text-white`}
             >
-              Find your sport
-              <ArrowRight className="w-4 h-4 shrink-0" strokeWidth={3} />
-            </Link>
+              <span className="transform skew-x-6 flex items-center gap-3">
+                <Heart className={`w-5 h-5 transition-all group-hover:fill-white`} />
+                Follow
+              </span>
+              {/* Shimmer */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            </button>
+
+            <button className="flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm border border-white/20 text-white hover:border-green-500 hover:text-green-400 transition-all transform -skew-x-6">
+              <span className="transform skew-x-6 flex items-center gap-3">
+                <Bell className="w-5 h-5" />
+                Race Alerts
+              </span>
+            </button>
           </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
-      </section>
-
-      {/* ─── What's Happening Feed ────────────────────────────────────────── */}
-      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-
-          {/* ── Upcoming Sports ── */}
-          <div className="mb-12 sm:mb-16">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8">
-              <div>
-                <SectionBadge label="Upcoming Sports" color="red" />
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1 sm:mt-0 sm:ml-4">
-                  Top sports happening around the world
-                </p>
-              </div>
-              <Link
-                href="/events"
-                className="text-red-400 text-[10px] font-black uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-1 shrink-0"
-              >
-                View All <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-8">
-              {UPCOMING_EVENTS.map((e) => (
-                <EventCard key={e.id} event={e} />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Watch Venues ── */}
-          <div className="mb-12 sm:mb-16">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8">
-              <div>
-                <SectionBadge label="Watch Venues" color="blue" />
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1 sm:mt-0 sm:ml-4">
-                  Bars &amp; fan zones screening live sport
-                </p>
-              </div>
-              <Link
-                href="/venues"
-                className="text-blue-400 text-[10px] font-black uppercase tracking-widest hover:text-blue-300 transition-colors flex items-center gap-1 shrink-0"
-              >
-                View All <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-8">
-              {VENUE_LIST.map((v) => (
-                <WatchVenueCard key={v.id} venue={v} />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Play Venues ── */}
-          <div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8">
-              <div>
-                <SectionBadge label="Play Venues" color="green" />
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1 sm:mt-0 sm:ml-4">
-                  Courts, clubs &amp; facilities to book
-                </p>
-              </div>
-              <Link
-                href="/play"
-                className="text-green-400 text-[10px] font-black uppercase tracking-widest hover:text-green-300 transition-colors flex items-center gap-1 shrink-0"
-              >
-                View All <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-8">
-              {VENUE_LIST.map((v) => (
-                <PlayVenueCard key={v.id} venue={v} />
-              ))}
-            </div>
-          </div>
-
-        </div>
       </section>
 
       {/* ─── Stats banner ─────────────────────────────────────────────────── */}
@@ -590,6 +496,36 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── What's Happening Feed ────────────────────────────────────────── */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+
+          {/* ── Upcoming Sports ── */}
+          <div className="mb-12 sm:mb-16">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8">
+              <div>
+                <SectionBadge label="Upcoming Sports" color="red" />
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1 sm:mt-0 sm:ml-4">
+                  Top sports happening around the world
+                </p>
+              </div>
+              <Link
+                href="/events"
+                className="text-red-400 text-[10px] font-black uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-1 shrink-0"
+              >
+                View All <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-8">
+              {UPCOMING_EVENTS.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
+          </div>
+
         </div>
       </section>
 

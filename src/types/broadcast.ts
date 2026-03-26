@@ -1,18 +1,5 @@
 import { SanityImageSource } from "@sanity/image-url";
 
-type Sport = {
-  id: string;
-  name: string;
-  slug: string;
-};
-
-export type Series = {
-  id: string;
-  name: string;
-  slug: string;
-  sport: Sport;
-};
-
 export type Venue = {
   id: string;
   name: string;
@@ -24,8 +11,11 @@ export type Broadcast = {
   title: string;
   slug: string;
   description: string;
-  series: Series;
+  series: string;
   dateTime: string;
-  venue: Venue;
-  image: SanityImageSource;
+  /** F1-specific (from f1Details) */
+  round?: number;
+  track?: string;
+  laps?: number;
+  distance?: number;
 };

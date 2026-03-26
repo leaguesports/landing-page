@@ -3,7 +3,7 @@ import { Broadcast } from "@/types/broadcast";
 
 interface BroadcastRepository {
   getBroadcastsBySportSlug(sportSlug: string): Promise<Broadcast[]>;
-  getBroadcastsBySeriesSlug(seriesSlug: string): Promise<Broadcast[]>;
+  getBroadcastsBySeriesSlug(seriesSlug: string, limit?: number): Promise<Broadcast[]>;
 }
 
 class SanityBroadcastRepository implements BroadcastRepository {
@@ -11,26 +11,31 @@ class SanityBroadcastRepository implements BroadcastRepository {
 
   async getBroadcastsBySportSlug(sportSlug: string): Promise<Broadcast[]> {
     const broadcasts = await sanityClient.fetch<Broadcast[]>(
-      `*[_type == "broadcast" && series.sport.slug == $sportSlug]`,
+      `*[_type == "event" && series == $sportSlug]`,
       { sportSlug },
     );
 
     return broadcasts;
   }
 
-  async getBroadcastsBySeriesSlug(seriesSlug: string): Promise<Broadcast[]> {
+  async getBroadcastsBySeriesSlug(
+    seriesSlug: string,
+    limit: number = 4,
+  ): Promise<Broadcast[]> {
     const broadcasts = await sanityClient.fetch<Broadcast[]>(
-      `*[_type == "broadcast" && series->slug.current == $seriesSlug && dateTime > now()]
+      `*[_type == "event" && series == $seriesSlug]
       {
         "id": _id,
         "title": title,
         "slug": slug.current,
-        "description": description,
-        "series": series->,
-        "dateTime": dateTime,
-        "venue": venue->,
-      } | order(dateTime asc) [0...4]`,
-      { seriesSlug },
+        "description": f1Details.description,
+        "dateTime": f1Details.dateTime,
+        "round": f1Details.round,
+        "track": f1Details.track,
+        "laps": f1Details.laps,
+        "distance": f1Details.distance,
+      } | order(dateTime asc) [0...$limit]`,
+      { seriesSlug, limit },
     );
 
     return broadcasts;
@@ -44,8 +49,8 @@ class BroadcastService {
     return this.repository.getBroadcastsBySportSlug(sportSlug);
   }
 
-  async getBroadcastsBySeriesSlug(seriesSlug: string): Promise<Broadcast[]> {
-    return this.repository.getBroadcastsBySeriesSlug(seriesSlug);
+  async getBroadcastsBySeriesSlug(seriesSlug: string, limit?: number): Promise<Broadcast[]> {
+    return this.repository.getBroadcastsBySeriesSlug(seriesSlug, limit);
   }
 }
 

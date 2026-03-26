@@ -1,8 +1,33 @@
-import { getAllRaceSlugs } from "@/app/motorsport/f1/_services/race";
-import { VENUE_LIST } from "@/data/venues";
+import { sanityClient } from "@/sanity/client";
 import type { MetadataRoute } from "next";
 
-const PLAY_AREAS = ["go-karting", "golf", "tennis", "cricket", "darts", "pool"];
+type Venue = {
+  id: string;
+  slug: string;
+  location: {
+    slug: string;
+  };
+  broadcasts: {
+    slug: string;
+  }[];
+};
+
+async function getVenues() {
+  const venues = await sanityClient.fetch<Venue[]>(`
+    *[_type == "venue"] {
+      "id": _id,
+      "slug": slug.current,
+      "location": {
+        "slug": location->slug.current,
+      },
+      "broadcasts": broadcasts[]-> {
+        "slug": slug.current,
+      }
+    }
+  `);
+
+  return venues;
+}
 
 function getBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -31,54 +56,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/athletes`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/discover`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/events`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/motorsport`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/motorsport/f1`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/motorsport/f1/calendar`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/motorsport/f2`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/play`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
       url: `${baseUrl}/privacy`,
       lastModified: new Date(),
       changeFrequency: "yearly",
@@ -91,41 +68,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/venues`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
       url: `${baseUrl}/watch`,
       lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
+      changeFrequency: "daily",
+      priority: 1,
     },
   ];
 
-  const playAreaRoutes: MetadataRoute.Sitemap = PLAY_AREAS.map((area) => ({
-    url: `${baseUrl}/play/${area}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  const venues = await getVenues();
 
-  const venueRoutes: MetadataRoute.Sitemap = VENUE_LIST.map((venue) => ({
-    url: `${baseUrl}/venues/${venue.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.7,
-  }));
+  const locationSports = new Map<string, string[]>();
 
-  const raceSlugs = await getAllRaceSlugs();
+  for (const venue of venues) {
+    for (const broadcast of venue.broadcasts) {
+      if (!locationSports.has(venue.location.slug)) {
+        locationSports.set(venue.location.slug, []);
+      }
+      locationSports.get(venue.location.slug)?.push(broadcast.slug);
+    }
+  }
 
-  const raceRoutes: MetadataRoute.Sitemap = raceSlugs.map((slug) => ({
-    url: `${baseUrl}/motorsport/f1/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  const locationRoutes: MetadataRoute.Sitemap = [];
 
-  return [...staticRoutes, ...playAreaRoutes, ...venueRoutes, ...raceRoutes];
+  for (const [location, sports] of locationSports.entries()) {
+    for (const sport of sports) {
+      locationRoutes.push({
+        url: `${baseUrl}/watch/${sport}/${location}`,
+        lastModified: new Date(),
+        changeFrequency: "daily",
+        priority: 1,
+      });
+    }
+  }
+
+  return [...staticRoutes, ...locationRoutes];
 }
