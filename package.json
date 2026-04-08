@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@material-symbols/svg-400": "^0.44.0",
     "@portabletext/react": "^6.0.2",
     "@sanity/image-url": "^2.0.3",
     "leaflet": "^1.9.4",

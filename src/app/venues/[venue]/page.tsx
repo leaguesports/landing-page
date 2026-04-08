@@ -1,13 +1,51 @@
-import { KidFriendlyBadge, MatchHeader, WifeApprovedBadge } from "@/app/components/page";
+/* eslint-disable @next/next/no-img-element */
+import { ACTIVITIES } from "@/data/activity";
 import {
     getVenueType,
     type Venue,
     VENUE_LIST,
 } from "@/data/venues";
-import { Car, ChevronRight, Dog, MapIcon, MapPin, Wifi } from "lucide-react";
+import {
+    Bell,
+    Car,
+    ChevronRight,
+    Dog,
+    Flag,
+    Heart,
+    MapPin,
+    Wifi,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+const NAV_LINKS = [
+    { label: "About", href: "#about" },
+    { label: "Sports", href: "#sports" },
+    { label: "Amenities", href: "#amenities" },
+    { label: "Events", href: "#events" },
+    { label: "Location", href: "#location" },
+];
+
+/** Shown when real listing data is missing (temporary demo content). */
+const DUMMY_WATCH = [
+    ACTIVITIES.FORMULA_1,
+    ACTIVITIES.RUGBY,
+    ACTIVITIES.SOCCER,
+];
+const DUMMY_PLAY = [ACTIVITIES.GOLF, ACTIVITIES.PADEL];
+
+const DUMMY_AMENITIES = [
+    { icon: Wifi, label: "Free Wi‑Fi" },
+    { icon: Car, label: "Parking" },
+    { icon: Dog, label: "Pet friendly" },
+] as const;
+
+const DUMMY_UPCOMING = {
+    eyebrow: "Live screening · sample",
+    title: "Rugby: Lions vs Sharks",
+    meta: "SAT · Kickoff 15:00 · Placeholder listing",
+};
 
 type Props = { params: Promise<{ venue: string }> };
 
@@ -15,76 +53,80 @@ function getVenueBySlug(slug: string): Venue | undefined {
     return VENUE_LIST.find((v) => v.slug === slug);
 }
 
+function getBaseUrl(): string {
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+        return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+    }
+    if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+    }
+    return "https://leaguesports.co.za";
+}
+
 export async function generateMetadata({
     params,
 }: {
-    params: Promise<{ area: string; venue: string }>;
+    params: Promise<{ venue: string }>;
 }): Promise<Metadata> {
     const { venue: slug } = await params;
     const venue = getVenueBySlug(slug);
     if (!venue) return { title: "Venue Not Found" };
     const type = getVenueType(venue);
+    const title = `${venue.name} | ${venue.area}`;
+    const canonicalPath = `/venues/${venue.slug}`;
+    const baseUrl = getBaseUrl();
+    const canonicalUrl = `${baseUrl}${canonicalPath}`;
+
     return {
-        title: `${venue.name} | ${venue.area} | League Sports`,
-        description: `${venue.name} is a ${type.toLowerCase()} in ${venue.area}. ${venue.description}`,
+        title,
+        description: `${venue.name} — ${type} in ${venue.area}. ${venue.description}`,
+        keywords: [
+            venue.name,
+            venue.area,
+            "Venues",
+            "Sports",
+            "LeagueSports",
+        ],
+        openGraph: {
+            title,
+            description: venue.description,
+            url: canonicalUrl,
+            siteName: "LeagueSports",
+            type: "website",
+            locale: "en_US",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description: venue.description,
+        },
+        alternates: {
+            canonical: canonicalUrl,
+        },
+        robots: {
+            index: true,
+            follow: true,
+        },
     };
 }
 
-function BreadCrumbs({ area, venue }: { area: string; venue: string }) {
-    const formatSlug = (slug: string) => slug.replace(/-/g, " ").replace(/\b\w/g, char => char.toUpperCase());
-
-    return <div className="flex items-center gap-2 text-sm">
-        <Link className="text-zinc-500 hover:text-zinc-700" href={`/${area}`}>{formatSlug(area)}</Link>
-        <ChevronRight className="w-4 h-4 text-zinc-500" />
-        <Link className="text-zinc-500 hover:text-zinc-700" href={`/${area}/venues`}>Venues</Link>
-        <ChevronRight className="w-4 h-4 text-zinc-500" />
-        <Link className="text-zinc-500 hover:text-zinc-700" href={`/${area}/venues/${venue}`}>{formatSlug(venue)}</Link>
-    </div>
-}
-
-function ImageGallery({ venue }: { venue: Venue }) {
-    return <div className="grid grid-cols-5 gap-2">
-        <div className="col-span-4">
-            <img src={venue.image} alt={venue.name} className="w-full h-full object-cover rounded-l-md" />
-        </div>
-        <div className="col-span-1">
-            <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-2">
-                    <img src={venue.image} alt={venue.name} className="w-full h-full object-cover rounded-tr-md" />
-                    <img src={venue.image} alt={venue.name} className="w-full h-full object-cover" />
-                    <img src={venue.image} alt={venue.name} className="w-full h-full object-cover" />
-                    <img src={venue.image} alt={venue.name} className="w-full h-full object-cover rounded-br-md" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) => (
-    <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-        <div className="mb-4">{icon}</div>
-        <h3 className="font-bold text-slate-800 mb-1">{title}</h3>
-        <p className="text-sm text-slate-500 leading-snug">{desc}</p>
-    </div>
-);
-
-function Map() {
-    return <div className="relative group overflow-hidden border border-slate-200">
-        {/* The Map Image */}
-
-        {/* Overlay Link */}
-        <a
-            href="https://goo.gl/maps/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 bg-emerald-900/10 group-hover:bg-emerald-900/0 transition-colors flex items-center justify-center"
+function Breadcrumbs({ venue }: { venue: Venue }) {
+    return (
+        <nav
+            className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500"
+            aria-label="Breadcrumb"
         >
-            <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-md font-bold text-emerald-800 text-sm flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all">
-                <MapIcon className="w-4 h-4" />
-                Open in Google Maps
-            </div>
-        </a>
-    </div>
+            <Link href="/" className="hover:text-white transition-colors">
+                Home
+            </Link>
+            <ChevronRight className="w-3 h-3 shrink-0 text-zinc-600" />
+            <Link href="/venues" className="hover:text-white transition-colors">
+                Venues
+            </Link>
+            <ChevronRight className="w-3 h-3 shrink-0 text-zinc-600" />
+            <span className="text-zinc-400">{venue.name}</span>
+        </nav>
+    );
 }
 
 export default async function VenuePage({ params }: Props) {
@@ -92,272 +134,415 @@ export default async function VenuePage({ params }: Props) {
     const venue = getVenueBySlug(venueSlug);
     if (!venue) return notFound();
 
+    const venueType = getVenueType(venue);
+    const watchActivities = venue.watch ?? [];
+    const playActivities = venue.play ?? [];
+
+    const displayWatch =
+        watchActivities.length > 0 ? watchActivities : DUMMY_WATCH;
+    const displayPlay =
+        playActivities.length > 0 ? playActivities : DUMMY_PLAY;
+    const sportsUsesDummy =
+        watchActivities.length === 0 || playActivities.length === 0;
+
+    const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        `${venue.name} ${venue.area}`,
+    )}`;
+
     return (
-        <div className="relative min-h-screen bg-white overflow-hidden text-zinc-900 py-12">
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div>
-                        <div className="mb-4 flex justify-between">
-                            <div>
-                                <h1 className="text-4xl font-bold tracking-tight">{venue.name}</h1>
-                                <BreadCrumbs area={'Moreleta Park'} venue={venue.slug} />
-                            </div>
-                            <div className="flex gap-4">
-                                <WifeApprovedBadge />
-                                <KidFriendlyBadge />
-                            </div>
-                        </div>
-                        <ImageGallery venue={venue} />
-                        {/* <div className="col-span-3">
-                            <div className="flex flex-col gap-1">
-                                <div className="flex flex-col gap-1">
-                                    <h2 className="text-2xl font-bold tracking-tight">About</h2>
-                                    <div className="flex flex-col gap-4 mt-4">
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-6 h-6 text-slate-600" strokeWidth={2} />
-                                            <a href="https://www.google.com/maps/place/Kimiad+Golf+Course+and+Driving+Range./@-25.8188202,28.2947962,694m/data=!3m2!1e3!4b1!4m6!3m5!1s0x1e95675e4b1258db:0x5b7fb0283ca3c6a8!8m2!3d-25.8188202!4d28.2947962!16s%2Fg%2F1hhkccbf5?entry=ttu&g_ep=EgoyMDI2MDIxNy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-slate-800 hover:underline">Wekker Rd, Moreleta Park, Pretoria, 0044</a>
-                                        </div>
-                                        <Map />
-                                    </div>
-                                </div>
-                            </div>
-                        </div> */}
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex gap-4">
-                        <Link className="underline" href="#">Overview</Link>
-                        <Link href="#">About</Link>
-                        <Link href="#">Events</Link>
-                        <Link href="#">Activities</Link>
-                        <Link href="#">Location</Link>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                        <div className="flex gap-2 p-2 rounded-md border border-slate-200 items-center">
-                            <Wifi className="w-4 h-4 text-slate-600" />
-                            <p className="text-sm text-slate-600">Free Wi-Fi</p>
-                        </div>
-                        <div className="flex gap-2 p-2 rounded-md border border-slate-200 items-center">
-                            <Dog className="w-4 h-4 text-slate-600" />
-                            <p className="text-sm text-slate-600">Pet Friendly</p>
-                        </div>
-                        <div className="flex gap-2 p-2 rounded-md border border-slate-200 items-center">
-                            <Car className="w-4 h-4 text-slate-600" />
-                            <p className="text-sm text-slate-600">Parking</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-slate-600" strokeWidth={2} />
-                        <a href="https://www.google.com/maps/place/Kimiad+Golf+Course+and+Driving+Range./@-25.8188202,28.2947962,694m/data=!3m2!1e3!4b1!4m6!3m5!1s0x1e95675e4b1258db:0x5b7fb0283ca3c6a8!8m2!3d-25.8188202!4d28.2947962!16s%2Fg%2F1hhkccbf5?entry=ttu&g_ep=EgoyMDI2MDIxNy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-slate-800 hover:underline">Wekker Rd, Moreleta Park, Pretoria, 0044</a>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div>
-                        <div className="col-span-7">
-                            <h2 className="text-2xl font-bold tracking-tight">About</h2>
-                            {/* <KimiadGolfLanding /> */}
-                            <p className="text-lg leading-relaxed text-slate-600 mb-4">
-                                Discover the perfect blend of challenging play and natural beauty.
-                                <strong> Kimiad Golf Course</strong> offers a unique 12-hole executive layout and a
-                                premier 18-hole Par 3 course, making it a favorite for both competitive players
-                                and those looking for a quick, social round.
-                            </p>
-                            <p className="text-lg leading-relaxed text-slate-600">
-                                Nestled within lush wetlands, you&apos;ll share the fairways with local wildlife
-                                including Blesbok and exotic birdlife, offering a true &quot;bushveld&quot; escape
-                                just minutes from the city center.
-                            </p>
-                        </div>
-                        <div className="col-span-3">
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Events</h2>
-                        <MatchHeader home="Lions" away="Sharks" time="NOV 16 • Kickoff 15:00" />
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Dicta enim tempore praesentium tempora rem laudantium nam, voluptas sapiente laborum corrupti autem asperiores voluptatem ipsam architecto neque fuga illo quo recusandae!</p>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <h2 className="text-2xl font-bold tracking-tight">Activities</h2>
-                    <p className="text-lg leading-relaxed text-slate-600 mb-4">Kimiad is much more than just a golf course. We offer a variety of activities for all ages and skill levels.</p>
-                    <div className="grid grid-cols-4 gap-8">
-                        <div className="rounded-lg overflow-hidden border border-slate-200">
-                            <img src="https://golf-pass.brightspotcdn.com/dims4/default/4517432/2147483647/strip/true/crop/1280x720+0+120/resize/590x332!/quality/90/?url=https%3A%2F%2Fgolf-pass-brightspot.s3.amazonaws.com%2Fd0%2Fc6%2Fc59b1682b565676dbac3a39c1dbf%2F18936.jpg" alt="Golf" className="w-full h-48 object-cover" />
-                            <div className="p-4">
-                                <h3 className="text-lg font-bold tracking-tight">Golf</h3>
-                                <p className="text-sm text-slate-600">Golf is a great way to get exercise and enjoy the outdoors.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://scontent-ber1-1.cdninstagram.com/v/t51.82787-15/622019170_18092823587090027_5186269843810629116_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=103&ig_cache_key=Mjc4NDg4Njk2ODQ4NTAyNjY4Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjEwODB4MTA4MC5zZHIuQzMifQ%3D%3D&_nc_ohc=bPXsfHuS7U8Q7kNvwHJKT_w&_nc_oc=AdndMKs_WtI7jWkTR_Q8kYNhxsp3b0tIX6tjqhwBSDpBr23t5lweD7hjwZ1QxKJqP34&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ber1-1.cdninstagram.com&_nc_gid=OE5uyPQRmYZYu38Tqp06Qg&oh=00_AfsRTG6AluIPG0b_5dQgqwqOmLMMN6vboTgr_YLHoTRn2w&oe=699E0992" alt="Golf" className="w-full h-48 object-cover" />
-                            <div className="mt-4">
-                                <h3 className="text-lg font-bold tracking-tight">Driving Range</h3>
-                                <p className="text-sm text-slate-600">Get your swing on with our driving range.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://golf-pass.brightspotcdn.com/dims4/default/d02220f/2147483647/strip/true/crop/960x619+0+50/resize/930x600!/format/webp/quality/90/?url=https%3A%2F%2Fgolf-pass-brightspot.s3.amazonaws.com%2F07%2Ff6%2Fff8a9db20f6b13c2d76a57744458%2F77786.jpg" alt="Golf" className="w-full h-48 object-cover" />
-                            <div className="mt-4">
-                                <h3 className="text-lg font-bold tracking-tight">Pitch And Putt</h3>
-                                <p className="text-sm text-slate-600">Focus on your short game with our pitch and putt course.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://scontent-ber1-1.cdninstagram.com/v/t51.75761-15/466922570_18022918502563622_2327504917365089441_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=108&ig_cache_key=MzUwMDI0NzU4ODY5NzIxMTAwNw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjE0NDB4MTgwMC5zZHIuQzMifQ%3D%3D&_nc_ohc=Gn3NxzMfCRkQ7kNvwGGJLAA&_nc_oc=AdkitsmujhUVHTFXek8zyjdz1ergHUKxB3cpghClAoqT2kesQ7MyqHa_3hEfkVLSPps&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ber1-1.cdninstagram.com&_nc_gid=N_wH1E79wZoG9q3EQJRXIg&oh=00_AfvWWmmzsET0JHHZBJGNEVaEZ7UCSuTnVA9PV5i8bQIBKQ&oe=699E2B52" alt="Mountain Biking" className="w-full h-48 object-cover" />
-                            <div className="mt-4">
-                                <h3 className="text-lg font-bold tracking-tight">Mountain Biking</h3>
-                                <p className="text-sm text-slate-600">Get your adrenaline pumping with our mountain biking trails.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://scontent-ber1-1.cdninstagram.com/v/t39.30808-6/466763081_18023029307563622_7277727151416950870_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=101&ig_cache_key=MzQwMjQzNDY1MTI4MzEyOTAyMw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjEzNTB4MTM1MC5zZHIuQzMifQ%3D%3D&_nc_ohc=gvrAj2870MoQ7kNvwGh5odI&_nc_oc=AdkPwK2yBi5zPE50Sf95t75XiNSZ1GoUTNjdncnayxU4V-RjNaUo12xWuXXgfwj6oks&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ber1-1.cdninstagram.com&_nc_gid=yxZg3UnMf6SG6sEeowD0hQ&oh=00_AfsPbLILk4yuw-bljeGRnT2Rwn_Hg8BXC_NLh1zjLDSNow&oe=699E365A" alt="Padel" className="w-full h-48 object-cover" />
-                            <div className="mt-4">
-                                <h3 className="text-lg font-bold tracking-tight">Padel</h3>
-                                <p className="text-sm text-slate-600">Get your padel on with our padel court.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://scontent-ber1-1.cdninstagram.com/v/t51.82787-15/619227541_18033164804574382_1853962973960426253_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=107&ig_cache_key=MjU0Nzg3MzEzNDM5ODQzMzMzMg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjczNHg3MzQuc2RyLkMzIn0%3D&_nc_ohc=SGvXq985qhwQ7kNvwFo-yho&_nc_oc=AdkVgPV_pRF2rzZSvkP43WmLabJBDs2O8S_OI7VyFmqA-gMCJWa0v8K_rh963VP9eGo&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ber1-1.cdninstagram.com&_nc_gid=eWML658AqaZ0k4Vxk2iTFA&oh=00_AfutDwRhvJjv6J_JKtaLpm7PY57eEaWO749f0wazVb_bhQ&oe=699E2B85" alt="Outdoor Training" className="w-full h-48 object-cover" />
-                            <div className="mt-4">
-                                <h3 className="text-lg font-bold tracking-tight">Outdoor Training</h3>
-                                <p className="text-sm text-slate-600">Get your training on with our outdoor training facilities.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Ammenities</h2>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Location</h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-slate-600" strokeWidth={2} />
-                        <a href="https://www.google.com/maps/place/Kimiad+Golf+Course+and+Driving+Range./@-25.8188202,28.2947962,694m/data=!3m2!1e3!4b1!4m6!3m5!1s0x1e95675e4b1258db:0x5b7fb0283ca3c6a8!8m2!3d-25.8188202!4d28.2947962!16s%2Fg%2F1hhkccbf5?entry=ttu&g_ep=EgoyMDI2MDIxNy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-600 hover:text-slate-800 hover:underline">Wekker Rd, Moreleta Park, Pretoria, 0044</a>
-                    </div>
-                    <div>
-                        <Map />
-                    </div>
-                </div>
-            </section>
-
-
-            {/* <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex gap-4">
-                        <div className="group relative overflow-hidden bg-neutral-800 transition-all duration-300 hover:bg-neutral-700 cursor-pointer border-l-8 border-lime-400 transform -skew-x-12 shadow-xl shadow-gray-600/50">
-
-                            <div className="transform skew-x-12 flex items-center justify-between p-6 hover:shadow-green-500">
-
-                                <div className="flex-1">
-                                    <span className="text-lime-400 font-black italic tracking-tighter uppercase text-sm">
-                                        Live Screening
+        <div>
+            <div className="min-h-screen bg-[#0f0f0f] text-white">
+                {/* In-page nav */}
+                <nav className="sticky top-0 z-40 bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/5">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
+                            <div className="flex items-center gap-2 mr-6 shrink-0">
+                                <div className="bg-red-600 px-3 py-1 transform -skew-x-6">
+                                    <span className="transform skew-x-6 block text-xs font-black uppercase tracking-widest text-white">
+                                        Venue
                                     </span>
-                                    <h3 className="text-white text-2xl font-black uppercase italic leading-tight">
-                                        Rugby: Lions vs Sharks
-                                    </h3>
-                                    <p className="text-gray-400 font-bold mt-1">NOV 16 • Kickoff 15:00</p>
                                 </div>
-
-                                <div className="ml-4">
-                                    <button className="bg-lime-400 text-black font-black px-6 py-2 uppercase italic text-sm transition-transform">
-                                        Book Fan Zone
-                                    </button>
-                                </div>
-
+                                <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest hidden sm:block truncate max-w-48">
+                                    {venue.name}
+                                </span>
                             </div>
 
-                            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-                        </div>
-                        <div>
-                            <div className="group relative overflow-hidden bg-neutral-800 transition-all duration-300 hover:bg-neutral-700 cursor-pointer border-l-8 border-lime-400 transform -skew-x-12">
-
-                                <div className="transform skew-x-12 flex items-center justify-between p-6">
-
-                                    <div className="flex-1">
-                                        <span className="text-lime-400 font-black italic tracking-tighter uppercase text-sm">
-                                            Live Screening
+                            <div className="flex items-center gap-1 flex-1">
+                                {NAV_LINKS.map((link) => (
+                                    <a
+                                        key={link.href}
+                                        href={link.href}
+                                        className="px-4 py-1.5 text-xs font-black uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 transition-all shrink-0 transform -skew-x-6"
+                                    >
+                                        <span className="transform skew-x-6 block">
+                                            {link.label}
                                         </span>
-                                        <h3 className="text-white text-2xl font-black uppercase italic leading-tight">
-                                            Rugby: Lions vs Sharks
-                                        </h3>
-                                        <p className="text-gray-400 font-bold mt-1">NOV 16 • Kickoff 15:00</p>
-                                    </div>
-
-                                    <div className="ml-4">
-                                        <button className="bg-lime-400 text-black font-black px-6 py-2 uppercase italic text-sm transition-transform hover:scale-105 active:scale-95">
-                                            Book Fan Zone
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                                    </a>
+                                ))}
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </nav>
 
-            <section>
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="max-w-xl group relative cursor-pointer">
-                        <div className="absolute inset-0 bg-lime-500 transform -skew-x-12 translate-x-2 translate-y-2 transition-transform group-hover:translate-x-1 group-hover:translate-y-1"></div>
+                {/* Hero */}
+                <section className="relative overflow-hidden min-h-[70vh] sm:min-h-[75vh] flex items-end">
+                    <div className="absolute inset-0 bg-linear-to-br from-red-950/60 via-[#0f0f0f] to-[#0f0f0f]" />
 
-                        <div className="relative bg-zinc-950 text-white p-6 border border-zinc-800 transform -skew-x-12 overflow-hidden">
-                            <div className="transform skew-x-12 flex items-center justify-between">
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        {[...Array(8)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="absolute h-px bg-linear-to-r from-transparent via-red-600/30 to-transparent"
+                                style={{
+                                    top: `${10 + i * 12}%`,
+                                    left: "-10%",
+                                    right: "-10%",
+                                    transform: `skewY(-${1 + i * 0.5}deg)`,
+                                    opacity: 0.4 - i * 0.04,
+                                }}
+                            />
+                        ))}
+                    </div>
 
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="bg-red-600 text-[10px] font-black px-2 py-0.5 uppercase tracking-widest animate-pulse">Live</span>
-                                        <span className="text-zinc-400 text-xs font-bold uppercase tracking-widest">The Local Pub • 1.2km away</span>
-                                    </div>
-                                    <h3 className="text-2xl font-black italic uppercase leading-none mb-1">Proteas vs Australia</h3>
-                                    <p className="text-zinc-400 font-medium">2nd ODI • Fans gathering now</p>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+                        <span
+                            className="text-[22vw] sm:text-[28vw] font-black italic uppercase text-white/2 leading-none tracking-tighter"
+                            style={{ fontStretch: "condensed" }}
+                        >
+                            Venue
+                        </span>
+                    </div>
+
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-red-700 via-red-500 to-red-700" />
+
+                    <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
+
+                    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-6">
+                            <Breadcrumbs venue={venue} />
+                        </div>
+
+                        <p className="text-red-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-3">
+                            {venueType}
+                        </p>
+
+                        <h1 className="text-4xl sm:text-7xl lg:text-[5rem] font-black italic uppercase leading-[0.95] tracking-tighter mb-4">
+                            <span className="text-red-white">{venue.name}</span>
+                        </h1>
+
+                        <p className="text-zinc-400 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm mb-10 max-w-2xl">
+                            {venue.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-6 mb-10">
+                            {[
+                                {
+                                    label: "Watch",
+                                    value: displayWatch.length,
+                                },
+                                {
+                                    label: "Play",
+                                    value: displayPlay.length,
+                                },
+                            ].map((stat) => (
+                                <div key={stat.label} className="flex flex-col">
+                                    <span className="text-3xl font-black italic text-white leading-none">
+                                        {stat.value}
+                                    </span>
+                                    <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                                        Sports · {stat.label}
+                                    </span>
                                 </div>
+                            ))}
+                        </div>
 
-                                <div className="text-right">
-                                    <div className="text-lime-500 font-black text-xl italic leading-none">88&apos;</div>
-                                    <button className="mt-2 text-[11px] font-black uppercase border-b-2 border-lime-500 pb-0.5 hover:text-lime-400">Join Hub</button>
-                                </div>
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <Link
+                                href="/discover"
+                                className="group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-white text-black hover:bg-red-600 hover:text-white"
+                            >
+                                <span className="transform skew-x-6 flex items-center gap-3">
+                                    <Heart className="w-5 h-5 transition-all group-hover:fill-white" />
+                                    Find more venues
+                                </span>
+                                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-linear-to-r from-transparent via-white/20 to-transparent" />
+                            </Link>
+
+                            <a
+                                href="#location"
+                                className="flex items-center gap-2 text-zinc-400 hover:text-white font-black uppercase italic tracking-wider text-sm transition-colors"
+                            >
+                                Directions <ChevronRight className="w-4 h-4" />
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
+                </section>
+
+                {/* Hero image */}
+                {/* <section className="px-4 sm:px-6 lg:px-8 -mt-4 pb-12 sm:pb-16">
+                    <div className="mx-auto max-w-7xl">
+                        <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-lg shadow-red-950/20">
+                            <div className="h-1 w-full bg-red-600" />
+                            <div className="aspect-21/9 sm:aspect-[2.4/1] w-full">
+                                <img
+                                    src={venue.image}
+                                    alt={venue.name}
+                                    className="h-full w-full object-cover"
+                                />
                             </div>
                         </div>
                     </div>
-                </div>
-            </section> */}
-        </div >
+                </section> */}
 
+                {/* About */}
+                <section
+                    id="about"
+                    className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 scroll-mt-24"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-8 sm:mb-10">
+                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                                About
+                            </h2>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                                {venueType} · {venue.area}
+                            </p>
+                        </div>
+                        <p className="text-zinc-300 text-base sm:text-lg leading-relaxed max-w-3xl font-medium">
+                            {venue.description}
+                        </p>
+                    </div>
+                </section>
+
+                {/* Sports */}
+                <section
+                    id="sports"
+                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-8 sm:mb-12">
+                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                                Sports at this venue
+                            </h2>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                                Watch and play what&apos;s on offer
+                            </p>
+                        </div>
+
+                        {sportsUsesDummy && (
+                            <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-6">
+                                Sample sports shown where listing data is still
+                                pending.
+                            </p>
+                        )}
+
+                        <div className="grid gap-8 sm:grid-cols-2">
+                            <div>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-4">
+                                    Watch
+                                </h3>
+                                <ul className="flex flex-wrap gap-2">
+                                    {displayWatch.map((a) => (
+                                        <li
+                                            key={a.id}
+                                            className="px-4 py-2 rounded border border-zinc-800 bg-zinc-950 text-sm font-black italic uppercase text-white hover:border-red-600/50 transition-colors"
+                                        >
+                                            {a.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-4">
+                                    Play
+                                </h3>
+                                <ul className="flex flex-wrap gap-2">
+                                    {displayPlay.map((a) => (
+                                        <li
+                                            key={a.id}
+                                            className="px-4 py-2 rounded border border-zinc-800 bg-zinc-950 text-sm font-black italic uppercase text-white hover:border-red-600/50 transition-colors"
+                                        >
+                                            {a.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="mt-10 flex flex-wrap gap-3">
+                            <Link
+                                href="/discover?intent=watch"
+                                className="inline-flex items-center gap-2 text-red-400 text-xs font-black uppercase tracking-widest hover:text-red-300 transition-colors"
+                            >
+                                Find places to watch{" "}
+                                <ChevronRight className="w-3 h-3" />
+                            </Link>
+                            <span className="text-zinc-700 hidden sm:inline">
+                                |
+                            </span>
+                            <Link
+                                href="/discover?intent=play"
+                                className="inline-flex items-center gap-2 text-red-400 text-xs font-black uppercase tracking-widest hover:text-red-300 transition-colors"
+                            >
+                                Find places to play{" "}
+                                <ChevronRight className="w-3 h-3" />
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Amenities (dummy data for now) */}
+                <section
+                    id="amenities"
+                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-8 sm:mb-10">
+                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                                Amenities
+                            </h2>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                                Sample amenities · replace with real venue data
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {DUMMY_AMENITIES.map(({ icon: Icon, label }) => (
+                                <div
+                                    key={label}
+                                    className="flex items-center gap-2 rounded border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-zinc-300"
+                                >
+                                    <Icon
+                                        className="w-4 h-4 shrink-0 text-red-500"
+                                        aria-hidden
+                                    />
+                                    {label}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Events (dummy data for now) */}
+                <section
+                    id="events"
+                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-8 sm:mb-10">
+                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                                What&apos;s on
+                            </h2>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                                Sample event · placeholder until calendar is wired
+                            </p>
+                        </div>
+                        <div className="max-w-xl overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition-all duration-300 hover:border-red-600/50">
+                            <div className="h-1 w-full bg-red-600" />
+                            <div className="p-5 sm:p-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400 mb-2">
+                                    {DUMMY_UPCOMING.eyebrow}
+                                </p>
+                                <h3 className="font-black italic uppercase text-lg sm:text-xl text-white leading-tight mb-2">
+                                    {DUMMY_UPCOMING.title}
+                                </h3>
+                                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">
+                                    {DUMMY_UPCOMING.meta}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Location */}
+                <section
+                    id="location"
+                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                        <div className="mb-8 sm:mb-10">
+                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                                Location
+                            </h2>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
+                                Area &amp; maps
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5 sm:p-6 max-w-2xl">
+                            <div className="flex items-start gap-3 mb-4">
+                                <MapPin className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                                <div>
+                                    <p className="font-black italic uppercase text-white leading-tight">
+                                        {venue.name}
+                                    </p>
+                                    <p className="text-zinc-400 text-sm font-bold mt-1">
+                                        {venue.area}
+                                    </p>
+                                </div>
+                            </div>
+                            <a
+                                href={mapsSearchUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 font-black uppercase italic tracking-wider text-sm border border-white/20 text-white hover:border-red-500 hover:text-red-400 transition-all transform -skew-x-6"
+                            >
+                                <span className="transform skew-x-6 flex items-center gap-2">
+                                    <MapPin className="w-4 h-4" />
+                                    Open in Google Maps
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA banner */}
+                <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-zinc-950">
+                    <div className="absolute inset-0 bg-linear-to-r from-red-950/40 to-transparent pointer-events-none" />
+                    <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-red-600 via-red-400 to-transparent" />
+
+                    <div className="mx-auto max-w-7xl relative">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+                            <div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Flag className="w-6 h-6 text-red-500" />
+                                    <span className="text-red-400 text-xs font-black uppercase tracking-[0.3em]">
+                                        Stay in the loop
+                                    </span>
+                                </div>
+                                <h2 className="text-4xl sm:text-5xl font-black italic uppercase leading-none tracking-tighter text-white mb-3">
+                                    More <span className="text-red-500">venues</span>
+                                </h2>
+                                <p className="text-zinc-500 font-bold text-sm max-w-md">
+                                    Discover screenings, fan zones, and places to
+                                    play near you.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-3 shrink-0">
+                                <Link
+                                    href="/venues"
+                                    className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm bg-white text-black hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"
+                                >
+                                    <span className="transform skew-x-6">
+                                        Browse all venues
+                                    </span>
+                                </Link>
+                                <button
+                                    type="button"
+                                    className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm border border-zinc-700 text-zinc-400 hover:border-red-600 hover:text-red-400 transition-all transform -skew-x-6"
+                                >
+                                    <span className="transform skew-x-6 flex items-center gap-3">
+                                        <Bell className="w-4 h-4" />
+                                        Venue alerts
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
     );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import HomeLink from "@/components/HomeLink";
-import { Tv, Trophy, ChevronDown } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function Dropdown({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -67,66 +67,31 @@ export default function Navigation() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-800/50 bg-[#0f0f0f]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center justify-between gap-4 w-full">
           {/* Logo */}
           <HomeLink />
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
+          <div className="flex gap-4 w-48">
             <Link
-              href="/discover"
+              href="/watch"
               className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
             >
-              Discover
-            </Link>
-            <Dropdown title="Sports">
-              <Link
-                href="/motorsport"
-                className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
-              >
-                Motorsport
-              </Link>
-            </Dropdown>
-            <Dropdown title="Venues">
-              <Link
-                href="/play"
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-green-500/10 hover:text-green-300"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-green-500/30 bg-green-500/10">
-                  <Trophy className="h-3.5 w-3.5 text-green-400" strokeWidth={2} />
-                </div>
-                <div>
-                  <div className="font-bold">Play</div>
-                  <div className="text-[11px] text-gray-500">Courts &amp; clubs</div>
-                </div>
-              </Link>
-              <Link
-                href="/venues"
-                className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-blue-500/10 hover:text-blue-300"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10">
-                  <Tv className="h-3.5 w-3.5 text-blue-400" strokeWidth={2} />
-                </div>
-                <div>
-                  <div className="font-bold">Watch</div>
-                  <div className="text-[11px] text-gray-500">Bars &amp; fan zones</div>
-                </div>
-              </Link>
-            </Dropdown>
-            <Link
-              href="/events"
-              className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
-            >
-              Events
+              Watch
             </Link>
             <Link
-              href="/login"
+              href="/play"
               className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
             >
-              Log in
+              Play
             </Link>
           </div>
-          <div></div>
+
+          <Link
+            href="/login"
+            className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
+          >
+            Log in
+          </Link>
         </div>
       </div>
     </nav>
