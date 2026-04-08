@@ -5,11 +5,13 @@ type Venue = {
   id: string;
   slug: string;
   location: {
-    slug: string;
-  };
-  broadcasts: {
-    slug: string;
-  }[];
+    slug: string | null;
+  } | null;
+  broadcasts:
+    | {
+        slug: string | null;
+      }[]
+    | null;
 };
 
 async function getVenues() {
@@ -20,9 +22,12 @@ async function getVenues() {
       "location": {
         "slug": location->slug.current,
       },
-      "broadcasts": broadcasts[]-> {
-        "slug": slug.current,
-      }
+      "broadcasts": coalesce(
+        broadcasts[]-> {
+          "slug": slug.current,
+        },
+        []
+      )
     }
   `);
 
@@ -80,11 +85,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const locationSports = new Map<string, string[]>();
 
   for (const venue of venues) {
-    for (const broadcast of venue.broadcasts) {
-      if (!locationSports.has(venue.location.slug)) {
-        locationSports.set(venue.location.slug, []);
+    const locationSlug = venue.location?.slug;
+    if (!locationSlug) continue;
+
+    const broadcasts = Array.isArray(venue.broadcasts) ? venue.broadcasts : [];
+    for (const broadcast of broadcasts) {
+      const sportSlug = broadcast?.slug;
+      if (!sportSlug) continue;
+
+      if (!locationSports.has(locationSlug)) {
+        locationSports.set(locationSlug, []);
       }
-      locationSports.get(venue.location.slug)?.push(broadcast.slug);
+      locationSports.get(locationSlug)?.push(sportSlug);
     }
   }
 
