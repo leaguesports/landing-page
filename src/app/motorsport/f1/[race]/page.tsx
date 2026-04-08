@@ -1,5 +1,4 @@
 import { CountdownTimer } from "@/components/CountdownTimer";
-import { getDiscoverVenues } from "@/data/discover";
 import { formatDate, formatTime } from "@/util/formats";
 import { PortableText, PortableTextComponents } from "@portabletext/react";
 import {
@@ -15,8 +14,7 @@ import {
     Repeat,
     TrendingUp,
     Trophy,
-    Tv,
-    Zap,
+    Zap
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -129,7 +127,6 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
     const isPast = raceDate.getTime() < new Date().getTime();
     const distanceStr = formatDistance(raceDetails.distance);
     const roundLabel = `Round ${raceDetails.round}`;
-    const watchVenues = getDiscoverVenues("watch", undefined, undefined, ["f1"], undefined);
 
     const baseUrl = getBaseUrl();
     const racePath = `/motorsport/f1/${race}`;
@@ -445,7 +442,7 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                         </p>
                     </div>
 
-                    {watchVenues.length > 0 ? (
+                    {/* {watchVenues.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             {watchVenues.map((venue) => (
                                 <Link
@@ -488,7 +485,7 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                                 Discover venues <ChevronRight className="w-3 h-3" />
                             </Link>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </section >
 
