@@ -28,7 +28,7 @@ function WatchPlayLink({
     <Link
       href={href}
       className={[
-        "group flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold tracking-wide transition-all duration-200 sm:px-4",
+        "group flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold tracking-wide transition-all duration-200 sm:px-4",
         active
           ? "bg-white/12 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] ring-1 ring-white/10"
           : "text-zinc-500 hover:bg-white/6 hover:text-zinc-200",
@@ -59,7 +59,7 @@ export default function Navigation() {
           </div>
 
           <div
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-white/10 bg-black/50 p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+            className="-skew-x-6 inline-flex shrink-0 items-center gap-0.5 rounded-lg border border-white/10 bg-black/50 p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
             role="presentation"
           >
             <WatchPlayLink href="/watch" label="Watch" icon={Tv} iconTone="blue" />
