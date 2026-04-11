@@ -73,7 +73,10 @@ export async function getVenuesByLocationAndSport(
 export async function getBroadcastSports() {
   const sports = await sanityClient.fetch<WatchSport[]>(
     `*[_type == "sport" &&
-        count(*[_type == "venue" && count(broadcasts) > 0]) > 0
+        count(*[_type == "venue" &&
+            defined(broadcasts) &&
+            ^._id in broadcasts[]._ref
+        ]) > 0
     ] | order(name asc) {
         "id": _id,
         "name": name,
@@ -85,7 +88,15 @@ export async function getBroadcastSports() {
 
 export async function getBroadcastSeries() {
   const series = await sanityClient.fetch<WatchSeries[]>(
-    `*[_type == "series"] | order(name asc) {
+    `*[_type == "series" &&
+        count(*[_type == "venue" &&
+            defined(broadcasts) &&
+            (
+                ^._id in broadcasts[]._ref ||
+                (defined(^.sport._ref) && ^.sport._ref in broadcasts[]._ref)
+            )
+        ]) > 0
+    ] | order(name asc) {
             "id": _id,
             "name": name,
             "slug": slug.current,

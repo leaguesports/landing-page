@@ -1,6 +1,5 @@
 "use client";
 
-import { VENUE_LIST } from "@/data/venues";
 import {
   Bell,
   Calendar,
@@ -8,9 +7,10 @@ import {
   Clock,
   Flag,
   Heart,
-  MapPin,
   Trophy,
+  TrophyIcon,
   Tv,
+  TvIcon,
   Users,
   Zap
 } from "lucide-react";
@@ -79,92 +79,6 @@ function SectionBadge({
         {label}
       </h2>
     </div>
-  );
-}
-
-// ─── Watch venue card ──────────────────────────────────────────────────────
-function WatchVenueCard({ venue }: { venue: (typeof VENUE_LIST)[number] }) {
-  return (
-    <Link
-      href={`/venues/${venue.slug}`}
-      className="group relative block overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition-all duration-300 hover:border-blue-600/50 hover:shadow-lg hover:shadow-blue-950/20"
-    >
-      {/* Top accent */}
-      <div className="h-1 w-full bg-blue-600 transition-colors duration-300 group-hover:bg-blue-400" />
-
-      <div className="p-4 sm:p-5">
-        {/* Badge */}
-        <div className="mb-3 sm:mb-4">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 flex items-center gap-1.5">
-            <Tv className="w-3 h-3 shrink-0" />
-            Watch
-          </span>
-        </div>
-
-        <h3 className="font-black italic uppercase leading-tight text-lg sm:text-xl text-white mb-2">
-          {venue.name}
-        </h3>
-
-        <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3">
-          <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
-          <span>{venue.area}</span>
-        </div>
-
-        {venue.watch && venue.watch.length > 0 && (
-          <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-4">
-            {venue.watch.map((a) => a.name).join(" · ")}
-          </p>
-        )}
-
-        <div className="flex items-center justify-end pt-4 border-t border-zinc-800">
-          <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:text-blue-300">
-            View Venue →
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-// ─── Play venue card ───────────────────────────────────────────────────────
-function PlayVenueCard({ venue }: { venue: (typeof VENUE_LIST)[number] }) {
-  return (
-    <Link
-      href={`/venues/${venue.slug}`}
-      className="group relative block overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition-all duration-300 hover:border-green-600/50 hover:shadow-lg hover:shadow-green-950/20"
-    >
-      <div className="h-1 w-full bg-green-600 transition-colors duration-300 group-hover:bg-green-400" />
-
-      <div className="p-4 sm:p-5">
-        <div className="mb-3 sm:mb-4">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-500 flex items-center gap-1.5">
-            <Trophy className="w-3 h-3 shrink-0" />
-            Play
-          </span>
-        </div>
-
-        <h3 className="font-black italic uppercase leading-tight text-lg sm:text-xl text-white mb-2">
-          {venue.name}
-        </h3>
-
-        <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3">
-          <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
-          <span>{venue.area}</span>
-        </div>
-
-        {venue.play && venue.play.length > 0 && (
-          <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-4">
-            {venue.play.map((a) => a.name).join(" · ")}
-          </p>
-        )}
-
-        <div className="flex items-center justify-end pt-4 border-t border-zinc-800">
-          <span className="text-green-400 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:text-green-300">
-            Book Session →
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -441,23 +355,24 @@ export default function Home() {
 
           {/* CTA buttons */}
           <div className="flex flex-wrap gap-4 items-center">
-            <button
-              className={`group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-white text-black hover:bg-green-500 hover:text-white`}
+            <Link href="/watch"
+              className={`group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-blue-500 text-white hover:bg-white hover:text-black cursor-pointer`}
             >
               <span className="transform skew-x-6 flex items-center gap-3">
-                <Heart className={`w-5 h-5 transition-all group-hover:fill-white`} />
-                Follow
+                <TvIcon className={`w-5 h-5 transition-all group-hover:text-black`} />
+                Watch Sports
               </span>
-              {/* Shimmer */}
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            </button>
+            </Link>
 
-            <button className="flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm border border-white/20 text-white hover:border-green-500 hover:text-green-400 transition-all transform -skew-x-6">
+            <Link href="/play"
+              className={`group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-green-500 text-white hover:bg-white hover:text-black cursor-pointer`}
+            >
               <span className="transform skew-x-6 flex items-center gap-3">
-                <Bell className="w-5 h-5" />
-                Race Alerts
+                <TrophyIcon className={`w-5 h-5 transition-all group-hover:text-black`} />
+                Play Sports
               </span>
-            </button>
+            </Link>
+
           </div>
         </div>
 

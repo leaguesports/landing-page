@@ -83,16 +83,9 @@ export function WatchHero({ sportName, locationTitle, venueCount }: WatchHeroPro
                     >
                         <span className="transform skew-x-6 flex items-center gap-3">
                             <Bell className="w-5 h-5" />
-                            Race Alerts
+                            Game Alerts
                         </span>
                     </button>
-
-                    <a
-                        href="#next-races"
-                        className="flex items-center gap-2 text-zinc-400 hover:text-white font-black uppercase italic tracking-wider text-sm transition-colors"
-                    >
-                        Next Race <ChevronRight className="w-4 h-4" />
-                    </a>
                 </div>
             </div>
 

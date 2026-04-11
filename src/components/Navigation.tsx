@@ -1,99 +1,72 @@
 "use client";
 
 import HomeLink from "@/components/HomeLink";
-import { ChevronDown } from "lucide-react";
+import { Trophy, Tv, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
-function Dropdown({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+const ICON_ACTIVE: Record<"blue" | "green", string> = {
+  blue: "text-blue-400",
+  green: "text-green-400",
+};
 
-  const close = useCallback(() => setOpen(false), []);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) close();
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [open, close]);
+function WatchPlayLink({
+  href,
+  label,
+  icon: Icon,
+  iconTone,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  iconTone: keyof typeof ICON_ACTIVE;
+}) {
+  const pathname = usePathname();
+  const active = pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1 text-md font-medium transition-colors hover:text-green-400 focus:outline-none ${open ? "text-green-400" : "text-gray-300"}`}
-        aria-expanded={open}
-        aria-haspopup="true"
-      >
-        {title}
-        <ChevronDown
-          className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180 text-green-400" : "text-gray-500"}`}
-        />
-      </button>
-
-      {open && (
-        <div
-          className="absolute left-0 top-full z-50 mt-3 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#0f0f0f]/95 shadow-2xl shadow-black/60 backdrop-blur-xl"
-          style={{
-            boxShadow:
-              "0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)",
-          }}
-        >
-          <div className="border-b border-white/10 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-              {title}
-            </p>
-          </div>
-          <div className="p-2">
-            {children}
-          </div>
-        </div>
-      )}
-    </div>
+    <Link
+      href={href}
+      className={[
+        "group flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold tracking-wide transition-all duration-200 sm:px-4",
+        active
+          ? "bg-white/12 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] ring-1 ring-white/10"
+          : "text-zinc-500 hover:bg-white/6 hover:text-zinc-200",
+      ].join(" ")}
+    >
+      <Icon
+        className={[
+          "h-4 w-4 shrink-0 transition-colors duration-200",
+          active ? ICON_ACTIVE[iconTone] : "text-zinc-600 group-hover:text-zinc-400",
+        ].join(" ")}
+        aria-hidden
+      />
+      <span>{label}</span>
+    </Link>
   );
 }
 
 export default function Navigation() {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-gray-800/50 bg-[#0f0f0f]/80 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4 w-full">
-          {/* Logo */}
-          <HomeLink />
-
-          <div className="flex gap-4 w-48">
-            <Link
-              href="/watch"
-              className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
-            >
-              Watch
-            </Link>
-            <Link
-              href="/play"
-              className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
-            >
-              Play
-            </Link>
+    <header className="sticky top-0 z-50 w-full">
+      <div className="border-b border-white/6 bg-[#0a0a0a]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] backdrop-blur-xl supports-backdrop-filter:bg-[#0a0a0a]/70">
+        <nav
+          className="mx-auto flex h-15 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6 lg:px-8"
+          aria-label="Main"
+        >
+          <div className="min-w-0 shrink-0">
+            <HomeLink />
           </div>
 
-          <Link
-            href="/login"
-            className="text-md font-medium text-gray-300 transition-colors hover:text-green-400"
+          <div
+            className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-white/10 bg-black/50 p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+            role="presentation"
           >
-            Log in
-          </Link>
-        </div>
+            <WatchPlayLink href="/watch" label="Watch" icon={Tv} iconTone="blue" />
+            <WatchPlayLink href="/play" label="Play" icon={Trophy} iconTone="green" />
+          </div>
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }

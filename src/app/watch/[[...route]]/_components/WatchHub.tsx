@@ -64,6 +64,23 @@ export function WatchHub({ partialSportSlug, sportDisplayName }: WatchHubProps) 
                         ? "Pick a suburb or area below. Every listing shows venues screening this sport with live screens."
                         : "Start with a sport or series, then choose an area to see bars and fan zones near you."}
                 </p>
+
+                {!partialSportSlug ? (
+                    <div className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+                        <a
+                            href="#watch-sports"
+                            className="inline-flex items-center justify-center gap-2 px-8 py-4 font-black uppercase italic tracking-wider text-sm bg-white text-black hover:bg-blue-600 hover:text-white transition-colors transform -skew-x-6"
+                        >
+                            <span className="transform skew-x-6">Choose a sport</span>
+                        </a>
+                        <a
+                            href="#watch-series"
+                            className="inline-flex items-center justify-center gap-2 px-8 py-4 font-black uppercase italic tracking-wider text-sm border border-white/20 text-white hover:border-blue-500 hover:text-blue-400 transition-colors transform -skew-x-6"
+                        >
+                            <span className="transform skew-x-6">Choose a series</span>
+                        </a>
+                    </div>
+                ) : null}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0f0f0f] to-transparent pointer-events-none" />

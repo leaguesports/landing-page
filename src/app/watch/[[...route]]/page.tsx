@@ -110,7 +110,8 @@ export default async function WatchPage(route: {
                     <WatchNav variant="hub" />
                     <WatchHub />
                     <WatchBrowseSection
-                        eyebrow="Step one"
+                        sectionId="watch-sports"
+                        eyebrow="Sports"
                         title="Choose a sport"
                         description="Open a sport to see suburbs and areas with screening venues."
                     >
@@ -121,7 +122,7 @@ export default async function WatchPage(route: {
                                         key={sport.id}
                                         href={`/watch/${sport.slug}`}
                                         title={sport.name}
-                                        subtitle="Browse watch venues"
+                                        subtitle={sport.name}
                                         sportIconSlug={sport.slug}
                                     />
                                 ))}
@@ -131,9 +132,10 @@ export default async function WatchPage(route: {
                         )}
                     </WatchBrowseSection>
                     <WatchBrowseSection
-                        eyebrow="Motorsport & series"
+                        sectionId="watch-series"
+                        eyebrow="Series"
                         title="Series & championships"
-                        description="Follow a series to find venues showing those broadcasts."
+                        description="Select a series to see venues showing those broadcasts."
                     >
                         {series.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
@@ -142,7 +144,7 @@ export default async function WatchPage(route: {
                                         key={item.id}
                                         href={`/watch/${item.slug}`}
                                         title={item.name}
-                                        subtitle="Browse by series"
+                                        subtitle={item.name}
                                         sportIconSlug={item.sportSlug ?? undefined}
                                     />
                                 ))}
