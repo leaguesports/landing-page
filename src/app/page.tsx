@@ -1,12 +1,8 @@
-"use client";
-
 import {
-  Bell,
   Calendar,
   ChevronRight,
   Clock,
   Flag,
-  Heart,
   Trophy,
   TrophyIcon,
   Tv,
@@ -16,7 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import type { ReactNode } from "react";
 
 // ─── Upcoming events ───────────────────────────────────────────────────────
 const UPCOMING_EVENTS = [
@@ -96,8 +92,8 @@ const SPORT_DNA: Record<
     btnHover: string;
     bottomLine: string;
     imgClass: string;
-    watermark: React.ReactNode;
-    dnaBadge: (event: (typeof UPCOMING_EVENTS)[number]) => React.ReactNode;
+    watermark: ReactNode;
+    dnaBadge: (event: (typeof UPCOMING_EVENTS)[number]) => ReactNode;
   }
 > = {
   "Formula 1": {

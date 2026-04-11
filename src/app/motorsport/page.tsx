@@ -1,5 +1,3 @@
-"use client";
-
 import { Bell, Calendar, ChevronRight, Clock, Flag, Heart, MapPin, Radio, Star, TrendingUp, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
 
