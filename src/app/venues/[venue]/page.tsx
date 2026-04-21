@@ -1,23 +1,87 @@
-/* eslint-disable @next/next/no-img-element */
-import { ACTIVITIES } from "@/data/activity";
-import {
-    getVenueType,
-    type Venue,
-    VENUE_LIST,
-} from "@/data/venues";
+import { getVenueBySlug, type VenueDetail } from "@/services/venues";
+import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import type { TypedObject } from "@portabletext/types";
 import {
     Bell,
-    Car,
     ChevronRight,
-    Dog,
     Flag,
     Heart,
     MapPin,
-    Wifi,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+const venueAboutPortableTextComponents = {
+    block: {
+        normal: ({ children }) => (
+            <p className="mb-5 text-balance text-zinc-300 text-base sm:text-lg leading-[1.75] font-medium last:mb-0">
+                {children}
+            </p>
+        ),
+        h2: ({ children }) => (
+            <h3 className="mb-3 mt-10 text-sm font-black uppercase tracking-[0.2em] text-red-400 first:mt-0">
+                {children}
+            </h3>
+        ),
+        h3: ({ children }) => (
+            <h3 className="mb-3 mt-8 text-sm font-black uppercase tracking-wider text-zinc-400 first:mt-0">
+                {children}
+            </h3>
+        ),
+        blockquote: ({ children }) => (
+            <blockquote className="my-6 border-l-4 border-red-600/90 py-1 pl-5 text-zinc-400 text-base sm:text-lg italic leading-relaxed">
+                {children}
+            </blockquote>
+        ),
+    },
+    list: {
+        bullet: ({ children }) => (
+            <ul className="my-6 space-y-4 sm:my-8">{children}</ul>
+        ),
+        number: ({ children }) => (
+            <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-black marker:text-red-500 sm:my-8 sm:pl-6">
+                {children}
+            </ol>
+        ),
+    },
+    listItem: {
+        bullet: ({ children }) => (
+            <li className="flex gap-3.5 text-zinc-300 text-base sm:text-lg leading-[1.65] font-medium">
+                <span
+                    className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.45)]"
+                    aria-hidden
+                />
+                <span className="min-w-0 flex-1 [&_strong]:text-white">{children}</span>
+            </li>
+        ),
+        number: ({ children }) => (
+            <li className="text-zinc-300 text-base sm:text-lg leading-relaxed font-medium [&_strong]:text-white">
+                {children}
+            </li>
+        ),
+    },
+    marks: {
+        strong: ({ children }) => (
+            <strong className="font-bold text-white">{children}</strong>
+        ),
+        em: ({ children }) => <em className="italic text-zinc-200">{children}</em>,
+        link: ({ children, value }) => {
+            const href =
+                value && typeof value === "object" && "href" in value
+                    ? String((value as { href?: string }).href ?? "#")
+                    : "#";
+            return (
+                <Link
+                    href={href}
+                    className="font-semibold text-red-400 underline decoration-red-500/35 underline-offset-[3px] transition-colors hover:text-red-300"
+                >
+                    {children}
+                </Link>
+            );
+        },
+    },
+} satisfies PortableTextComponents;
 
 const NAV_LINKS = [
     { label: "About", href: "#about" },
@@ -27,31 +91,7 @@ const NAV_LINKS = [
     { label: "Location", href: "#location" },
 ];
 
-/** Shown when real listing data is missing (temporary demo content). */
-const DUMMY_WATCH = [
-    ACTIVITIES.FORMULA_1,
-    ACTIVITIES.RUGBY,
-    ACTIVITIES.SOCCER,
-];
-const DUMMY_PLAY = [ACTIVITIES.GOLF, ACTIVITIES.PADEL];
-
-const DUMMY_AMENITIES = [
-    { icon: Wifi, label: "Free Wi‑Fi" },
-    { icon: Car, label: "Parking" },
-    { icon: Dog, label: "Pet friendly" },
-] as const;
-
-const DUMMY_UPCOMING = {
-    eyebrow: "Live screening · sample",
-    title: "Rugby: Lions vs Sharks",
-    meta: "SAT · Kickoff 15:00 · Placeholder listing",
-};
-
 type Props = { params: Promise<{ venue: string }> };
-
-function getVenueBySlug(slug: string): Venue | undefined {
-    return VENUE_LIST.find((v) => v.slug === slug);
-}
 
 function getBaseUrl(): string {
     if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -69,27 +109,23 @@ export async function generateMetadata({
     params: Promise<{ venue: string }>;
 }): Promise<Metadata> {
     const { venue: slug } = await params;
-    const venue = getVenueBySlug(slug);
+    const venue = await getVenueBySlug(slug);
     if (!venue) return { title: "Venue Not Found" };
-    const type = getVenueType(venue);
-    const title = `${venue.name} | ${venue.area}`;
+    const title = `${venue.name}`;
     const canonicalPath = `/venues/${venue.slug}`;
     const baseUrl = getBaseUrl();
     const canonicalUrl = `${baseUrl}${canonicalPath}`;
 
     return {
         title,
-        description: `${venue.name} — ${type} in ${venue.area}. ${venue.description}`,
         keywords: [
             venue.name,
-            venue.area,
             "Venues",
             "Sports",
             "LeagueSports",
         ],
         openGraph: {
             title,
-            description: venue.description,
             url: canonicalUrl,
             siteName: "LeagueSports",
             type: "website",
@@ -98,7 +134,6 @@ export async function generateMetadata({
         twitter: {
             card: "summary_large_image",
             title,
-            description: venue.description,
         },
         alternates: {
             canonical: canonicalUrl,
@@ -110,7 +145,7 @@ export async function generateMetadata({
     };
 }
 
-function Breadcrumbs({ venue }: { venue: Venue }) {
+function Breadcrumbs({ venue }: { venue: Pick<VenueDetail, "name"> }) {
     return (
         <nav
             className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500"
@@ -131,22 +166,11 @@ function Breadcrumbs({ venue }: { venue: Venue }) {
 
 export default async function VenuePage({ params }: Props) {
     const { venue: venueSlug } = await params;
-    const venue = getVenueBySlug(venueSlug);
+    const venue = await getVenueBySlug(venueSlug);
     if (!venue) return notFound();
 
-    const venueType = getVenueType(venue);
-    const watchActivities = venue.watch ?? [];
-    const playActivities = venue.play ?? [];
-
-    const displayWatch =
-        watchActivities.length > 0 ? watchActivities : DUMMY_WATCH;
-    const displayPlay =
-        playActivities.length > 0 ? playActivities : DUMMY_PLAY;
-    const sportsUsesDummy =
-        watchActivities.length === 0 || playActivities.length === 0;
-
     const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        `${venue.name} ${venue.area}`,
+        `${venue.name}`,
     )}`;
 
     return (
@@ -222,38 +246,11 @@ export default async function VenuePage({ params }: Props) {
                             <Breadcrumbs venue={venue} />
                         </div>
 
-                        <p className="text-red-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-3">
-                            {venueType}
-                        </p>
-
                         <h1 className="text-4xl sm:text-7xl lg:text-[5rem] font-black italic uppercase leading-[0.95] tracking-tighter mb-4">
                             <span className="text-red-white">{venue.name}</span>
                         </h1>
 
-                        <p className="text-zinc-400 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm mb-10 max-w-2xl">
-                            {venue.description}
-                        </p>
-
                         <div className="flex flex-wrap gap-6 mb-10">
-                            {[
-                                {
-                                    label: "Watch",
-                                    value: displayWatch.length,
-                                },
-                                {
-                                    label: "Play",
-                                    value: displayPlay.length,
-                                },
-                            ].map((stat) => (
-                                <div key={stat.label} className="flex flex-col">
-                                    <span className="text-3xl font-black italic text-white leading-none">
-                                        {stat.value}
-                                    </span>
-                                    <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
-                                        Sports · {stat.label}
-                                    </span>
-                                </div>
-                            ))}
                         </div>
 
                         <div className="flex flex-wrap gap-4 items-center">
@@ -299,20 +296,26 @@ export default async function VenuePage({ params }: Props) {
                 {/* About */}
                 <section
                     id="about"
-                    className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 scroll-mt-24"
+                    className="scroll-mt-24 border-t border-white/5 py-12 sm:py-20"
                 >
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                        <div className="mb-8 sm:mb-10">
-                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <header className="mb-8 sm:mb-10">
+                            <h2 className="mb-2 inline-block rounded bg-red-600 px-4 py-1.5 font-black text-xl uppercase italic text-white sm:px-6 sm:text-2xl">
                                 About
                             </h2>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
-                                {venueType} · {venue.area}
+                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                                {venue.name}
                             </p>
-                        </div>
-                        <p className="text-zinc-300 text-base sm:text-lg leading-relaxed max-w-3xl font-medium">
-                            {venue.description}
-                        </p>
+                        </header>
+
+                        <PortableText
+                            value={
+                                venue.description as unknown as
+                                | TypedObject
+                                | TypedObject[]
+                            }
+                            components={venueAboutPortableTextComponents}
+                        />
                     </div>
                 </section>
 
@@ -331,27 +334,12 @@ export default async function VenuePage({ params }: Props) {
                             </p>
                         </div>
 
-                        {sportsUsesDummy && (
-                            <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-6">
-                                Sample sports shown where listing data is still
-                                pending.
-                            </p>
-                        )}
-
                         <div className="grid gap-8 sm:grid-cols-2">
                             <div>
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-4">
                                     Watch
                                 </h3>
                                 <ul className="flex flex-wrap gap-2">
-                                    {displayWatch.map((a) => (
-                                        <li
-                                            key={a.id}
-                                            className="px-4 py-2 rounded border border-zinc-800 bg-zinc-950 text-sm font-black italic uppercase text-white hover:border-red-600/50 transition-colors"
-                                        >
-                                            {a.name}
-                                        </li>
-                                    ))}
                                 </ul>
                             </div>
                             <div>
@@ -359,14 +347,6 @@ export default async function VenuePage({ params }: Props) {
                                     Play
                                 </h3>
                                 <ul className="flex flex-wrap gap-2">
-                                    {displayPlay.map((a) => (
-                                        <li
-                                            key={a.id}
-                                            className="px-4 py-2 rounded border border-zinc-800 bg-zinc-950 text-sm font-black italic uppercase text-white hover:border-red-600/50 transition-colors"
-                                        >
-                                            {a.name}
-                                        </li>
-                                    ))}
                                 </ul>
                             </div>
                         </div>
@@ -408,18 +388,6 @@ export default async function VenuePage({ params }: Props) {
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {DUMMY_AMENITIES.map(({ icon: Icon, label }) => (
-                                <div
-                                    key={label}
-                                    className="flex items-center gap-2 rounded border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-zinc-300"
-                                >
-                                    <Icon
-                                        className="w-4 h-4 shrink-0 text-red-500"
-                                        aria-hidden
-                                    />
-                                    {label}
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </section>
@@ -437,20 +405,6 @@ export default async function VenuePage({ params }: Props) {
                             <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
                                 Sample event · placeholder until calendar is wired
                             </p>
-                        </div>
-                        <div className="max-w-xl overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition-all duration-300 hover:border-red-600/50">
-                            <div className="h-1 w-full bg-red-600" />
-                            <div className="p-5 sm:p-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400 mb-2">
-                                    {DUMMY_UPCOMING.eyebrow}
-                                </p>
-                                <h3 className="font-black italic uppercase text-lg sm:text-xl text-white leading-tight mb-2">
-                                    {DUMMY_UPCOMING.title}
-                                </h3>
-                                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">
-                                    {DUMMY_UPCOMING.meta}
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -478,7 +432,6 @@ export default async function VenuePage({ params }: Props) {
                                         {venue.name}
                                     </p>
                                     <p className="text-zinc-400 text-sm font-bold mt-1">
-                                        {venue.area}
                                     </p>
                                 </div>
                             </div>
