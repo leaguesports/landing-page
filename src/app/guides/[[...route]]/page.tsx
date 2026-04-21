@@ -7,6 +7,49 @@ import { notFound } from "next/navigation";
 import { getGuideBySlug } from "./actions";
 import { guidePortableTextComponents } from "./textComponents";
 
+export async function generateMetadata({ params }: { params: Promise<{ route: string[] }> }) {
+    const guideSlug = (await params).route[0];
+
+    if (!guideSlug) {
+        return notFound();
+    }
+
+    const guide = await getGuideBySlug(guideSlug);
+
+    if (!guide) {
+        return notFound();
+    }
+
+    return {
+        title: guide?.title,
+        description: guide?.description,
+        openGraph: {
+            title: guide?.title,
+            description: guide?.description,
+            images: [urlFor(guide.mainImage)?.url() ?? ""],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: guide?.title,
+            description: guide?.description,
+            images: [urlFor(guide.mainImage)?.url() ?? ""],
+        },
+        alternates: {
+            canonical: `/guides/${guide.slug}`,
+        },
+        robots: {
+            index: true,
+            follow: true,
+        },
+        keywords: [
+            guide.title,
+            "Guides",
+            "Sports",
+            "LeagueSports",
+        ],
+    };
+}
+
 export default async function GuidesPage(route: { params: Promise<{ route: string[] }> }) {
     const params = await route.params;
     const guideSlug = params.route[0];

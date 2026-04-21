@@ -1,5 +1,6 @@
 import { sanityClient } from "@/sanity/client";
 import type { MetadataRoute } from "next";
+import { listGuides } from "./guides/[[...route]]/actions";
 
 type Venue = {
   id: string;
@@ -113,5 +114,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticRoutes, ...locationRoutes];
+  const guides = await listGuides();
+
+  const guideRoutes: MetadataRoute.Sitemap = [];
+
+  for (const guide of guides) {
+    guideRoutes.push({
+      url: `${baseUrl}/guides/${guide.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    });
+  }
+
+  return [...staticRoutes, ...locationRoutes, ...guideRoutes];
 }

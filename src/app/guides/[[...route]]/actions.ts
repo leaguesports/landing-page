@@ -11,13 +11,25 @@ type Guide = {
   content: TypedObject[];
 };
 
+export async function listGuides() {
+  return sanityClient.fetch<Guide[]>(
+    `*[_type == "guide"] {
+      _id,
+      title,
+      description,
+      mainImage,
+      "slug": slug.current,
+    }`,
+  );
+}
+
 export async function getGuideBySlug(slug: string) {
   return sanityClient.fetch<Guide | null>(
     `*[_type == "guide" && slug.current == $slug][0] {
             _id,
             title,
             mainImage,
-            slug,
+            "slug": slug.current,
             description,
             content,
         }`,
