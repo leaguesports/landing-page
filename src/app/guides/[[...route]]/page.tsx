@@ -166,11 +166,11 @@ export default async function GuidesPage(route: { params: Promise<{ route: strin
 
                     <div className="flex flex-col gap-3 shrink-0">
                         <Link
-                            href="/venues"
+                            href="/guides"
                             className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm bg-white text-black hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"
                         >
                             <span className="transform skew-x-6">
-                                Browse all venues
+                                Browse all guides
                             </span>
                         </Link>
                         <button
@@ -179,7 +179,7 @@ export default async function GuidesPage(route: { params: Promise<{ route: strin
                         >
                             <span className="transform skew-x-6 flex items-center gap-3">
                                 <Bell className="w-4 h-4" />
-                                Venue alerts
+                                Guide alerts
                             </span>
                         </button>
                     </div>

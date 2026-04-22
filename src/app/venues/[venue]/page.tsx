@@ -383,9 +383,6 @@ export default async function VenuePage({ params }: Props) {
                             <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
                                 Amenities
                             </h2>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
-                                Sample amenities · replace with real venue data
-                            </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                         </div>
