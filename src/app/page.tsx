@@ -13,6 +13,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
+import { urlFor } from "@/sanity/client";
 
 // ─── Upcoming events ───────────────────────────────────────────────────────
 const UPCOMING_EVENTS = [
@@ -281,8 +283,57 @@ function EventCard({ event }: { event: (typeof UPCOMING_EVENTS)[number] }) {
   );
 }
 
+function GuideCard({ guide }: { guide: Guide }) {
+  return (
+    <Link
+      href={`/guides/${guide.slug}`}
+      className="group block bg-zinc-900 overflow-hidden hover:bg-zinc-800/80 transition-colors duration-200 rounded-sm border-b"
+      style={{ borderColor: DEFAULT_DNA.hex }}
+    >
+      {/* Image with title overlay */}
+      <div className="relative aspect-video overflow-hidden bg-zinc-800">
+        {guide.mainImage ? (
+          <Image
+            src={urlFor(guide.mainImage)?.url() ?? ""}
+            alt={guide.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          />
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: `${DEFAULT_DNA.hex}18` }}
+          >
+            <div style={{ opacity: 0.15, color: DEFAULT_DNA.hex, width: "5rem", height: "5rem" }}>
+              {DEFAULT_DNA.watermark}
+            </div>
+          </div>
+        )}
+
+        {/* Scrim */}
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
+
+      {/* Meta panel */}
+      <div className="px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-2">
+        <div>
+          <p className="text-xs tracking-wide uppercase" style={{ color: DEFAULT_DNA.hex }}>
+            {/* {guide.} */}
+          </p>
+          <h3 className="text-sm sm:text-base min-h-[2.5rem] sm:min-h-[3.5rem] leading-snug text-white drop-shadow-lg font-black uppercase">
+            {guide.title}
+          </h3>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────
-export default function Home() {
+export default async function Home() {
+  const topGuides = await getTopGuides();
+
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
 
@@ -410,29 +461,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── What's Happening Feed ────────────────────────────────────────── */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
 
-          {/* ── Upcoming Sports ── */}
+          {/* ── Top Guides ── */}
           <div className="mb-12 sm:mb-16">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8">
               <div>
-                <SectionBadge label="Upcoming Sports" color="red" />
+                <SectionBadge label="Top Guides" color="red" />
                 <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1 sm:mt-0 sm:ml-4">
-                  Top sports happening around the world
+                  Top guides for your sports
                 </p>
               </div>
               <Link
-                href="/events"
+                href="/guides"
                 className="text-red-400 text-[10px] font-black uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-1 shrink-0"
               >
                 View All <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-8">
-              {UPCOMING_EVENTS.map((e) => (
-                <EventCard key={e.id} event={e} />
+              {topGuides.map((guide) => (
+                <GuideCard key={guide._id} guide={guide} />
               ))}
             </div>
           </div>

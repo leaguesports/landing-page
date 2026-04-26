@@ -83,11 +83,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const venues = await getVenues();
 
+  const venueRoutes: MetadataRoute.Sitemap = [];
   const locationSports = new Map<string, string[]>();
 
   for (const venue of venues) {
     const locationSlug = venue.location?.slug;
     if (!locationSlug) continue;
+
+    venueRoutes.push({
+      url: `${baseUrl}/venues/${venue.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    });
 
     const broadcasts = Array.isArray(venue.broadcasts) ? venue.broadcasts : [];
     for (const broadcast of broadcasts) {
@@ -127,5 +135,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  return [...staticRoutes, ...locationRoutes, ...guideRoutes];
+  return [...staticRoutes, ...locationRoutes, ...guideRoutes, ...venueRoutes];
 }
