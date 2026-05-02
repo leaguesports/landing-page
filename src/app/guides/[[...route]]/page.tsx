@@ -4,8 +4,36 @@ import { PortableText } from "next-sanity";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGuideBySlug } from "./actions";
+import { getGuideBySlug, Guide } from "./actions";
 import { guidePortableTextComponents } from "./textComponents";
+
+function getJsonLd(guide: Guide) {
+    return {
+        "@context": "https://schema.org",
+        "@type": "Guide",
+        "headline": guide.title,
+        "description": guide.description,
+        "image": urlFor(guide.mainImage)?.url() ?? "",
+        "author": {
+            "@type": "Organization",
+            "name": "LeagueSports",
+            "url": "https://leaguesports.co.za"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "LeagueSports",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://leaguesports.co.za/logo.png" // Replace with your logo
+            }
+        },
+        "datePublished": new Date(guide._createdAt).toISOString(),
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://leaguesports.co.za/guides/${guide.slug}`
+        }
+    };
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ route: string[] }> }) {
     const guideSlug = (await params).route[0];
@@ -43,8 +71,7 @@ export async function generateMetadata({ params }: { params: Promise<{ route: st
         },
         keywords: [
             guide.title,
-            "Guides",
-            "Sports",
+            ...guide.keywords,
             "LeagueSports",
         ],
     };
@@ -64,7 +91,15 @@ export default async function GuidesPage(route: { params: Promise<{ route: strin
         return notFound();
     }
 
+    const jsonLd = getJsonLd(guide);
+
     return <div className="min-h-screen bg-[#0f0f0f] text-white">
+        {/* JSON-LD */}
+        <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
         {/* Hero */}
         <section className="relative overflow-hidden min-h-[70vh] sm:min-h-[75vh] flex items-end">
             <div className="absolute inset-0 bg-linear-to-br from-red-950/60 via-[#0f0f0f] to-[#0f0f0f]" />
