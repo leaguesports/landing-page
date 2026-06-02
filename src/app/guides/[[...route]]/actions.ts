@@ -15,7 +15,7 @@ export type Guide = {
 
 export async function getTopGuides(limit: number = 4) {
   return sanityClient.fetch<Guide[]>(
-    `*[_type == "guide"] | order(createdAt desc) [0...$limit] {
+    `*[_type == "guide"] | order(_createdAt desc) [0...$limit] {
       _id,
       _createdAt,
       title,
