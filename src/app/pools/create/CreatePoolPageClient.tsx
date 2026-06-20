@@ -1,12 +1,13 @@
 "use client";
 
+import { getGoogleSignInUrl } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import CreatePoolForm from "@/app/pools/_components/CreatePoolForm";
 
 export default function CreatePoolPageClient() {
-  const { isAuthenticated, isLoading, signIn } = useAuth();
+  const { isAuthenticated, isLoading, authError, signIn, refresh } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,16 +18,26 @@ export default function CreatePoolPageClient() {
   }
 
   if (!isAuthenticated) {
+    const signInUrl = getGoogleSignInUrl("/pools/create");
+
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
         <h1 className="text-2xl font-bold text-white">Sign in to create a pool</h1>
         <p className="mt-2 text-zinc-400">
           You need a LeagueSports account to start a prediction pool.
         </p>
+
+        {authError && (
+          <p className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {authError}
+          </p>
+        )}
+
         <button
           type="button"
           onClick={() => signIn("/pools/create")}
-          className="mt-6 inline-flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white/25 hover:bg-white/10"
+          disabled={!signInUrl}
+          className="mt-6 inline-flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
             <path
@@ -48,6 +59,15 @@ export default function CreatePoolPageClient() {
           </svg>
           Continue with Google
         </button>
+
+        <button
+          type="button"
+          onClick={() => refresh()}
+          className="mt-3 block w-full text-sm text-zinc-500 hover:text-zinc-300"
+        >
+          Already signed in? Refresh
+        </button>
+
         <p className="mt-4 text-sm text-zinc-500">
           Or{" "}
           <Link href="/login" className="text-green-400 hover:text-green-300">

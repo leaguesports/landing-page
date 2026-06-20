@@ -1,13 +1,16 @@
 "use client";
 
-const GOOGLE_AUTH_URL = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL ?? "";
+import { getGoogleSignInUrl } from "@/lib/api-client";
 
 export default function LoginPage() {
   function handleGoogleLogin() {
-    if (GOOGLE_AUTH_URL) {
-      window.location.href = GOOGLE_AUTH_URL;
+    const url = getGoogleSignInUrl("/");
+    if (url) {
+      window.location.href = url;
     }
   }
+
+  const signInUrl = getGoogleSignInUrl("/");
 
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#0f0f0f]">
@@ -24,7 +27,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={!GOOGLE_AUTH_URL}
+              disabled={!signInUrl}
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 py-3 text-sm font-medium text-gray-200 transition-colors hover:border-white/25 hover:bg-white/8 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
@@ -47,9 +50,13 @@ export default function LoginPage() {
               </svg>
               Continue with Google
             </button>
-            {!GOOGLE_AUTH_URL && (
+            {!signInUrl && (
               <p className="mt-4 text-center text-xs text-gray-500">
-                Set <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-gray-400">NEXT_PUBLIC_GOOGLE_AUTH_URL</code> in .env to enable sign in.
+                Set{" "}
+                <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-gray-400">
+                  NEXT_PUBLIC_API_URL
+                </code>{" "}
+                in .env to enable sign in.
               </p>
             )}
           </div>

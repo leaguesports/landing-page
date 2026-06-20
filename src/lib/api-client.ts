@@ -14,6 +14,24 @@ export function getApiBaseUrl(): string {
   return API_BASE;
 }
 
+export function isApiConfigured(): boolean {
+  return API_BASE.length > 0;
+}
+
+function toAbsoluteReturnTo(returnTo: string): string {
+  if (returnTo.startsWith("http")) {
+    return returnTo;
+  }
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_SITE_URL ?? "https://leaguesports.co.za").replace(
+          /\/$/,
+          "",
+        );
+  return `${origin}${returnTo.startsWith("/") ? returnTo : `/${returnTo}`}`;
+}
+
 export async function poolApi<T>(
   path: string,
   options: RequestInit = {},
@@ -53,47 +71,64 @@ export interface AuthUser {
 export interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
+  error: string | null;
 }
 
 export async function getAuthState(): Promise<AuthState> {
   if (!API_BASE) {
-    return { isAuthenticated: false, user: null };
+    return {
+      isAuthenticated: false,
+      user: null,
+      error: "API URL is not configured",
+    };
   }
 
-  const res = await fetch(`${API_BASE}/api/auth/me`, {
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      credentials: "include",
+    });
 
-  if (res.status === 401) {
-    return { isAuthenticated: false, user: null };
-  }
-
-  if (res.status === 204) {
-    return { isAuthenticated: true, user: null };
-  }
-
-  if (res.ok) {
-    try {
-      const user = (await res.json()) as AuthUser;
-      return { isAuthenticated: true, user };
-    } catch {
-      return { isAuthenticated: true, user: null };
+    if (res.status === 401) {
+      return { isAuthenticated: false, user: null, error: null };
     }
-  }
 
-  return { isAuthenticated: false, user: null };
+    if (res.status === 204) {
+      return { isAuthenticated: true, user: null, error: null };
+    }
+
+    if (res.ok) {
+      try {
+        const user = (await res.json()) as AuthUser;
+        return { isAuthenticated: true, user, error: null };
+      } catch {
+        return { isAuthenticated: true, user: null, error: null };
+      }
+    }
+
+    return {
+      isAuthenticated: false,
+      user: null,
+      error: `Auth check failed (${res.status})`,
+    };
+  } catch {
+    return {
+      isAuthenticated: false,
+      user: null,
+      error: "Could not reach the API. Check your connection or try again.",
+    };
+  }
 }
 
 export function getGoogleSignInUrl(returnTo?: string): string {
-  if (API_BASE) {
-    const url = new URL(`${API_BASE}/api/auth/providers/google/signin`);
-    if (returnTo) {
-      url.searchParams.set("returnTo", returnTo);
-    }
-    return url.toString();
+  if (!API_BASE) {
+    return "";
   }
 
-  return process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL ?? "";
+  const url = new URL(`${API_BASE}/api/auth/providers/google/signin`);
+  if (returnTo) {
+    url.searchParams.set("returnTo", toAbsoluteReturnTo(returnTo));
+  }
+  return url.toString();
 }
 
 export async function logout(): Promise<void> {

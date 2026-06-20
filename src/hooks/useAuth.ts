@@ -8,11 +8,14 @@ import {
   type AuthState,
 } from "@/lib/api-client";
 
+const INITIAL_AUTH: AuthState = {
+  isAuthenticated: false,
+  user: null,
+  error: null,
+};
+
 export function useAuth() {
-  const [auth, setAuth] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-  });
+  const [auth, setAuth] = useState<AuthState>(INITIAL_AUTH);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -21,7 +24,11 @@ export function useAuth() {
       const state = await getAuthState();
       setAuth(state);
     } catch {
-      setAuth({ isAuthenticated: false, user: null });
+      setAuth({
+        isAuthenticated: false,
+        user: null,
+        error: "Could not verify sign-in status",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -29,6 +36,21 @@ export function useAuth() {
 
   useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    }
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [refresh]);
 
   const signIn = useCallback((returnTo?: string) => {
@@ -44,7 +66,7 @@ export function useAuth() {
     } catch {
       // Cookie may already be cleared
     }
-    setAuth({ isAuthenticated: false, user: null });
+    setAuth(INITIAL_AUTH);
   }, []);
 
   const displayName =
@@ -54,6 +76,7 @@ export function useAuth() {
     isAuthenticated: auth.isAuthenticated,
     user: auth.user,
     displayName,
+    authError: auth.error,
     isLoading,
     signIn,
     signOut,
