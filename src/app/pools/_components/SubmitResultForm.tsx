@@ -1,7 +1,6 @@
 "use client";
 
-import { ApiError } from "@/lib/api-client";
-import { submitResult } from "@/lib/pool-api";
+import { PoolApiError, submitResult } from "@/lib/pool-api";
 import { parseNonNegativeInt } from "@/lib/pool-utils";
 import type { Leaderboard } from "@/types/pool";
 import { useState } from "react";
@@ -39,7 +38,7 @@ export default function SubmitResultForm({
       const leaderboard = await submitResult(inviteCode, home, away);
       onSubmitted(leaderboard);
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof PoolApiError) {
         setError(err.message);
       } else {
         setError("Could not submit result. Please try again.");
@@ -56,7 +55,8 @@ export default function SubmitResultForm({
     >
       <h2 className="text-lg font-bold text-white">Submit final result</h2>
       <p className="mt-1 text-sm text-zinc-400">
-        As pool creator, enter the final score to score all predictions and reveal the winner.
+        Enter the final score to calculate points and reveal the winner. Anyone with this
+        device&apos;s pool link can submit.
       </p>
 
       <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-end gap-3">

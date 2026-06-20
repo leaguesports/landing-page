@@ -18,18 +18,32 @@ export function isApiConfigured(): boolean {
   return API_BASE.length > 0;
 }
 
+function getSiteOrigin(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://leaguesports.co.za").replace(
+    /\/$/,
+    "",
+  );
+}
+
+/**
+ * Browser calls use same-origin `/api/*` (proxied to the backend in next.config).
+ * This keeps auth cookies first-party on leaguesports.co.za.
+ */
+function getRequestBase(): string {
+  if (typeof window !== "undefined") {
+    return getSiteOrigin();
+  }
+  return API_BASE;
+}
+
 function toAbsoluteReturnTo(returnTo: string): string {
   if (returnTo.startsWith("http")) {
     return returnTo;
   }
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : (process.env.NEXT_PUBLIC_SITE_URL ?? "https://leaguesports.co.za").replace(
-          /\/$/,
-          "",
-        );
-  return `${origin}${returnTo.startsWith("/") ? returnTo : `/${returnTo}`}`;
+  return `${getSiteOrigin()}${returnTo.startsWith("/") ? returnTo : `/${returnTo}`}`;
 }
 
 export async function poolApi<T>(
@@ -40,7 +54,7 @@ export async function poolApi<T>(
     throw new ApiError(0, "API URL is not configured");
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getRequestBase()}${path}`, {
     ...options,
     credentials: "include",
     headers: {
@@ -84,7 +98,7 @@ export async function getAuthState(): Promise<AuthState> {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/auth/me`, {
+    const res = await fetch(`${getRequestBase()}/api/auth/me`, {
       credentials: "include",
     });
 
@@ -124,7 +138,7 @@ export function getGoogleSignInUrl(returnTo?: string): string {
     return "";
   }
 
-  const url = new URL(`${API_BASE}/api/auth/providers/google/signin`);
+  const url = new URL(`${getSiteOrigin()}/api/auth/providers/google/signin`);
   if (returnTo) {
     url.searchParams.set("returnTo", toAbsoluteReturnTo(returnTo));
   }

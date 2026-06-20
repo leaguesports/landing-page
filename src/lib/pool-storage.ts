@@ -1,20 +1,17 @@
-const PREFIX = "pool-member:";
+const storageKey = (inviteCode: string) =>
+  `pool-member:${inviteCode.toUpperCase()}`;
 
-function normalizeCode(inviteCode: string): string {
-  return inviteCode.toUpperCase();
-}
-
-export function getGuestMemberId(inviteCode: string): string | null {
+export function getPoolMemberId(inviteCode: string): string | null {
   if (typeof window === "undefined") {
     return null;
   }
-  return localStorage.getItem(`${PREFIX}${normalizeCode(inviteCode)}`);
+  return localStorage.getItem(storageKey(inviteCode));
 }
 
-export function setGuestMemberId(inviteCode: string, memberId: string): void {
-  localStorage.setItem(`${PREFIX}${normalizeCode(inviteCode)}`, memberId);
+export function savePoolMemberId(inviteCode: string, poolMemberId: string): void {
+  localStorage.setItem(storageKey(inviteCode), poolMemberId);
 }
 
-export function clearGuestMemberId(inviteCode: string): void {
-  localStorage.removeItem(`${PREFIX}${normalizeCode(inviteCode)}`);
+export function clearPoolMemberId(inviteCode: string): void {
+  localStorage.removeItem(storageKey(inviteCode));
 }

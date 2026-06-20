@@ -43,7 +43,7 @@ export interface PoolView {
   inviteCode: string;
   scoringRule: PoolScoringRule;
   createdAt: string;
-  createdByUserId: string;
+  createdByUserId: string | null;
   memberCount: number;
   predictionsOpen: boolean;
   fixture: PoolFixture;
@@ -103,6 +103,7 @@ export interface CreatePoolFixtureInput {
 
 export interface CreatePoolInput {
   name: string;
+  hostDisplayName: string;
   scoringRule?: PoolScoringRule;
   fixture?: CreatePoolFixtureInput;
   fixtureId?: string;

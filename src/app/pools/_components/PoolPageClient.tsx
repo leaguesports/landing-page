@@ -1,14 +1,12 @@
 "use client";
 
-import { ApiError } from "@/lib/api-client";
-import { getLeaderboard, getPool } from "@/lib/pool-api";
-import { getGuestMemberId } from "@/lib/pool-storage";
+import { getLeaderboard, getPool, PoolApiError } from "@/lib/pool-api";
+import { getPoolMemberId } from "@/lib/pool-storage";
 import {
   findCurrentMember,
   getPoolUiState,
   SCORING_RULES,
 } from "@/lib/pool-utils";
-import { useAuth } from "@/hooks/useAuth";
 import type { Leaderboard, PoolView } from "@/types/pool";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { Loader2, Trophy } from "lucide-react";
@@ -31,8 +29,6 @@ export default function PoolPageClient({
   inviteCode: string;
   initialTab?: Tab;
 }) {
-  const { isAuthenticated, isLoading: authLoading, user, displayName, signIn } =
-    useAuth();
   const [pool, setPool] = useState<PoolView | null>(null);
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -49,9 +45,9 @@ export default function PoolPageClient({
       setNotFound(false);
       return data;
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
+      if (err instanceof PoolApiError && err.status === 404) {
         setNotFound(true);
-      } else if (err instanceof ApiError) {
+      } else if (err instanceof PoolApiError) {
         setError(err.message);
       } else {
         setError("Could not load pool. Please try again.");
@@ -72,8 +68,7 @@ export default function PoolPageClient({
   useEffect(() => {
     async function init() {
       setIsLoading(true);
-      const storedId = getGuestMemberId(inviteCode);
-      setMemberId(storedId);
+      setMemberId(getPoolMemberId(inviteCode));
       const data = await loadPool();
       if (data?.fixture.status === "FINISHED") {
         await loadLeaderboard();
@@ -109,7 +104,7 @@ export default function PoolPageClient({
     setTab("leaderboard");
   }
 
-  if (isLoading || authLoading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-green-400" aria-label="Loading" />
@@ -154,15 +149,8 @@ export default function PoolPageClient({
   }
 
   const uiState = getPoolUiState(pool);
+  const isJoined = !!memberId;
   const currentMember = findCurrentMember(pool, memberId);
-  const isMember = !!currentMember;
-  const creatorMember = [...pool.members].sort(
-    (a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime(),
-  )[0];
-  const isCreator =
-    isAuthenticated &&
-    ((!!user?.id && pool.createdByUserId === user.id) ||
-      (!!memberId && creatorMember?.id === memberId));
   const existingPrediction =
     currentMember?.prediction &&
     currentMember.prediction.predictedHomeScore !== null &&
@@ -173,12 +161,27 @@ export default function PoolPageClient({
         }
       : null;
 
+  const showSubmitResult =
+    isJoined &&
+    uiState !== "results" &&
+    !pool.predictionsOpen &&
+    pool.fixture.status !== "FINISHED" &&
+    pool.fixture.status !== "CANCELLED" &&
+    pool.fixture.status !== "POSTPONED";
+
   const winners = leaderboard?.winner ?? [];
   const showWinnerBanner = uiState === "results" && winners.length > 0;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
       <PoolHeader pool={pool} />
+
+      {isJoined && currentMember && (
+        <p className="mt-4 text-sm text-zinc-400">
+          You&apos;re playing as{" "}
+          <span className="font-semibold text-white">{currentMember.displayName}</span>
+        </p>
+      )}
 
       {showWinnerBanner && (
         <div className="mt-6 rounded-2xl border border-green-500/30 bg-linear-to-r from-green-600/20 to-emerald-700/20 p-5 text-center">
@@ -224,9 +227,7 @@ export default function PoolPageClient({
 
       {tab === "pool" ? (
         <div className="mt-6 space-y-6">
-          {isCreator && (
-            <SharePoolButton inviteCode={pool.inviteCode} poolName={pool.name} />
-          )}
+          <SharePoolButton inviteCode={pool.inviteCode} poolName={pool.name} />
 
           {uiState === "open" && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
@@ -248,39 +249,30 @@ export default function PoolPageClient({
             </div>
           )}
 
-          {!isMember && (
-            <JoinForm
-              inviteCode={inviteCode}
-              defaultDisplayName={displayName}
-              isAuthenticated={isAuthenticated}
-              onJoined={handleJoined}
-            />
+          {!isJoined && (
+            <JoinForm inviteCode={inviteCode} onJoined={handleJoined} />
           )}
 
-          {isMember && (
+          {isJoined && memberId && pool.predictionsOpen && (
             <PredictionForm
               inviteCode={inviteCode}
               homeTeamName={pool.fixture.homeTeamName}
               awayTeamName={pool.fixture.awayTeamName}
-              poolMemberId={memberId ?? undefined}
-              isAuthenticated={isAuthenticated}
+              poolMemberId={memberId}
               existingPrediction={existingPrediction}
               predictionsOpen={pool.predictionsOpen}
               onSubmitted={handleRefresh}
             />
           )}
 
-          {isCreator &&
-            uiState !== "results" &&
-            pool.fixture.status !== "CANCELLED" &&
-            pool.fixture.status !== "POSTPONED" && (
-              <SubmitResultForm
-                inviteCode={inviteCode}
-                homeTeamName={pool.fixture.homeTeamName}
-                awayTeamName={pool.fixture.awayTeamName}
-                onSubmitted={handleResultSubmitted}
-              />
-            )}
+          {showSubmitResult && (
+            <SubmitResultForm
+              inviteCode={inviteCode}
+              homeTeamName={pool.fixture.homeTeamName}
+              awayTeamName={pool.fixture.awayTeamName}
+              onSubmitted={handleResultSubmitted}
+            />
+          )}
 
           <MemberList pool={pool} currentMemberId={memberId} />
 
@@ -325,19 +317,6 @@ export default function PoolPageClient({
             </>
           )}
         </div>
-      )}
-
-      {!isAuthenticated && (
-        <p className="mt-8 text-center text-sm text-zinc-500">
-          Already have an account?{" "}
-          <button
-            type="button"
-            onClick={() => signIn(`/pools/join/${inviteCode}`)}
-            className="font-medium text-green-400 hover:text-green-300"
-          >
-            Sign in with Google
-          </button>
-        </p>
       )}
     </div>
   );

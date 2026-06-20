@@ -39,10 +39,10 @@ export default function MemberList({
       />
 
       {currentMemberId && (
-        <p className="text-xs text-zinc-600">
-          You&apos;re in this pool as{" "}
-          <span className="text-zinc-400">
-            {pool.members.find((m) => m.id === currentMemberId)?.displayName}
+        <p className="text-xs text-zinc-500">
+          You&apos;re playing as{" "}
+          <span className="font-medium text-zinc-300">
+            {pool.members.find((m) => m.id === currentMemberId)?.displayName ?? "Unknown"}
           </span>
         </p>
       )}

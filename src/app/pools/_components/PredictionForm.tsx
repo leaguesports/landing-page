@@ -1,7 +1,6 @@
 "use client";
 
-import { ApiError } from "@/lib/api-client";
-import { submitPrediction } from "@/lib/pool-api";
+import { PoolApiError, submitPrediction } from "@/lib/pool-api";
 import { parseNonNegativeInt } from "@/lib/pool-utils";
 import { useEffect, useState } from "react";
 
@@ -10,7 +9,6 @@ export default function PredictionForm({
   homeTeamName,
   awayTeamName,
   poolMemberId,
-  isAuthenticated,
   existingPrediction,
   predictionsOpen,
   onSubmitted,
@@ -18,8 +16,7 @@ export default function PredictionForm({
   inviteCode: string;
   homeTeamName: string;
   awayTeamName: string;
-  poolMemberId?: string;
-  isAuthenticated: boolean;
+  poolMemberId: string;
   existingPrediction?: { predictedHomeScore: number; predictedAwayScore: number } | null;
   predictionsOpen: boolean;
   onSubmitted: () => void;
@@ -65,22 +62,16 @@ export default function PredictionForm({
       return;
     }
 
-    if (!isAuthenticated && !poolMemberId) {
-      setError("Join the pool before submitting a prediction");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await submitPrediction(
-        inviteCode,
-        { predictedHomeScore: home, predictedAwayScore: away },
-        isAuthenticated ? undefined : poolMemberId,
-      );
+      await submitPrediction(inviteCode, poolMemberId, {
+        predictedHomeScore: home,
+        predictedAwayScore: away,
+      });
       setSuccess(true);
       onSubmitted();
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof PoolApiError) {
         setError(err.message);
       } else {
         setError("Could not save prediction. Please try again.");

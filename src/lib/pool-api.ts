@@ -1,10 +1,56 @@
-import { poolApi } from "@/lib/api-client";
 import type {
   CreatePoolInput,
   Leaderboard,
   PoolMember,
   PoolView,
 } from "@/types/pool";
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+
+export class PoolApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "PoolApiError";
+    this.status = status;
+  }
+}
+
+export function isPoolApiConfigured(): boolean {
+  return API_BASE.length > 0;
+}
+
+export async function poolApi<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  if (!API_BASE) {
+    throw new PoolApiError(0, "API URL is not configured");
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new PoolApiError(
+      res.status,
+      body.error ?? `Request failed (${res.status})`,
+    );
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  return res.json() as Promise<T>;
+}
 
 export const getPool = (code: string) =>
   poolApi<PoolView>(`/api/pools/by-code/${encodeURIComponent(code)}`);
@@ -22,12 +68,12 @@ export const joinPool = (code: string, displayName: string) =>
 
 export const submitPrediction = (
   code: string,
+  poolMemberId: string,
   scores: { predictedHomeScore: number; predictedAwayScore: number },
-  poolMemberId?: string,
 ) =>
   poolApi(`/api/pools/by-code/${encodeURIComponent(code)}/predictions`, {
     method: "POST",
-    body: JSON.stringify({ ...scores, poolMemberId }),
+    body: JSON.stringify({ poolMemberId, ...scores }),
   });
 
 export const createPool = (data: CreatePoolInput) =>

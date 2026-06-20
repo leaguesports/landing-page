@@ -1,8 +1,7 @@
 "use client";
 
-import { ApiError } from "@/lib/api-client";
-import { createPool } from "@/lib/pool-api";
-import { setGuestMemberId } from "@/lib/pool-storage";
+import { createPool, PoolApiError } from "@/lib/pool-api";
+import { savePoolMemberId } from "@/lib/pool-storage";
 import { SCORING_RULES } from "@/lib/pool-utils";
 import type { PoolScoringRule } from "@/types/pool";
 import { useRouter } from "next/navigation";
@@ -12,6 +11,7 @@ const SPORTS = ["rugby", "soccer", "cricket", "formula 1", "other"];
 
 export default function CreatePoolForm() {
   const router = useRouter();
+  const [hostDisplayName, setHostDisplayName] = useState("");
   const [name, setName] = useState("");
   const [scoringRule, setScoringRule] =
     useState<PoolScoringRule>("EXACT_SCORE_THREE_CORRECT_RESULT_ONE");
@@ -28,6 +28,9 @@ export default function CreatePoolForm() {
   function validate(): boolean {
     const errors: Record<string, string> = {};
 
+    if (!hostDisplayName.trim()) {
+      errors.hostDisplayName = "Your name is required";
+    }
     if (!name.trim()) {
       errors.name = "Pool name is required";
     }
@@ -64,6 +67,7 @@ export default function CreatePoolForm() {
     try {
       const pool = await createPool({
         name: name.trim(),
+        hostDisplayName: hostDisplayName.trim(),
         scoringRule,
         fixture: {
           title: title.trim() || `${homeTeamName.trim()} vs ${awayTeamName.trim()}`,
@@ -74,19 +78,15 @@ export default function CreatePoolForm() {
         },
       });
 
-      const creatorMember = pool.members[0];
-      if (creatorMember) {
-        setGuestMemberId(pool.inviteCode, creatorMember.id);
+      const hostMember = pool.members[0];
+      if (hostMember) {
+        savePoolMemberId(pool.inviteCode, hostMember.id);
       }
 
       router.push(`/pools/join/${pool.inviteCode}`);
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setError("Please sign in to create a pool");
-        } else {
-          setError(err.message);
-        }
+      if (err instanceof PoolApiError) {
+        setError(err.message);
       } else {
         setError("Could not create pool. Please try again.");
       }
@@ -97,6 +97,28 @@ export default function CreatePoolForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+        <h2 className="text-lg font-bold text-white">Your details</h2>
+
+        <div className="mt-4">
+          <label htmlFor="hostDisplayName" className="block text-sm font-medium text-zinc-300">
+            Your name
+          </label>
+          <input
+            id="hostDisplayName"
+            type="text"
+            value={hostDisplayName}
+            onChange={(e) => setHostDisplayName(e.target.value)}
+            placeholder="e.g. Brandon"
+            maxLength={50}
+            className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white placeholder:text-zinc-600 focus:border-green-500/50 focus:outline-none focus:ring-1 focus:ring-green-500/30"
+          />
+          {fieldErrors.hostDisplayName && (
+            <p className="mt-1 text-sm text-red-400">{fieldErrors.hostDisplayName}</p>
+          )}
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-bold text-white">Pool details</h2>
 
