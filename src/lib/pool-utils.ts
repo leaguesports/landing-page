@@ -1,4 +1,11 @@
-import type { PoolScoringRule, PoolUiState, PoolView } from "@/types/pool";
+import type {
+  PoolScoringRule,
+  PoolUiState,
+  PoolView,
+  PredictionFormState,
+  PredictionType,
+  PredictionView,
+} from "@/types/pool";
 
 export function getPoolUiState(pool: PoolView): PoolUiState {
   if (pool.fixture.status === "FINISHED") {
@@ -24,9 +31,9 @@ export function getShareUrl(inviteCode: string): string {
   return `${getSiteBaseUrl()}/pools/join/${inviteCode}`;
 }
 
-export function getWhatsAppShareUrl(inviteCode: string, poolName: string): string {
-  const link = getShareUrl(inviteCode);
-  const text = `Join my prediction pool "${poolName}" on LeagueSports! ${link}`;
+export function getWhatsAppShareUrl(inviteCode: string): string {
+  const shareUrl = getShareUrl(inviteCode);
+  const text = `Join my prediction pool: ${shareUrl}`;
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
@@ -42,19 +49,29 @@ export function formatMatchDateTime(isoDate: string): string {
   });
 }
 
+const PREDICTION_TYPE_LABELS: Record<PredictionType, string> = {
+  EXACT_SCORE: "Exact score",
+  TOTAL_SCORE: "Total points",
+  MARGIN: "Win by margin",
+};
+
+export function getPredictionTypeLabel(type: PredictionType): string {
+  return PREDICTION_TYPE_LABELS[type];
+}
+
 export const SCORING_RULES: Record<
   PoolScoringRule,
   { label: string; description: string }
 > = {
   EXACT_SCORE_THREE_CORRECT_RESULT_ONE: {
-    label: "Exact score (3 pts) + correct result (1 pt)",
+    label: "Standard (3 pts exact + 1 pt result)",
     description:
-      "Exact score earns 3 points. Correct winner or draw (wrong margin) earns 1 point. Wrong earns 0.",
+      "Exact score: 3 pts for exact home + away, 1 pt for correct winner/draw. Total score: 3 pts for exact total, 1 pt within 6 points. Margin: 3 pts for correct winner + exact margin, 1 pt for correct winner only.",
   },
   CORRECT_RESULT_ONLY: {
     label: "Correct result only (1 pt)",
     description:
-      "Correct winner or draw earns 1 point. Wrong earns 0.",
+      "1 point for correct outcome (exact total, or correct winner/margin side). 0 otherwise.",
   },
 };
 
@@ -79,14 +96,54 @@ export function parseNonNegativeInt(value: string): number | null {
   return num;
 }
 
-export function formatPrediction(
-  home: number | null,
-  away: number | null,
-  homeTeam: string,
-  awayTeam: string,
+export function formatPredictionDisplay(
+  prediction: PredictionView | null,
+  options?: { hidden?: boolean },
 ): string {
-  if (home === null || away === null) {
-    return "Hidden";
+  if (!prediction) {
+    return "No prediction";
   }
-  return `${homeTeam} ${home} – ${away} ${awayTeam}`;
+  if (options?.hidden || prediction.summary === null) {
+    return "🔒 Prediction hidden";
+  }
+  return prediction.summary;
+}
+
+export function predictionToFormState(
+  prediction: PredictionView,
+): PredictionFormState | null {
+  switch (prediction.predictionType) {
+    case "EXACT_SCORE":
+      if (
+        prediction.predictedHomeScore === null ||
+        prediction.predictedAwayScore === null
+      ) {
+        return null;
+      }
+      return {
+        type: "EXACT_SCORE",
+        home: prediction.predictedHomeScore,
+        away: prediction.predictedAwayScore,
+      };
+    case "TOTAL_SCORE":
+      if (prediction.predictedTotalScore === null) {
+        return null;
+      }
+      return {
+        type: "TOTAL_SCORE",
+        total: prediction.predictedTotalScore,
+      };
+    case "MARGIN":
+      if (!prediction.predictedWinnerSide) {
+        return null;
+      }
+      return {
+        type: "MARGIN",
+        side: prediction.predictedWinnerSide,
+        margin:
+          prediction.predictedWinnerSide === "DRAW"
+            ? undefined
+            : (prediction.predictedMargin ?? 0),
+      };
+  }
 }

@@ -9,7 +9,11 @@ export type PoolScoringRule =
   | "EXACT_SCORE_THREE_CORRECT_RESULT_ONE"
   | "CORRECT_RESULT_ONLY";
 
-export interface PoolFixture {
+export type PredictionType = "EXACT_SCORE" | "TOTAL_SCORE" | "MARGIN";
+
+export type PredictionWinnerSide = "HOME" | "AWAY" | "DRAW";
+
+export interface Fixture {
   id: string;
   title: string;
   sport: string;
@@ -22,9 +26,17 @@ export interface PoolFixture {
   resultSubmittedAt: string | null;
 }
 
-export interface PoolMemberPrediction {
+/** @deprecated Use Fixture */
+export type PoolFixture = Fixture;
+
+export interface PredictionView {
+  predictionType: PredictionType;
+  summary: string | null;
   predictedHomeScore: number | null;
   predictedAwayScore: number | null;
+  predictedTotalScore: number | null;
+  predictedWinnerSide: PredictionWinnerSide | null;
+  predictedMargin: number | null;
   pointsEarned: number | null;
 }
 
@@ -34,7 +46,7 @@ export interface PoolMemberView {
   totalPoints: number;
   joinedAt: string;
   isGuest: boolean;
-  prediction: PoolMemberPrediction | null;
+  prediction: PredictionView | null;
 }
 
 export interface PoolView {
@@ -46,7 +58,7 @@ export interface PoolView {
   createdByUserId: string | null;
   memberCount: number;
   predictionsOpen: boolean;
-  fixture: PoolFixture;
+  fixture: Fixture;
   members: PoolMemberView[];
 }
 
@@ -55,7 +67,7 @@ export interface LeaderboardMember {
   id: string;
   displayName: string;
   totalPoints: number;
-  prediction: PoolMemberPrediction | null;
+  prediction: PredictionView | null;
 }
 
 export interface Leaderboard {
@@ -65,7 +77,7 @@ export interface Leaderboard {
     inviteCode: string;
     scoringRule: PoolScoringRule;
   };
-  fixture: PoolFixture;
+  fixture: Fixture;
   members: LeaderboardMember[];
   winner: Array<{
     id: string;
@@ -81,16 +93,6 @@ export interface PoolMember {
   displayName: string;
   totalPoints: number;
   joinedAt: string;
-  predictions: Array<{
-    id: string;
-    poolId: string;
-    poolMemberId: string;
-    predictedHomeScore: number;
-    predictedAwayScore: number;
-    pointsEarned: number | null;
-    createdAt: string;
-    updatedAt: string;
-  }>;
 }
 
 export interface CreatePoolFixtureInput {
@@ -110,3 +112,8 @@ export interface CreatePoolInput {
 }
 
 export type PoolUiState = "open" | "locked" | "results";
+
+export type PredictionFormState =
+  | { type: "EXACT_SCORE"; home: number; away: number }
+  | { type: "TOTAL_SCORE"; total: number }
+  | { type: "MARGIN"; side: PredictionWinnerSide; margin?: number };

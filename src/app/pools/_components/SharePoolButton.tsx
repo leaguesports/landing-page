@@ -1,35 +1,37 @@
 "use client";
 
+import { getShareUrl, getWhatsAppShareUrl } from "@/lib/pool-utils";
 import { Check, Copy, MessageCircle } from "lucide-react";
 import { useState } from "react";
-import { getShareUrl, getWhatsAppShareUrl } from "@/lib/pool-utils";
 
 export default function SharePoolButton({
   inviteCode,
-  poolName,
 }: {
   inviteCode: string;
-  poolName: string;
+  poolName?: string;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const shareUrl = getShareUrl(inviteCode);
-  const whatsAppUrl = getWhatsAppShareUrl(inviteCode, poolName);
+  const whatsAppUrl = getWhatsAppShareUrl(inviteCode);
 
-  async function handleCopy() {
+  async function copyText(text: string, which: "link" | "code") {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
     } catch {
-      // Fallback for older browsers
       const input = document.createElement("input");
-      input.value = shareUrl;
+      input.value = text;
       document.body.appendChild(input);
       input.select();
       document.execCommand("copy");
       document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    }
+    if (which === "link") {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } else {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
     }
   }
 
@@ -39,27 +41,35 @@ export default function SharePoolButton({
         Invite friends
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-2">
+        <button
+          type="button"
+          onClick={() => copyText(inviteCode, "code")}
+          className="group inline-flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-2 transition-colors hover:border-green-500/50 hover:bg-green-500/15"
+          title="Copy invite code"
+        >
           <span className="text-2xl font-black tracking-[0.3em] text-green-400">
             {inviteCode}
           </span>
-        </div>
-        <p className="min-w-0 flex-1 break-all text-sm text-zinc-400">
-          {shareUrl}
-        </p>
+          {copiedCode ? (
+            <Check className="h-4 w-4 text-green-400" aria-hidden />
+          ) : (
+            <Copy className="h-4 w-4 text-green-500/70 group-hover:text-green-400" aria-hidden />
+          )}
+        </button>
+        <p className="min-w-0 flex-1 break-all text-sm text-zinc-400">{shareUrl}</p>
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => copyText(shareUrl, "link")}
           className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-white/25 hover:bg-white/10"
         >
-          {copied ? (
+          {copiedLink ? (
             <Check className="h-4 w-4 text-green-400" aria-hidden />
           ) : (
             <Copy className="h-4 w-4" aria-hidden />
           )}
-          {copied ? "Copied!" : "Copy link"}
+          {copiedLink ? "Copied!" : "Copy link"}
         </button>
         <a
           href={whatsAppUrl}

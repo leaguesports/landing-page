@@ -34,6 +34,9 @@ export default function CreatePoolForm() {
     if (!name.trim()) {
       errors.name = "Pool name is required";
     }
+    if (!title.trim()) {
+      errors.title = "Match title is required";
+    }
     if (!homeTeamName.trim()) {
       errors.homeTeamName = "Home team is required";
     }
@@ -70,7 +73,7 @@ export default function CreatePoolForm() {
         hostDisplayName: hostDisplayName.trim(),
         scoringRule,
         fixture: {
-          title: title.trim() || `${homeTeamName.trim()} vs ${awayTeamName.trim()}`,
+          title: title.trim(),
           sport,
           homeTeamName: homeTeamName.trim(),
           awayTeamName: awayTeamName.trim(),
@@ -174,7 +177,7 @@ export default function CreatePoolForm() {
         <div className="mt-4 space-y-4">
           <div>
             <label htmlFor="matchTitle" className="block text-sm font-medium text-zinc-300">
-              Match title <span className="text-zinc-600">(optional)</span>
+              Match title
             </label>
             <input
               id="matchTitle"
@@ -184,6 +187,9 @@ export default function CreatePoolForm() {
               placeholder="Springboks vs All Blacks"
               className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white placeholder:text-zinc-600 focus:border-green-500/50 focus:outline-none focus:ring-1 focus:ring-green-500/30"
             />
+            {fieldErrors.title && (
+              <p className="mt-1 text-sm text-red-400">{fieldErrors.title}</p>
+            )}
           </div>
 
           <div>

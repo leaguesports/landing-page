@@ -3,6 +3,7 @@ import type {
   Leaderboard,
   PoolMember,
   PoolView,
+  PredictionFormState,
 } from "@/types/pool";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
@@ -66,15 +67,40 @@ export const joinPool = (code: string, displayName: string) =>
     body: JSON.stringify({ displayName }),
   });
 
-export const submitPrediction = (
-  code: string,
+export async function submitPrediction(
+  inviteCode: string,
   poolMemberId: string,
-  scores: { predictedHomeScore: number; predictedAwayScore: number },
-) =>
-  poolApi(`/api/pools/by-code/${encodeURIComponent(code)}/predictions`, {
-    method: "POST",
-    body: JSON.stringify({ poolMemberId, ...scores }),
-  });
+  form: PredictionFormState,
+) {
+  const body =
+    form.type === "EXACT_SCORE"
+      ? {
+          poolMemberId,
+          predictionType: "EXACT_SCORE" as const,
+          predictedHomeScore: form.home,
+          predictedAwayScore: form.away,
+        }
+      : form.type === "TOTAL_SCORE"
+        ? {
+            poolMemberId,
+            predictionType: "TOTAL_SCORE" as const,
+            predictedTotalScore: form.total,
+          }
+        : {
+            poolMemberId,
+            predictionType: "MARGIN" as const,
+            predictedWinnerSide: form.side,
+            ...(form.side !== "DRAW" && { predictedMargin: form.margin ?? 0 }),
+          };
+
+  return poolApi(
+    `/api/pools/by-code/${encodeURIComponent(inviteCode)}/predictions`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+}
 
 export const createPool = (data: CreatePoolInput) =>
   poolApi<PoolView>("/api/pools", {

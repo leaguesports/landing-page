@@ -5,6 +5,7 @@ import { getPoolMemberId } from "@/lib/pool-storage";
 import {
   findCurrentMember,
   getPoolUiState,
+  predictionToFormState,
   SCORING_RULES,
 } from "@/lib/pool-utils";
 import type { Leaderboard, PoolView } from "@/types/pool";
@@ -151,15 +152,9 @@ export default function PoolPageClient({
   const uiState = getPoolUiState(pool);
   const isJoined = !!memberId;
   const currentMember = findCurrentMember(pool, memberId);
-  const existingPrediction =
-    currentMember?.prediction &&
-    currentMember.prediction.predictedHomeScore !== null &&
-    currentMember.prediction.predictedAwayScore !== null
-      ? {
-          predictedHomeScore: currentMember.prediction.predictedHomeScore,
-          predictedAwayScore: currentMember.prediction.predictedAwayScore,
-        }
-      : null;
+  const existingPrediction = currentMember?.prediction
+    ? predictionToFormState(currentMember.prediction)
+    : null;
 
   const showSubmitResult =
     isJoined &&
@@ -227,7 +222,7 @@ export default function PoolPageClient({
 
       {tab === "pool" ? (
         <div className="mt-6 space-y-6">
-          <SharePoolButton inviteCode={pool.inviteCode} poolName={pool.name} />
+          <SharePoolButton inviteCode={pool.inviteCode} />
 
           {uiState === "open" && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
@@ -253,7 +248,7 @@ export default function PoolPageClient({
             <JoinForm inviteCode={inviteCode} onJoined={handleJoined} />
           )}
 
-          {isJoined && memberId && pool.predictionsOpen && (
+          {isJoined && memberId && uiState === "open" && (
             <PredictionForm
               inviteCode={inviteCode}
               homeTeamName={pool.fixture.homeTeamName}
@@ -263,6 +258,15 @@ export default function PoolPageClient({
               predictionsOpen={pool.predictionsOpen}
               onSubmitted={handleRefresh}
             />
+          )}
+
+          {isJoined && uiState === "locked" && (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+              <p className="font-medium text-amber-300">Predictions closed</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                Kickoff has passed. All picks are now visible below.
+              </p>
+            </div>
           )}
 
           {showSubmitResult && (

@@ -1,8 +1,8 @@
 "use client";
 
-import { Trophy } from "lucide-react";
-import { formatPrediction } from "@/lib/pool-utils";
+import { formatPredictionDisplay, getPredictionTypeLabel } from "@/lib/pool-utils";
 import type { Leaderboard, PoolView } from "@/types/pool";
+import { Trophy } from "lucide-react";
 
 type LeaderboardMember =
   | Leaderboard["members"][number]
@@ -14,15 +14,13 @@ function getRank(member: LeaderboardMember, index: number): number {
 
 export default function LeaderboardTable({
   members,
-  homeTeamName,
-  awayTeamName,
   winners = [],
   showPoints = false,
   highlightHidden = false,
 }: {
   members: LeaderboardMember[];
-  homeTeamName: string;
-  awayTeamName: string;
+  homeTeamName?: string;
+  awayTeamName?: string;
   winners?: Array<{ id: string; displayName: string }>;
   showPoints?: boolean;
   highlightHidden?: boolean;
@@ -59,10 +57,7 @@ export default function LeaderboardTable({
             const isWinner = winnerIds.has(member.id);
             const prediction = member.prediction;
             const isHidden =
-              highlightHidden &&
-              prediction &&
-              (prediction.predictedHomeScore === null ||
-                prediction.predictedAwayScore === null);
+              highlightHidden && prediction !== null && prediction.summary === null;
 
             return (
               <tr
@@ -86,19 +81,24 @@ export default function LeaderboardTable({
                   {!prediction ? (
                     <span className="text-zinc-600">No prediction</span>
                   ) : isHidden ? (
-                    <span className="text-zinc-600">🔒 Hidden until kickoff</span>
+                    <span className="text-zinc-600">
+                      {getPredictionTypeLabel(prediction.predictionType)} ·{" "}
+                      {formatPredictionDisplay(prediction, { hidden: true })}
+                    </span>
                   ) : (
-                    formatPrediction(
-                      prediction.predictedHomeScore,
-                      prediction.predictedAwayScore,
-                      homeTeamName,
-                      awayTeamName,
-                    )
+                    <span>
+                      {formatPredictionDisplay(prediction)}
+                      {showPoints && prediction.pointsEarned !== null && (
+                        <span className="ml-2 text-green-400">
+                          +{prediction.pointsEarned}
+                        </span>
+                      )}
+                    </span>
                   )}
                 </td>
                 {showPoints && (
                   <td className="px-4 py-3 text-right tabular-nums font-semibold text-green-400">
-                    {prediction?.pointsEarned ?? member.totalPoints}
+                    {member.totalPoints}
                   </td>
                 )}
               </tr>
