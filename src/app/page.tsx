@@ -3,6 +3,8 @@ import {
   ChevronRight,
   Clock,
   Flag,
+  Share2,
+  Target,
   Trophy,
   TrophyIcon,
   Tv,
@@ -420,6 +422,15 @@ export default async function Home() {
               </span>
             </Link>
 
+            <Link href="/pools/create"
+              className="group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden border-2 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500 hover:text-black cursor-pointer"
+            >
+              <span className="transform skew-x-6 flex items-center gap-3">
+                <Target className="w-5 h-5 transition-all group-hover:text-black" />
+                Create a Pool
+              </span>
+            </Link>
+
           </div>
         </div>
 
@@ -457,6 +468,51 @@ export default async function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Prediction pools promo ─────────────────────────────────────── */}
+      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden border-y border-white/5">
+        <div className="absolute inset-0 bg-linear-to-r from-amber-950/20 via-[#0f0f0f] to-[#0f0f0f] pointer-events-none" />
+        <div className="mx-auto max-w-7xl relative">
+          <div className="rounded-2xl border border-amber-500/20 bg-white/5 p-6 sm:p-8 backdrop-blur-sm">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1">
+                  <Target className="h-4 w-4 text-amber-400" aria-hidden />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
+                    New
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black italic uppercase leading-none tracking-tighter text-white">
+                  Match <span className="text-amber-400">Prediction Pools</span>
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-400">
+                  Pick a fixture, invite your mates, and see who called the score before kickoff.
+                  Share a short link on WhatsApp — no app download needed.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Share2 className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                    Share in seconds
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                    Friends can join as guests
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/pools/create"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-500 px-8 py-4 text-sm font-black uppercase italic tracking-wider text-black transition-colors hover:bg-amber-400"
+              >
+                <Target className="h-5 w-5" aria-hidden />
+                Create a Pool
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
