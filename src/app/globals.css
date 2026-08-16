@@ -1,27 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* Permanent Marker from next/font (--font-permanent-marker set on <html>) */
   --font-marker: var(--font-permanent-marker);
+  --font-display: var(--font-bebas);
+  --font-sans: var(--font-outfit);
+  --color-surface: #0c0f0c;
+  --color-surface-raised: #141814;
+  --color-surface-muted: #1a1f1a;
+  --color-brand: #3dff8a;
+  --color-brand-dim: #22c55e;
+  --color-watch: #38bdf8;
+  --color-play: #4ade80;
+  --color-ink: #f4f7f4;
+  --color-ink-muted: #9ca89c;
 }
 
 :root {
   --primary: #ffffff;
   --primary-hover: #f3f4f6;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --background: #0f0f0f;
-  --background-secondary: #1a1a1a;
-  --foreground: #ffffff;
-  --foreground-muted: #9ca3af;
-  --border: rgba(255, 255, 255, 0.1);
+  --accent: #3dff8a;
+  --accent-hover: #22c55e;
+  --background: #0c0f0c;
+  --background-secondary: #141814;
+  --foreground: #f4f7f4;
+  --foreground-muted: #9ca89c;
+  --border: rgba(255, 255, 255, 0.08);
 
-  /* ── Sport colour DNA ──────────────────────────────────────────────────── */
-  --color-f1:     #FF1801;
-  --color-rugby:  #2d6a2d;
+  --color-f1: #ff1801;
+  --color-rugby: #2d6a2d;
   --color-soccer: #1a6fb5;
-  --color-cricket:#c8a84b;
-  --color-default:#6b7280;
+  --color-cricket: #c8a84b;
+  --color-default: #6b7280;
 }
 
 * {
@@ -37,20 +46,24 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-outfit), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Snappier taps: no double-tap zoom wait, lighter global transitions than `all` */
+.font-display {
+  font-family: var(--font-bebas), Impact, sans-serif;
+  letter-spacing: 0.02em;
+}
+
 a,
 button {
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0.07);
   touch-action: manipulation;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
     opacity, box-shadow, transform, filter;
-  transition-duration: 0.15s;
-  transition-timing-function: ease;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -58,17 +71,23 @@ button {
   button {
     transition-duration: 0.01ms;
   }
+
+  .animate-rise,
+  .animate-rise-delay,
+  .animate-rise-delay-2,
+  .animate-mesh {
+    animation: none !important;
+  }
 }
 
-/* Focus styles */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* Hero animations */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0);
   }
   50% {
@@ -77,7 +96,8 @@ button {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.3;
   }
   50% {
@@ -93,8 +113,46 @@ button {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.06) translate(-2%, 1%);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-rise-delay {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.animate-rise-delay-2 {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.animate-mesh {
+  animation: mesh-drift 18s ease-in-out infinite;
+}
+
 @keyframes float-slow {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) rotate(0deg);
   }
   33% {
@@ -106,13 +164,12 @@ button {
 }
 
 @keyframes gradient-shift {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
-    filter: hue-rotate(0deg);
   }
   50% {
-    opacity: 0.9;
-    filter: hue-rotate(5deg);
+    opacity: 0.85;
   }
 }
 
@@ -124,7 +181,6 @@ button {
   animation: gradient-shift 6s ease-in-out infinite;
 }
 
-/* Toast notification animations */
 @keyframes slide-in-from-left {
   from {
     transform: translateX(-100%);
@@ -136,52 +192,12 @@ button {
   }
 }
 
-@keyframes slide-in-from-bottom {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-out-to-top {
-  from {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-}
-
-@keyframes push-up {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-60px);
-  }
-}
-
 @keyframes fade-in {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
   }
 }
 
@@ -197,7 +213,6 @@ button {
   animation-name: fade-in;
 }
 
-/* Badge shape clip paths */
 .clip-star {
   clip-path: polygon(
     50% 0%,
@@ -214,17 +229,9 @@ button {
 }
 
 .clip-hexagon {
-  clip-path: polygon(
-    30% 0%,
-    70% 0%,
-    100% 50%,
-    70% 100%,
-    30% 100%,
-    0% 50%
-  );
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
 }
 
-/* Premium badge animations */
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -238,14 +245,10 @@ button {
   animation: shimmer 2s infinite;
 }
 
-/* Radial gradient utility */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
 }
 
-/* ── Sport image treatments ────────────────────────────────────────────── */
-
-/* F1 — speed blur on left/right edges via mask */
 .img-treatment-f1 {
   -webkit-mask-image: linear-gradient(
     to right,
@@ -263,7 +266,6 @@ button {
   );
 }
 
-/* Rugby — high contrast + subtle grain */
 .img-treatment-rugby {
   filter: contrast(1.25) saturate(0.85);
 }

@@ -2,29 +2,42 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Permanent_Marker } from 'next/font/google';
+import { Bebas_Neue, Outfit, Permanent_Marker } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const permanentMarker = Permanent_Marker({
-  weight: '400', // Permanent Marker only comes in 400
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-permanent-marker', // Using a CSS variable is best for flexibility
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-permanent-marker",
 });
 
+const bebas = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-bebas",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-outfit",
+});
 
 export const metadata: Metadata = {
   title: {
     default: "LeagueSports | Find Venues & Events",
     template: "%s | LeagueSports",
   },
-  description: "Find venues and events to participate in. Connect with players and venues in your area.",
+  description:
+    "Find venues and events to participate in. Connect with players and venues in your area.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f0f0f",
+  themeColor: "#0c0f0c",
 };
 
 export default function RootLayout({
@@ -35,15 +48,16 @@ export default function RootLayout({
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
-    <html lang="en" className={permanentMarker.variable}>
-      <body className="flex min-h-screen flex-col bg-[#0f0f0f] text-white antialiased">
+    <html
+      lang="en"
+      className={`${permanentMarker.variable} ${bebas.variable} ${outfit.variable}`}
+    >
+      <body className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)] antialiased">
         <Navigation />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
-      {GA_MEASUREMENT_ID && (
-        <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
-      )}
+      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }

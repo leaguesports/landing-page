@@ -68,87 +68,74 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
       () => {
-        // Prefer Johannesburg hub until reverse-geocode is wired to Sanity locations.
         const nearQuery = "Johannesburg";
-        setQuery(nearQuery);
-        setSelected({
+        const suggestion: SearchSuggestion = {
           id: "city-johannesburg",
           label: "Johannesburg",
           kind: "city",
           citySlug: "johannesburg",
-        });
+        };
+        setQuery(nearQuery);
+        setSelected(suggestion);
         setGeoStatus("idle");
         setOpen(false);
-        navigate(buildSearchPath(intent, nearQuery, {
-          id: "city-johannesburg",
-          label: "Johannesburg",
-          kind: "city",
-          citySlug: "johannesburg",
-        }));
+        navigate(buildSearchPath(intent, nearQuery, suggestion));
       },
       () => setGeoStatus("error"),
       { enableHighAccuracy: false, timeout: 10000 },
     );
   }
 
-  const accent =
-    intent === "watch"
-      ? {
-          tab: "bg-blue-500 text-white",
-          idle: "bg-white/5 text-zinc-400 hover:text-white",
-          ring: "focus-within:ring-blue-500/40",
-          btn: "bg-blue-500 hover:bg-blue-400 text-white",
-          near: "border-blue-500/40 text-blue-300 hover:bg-blue-500/10",
-        }
-      : {
-          tab: "bg-green-500 text-white",
-          idle: "bg-white/5 text-zinc-400 hover:text-white",
-          ring: "focus-within:ring-green-500/40",
-          btn: "bg-green-500 hover:bg-green-400 text-white",
-          near: "border-green-500/40 text-green-300 hover:bg-green-500/10",
-        };
+  const isWatch = intent === "watch";
 
   return (
-    <div className="w-full max-w-3xl">
-      {/* Intent tabs */}
+    <div className="w-full max-w-2xl">
       <div
-        className="inline-flex rounded-xl border border-white/10 bg-zinc-950/80 p-1 mb-4"
+        className="mb-3 inline-flex rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-md"
         role="tablist"
         aria-label="Search intent"
       >
         <button
           type="button"
           role="tab"
-          aria-selected={intent === "watch"}
+          aria-selected={isWatch}
           onClick={() => setIntent("watch")}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-black uppercase italic tracking-wider transition-colors ${
-            intent === "watch" ? accent.tab : accent.idle
+          className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            isWatch
+              ? "bg-sky-500 text-white"
+              : "text-zinc-400 hover:text-white"
           }`}
         >
           <Tv className="h-4 w-4 shrink-0" aria-hidden />
-          Watch Sports
+          Watch
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected={intent === "play"}
+          aria-selected={!isWatch}
           onClick={() => setIntent("play")}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-black uppercase italic tracking-wider transition-colors ${
-            intent === "play" ? accent.tab : accent.idle
+          className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            !isWatch
+              ? "bg-emerald-500 text-zinc-950"
+              : "text-zinc-400 hover:text-white"
           }`}
         >
           <Trophy className="h-4 w-4 shrink-0" aria-hidden />
-          Play Sports
+          Play
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div
-          className={`relative flex flex-col sm:flex-row gap-2 rounded-2xl border border-white/10 bg-zinc-950/90 p-2 shadow-xl shadow-black/40 ring-2 ring-transparent ${accent.ring}`}
+          className={`relative flex flex-col gap-2 rounded-2xl border border-white/12 bg-black/55 p-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl ring-2 ring-transparent transition sm:flex-row ${
+            isWatch
+              ? "focus-within:ring-sky-400/30"
+              : "focus-within:ring-emerald-400/30"
+          }`}
         >
-          <div className="relative flex-1 min-w-0">
+          <div className="relative min-w-0 flex-1">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
               aria-hidden
             />
             <input
@@ -160,7 +147,7 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               aria-autocomplete="list"
               aria-controls={listId}
               aria-expanded={open && suggestions.length > 0}
-              placeholder="Enter suburb, city, or sport (e.g. Sea Point, Padel, Rugby)..."
+              placeholder="Suburb, city, or sport…"
               onChange={(e) => {
                 setQuery(e.target.value);
                 setSelected(null);
@@ -168,30 +155,33 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               }}
               onFocus={() => setOpen(true)}
               onBlur={() => {
-                // Delay so suggestion click registers
                 window.setTimeout(() => setOpen(false), 150);
               }}
-              className="w-full min-h-12 rounded-xl bg-transparent pl-10 pr-3 text-sm sm:text-base text-white placeholder:text-zinc-500 outline-none"
+              className="w-full min-h-12 rounded-xl bg-transparent pl-11 pr-3 text-[15px] text-white outline-none placeholder:text-zinc-500"
             />
 
             {open && suggestions.length > 0 && (
               <ul
                 id={listId}
                 role="listbox"
-                className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-64 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+                className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-50 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
               >
                 {suggestions.map((s) => (
-                  <li key={s.id} role="option" aria-selected={selected?.id === s.id}>
+                  <li
+                    key={s.id}
+                    role="option"
+                    aria-selected={selected?.id === s.id}
+                  >
                     <button
                       type="button"
-                      className="flex w-full min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-white/5"
+                      className="flex w-full min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left hover:bg-white/6"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => selectSuggestion(s)}
                     >
-                      <span className="text-sm font-semibold text-white">
+                      <span className="text-sm font-medium text-white">
                         {s.label}
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                      <span className="text-[11px] uppercase tracking-wider text-zinc-500">
                         {s.kind}
                       </span>
                     </button>
@@ -206,7 +196,11 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               type="button"
               onClick={handleNearMe}
               disabled={geoStatus === "loading"}
-              className={`inline-flex min-h-12 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border px-4 text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-60 ${accent.near}`}
+              className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors disabled:opacity-60 sm:flex-none ${
+                isWatch
+                  ? "border-sky-400/30 text-sky-200 hover:bg-sky-400/10"
+                  : "border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/10"
+              }`}
             >
               <MapPin className="h-4 w-4 shrink-0" aria-hidden />
               {geoStatus === "loading" ? "Locating…" : "Near Me"}
@@ -215,16 +209,20 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
             <button
               type="submit"
               disabled={isPending}
-              className={`inline-flex min-h-12 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl px-5 sm:px-6 text-xs sm:text-sm font-black uppercase italic tracking-wider transition-colors disabled:opacity-70 ${accent.btn}`}
+              className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors disabled:opacity-70 sm:flex-none ${
+                isWatch
+                  ? "bg-sky-500 text-white hover:bg-sky-400"
+                  : "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
+              }`}
             >
               <Search className="h-4 w-4 shrink-0" aria-hidden />
-              Search Venues
+              Search
             </button>
           </div>
         </div>
 
         {geoStatus === "error" && (
-          <p className="text-xs text-amber-400/90 font-medium">
+          <p className="text-xs text-amber-300/90">
             Couldn&apos;t access location. Enter a suburb or city instead.
           </p>
         )}

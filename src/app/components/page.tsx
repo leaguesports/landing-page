@@ -2,28 +2,10 @@ import { Volleyball } from "lucide-react";
 
 export const LeagueSportsLogo = ({ className = "h-8" }: { className?: string }) => {
     return (
-        <svg
-            viewBox="0 0 320 60"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className={className}
-        >
-
-            {/* 2. THE TEXT: High-impact, tight tracking, anti-aliased */}
-            <g transform="translate(0, 48)">
-                <text
-                    fill="white"
-                    style={{
-                        font: 'italic 900 44px "Inter Tight", "Kanit", "Impact", sans-serif',
-                        letterSpacing: '-0.05em',
-                        textTransform: 'uppercase'
-                    }}
-                >
-                    LEAGUE
-                    <tspan fill="#05df72" dx="5">SPORTS</tspan>
-                </text>
-            </g>
-        </svg>
+        <div className={`font-display flex items-center text-2xl tracking-wide text-white ${className}`}>
+            LEAGUE
+            <span className="text-[var(--color-brand)]">SPORTS</span>
+        </div>
     );
 };
 
