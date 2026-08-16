@@ -34,6 +34,7 @@ export function VenueCard({
   website,
 }: VenueCardProps) {
   const utility: VenueUtilityFlags = {
+    name,
     has_generator_backup,
     has_big_screens,
     has_live_audio,

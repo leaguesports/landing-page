@@ -31,6 +31,11 @@ export type Venue = {
   has_big_screens?: boolean;
   has_live_audio?: boolean;
   has_craft_drafts?: boolean;
+  has_food_menu?: boolean;
+  has_outdoor_area?: boolean;
+  has_parking?: boolean;
+  is_verified?: boolean;
+  rating?: number;
   createdAt: Date;
   updatedAt: Date;
 };

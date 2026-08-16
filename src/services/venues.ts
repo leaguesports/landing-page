@@ -1,6 +1,13 @@
 import { sanityClient } from "@/sanity/client";
 import { SanityImageSource } from "@sanity/image-url";
 
+export type VenueScreening = {
+  title: string;
+  /** ISO datetime or free-form display string from CMS */
+  startsAt: string;
+  setupTags?: string[];
+};
+
 export type Venue = {
   _id: string;
   name: string;
@@ -29,33 +36,17 @@ export type Venue = {
   has_big_screens?: boolean | null;
   has_live_audio?: boolean | null;
   has_craft_drafts?: boolean | null;
+  has_food_menu?: boolean | null;
+  has_outdoor_area?: boolean | null;
+  has_parking?: boolean | null;
+  is_verified?: boolean | null;
+  rating?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   phone?: string | null;
   website?: string | null;
+  upcoming_screenings?: VenueScreening[] | null;
 };
-
-// defineField({
-//   name: 'address',
-//   title: 'Address',
-//   type: 'object',
-//   fields: [
-//     defineField({name: 'street', title: 'Street', type: 'string'}),
-//     defineField({
-//       name: 'suburb',
-//       title: 'Suburb',
-//       type: 'reference',
-//       to: [{type: 'location', options: {filter: 'type == "suburb"'}}],
-//     }),
-//     defineField({
-//       name: 'city',
-//       title: 'City',
-//       type: 'reference',
-//       to: [{type: 'location', options: {filter: 'type == "city"'}}],
-//     }),
-//     defineField({name: 'postcode', title: 'Postcode', type: 'string'}),
-//     defineField({name: 'province', title: 'Province', type: 'string'}),
-//     defineField({name: 'country', title: 'Country', type: 'string'}),
-//   ],
-// }),
 
 /** Full venue document for venue detail pages (watch/play from linked sports). */
 export type VenueDetail = Venue & {
@@ -63,25 +54,101 @@ export type VenueDetail = Venue & {
   // play: Activity[];
 };
 
+const VENUE_UTILITY_PROJECTION = `
+  phone,
+  website,
+  has_generator_backup,
+  has_big_screens,
+  has_live_audio,
+  has_craft_drafts,
+  has_food_menu,
+  has_outdoor_area,
+  has_parking,
+  is_verified,
+  rating,
+  latitude,
+  longitude,
+  upcoming_screenings[]{
+    title,
+    startsAt,
+    setupTags
+  },
+`;
+
+function mapVenueRow(row: {
+  _id: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  address: Venue["address"] | null;
+  sports: Venue["sports"] | null;
+  broadcasts: Venue["broadcasts"] | null;
+  has_generator_backup?: boolean | null;
+  has_big_screens?: boolean | null;
+  has_live_audio?: boolean | null;
+  has_craft_drafts?: boolean | null;
+  has_food_menu?: boolean | null;
+  has_outdoor_area?: boolean | null;
+  has_parking?: boolean | null;
+  is_verified?: boolean | null;
+  rating?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  phone?: string | null;
+  website?: string | null;
+  upcoming_screenings?: VenueScreening[] | null;
+}): VenueDetail | null {
+  if (!row.slug) return null;
+
+  return {
+    _id: row._id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description ?? "",
+    address: row.address ?? {
+      street: "",
+      suburb: "",
+      city: "",
+      province: "",
+      postcode: "",
+      country: "",
+    },
+    sports: row.sports ?? [],
+    broadcasts: row.broadcasts ?? [],
+    has_generator_backup: row.has_generator_backup ?? null,
+    has_big_screens: row.has_big_screens ?? null,
+    has_live_audio: row.has_live_audio ?? null,
+    has_craft_drafts: row.has_craft_drafts ?? null,
+    has_food_menu: row.has_food_menu ?? null,
+    has_outdoor_area: row.has_outdoor_area ?? null,
+    has_parking: row.has_parking ?? null,
+    is_verified: row.is_verified ?? false,
+    rating: row.rating ?? null,
+    latitude: row.latitude ?? null,
+    longitude: row.longitude ?? null,
+    phone: row.phone ?? null,
+    website: row.website ?? null,
+    upcoming_screenings: (row.upcoming_screenings ?? []).filter(
+      (s) => s?.title && s?.startsAt,
+    ),
+  };
+}
+
 export async function listVenues() {
-  const venues = await sanityClient.fetch<Venue[]>(`
+  const venues = await sanityClient.fetch<
+    Parameters<typeof mapVenueRow>[0][]
+  >(`
     *[_type == "venue"] | order(_createdAt desc) {
       _id,
       name,
       "slug": slug.current,
       description,
-      phone,
-      website,
-      has_generator_backup,
-      has_big_screens,
-      has_live_audio,
-      has_craft_drafts,
+      ${VENUE_UTILITY_PROJECTION}
       "address": {
         "street": address.street,
         "province": address.province,
         "postcode": address.postcode,
         "country": address.country,
-        // Dereference the specific fields, not the parent 'address'
         "suburb": address.suburb->title,
         "city": address.city->title
       },
@@ -98,7 +165,9 @@ export async function listVenues() {
     }
     `);
 
-  return venues;
+  return venues
+    .map(mapVenueRow)
+    .filter((v): v is VenueDetail => v !== null);
 }
 
 export async function getVenueBySlug(
@@ -106,47 +175,13 @@ export async function getVenueBySlug(
 ): Promise<VenueDetail | null> {
   if (!slug) return null;
 
-  const row = await sanityClient.fetch<{
-    _id: string;
-    name: string;
-    slug: string | null;
-    description: string | null;
-    address: {
-      street: string;
-      suburb: string;
-      city: string;
-      province: string;
-      postcode: string;
-      country: string;
-    } | null;
-    sports: {
-      _id: string;
-      name: string;
-      image: SanityImageSource | undefined;
-    }[];
-    broadcasts: {
-      _id: string;
-      name: string;
-      slug: string;
-    }[];
-    has_generator_backup?: boolean | null;
-    has_big_screens?: boolean | null;
-    has_live_audio?: boolean | null;
-    has_craft_drafts?: boolean | null;
-    phone?: string | null;
-    website?: string | null;
-  } | null>(
+  const row = await sanityClient.fetch<Parameters<typeof mapVenueRow>[0] | null>(
     `*[_type == "venue" && slug.current == $slug][0] {
       _id,
       name,
       "slug": slug.current,
       description,
-      phone,
-      website,
-      has_generator_backup,
-      has_big_screens,
-      has_live_audio,
-      has_craft_drafts,
+      ${VENUE_UTILITY_PROJECTION}
       "address": {
         "street": address.street,
         "province": address.province,
@@ -169,28 +204,6 @@ export async function getVenueBySlug(
     { slug },
   );
 
-  if (!row?.slug) return null;
-
-  return {
-    _id: row._id,
-    name: row.name,
-    slug: row.slug,
-    description: row.description ?? "",
-    address: row.address ?? {
-      street: "",
-      suburb: "",
-      city: "",
-      province: "",
-      postcode: "",
-      country: "",
-    },
-    sports: row.sports ?? [],
-    broadcasts: row.broadcasts ?? [],
-    has_generator_backup: row.has_generator_backup ?? null,
-    has_big_screens: row.has_big_screens ?? null,
-    has_live_audio: row.has_live_audio ?? null,
-    has_craft_drafts: row.has_craft_drafts ?? null,
-    phone: row.phone ?? null,
-    website: row.website ?? null,
-  };
+  if (!row) return null;
+  return mapVenueRow(row);
 }
