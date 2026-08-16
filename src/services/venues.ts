@@ -24,6 +24,13 @@ export type Venue = {
     name: string;
     slug: string;
   }[];
+  /** SA operational flags — optional until Sanity schema is fully populated */
+  has_generator_backup?: boolean | null;
+  has_big_screens?: boolean | null;
+  has_live_audio?: boolean | null;
+  has_craft_drafts?: boolean | null;
+  phone?: string | null;
+  website?: string | null;
 };
 
 // defineField({
@@ -63,6 +70,12 @@ export async function listVenues() {
       name,
       "slug": slug.current,
       description,
+      phone,
+      website,
+      has_generator_backup,
+      has_big_screens,
+      has_live_audio,
+      has_craft_drafts,
       "address": {
         "street": address.street,
         "province": address.province,
@@ -116,21 +129,41 @@ export async function getVenueBySlug(
       name: string;
       slug: string;
     }[];
-    // area: string | null;
-    // suburb: string | null;
-    // image: SanityImageSource | null;
-    // watch: { id?: string; slug?: string; name?: string }[] | null;
-    // play: { id?: string; slug?: string; name?: string }[] | null;
+    has_generator_backup?: boolean | null;
+    has_big_screens?: boolean | null;
+    has_live_audio?: boolean | null;
+    has_craft_drafts?: boolean | null;
+    phone?: string | null;
+    website?: string | null;
   } | null>(
     `*[_type == "venue" && slug.current == $slug][0] {
       _id,
       name,
       "slug": slug.current,
       description,
-      "sports": sports[] {
+      phone,
+      website,
+      has_generator_backup,
+      has_big_screens,
+      has_live_audio,
+      has_craft_drafts,
+      "address": {
+        "street": address.street,
+        "province": address.province,
+        "postcode": address.postcode,
+        "country": address.country,
+        "suburb": address.suburb->title,
+        "city": address.city->title
+      },
+      "sports": sports[]-> {
         _id,
         name,
         image,
+      },
+      "broadcasts": broadcasts[]-> {
+        _id,
+        name,
+        "slug": slug.current,
       }
     }`,
     { slug },
@@ -142,7 +175,6 @@ export async function getVenueBySlug(
     _id: row._id,
     name: row.name,
     slug: row.slug,
-    // image: (row.image ?? {}) as SanityImageSource,
     description: row.description ?? "",
     address: row.address ?? {
       street: "",
@@ -154,9 +186,11 @@ export async function getVenueBySlug(
     },
     sports: row.sports ?? [],
     broadcasts: row.broadcasts ?? [],
-    // area: row.area ?? "",
-    // suburb: row.suburb ?? "",
-    // watch: asActivities(row.watch),
-    // play: asActivities(row.play),
+    has_generator_backup: row.has_generator_backup ?? null,
+    has_big_screens: row.has_big_screens ?? null,
+    has_live_audio: row.has_live_audio ?? null,
+    has_craft_drafts: row.has_craft_drafts ?? null,
+    phone: row.phone ?? null,
+    website: row.website ?? null,
   };
 }

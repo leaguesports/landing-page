@@ -1,4 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import {
+    VenueContactActions,
+    VenueUtilityBadges,
+} from "@/components/VenueUtilityBadges";
 import { urlFor } from "@/sanity/client";
 import { listVenues, Venue } from "@/services/venues";
 import { Bell, ChevronRight, Flag, MapPin } from "lucide-react";
@@ -26,30 +30,32 @@ function VenueImage({ venue }: { venue: Venue }) {
 
 function VenueCard({ venue }: { venue: Venue }) {
     return (
-        <Link
-            key={venue._id}
-            href={`/venues/${venue.slug}`}
-            className="group block overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-sm transition-all duration-300 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-950/25"
-        >
+        <div className="group overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-sm transition-all duration-300 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-950/25">
             <div className="h-1 w-full bg-gradient-to-r from-blue-700 via-blue-500 to-blue-600 transition-opacity group-hover:opacity-100 opacity-90" />
-            <div>
-                <VenueImage venue={venue} />
-            </div>
-            <div className="p-4 sm:p-5">
-                <h3 className="font-black italic uppercase leading-tight text-base sm:text-lg text-white mb-2 group-hover:text-blue-400 transition-colors">
-                    {venue.name}
-                </h3>
-                <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold">
-                    <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
-                    <span>{venue.address.suburb}</span>
+            <Link href={`/venues/${venue.slug}`} className="block">
+                <div className="relative">
+                    <VenueImage venue={venue} />
+                    {venue.has_generator_backup && (
+                        <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300 backdrop-blur-sm">
+                            ⚡ Backup Power
+                        </div>
+                    )}
                 </div>
-                <div className="flex items-center justify-end pt-4 mt-4 border-t border-zinc-800">
-                    <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:text-blue-300 inline-flex items-center gap-0.5">
-                        {/* View venue <ChevronRight className="w-3 h-3" /> */}
-                    </span>
+                <div className="p-4 sm:p-5 pb-2">
+                    <h3 className="font-black italic uppercase leading-tight text-base sm:text-lg text-white mb-2 group-hover:text-blue-400 transition-colors">
+                        {venue.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3">
+                        <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
+                        <span>{venue.address.suburb}</span>
+                    </div>
+                    <VenueUtilityBadges venue={venue} className="mb-2" />
                 </div>
+            </Link>
+            <div className="px-4 sm:px-5 pb-4 sm:pb-5">
+                <VenueContactActions venue={venue} />
             </div>
-        </Link>
+        </div>
     );
 }
 

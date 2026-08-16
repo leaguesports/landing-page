@@ -1,3 +1,7 @@
+import {
+    VenueContactActions,
+    VenueUtilityBadges,
+} from "@/components/VenueUtilityBadges";
 import { getVenueBySlug, type VenueDetail } from "@/services/venues";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import type { TypedObject } from "@portabletext/types";
@@ -250,12 +254,17 @@ export default async function VenuePage({ params }: Props) {
                             <span className="text-red-white">{venue.name}</span>
                         </h1>
 
-                        <div className="flex flex-wrap gap-6 mb-10">
+                        <div className="flex flex-wrap gap-3 mb-6">
+                            <VenueUtilityBadges venue={venue} />
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 mb-10">
+                            <VenueContactActions venue={venue} />
                         </div>
 
                         <div className="flex flex-wrap gap-4 items-center">
                             <Link
-                                href="/discover"
+                                href="/venues"
                                 className="group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-white text-black hover:bg-red-600 hover:text-white"
                             >
                                 <span className="transform skew-x-6 flex items-center gap-3">
@@ -384,8 +393,7 @@ export default async function VenuePage({ params }: Props) {
                                 Amenities
                             </h2>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                        </div>
+                        <VenueUtilityBadges venue={venue} />
                     </div>
                 </section>
 

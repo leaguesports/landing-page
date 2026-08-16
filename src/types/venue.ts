@@ -26,6 +26,11 @@ export type Venue = {
   website: string;
   latitude: number;
   longitude: number;
+  /** Load-shedding resilience for SA venues */
+  has_generator_backup?: boolean;
+  has_big_screens?: boolean;
+  has_live_audio?: boolean;
+  has_craft_drafts?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
