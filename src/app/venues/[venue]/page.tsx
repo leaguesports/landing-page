@@ -19,22 +19,22 @@ import { notFound } from "next/navigation";
 const venueAboutPortableTextComponents = {
     block: {
         normal: ({ children }) => (
-            <p className="mb-5 text-balance text-zinc-300 text-base sm:text-lg leading-[1.75] font-medium last:mb-0">
+            <p className="mb-5 text-balance text-base font-medium leading-[1.75] text-zinc-300 last:mb-0 sm:text-lg">
                 {children}
             </p>
         ),
         h2: ({ children }) => (
-            <h3 className="mb-3 mt-10 text-sm font-black uppercase tracking-[0.2em] text-red-400 first:mt-0">
+            <h3 className="mb-3 mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)] first:mt-0">
                 {children}
             </h3>
         ),
         h3: ({ children }) => (
-            <h3 className="mb-3 mt-8 text-sm font-black uppercase tracking-wider text-zinc-400 first:mt-0">
+            <h3 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-zinc-400 first:mt-0">
                 {children}
             </h3>
         ),
         blockquote: ({ children }) => (
-            <blockquote className="my-6 border-l-4 border-red-600/90 py-1 pl-5 text-zinc-400 text-base sm:text-lg italic leading-relaxed">
+            <blockquote className="my-6 border-l-4 border-[var(--color-brand)]/70 py-1 pl-5 text-base italic leading-relaxed text-zinc-400 sm:text-lg">
                 {children}
             </blockquote>
         ),
@@ -44,30 +44,32 @@ const venueAboutPortableTextComponents = {
             <ul className="my-6 space-y-4 sm:my-8">{children}</ul>
         ),
         number: ({ children }) => (
-            <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-black marker:text-red-500 sm:my-8 sm:pl-6">
+            <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-semibold marker:text-[var(--color-brand)] sm:my-8 sm:pl-6">
                 {children}
             </ol>
         ),
     },
     listItem: {
         bullet: ({ children }) => (
-            <li className="flex gap-3.5 text-zinc-300 text-base sm:text-lg leading-[1.65] font-medium">
+            <li className="flex gap-3.5 text-base font-medium leading-[1.65] text-zinc-300 sm:text-lg">
                 <span
-                    className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.45)]"
+                    className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-brand)]"
                     aria-hidden
                 />
-                <span className="min-w-0 flex-1 [&_strong]:text-white">{children}</span>
+                <span className="min-w-0 flex-1 [&_strong]:text-white">
+                    {children}
+                </span>
             </li>
         ),
         number: ({ children }) => (
-            <li className="text-zinc-300 text-base sm:text-lg leading-relaxed font-medium [&_strong]:text-white">
+            <li className="text-base font-medium leading-relaxed text-zinc-300 sm:text-lg [&_strong]:text-white">
                 {children}
             </li>
         ),
     },
     marks: {
         strong: ({ children }) => (
-            <strong className="font-bold text-white">{children}</strong>
+            <strong className="font-semibold text-white">{children}</strong>
         ),
         em: ({ children }) => <em className="italic text-zinc-200">{children}</em>,
         link: ({ children, value }) => {
@@ -78,7 +80,7 @@ const venueAboutPortableTextComponents = {
             return (
                 <Link
                     href={href}
-                    className="font-semibold text-red-400 underline decoration-red-500/35 underline-offset-[3px] transition-colors hover:text-red-300"
+                    className="font-semibold text-[var(--color-brand)] underline decoration-[var(--color-brand)]/35 underline-offset-[3px] transition-colors hover:text-[var(--color-brand-dim)]"
                 >
                     {children}
                 </Link>
@@ -152,19 +154,43 @@ export async function generateMetadata({
 function Breadcrumbs({ venue }: { venue: Pick<VenueDetail, "name"> }) {
     return (
         <nav
-            className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500"
+            className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500"
             aria-label="Breadcrumb"
         >
-            <Link href="/" className="hover:text-white transition-colors">
+            <Link href="/" className="transition-colors hover:text-white">
                 Home
             </Link>
-            <ChevronRight className="w-3 h-3 shrink-0 text-zinc-600" />
-            <Link href="/venues" className="hover:text-white transition-colors">
+            <ChevronRight className="h-3 w-3 shrink-0 text-zinc-600" />
+            <Link href="/venues" className="transition-colors hover:text-white">
                 Venues
             </Link>
-            <ChevronRight className="w-3 h-3 shrink-0 text-zinc-600" />
+            <ChevronRight className="h-3 w-3 shrink-0 text-zinc-600" />
             <span className="text-zinc-400">{venue.name}</span>
         </nav>
+    );
+}
+
+function SectionHeader({
+    label,
+    title,
+    description,
+}: {
+    label: string;
+    title: string;
+    description?: string;
+}) {
+    return (
+        <header className="mb-8 sm:mb-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+                {label}
+            </p>
+            <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
+                {title}
+            </h2>
+            {description ? (
+                <p className="mt-2 text-sm text-zinc-500">{description}</p>
+            ) : null}
+        </header>
     );
 }
 
@@ -179,118 +205,78 @@ export default async function VenuePage({ params }: Props) {
 
     return (
         <div>
-            <div className="min-h-screen bg-[#0f0f0f] text-white">
+            <div className="min-h-screen bg-[#0c0f0c] text-white">
                 {/* In-page nav */}
-                <nav className="sticky top-0 z-40 bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/5">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
-                            <div className="flex items-center gap-2 mr-6 shrink-0">
-                                <div className="bg-red-600 px-3 py-1 transform -skew-x-6">
-                                    <span className="transform skew-x-6 block text-xs font-black uppercase tracking-widest text-white">
-                                        Venue
-                                    </span>
-                                </div>
-                                <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest hidden sm:block truncate max-w-48">
-                                    {venue.name}
-                                </span>
-                            </div>
+                <nav className="sticky top-16 z-40 border-b border-white/6 bg-[#0c0f0c]/80 backdrop-blur-xl">
+                    <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 overflow-x-auto px-4 scrollbar-hide sm:px-6 lg:px-8">
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--color-brand)] px-3.5 py-1.5 text-xs font-semibold text-zinc-950">
+                            Venue
+                        </span>
+                        <span className="hidden max-w-48 truncate text-sm text-zinc-400 sm:inline">
+                            {venue.name}
+                        </span>
 
-                            <div className="flex items-center gap-1 flex-1">
-                                {NAV_LINKS.map((link) => (
-                                    <a
-                                        key={link.href}
-                                        href={link.href}
-                                        className="px-4 py-1.5 text-xs font-black uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 transition-all shrink-0 transform -skew-x-6"
-                                    >
-                                        <span className="transform skew-x-6 block">
-                                            {link.label}
-                                        </span>
-                                    </a>
-                                ))}
-                            </div>
+                        <div className="ml-auto flex items-center gap-1">
+                            {NAV_LINKS.map((link) => (
+                                <a
+                                    key={link.href}
+                                    href={link.href}
+                                    className="shrink-0 rounded-full px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-white/6 hover:text-white"
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
                         </div>
                     </div>
                 </nav>
 
                 {/* Hero */}
-                <section className="relative overflow-hidden min-h-[70vh] sm:min-h-[75vh] flex items-end">
-                    <div className="absolute inset-0 bg-linear-to-br from-red-950/60 via-[#0f0f0f] to-[#0f0f0f]" />
+                <section className="relative overflow-hidden border-b border-white/5">
+                    <div className="absolute inset-0 bg-linear-to-br from-emerald-950/35 via-[#0c0f0c] to-[#0c0f0c]" />
 
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        {[...Array(8)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="absolute h-px bg-linear-to-r from-transparent via-red-600/30 to-transparent"
-                                style={{
-                                    top: `${10 + i * 12}%`,
-                                    left: "-10%",
-                                    right: "-10%",
-                                    transform: `skewY(-${1 + i * 0.5}deg)`,
-                                    opacity: 0.4 - i * 0.04,
-                                }}
-                            />
-                        ))}
-                    </div>
-
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
-                        <span
-                            className="text-[22vw] sm:text-[28vw] font-black italic uppercase text-white/2 leading-none tracking-tighter"
-                            style={{ fontStretch: "condensed" }}
-                        >
-                            Venue
-                        </span>
-                    </div>
-
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-red-700 via-red-500 to-red-700" />
-
-                    <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
-
-                    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
+                    <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
                         <div className="mb-6">
                             <Breadcrumbs venue={venue} />
                         </div>
 
-                        <h1 className="text-4xl sm:text-7xl lg:text-[5rem] font-black italic uppercase leading-[0.95] tracking-tighter mb-4">
-                            <span className="text-red-white">{venue.name}</span>
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+                            Venue
+                        </p>
+                        <h1 className="font-display text-5xl tracking-wide text-white sm:text-6xl lg:text-7xl">
+                            {venue.name}
                         </h1>
 
-                        <div className="flex flex-wrap gap-3 mb-6">
+                        <div className="mt-6 flex flex-wrap gap-3">
                             <VenueUtilityBadges venue={venue} />
                         </div>
 
-                        <div className="flex flex-wrap gap-3 mb-10">
+                        <div className="mt-4 flex flex-wrap gap-3">
                             <VenueContactActions venue={venue} />
                         </div>
 
-                        <div className="flex flex-wrap gap-4 items-center">
+                        <div className="mt-8 flex flex-wrap items-center gap-3">
                             <Link
                                 href="/venues"
-                                className="group relative flex items-center gap-3 px-8 py-4 font-black uppercase italic tracking-wider text-sm transition-all transform -skew-x-6 overflow-hidden bg-white text-black hover:bg-red-600 hover:text-white"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand)]"
                             >
-                                <span className="transform skew-x-6 flex items-center gap-3">
-                                    <Heart className="w-5 h-5 transition-all group-hover:fill-white" />
-                                    Find more venues
-                                </span>
-                                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-linear-to-r from-transparent via-white/20 to-transparent" />
+                                <Heart className="h-4 w-4" />
+                                Find more venues
                             </Link>
 
                             <a
                                 href="#location"
-                                className="flex items-center gap-2 text-zinc-400 hover:text-white font-black uppercase italic tracking-wider text-sm transition-colors"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
                             >
-                                Directions <ChevronRight className="w-4 h-4" />
+                                Directions <ChevronRight className="h-4 w-4" />
                             </a>
                         </div>
                     </div>
-
-                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
                 </section>
 
                 {/* Hero image */}
                 {/* <section className="px-4 sm:px-6 lg:px-8 -mt-4 pb-12 sm:pb-16">
                     <div className="mx-auto max-w-7xl">
-                        <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-lg shadow-red-950/20">
-                            <div className="h-1 w-full bg-red-600" />
+                        <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
                             <div className="aspect-21/9 sm:aspect-[2.4/1] w-full">
                                 <img
                                     src={venue.image}
@@ -305,78 +291,71 @@ export default async function VenuePage({ params }: Props) {
                 {/* About */}
                 <section
                     id="about"
-                    className="scroll-mt-24 border-t border-white/5 py-12 sm:py-20"
+                    className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
                 >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <header className="mb-8 sm:mb-10">
-                            <h2 className="mb-2 inline-block rounded bg-red-600 px-4 py-1.5 font-black text-xl uppercase italic text-white sm:px-6 sm:text-2xl">
-                                About
-                            </h2>
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                                {venue.name}
-                            </p>
-                        </header>
-
-                        <PortableText
-                            value={
-                                venue.description as unknown as
-                                | TypedObject
-                                | TypedObject[]
-                            }
-                            components={venueAboutPortableTextComponents}
+                        <SectionHeader
+                            label="About"
+                            title={venue.name}
                         />
+
+                        <div className="rounded-3xl border border-white/8 bg-[#141814] p-6 sm:p-8">
+                            <PortableText
+                                value={
+                                    venue.description as unknown as
+                                    | TypedObject
+                                    | TypedObject[]
+                                }
+                                components={venueAboutPortableTextComponents}
+                            />
+                        </div>
                     </div>
                 </section>
 
                 {/* Sports */}
                 <section
                     id="sports"
-                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                    className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
                 >
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                        <div className="mb-8 sm:mb-12">
-                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
-                                Sports at this venue
-                            </h2>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
-                                Watch and play what&apos;s on offer
-                            </p>
-                        </div>
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <SectionHeader
+                            label="Sports"
+                            title="Sports at this venue"
+                            description="Watch and play what's on offer"
+                        />
 
-                        <div className="grid gap-8 sm:grid-cols-2">
-                            <div>
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-4">
+                        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+                            <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
                                     Watch
                                 </h3>
-                                <ul className="flex flex-wrap gap-2">
-                                </ul>
+                                <ul className="flex flex-wrap gap-2"></ul>
                             </div>
-                            <div>
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-4">
+                            <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
                                     Play
                                 </h3>
-                                <ul className="flex flex-wrap gap-2">
-                                </ul>
+                                <ul className="flex flex-wrap gap-2"></ul>
                             </div>
                         </div>
 
-                        <div className="mt-10 flex flex-wrap gap-3">
+                        <div className="mt-8 flex flex-wrap gap-3">
                             <Link
-                                href="/discover?intent=watch"
-                                className="inline-flex items-center gap-2 text-red-400 text-xs font-black uppercase tracking-widest hover:text-red-300 transition-colors"
+                                href="/watch"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
                             >
                                 Find places to watch{" "}
-                                <ChevronRight className="w-3 h-3" />
+                                <ChevronRight className="h-3.5 w-3.5" />
                             </Link>
-                            <span className="text-zinc-700 hidden sm:inline">
+                            <span className="hidden text-zinc-700 sm:inline">
                                 |
                             </span>
                             <Link
-                                href="/discover?intent=play"
-                                className="inline-flex items-center gap-2 text-red-400 text-xs font-black uppercase tracking-widest hover:text-red-300 transition-colors"
+                                href="/play"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
                             >
                                 Find places to play{" "}
-                                <ChevronRight className="w-3 h-3" />
+                                <ChevronRight className="h-3.5 w-3.5" />
                             </Link>
                         </div>
                     </div>
@@ -385,116 +364,100 @@ export default async function VenuePage({ params }: Props) {
                 {/* Amenities (dummy data for now) */}
                 <section
                     id="amenities"
-                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                    className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
                 >
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                        <div className="mb-8 sm:mb-10">
-                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
-                                Amenities
-                            </h2>
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <SectionHeader label="Amenities" title="Amenities" />
+                        <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                            <VenueUtilityBadges venue={venue} />
                         </div>
-                        <VenueUtilityBadges venue={venue} />
                     </div>
                 </section>
 
                 {/* Events (dummy data for now) */}
                 <section
                     id="events"
-                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                    className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
                 >
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                        <div className="mb-8 sm:mb-10">
-                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
-                                What&apos;s on
-                            </h2>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
-                                Sample event · placeholder until calendar is wired
-                            </p>
-                        </div>
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <SectionHeader
+                            label="Events"
+                            title="What's on"
+                            description="Sample event · placeholder until calendar is wired"
+                        />
                     </div>
                 </section>
 
                 {/* Location */}
                 <section
                     id="location"
-                    className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5 scroll-mt-24"
+                    className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
                 >
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                        <div className="mb-8 sm:mb-10">
-                            <h2 className="bg-red-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
-                                Location
-                            </h2>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">
-                                Area &amp; maps
-                            </p>
-                        </div>
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <SectionHeader
+                            label="Location"
+                            title="Location"
+                            description="Area & maps"
+                        />
 
-                        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5 sm:p-6 max-w-2xl">
-                            <div className="flex items-start gap-3 mb-4">
-                                <MapPin className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                        <div className="max-w-2xl rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                            <div className="mb-5 flex items-start gap-3">
+                                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-brand)]" />
                                 <div>
-                                    <p className="font-black italic uppercase text-white leading-tight">
+                                    <p className="font-display text-2xl tracking-wide text-white leading-tight">
                                         {venue.name}
                                     </p>
-                                    <p className="text-zinc-400 text-sm font-bold mt-1">
-                                    </p>
+                                    <p className="mt-1 text-sm text-zinc-400"></p>
                                 </div>
                             </div>
                             <a
                                 href={mapsSearchUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 font-black uppercase italic tracking-wider text-sm border border-white/20 text-white hover:border-red-500 hover:text-red-400 transition-all transform -skew-x-6"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
                             >
-                                <span className="transform skew-x-6 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    Open in Google Maps
-                                </span>
+                                <MapPin className="h-4 w-4" />
+                                Open in Google Maps
                             </a>
                         </div>
                     </div>
                 </section>
 
                 {/* CTA banner */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-zinc-950">
-                    <div className="absolute inset-0 bg-linear-to-r from-red-950/40 to-transparent pointer-events-none" />
-                    <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-red-600 via-red-400 to-transparent" />
+                <section className="relative overflow-hidden border-t border-white/5 py-16 sm:py-20">
+                    <div className="absolute inset-0 bg-linear-to-br from-emerald-950/25 via-[#0c0f0c] to-[#0c0f0c] pointer-events-none" />
 
-                    <div className="mx-auto max-w-7xl relative">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+                    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col items-start justify-between gap-8 rounded-3xl border border-white/8 bg-[#141814] p-6 sm:flex-row sm:items-center sm:p-8">
                             <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Flag className="w-6 h-6 text-red-500" />
-                                    <span className="text-red-400 text-xs font-black uppercase tracking-[0.3em]">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <Flag className="h-4 w-4 text-[var(--color-brand)]" />
+                                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
                                         Stay in the loop
                                     </span>
                                 </div>
-                                <h2 className="text-4xl sm:text-5xl font-black italic uppercase leading-none tracking-tighter text-white mb-3">
-                                    More <span className="text-red-500">venues</span>
+                                <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+                                    More venues
                                 </h2>
-                                <p className="text-zinc-500 font-bold text-sm max-w-md">
+                                <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-500">
                                     Discover screenings, fan zones, and places to
                                     play near you.
                                 </p>
                             </div>
 
-                            <div className="flex flex-col gap-3 shrink-0">
+                            <div className="flex shrink-0 flex-col gap-3">
                                 <Link
                                     href="/venues"
-                                    className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm bg-white text-black hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"
+                                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-8 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand)]"
                                 >
-                                    <span className="transform skew-x-6">
-                                        Browse all venues
-                                    </span>
+                                    Browse all venues
                                 </Link>
                                 <button
                                     type="button"
-                                    className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm border border-zinc-700 text-zinc-400 hover:border-red-600 hover:text-red-400 transition-all transform -skew-x-6"
+                                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
                                 >
-                                    <span className="transform skew-x-6 flex items-center gap-3">
-                                        <Bell className="w-4 h-4" />
-                                        Venue alerts
-                                    </span>
+                                    <Bell className="h-4 w-4" />
+                                    Venue alerts
                                 </button>
                             </div>
                         </div>

@@ -8,37 +8,41 @@ export default function PoolHeader({ pool }: { pool: PoolView }) {
   const { fixture } = pool;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
             Prediction pool
           </p>
-          <h1 className="mt-1 text-2xl font-black italic uppercase tracking-tighter text-white sm:text-3xl">
+          <h1 className="font-display mt-2 text-3xl tracking-wide text-white sm:text-4xl">
             {pool.name}
           </h1>
         </div>
         <PoolStatusBadge fixtureStatus={fixture.status} uiState={uiState} />
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-        <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+      <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
           {fixture.title}
         </p>
         <div className="mt-4 flex items-center justify-center gap-4 sm:gap-8">
           <div className="text-center">
-            <p className="text-lg font-bold text-white sm:text-xl">{fixture.homeTeamName}</p>
+            <p className="text-lg font-medium text-white sm:text-xl">
+              {fixture.homeTeamName}
+            </p>
             {fixture.homeScore !== null && (
-              <p className="mt-1 text-3xl font-black tabular-nums text-green-400">
+              <p className="mt-1 font-display text-3xl tabular-nums text-[var(--color-brand)]">
                 {fixture.homeScore}
               </p>
             )}
           </div>
-          <span className="text-2xl font-bold text-zinc-600">vs</span>
+          <span className="text-xl font-medium text-zinc-600">vs</span>
           <div className="text-center">
-            <p className="text-lg font-bold text-white sm:text-xl">{fixture.awayTeamName}</p>
+            <p className="text-lg font-medium text-white sm:text-xl">
+              {fixture.awayTeamName}
+            </p>
             {fixture.awayScore !== null && (
-              <p className="mt-1 text-3xl font-black tabular-nums text-green-400">
+              <p className="mt-1 font-display text-3xl tabular-nums text-[var(--color-brand)]">
                 {fixture.awayScore}
               </p>
             )}

@@ -14,7 +14,7 @@ export default async function PoolLeaderboardPage({
   const { inviteCode } = await params;
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
+    <div className="min-h-screen bg-[#0c0f0c] text-white">
       <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-green-700 via-green-500 to-green-700" />
       <PoolPageClient inviteCode={inviteCode.toUpperCase()} initialTab="leaderboard" />
     </div>

@@ -14,7 +14,7 @@ const CITY_IMAGES: Record<string, string> = {
   johannesburg:
     "https://images.unsplash.com/photo-1577948000111-9c970dfe3743?auto=format&fit=crop&w=1200&q=70",
   durban:
-    "https://images.unsplash.com/photo-1555881403-32f4fd2634fc?auto=format&fit=crop&w=1200&q=70",
+    "https://images.unsplash.com/photo-1682065936841-6bb7f68207b7?auto=format&fit=crop&w=1200&q=70",
   pretoria:
     "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=1200&q=70",
 };

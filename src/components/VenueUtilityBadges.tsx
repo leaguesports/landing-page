@@ -109,7 +109,7 @@ export function VenueContactActions({
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-[#1ebe57]"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-[#1ebe57]"
         >
           <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
           WhatsApp Venue
@@ -118,7 +118,7 @@ export function VenueContactActions({
       {venue.phone && (
         <a
           href={`tel:${venue.phone}`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-zinc-300 transition-colors hover:border-white hover:text-white"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
         >
           <Phone className="h-4 w-4 shrink-0" aria-hidden />
           Call
@@ -129,7 +129,7 @@ export function VenueContactActions({
           href={venue.website}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-zinc-300 transition-colors hover:border-white hover:text-white"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
         >
           Website
         </a>

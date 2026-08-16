@@ -13,13 +13,17 @@ export default function LoginPage() {
   const signInUrl = getGoogleSignInUrl("/");
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#0f0f0f]">
+    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[#0c0f0c] px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-sm">
-        <div className="rounded-2xl border border-white/10 bg-white/3 p-8 backdrop-blur-sm">
-          <h1 className="text-center text-xl font-semibold tracking-tight text-white">
+        <div className="rounded-3xl border border-white/8 bg-[#141814] p-8">
+          <p className="text-center font-display text-2xl tracking-wide text-white">
+            LEAGUE
+            <span className="text-[var(--color-brand)]">SPORTS</span>
+          </p>
+          <h1 className="mt-4 text-center text-lg font-medium text-white">
             Log in
           </h1>
-          <p className="mt-1.5 text-center text-sm text-gray-500">
+          <p className="mt-1.5 text-center text-sm text-zinc-500">
             Sign in to your LeagueSports account
           </p>
 
@@ -28,7 +32,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={!signInUrl}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 py-3 text-sm font-medium text-gray-200 transition-colors hover:border-white/25 hover:bg-white/8 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-white/12 bg-white/5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white hover:text-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
                 <path
@@ -51,9 +55,9 @@ export default function LoginPage() {
               Continue with Google
             </button>
             {!signInUrl && (
-              <p className="mt-4 text-center text-xs text-gray-500">
+              <p className="mt-4 text-center text-xs text-zinc-500">
                 Set{" "}
-                <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-gray-400">
+                <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-zinc-400">
                   NEXT_PUBLIC_API_URL
                 </code>{" "}
                 in .env to enable sign in.

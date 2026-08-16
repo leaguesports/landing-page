@@ -286,7 +286,7 @@ export default function CreatePoolForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-green-600 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-12 w-full rounded-full bg-emerald-400 px-4 py-3.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSubmitting ? "Creating pool…" : "Create pool & get invite link"}
       </button>

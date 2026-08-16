@@ -89,7 +89,7 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
   const isWatch = intent === "watch";
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="relative z-20 w-full max-w-2xl overflow-visible">
       <div
         className="mb-3 inline-flex rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-md"
         role="tablist"
@@ -125,7 +125,7 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="relative space-y-3 overflow-visible">
         <div
           className={`relative flex flex-col gap-2 rounded-2xl border border-white/12 bg-black/55 p-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl ring-2 ring-transparent transition sm:flex-row ${
             isWatch
@@ -133,9 +133,9 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               : "focus-within:ring-emerald-400/30"
           }`}
         >
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0 flex-1 overflow-visible">
             <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+              className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-400"
               aria-hidden
             />
             <input
@@ -159,36 +159,6 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               }}
               className="w-full min-h-12 rounded-xl bg-transparent pl-11 pr-3 text-[15px] text-white outline-none placeholder:text-zinc-500"
             />
-
-            {open && suggestions.length > 0 && (
-              <ul
-                id={listId}
-                role="listbox"
-                className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-50 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
-              >
-                {suggestions.map((s) => (
-                  <li
-                    key={s.id}
-                    role="option"
-                    aria-selected={selected?.id === s.id}
-                  >
-                    <button
-                      type="button"
-                      className="flex w-full min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left hover:bg-white/6"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectSuggestion(s)}
-                    >
-                      <span className="text-sm font-medium text-white">
-                        {s.label}
-                      </span>
-                      <span className="text-[11px] uppercase tracking-wider text-zinc-500">
-                        {s.kind}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           <div className="flex gap-2 shrink-0">
@@ -219,6 +189,37 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
               Search
             </button>
           </div>
+
+          {/* Anchored to the full search shell so it isn't clipped by row layout */}
+          {open && suggestions.length > 0 && (
+            <ul
+              id={listId}
+              role="listbox"
+              className="absolute left-0 right-0 bottom-[calc(100%+0.5rem)] z-[60] max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
+            >
+              {suggestions.map((s) => (
+                <li
+                  key={s.id}
+                  role="option"
+                  aria-selected={selected?.id === s.id}
+                >
+                  <button
+                    type="button"
+                    className="flex w-full min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left hover:bg-white/6"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(s)}
+                  >
+                    <span className="text-sm font-medium text-white">
+                      {s.label}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+                      {s.kind}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {geoStatus === "error" && (

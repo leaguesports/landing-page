@@ -1,77 +1,84 @@
-import { ChevronRight, MapPin, Trophy, Tv } from "lucide-react";
+import { ArrowUpRight, MapPin, Trophy } from "lucide-react";
 import Link from "next/link";
 import type { PlayVenue } from "../types";
 
 type PlayVenueSectionProps = {
-    venues: PlayVenue[];
-    locationTitle: string;
-    sportName: string;
+  venues: PlayVenue[];
+  locationTitle: string;
+  sportName: string;
 };
 
 export function PlayVenueSection({
-    venues,
-    locationTitle,
-    sportName,
+  venues,
+  locationTitle,
+  sportName,
 }: PlayVenueSectionProps) {
-    return (
-        <section id="venues" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20 pt-12 sm:pt-16 w-full">
-                <div className="mb-8 sm:mb-12">
-                    <h2 className="bg-green-600 inline-block px-4 sm:px-6 py-1.5 rounded mb-2 sm:mb-3 text-white font-black italic uppercase text-xl sm:text-2xl">
-                        Play at a venue
-                    </h2>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs sm:ml-4">
-                        Venues playing this sport
-                    </p>
-                </div>
+  return (
+    <section
+      id="venues"
+      className="scroll-mt-28 border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
+    >
+      <div className="mx-auto w-full max-w-7xl">
+        <header className="mb-8 max-w-3xl sm:mb-10">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+            Venues
+          </p>
+          <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
+            Play at a venue
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Courts and clubs hosting this sport
+          </p>
+        </header>
 
-                {venues.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                        {venues.map((venue) => (
-                            <Link
-                                key={venue.id}
-                                href={`/venues/${venue.slug}`}
-                                className="group block overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition-all duration-300 hover:border-green-600/50 hover:shadow-lg hover:shadow-green-950/20"
-                            >
-                                <div className="h-1 w-full bg-green-600 transition-colors group-hover:bg-green-500" />
-                                <div className="p-4 sm:p-5">
-                                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                                        <Trophy className="w-4 h-4 shrink-0 text-green-500" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">
-                                            Play {sportName}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-black italic uppercase leading-tight text-base sm:text-lg text-white mb-2 group-hover:text-green-400 transition-colors">
-                                        {venue.name}
-                                    </h3>
-                                    <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold">
-                                        <MapPin className="w-3 h-3 shrink-0 text-zinc-600" />
-                                        <span>{locationTitle}</span>
-                                    </div>
-                                    <div className="flex items-center justify-end pt-4 mt-4 border-t border-zinc-800">
-                                        <span className="text-green-400 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:text-green-300 inline-flex items-center gap-0.5">
-                                            View venue <ChevronRight className="w-3 h-3" />
-                                        </span>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 px-4 sm:px-6 py-8 sm:py-10 text-center">
-                        <Tv className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                        <p className="text-zinc-500 font-bold text-sm">
-                            No play venues for {sportName} in our directory yet.
-                        </p>
-                        <Link
-                            href="/discover?intent=play"
-                            className="inline-flex items-center gap-2 mt-4 text-green-400 text-xs font-black uppercase tracking-widest hover:text-green-300 transition-colors"
-                        >
-                            Discover venues <ChevronRight className="w-3 h-3" />
-                        </Link>
-                    </div>
-                )}
-            </div>
-        </section>
-    );
+        {venues.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+            {venues.map((venue) => (
+              <Link
+                key={venue.id}
+                href={`/venues/${venue.slug}`}
+                className="group block overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-emerald-400/30"
+              >
+                <div className="p-5 sm:p-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Trophy className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <span className="text-xs font-medium text-emerald-300">
+                      Play {sportName}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-medium leading-snug text-white transition-colors group-hover:text-emerald-300 sm:text-lg">
+                    {venue.name}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span>{locationTitle}</span>
+                  </div>
+                  <div className="mt-5 flex items-center justify-end border-t border-white/6 pt-4">
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors group-hover:text-emerald-300">
+                      View venue
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-12 text-center">
+            <Trophy className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
+            <p className="text-sm text-zinc-400">
+              No play venues for {sportName} in our directory yet.
+            </p>
+            <Link
+              href="/venues"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-400 hover:text-emerald-300"
+            >
+              Browse venues
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }

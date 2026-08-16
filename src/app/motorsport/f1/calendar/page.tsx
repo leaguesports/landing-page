@@ -11,9 +11,9 @@ export default async function F1CalendarPage() {
     const races = await getRaces("f1", 30);
 
     return (
-        <div className="min-h-screen bg-[#0f0f0f] text-white">
+        <div className="min-h-screen bg-[#0c0f0c] text-white">
             {/* ─── In-page nav ─────────────────────────────────────────────── */}
-            <nav className="sticky top-0 z-40 bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/5">
+            <nav className="sticky top-0 z-40 bg-[#0c0f0c]/90 backdrop-blur-md border-b border-white/5">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
                         <div className="flex items-center gap-2 mr-6 shrink-0">
@@ -45,7 +45,7 @@ export default async function F1CalendarPage() {
 
             {/* ─── Hero ─────────────────────────────────────────────────────── */}
             <section className="relative overflow-hidden pt-12 pb-16 px-4 sm:px-6 lg:px-8">
-                <div className="absolute inset-0 bg-linear-to-br from-red-950/40 via-[#0f0f0f] to-[#0f0f0f]" />
+                <div className="absolute inset-0 bg-linear-to-br from-red-950/40 via-[#0c0f0c] to-[#0f0f0f]" />
                 <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-red-700 via-red-500 to-red-700" />
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     {[...Array(5)].map((_, i) => (

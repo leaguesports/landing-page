@@ -51,7 +51,10 @@ export function OpenMatchFeed() {
   const [joined, setJoined] = useState<Record<string, boolean>>({});
 
   return (
-    <section className="border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+    <section
+      id="open-matches"
+      className="border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-20 px-4 sm:px-6 lg:px-8"
+    >
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 flex flex-col gap-5 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
@@ -83,44 +86,46 @@ export function OpenMatchFeed() {
                 key={match.id}
                 className="rounded-3xl border border-white/8 bg-[#141814] p-5 transition-colors hover:border-white/16 sm:p-6"
               >
-                <div className="flex items-start gap-4">
-                  <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-brand)]/15 text-sm font-semibold text-[var(--color-brand)]"
-                    aria-hidden
-                  >
-                    {match.hostInitials}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-white/6 px-3 py-1 text-xs font-medium text-zinc-200">
-                        {match.sport}
-                      </span>
-                      <span className="text-xs text-zinc-500">
-                        {match.hostName}
-                      </span>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-start gap-4">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-brand)]/15 text-sm font-semibold text-[var(--color-brand)]"
+                      aria-hidden
+                    >
+                      {match.hostInitials}
                     </div>
 
-                    <p className="text-[15px] font-medium text-zinc-100">
-                      {match.venueLine}
-                    </p>
-                    <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-zinc-500">
-                      <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      {match.status}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white/6 px-3 py-1 text-xs font-medium text-zinc-200">
+                          {match.sport}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {match.hostName}
+                        </span>
+                      </div>
 
-                    <button
-                      type="button"
-                      disabled={isJoined}
-                      onClick={() =>
-                        setJoined((prev) => ({ ...prev, [match.id]: true }))
-                      }
-                      className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-auto"
-                    >
-                      <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
-                      {isJoined ? "Request sent" : "Request to join"}
-                    </button>
+                      <p className="text-[15px] font-medium text-zinc-100">
+                        {match.venueLine}
+                      </p>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-zinc-500">
+                        <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {match.status}
+                      </p>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    disabled={isJoined}
+                    onClick={() =>
+                      setJoined((prev) => ({ ...prev, [match.id]: true }))
+                    }
+                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-auto sm:self-center"
+                  >
+                    <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+                    {isJoined ? "Request sent" : "Request to join"}
+                  </button>
                 </div>
               </li>
             );

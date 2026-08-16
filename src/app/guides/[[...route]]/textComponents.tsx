@@ -9,17 +9,17 @@ export const guidePortableTextComponents = {
             </p>
         ),
         h2: ({ children }) => (
-            <h3 className="mb-3 mt-10 text-sm font-black uppercase tracking-[0.2em] text-red-400 first:mt-0">
+            <h3 className="mb-3 mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)] first:mt-0">
                 {children}
             </h3>
         ),
         h3: ({ children }) => (
-            <h3 className="mb-3 text-2xl font-black uppercase tracking-wider text-zinc-400 first:mt-0 mt-20">
+            <h3 className="mb-3 mt-10 font-display text-2xl tracking-wide text-white first:mt-0 sm:text-3xl">
                 {children}
             </h3>
         ),
         blockquote: ({ children }) => (
-            <blockquote className="my-6 border-l-4 border-red-600/90 py-1 pl-5 text-zinc-400 text-base sm:text-lg italic leading-relaxed">
+            <blockquote className="my-6 rounded-3xl border border-white/8 border-l-[3px] border-l-[var(--color-brand)] bg-[#141814] py-4 pl-5 pr-5 text-base italic leading-relaxed text-zinc-400 sm:text-lg">
                 {children}
             </blockquote>
         ),
@@ -29,7 +29,7 @@ export const guidePortableTextComponents = {
             <ul className="my-6 space-y-4 sm:my-8">{children}</ul>
         ),
         number: ({ children }) => (
-            <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-black marker:text-red-500 sm:my-8 sm:pl-6">
+            <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-semibold marker:text-[var(--color-brand)] sm:my-8 sm:pl-6">
                 {children}
             </ol>
         ),
@@ -38,7 +38,7 @@ export const guidePortableTextComponents = {
         bullet: ({ children }) => (
             <li className="flex gap-3.5 text-zinc-300 text-base sm:text-lg leading-[1.65] font-medium">
                 <span
-                    className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.45)]"
+                    className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-brand)]"
                     aria-hidden
                 />
                 <span className="min-w-0 flex-1 [&_strong]:text-white">{children}</span>
@@ -63,7 +63,7 @@ export const guidePortableTextComponents = {
             return (
                 <Link
                     href={href}
-                    className="font-semibold text-red-400 underline decoration-red-500/35 underline-offset-[3px] transition-colors hover:text-red-300"
+                    className="font-semibold text-[var(--color-brand)] underline decoration-[var(--color-brand)]/35 underline-offset-[3px] transition-colors hover:text-emerald-300"
                 >
                     {children}
                 </Link>

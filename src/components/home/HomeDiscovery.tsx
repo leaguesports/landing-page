@@ -14,9 +14,9 @@ export function HomeDiscovery() {
 
   return (
     <>
-      <section className="relative flex min-h-[88vh] items-end overflow-hidden">
-        {/* Full-bleed hero plane */}
-        <div className="absolute inset-0">
+      <section className="relative flex min-h-[88vh] items-end overflow-visible">
+        {/* Full-bleed hero plane — overflow clipped here so search popover can escape */}
+        <div className="absolute inset-0 overflow-hidden">
           <Image
             src={HERO_IMAGE}
             alt=""
@@ -44,7 +44,7 @@ export function HomeDiscovery() {
             suburb, city, or sport.
           </p>
 
-          <div className="animate-rise-delay-2 mt-8 sm:mt-10">
+          <div className="relative z-20 animate-rise-delay-2 mt-8 sm:mt-10 overflow-visible">
             <HeroSearch onIntentChange={setIntent} />
           </div>
         </div>

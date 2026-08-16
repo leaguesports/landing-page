@@ -1,39 +1,31 @@
-import { Bell, Flag } from "lucide-react";
+import { Bell } from "lucide-react";
 
 export function WatchFollowBanner() {
-    return (
-        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-zinc-950 border-t border-white/5">
-            <div className="absolute inset-0 bg-linear-to-r from-blue-950/40 to-transparent pointer-events-none" />
-            <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-blue-600 via-blue-400 to-transparent" />
+  return (
+    <section className="relative overflow-hidden border-t border-white/5 bg-[#101410] px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+      <div className="pointer-events-none absolute -left-16 top-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
 
-            <div className="mx-auto max-w-7xl relative w-full">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <Flag className="w-6 h-6 text-blue-500" />
-                            <span className="text-blue-400 text-xs font-black uppercase tracking-[0.3em]">Never Miss a Venue</span>
-                        </div>
-                        <h2 className="text-4xl sm:text-5xl font-black italic uppercase leading-none tracking-tighter text-white mb-3">
-                            Follow <span className="text-blue-500">Venues</span>
-                        </h2>
-                        <p className="text-zinc-500 font-bold text-sm max-w-md">
-                            Be notified when new venues are available.
-                        </p>
-                    </div>
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">
+            Stay in the loop
+          </p>
+          <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+            Follow venues
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Get notified when new watch spots open near you.
+          </p>
+        </div>
 
-                    <div className="flex flex-col gap-3 shrink-0">
-                        <button
-                            type="button"
-                            className="flex items-center justify-center gap-3 px-10 py-3 font-black uppercase italic tracking-wider text-sm border border-zinc-700 text-zinc-400 hover:border-blue-600 hover:text-blue-400 transition-all transform -skew-x-6"
-                        >
-                            <span className="transform skew-x-6 flex items-center gap-3">
-                                <Bell className="w-4 h-4" />
-                                Enable Venue Alerts
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+        <button
+          type="button"
+          className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+        >
+          <Bell className="h-4 w-4" aria-hidden />
+          Enable venue alerts
+        </button>
+      </div>
+    </section>
+  );
 }

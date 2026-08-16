@@ -9,21 +9,23 @@ export const metadata: Metadata = {
 
 export default function CreatePoolPage() {
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-green-700 via-green-500 to-green-700" />
-      <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <div className="mx-auto max-w-xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
             Prediction pools
           </p>
-          <h1 className="mt-1 text-3xl font-black italic uppercase tracking-tighter text-white">
+          <h1 className="font-display mt-2 text-4xl tracking-wide text-white sm:text-5xl">
             Create a pool
           </h1>
-          <p className="mt-2 text-zinc-400">
-            No login needed — pick your name, set up a match, and share the link with friends.
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+            No login needed — pick your name, set up a match, and share the link
+            with friends.
           </p>
         </div>
-        <CreatePoolForm />
+        <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+          <CreatePoolForm />
+        </div>
       </div>
     </div>
   );

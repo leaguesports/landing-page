@@ -322,7 +322,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 1: Digital Scorecards */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute right-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
@@ -435,7 +435,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 2: Progress Tracking */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-purple-500/10 blur-3xl" />
         </div>
@@ -638,7 +638,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 3: Achievement Badges */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute right-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-yellow-500/10 blur-3xl" />
         </div>
@@ -872,7 +872,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 4: Custom Training */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-green-500/10 blur-3xl" />
         </div>
@@ -972,7 +972,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 5: Communities */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute right-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-pink-500/10 blur-3xl" />
         </div>
@@ -1067,7 +1067,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Feature 6: Smart Integrations */}
-      <section className="relative border-b border-white/10 bg-[#0f0f0f] py-24">
+      <section className="relative border-b border-white/10 bg-[#0c0f0c] py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
         </div>
