@@ -35,6 +35,8 @@ export type Venue = {
   has_outdoor_area?: boolean;
   has_parking?: boolean;
   is_verified?: boolean;
+  /** Ownership claim funnel status */
+  claim_status?: "unclaimed" | "claim_pending" | "claimed";
   rating?: number;
   createdAt: Date;
   updatedAt: Date;

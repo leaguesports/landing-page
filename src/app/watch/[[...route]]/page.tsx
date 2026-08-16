@@ -7,7 +7,7 @@ import {
     getBroadcastSports,
     getLocationBySlug,
     getSportBySlug,
-    getVenuesByLocationAndSport,
+    getVenuesByLocationAndSportWithFallback,
     getWatchLocationsBySportSlug,
 } from "./watch-data";
 import { resolveWatchRoute } from "./watch-types";
@@ -204,18 +204,24 @@ export default async function WatchPage(route: {
     }
 
     const { sportSlug, locationSlug } = resolved;
-    const [location, sport, venues] = await Promise.all([
+    const [location, sport] = await Promise.all([
         getLocationBySlug(locationSlug),
         getSportBySlug(sportSlug),
-        getVenuesByLocationAndSport(locationSlug, sportSlug),
     ]);
 
     if (!location) {
         notFound();
     }
 
+    const venueResults = await getVenuesByLocationAndSportWithFallback(
+        locationSlug,
+        sportSlug,
+        location,
+    );
+
     const sportName = sport?.name ?? sportSlug;
     const locationTitle = location.title;
+    const venues = venueResults.venues;
 
     return (
         <div>
@@ -230,6 +236,9 @@ export default async function WatchPage(route: {
                     venues={venues}
                     locationTitle={locationTitle}
                     sportName={sportName}
+                    usedCityFallback={venueResults.usedCityFallback}
+                    suburbTitle={venueResults.suburbTitle}
+                    cityTitle={venueResults.cityTitle}
                 />
                 <WatchFollowBanner />
             </WatchShell>

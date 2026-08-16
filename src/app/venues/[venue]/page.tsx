@@ -231,7 +231,10 @@ export default async function VenuePage({ params }: Props) {
   const suburbLine = [venue.address.suburb, venue.address.city]
     .filter(Boolean)
     .join(", ");
-  const showClaimBar = venue.is_verified !== true;
+  const showClaimBar =
+    venue.is_verified !== true &&
+    venue.claim_status !== "claim_pending" &&
+    venue.claim_status !== "claimed";
   const addressLine = [
     venue.address.street,
     venue.address.suburb,

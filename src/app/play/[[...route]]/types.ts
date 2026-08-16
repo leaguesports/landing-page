@@ -2,12 +2,23 @@ export type PlayLocation = {
   id: string;
   slug: string;
   title: string;
+  type?: string | null;
+  parentSlug?: string | null;
+  parentTitle?: string | null;
 };
 
 export type PlayVenue = {
   id: string;
   slug: string;
   name: string;
+};
+
+export type PlayVenueResults = {
+  venues: PlayVenue[];
+  /** True when suburb had no exact matches and city-level venues are shown. */
+  usedCityFallback: boolean;
+  suburbTitle: string | null;
+  cityTitle: string | null;
 };
 
 export type PlaySport = {

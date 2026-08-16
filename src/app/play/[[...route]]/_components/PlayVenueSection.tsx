@@ -6,13 +6,22 @@ type PlayVenueSectionProps = {
   venues: PlayVenue[];
   locationTitle: string;
   sportName: string;
+  usedCityFallback?: boolean;
+  suburbTitle?: string | null;
+  cityTitle?: string | null;
 };
 
 export function PlayVenueSection({
   venues,
   locationTitle,
   sportName,
+  usedCityFallback = false,
+  suburbTitle,
+  cityTitle,
 }: PlayVenueSectionProps) {
+  const fallbackSuburb = suburbTitle ?? locationTitle;
+  const fallbackCity = cityTitle ?? "this city";
+
   return (
     <section
       id="venues"
@@ -30,6 +39,17 @@ export function PlayVenueSection({
             Courts and clubs hosting this sport
           </p>
         </header>
+
+        {usedCityFallback && venues.length > 0 ? (
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/8 px-4 py-3.5 sm:px-5">
+            <p className="text-sm leading-relaxed text-emerald-100/90">
+              No venues found directly in{" "}
+              <span className="font-medium text-white">{fallbackSuburb}</span>{" "}
+              yet. Showing top sports venues in nearby{" "}
+              <span className="font-medium text-white">{fallbackCity}</span>:
+            </p>
+          </div>
+        ) : null}
 
         {venues.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
@@ -51,7 +71,9 @@ export function PlayVenueSection({
                   </h3>
                   <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500">
                     <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span>{locationTitle}</span>
+                    <span>
+                      {usedCityFallback ? fallbackCity : locationTitle}
+                    </span>
                   </div>
                   <div className="mt-5 flex items-center justify-end border-t border-white/6 pt-4">
                     <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors group-hover:text-emerald-300">

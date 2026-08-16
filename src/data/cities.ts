@@ -15,6 +15,9 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Claremont", slug: "claremont" },
       { name: "Green Point", slug: "green-point" },
       { name: "Newlands", slug: "newlands" },
+      { name: "Camps Bay", slug: "camps-bay" },
+      { name: "Rondebosch", slug: "rondebosch" },
+      { name: "Woodstock", slug: "woodstock" },
     ],
   },
   {
@@ -24,7 +27,10 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Sandton", slug: "sandton" },
       { name: "Rosebank", slug: "rosebank" },
       { name: "Illovo", slug: "illovo" },
-      { name: "Bryanston", slug: "bryanston" },
+      { name: "Parkhurst", slug: "parkhurst" },
+      { name: "Fourways", slug: "fourways" },
+      { name: "Randburg", slug: "randburg" },
+      { name: "Greenside", slug: "greenside" },
     ],
   },
   {
@@ -34,6 +40,7 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Umhlanga", slug: "umhlanga" },
       { name: "Ballito", slug: "ballito" },
       { name: "Morningside", slug: "morningside" },
+      { name: "Berea", slug: "berea" },
     ],
   },
   {
@@ -43,6 +50,7 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Menlyn", slug: "menlyn" },
       { name: "Hazelwood", slug: "hazelwood" },
       { name: "Brooklyn", slug: "brooklyn" },
+      { name: "Centurion", slug: "centurion" },
     ],
   },
 ];

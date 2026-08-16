@@ -1,5 +1,10 @@
 import { sanityClient } from "@/sanity/client";
-import type { PlayLocation, PlaySport, PlayVenue } from "./types";
+import type {
+  PlayLocation,
+  PlaySport,
+  PlayVenue,
+  PlayVenueResults,
+} from "./types";
 
 export function getBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -19,6 +24,9 @@ export async function getLocationBySlug(slug: string) {
           "id": _id,
           "slug": slug.current,
           "title": title,
+          "type": type,
+          "parentSlug": parent->slug.current,
+          "parentTitle": parent->title,
           }`,
     { slug },
   );
@@ -63,4 +71,54 @@ export async function getVenuesByLocationAndSport(
   );
 
   return venues;
+}
+
+/**
+ * Exact suburb/location match first; if empty and a parent city exists,
+ * return city-level venues for a graceful nearby fallback.
+ */
+export async function getVenuesByLocationAndSportWithFallback(
+  locationSlug: string,
+  sportSlug: string,
+  location: PlayLocation | null,
+): Promise<PlayVenueResults> {
+  const parentSlug = location?.parentSlug ?? null;
+  const isSuburb =
+    location?.type === "suburb" || Boolean(parentSlug);
+
+  const exactQuery = isSuburb
+    ? `*[_type == "venue" && 
+        $sport in sports[]->slug.current && 
+        location->slug.current == $location
+        ] {
+            "id": _id,
+            "slug": slug.current,
+            "name": name,
+        }`
+    : null;
+
+  const exact = exactQuery
+    ? await sanityClient.fetch<PlayVenue[]>(exactQuery, {
+        location: locationSlug,
+        sport: sportSlug,
+      })
+    : await getVenuesByLocationAndSport(locationSlug, sportSlug);
+
+  if (exact.length > 0 || !isSuburb || !parentSlug) {
+    return {
+      venues: exact,
+      usedCityFallback: false,
+      suburbTitle: isSuburb ? (location?.title ?? null) : null,
+      cityTitle: location?.parentTitle ?? null,
+    };
+  }
+
+  const nearby = await getVenuesByLocationAndSport(parentSlug, sportSlug);
+
+  return {
+    venues: nearby,
+    usedCityFallback: nearby.length > 0,
+    suburbTitle: location?.title ?? null,
+    cityTitle: location?.parentTitle ?? parentSlug,
+  };
 }

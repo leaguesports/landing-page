@@ -40,6 +40,7 @@ export type Venue = {
   has_outdoor_area?: boolean | null;
   has_parking?: boolean | null;
   is_verified?: boolean | null;
+  claim_status?: "unclaimed" | "claim_pending" | "claimed" | null;
   rating?: number | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -65,6 +66,7 @@ const VENUE_UTILITY_PROJECTION = `
   has_outdoor_area,
   has_parking,
   is_verified,
+  claim_status,
   rating,
   latitude,
   longitude,
@@ -91,6 +93,7 @@ function mapVenueRow(row: {
   has_outdoor_area?: boolean | null;
   has_parking?: boolean | null;
   is_verified?: boolean | null;
+  claim_status?: "unclaimed" | "claim_pending" | "claimed" | null;
   rating?: number | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -123,6 +126,7 @@ function mapVenueRow(row: {
     has_outdoor_area: row.has_outdoor_area ?? null,
     has_parking: row.has_parking ?? null,
     is_verified: row.is_verified ?? false,
+    claim_status: row.claim_status ?? null,
     rating: row.rating ?? null,
     latitude: row.latitude ?? null,
     longitude: row.longitude ?? null,

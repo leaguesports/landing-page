@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MapPin } from "lucide-react";
+import { urlFor } from "@/sanity/client";
+import { getVenueBySlug } from "@/services/venues";
+import { ClaimForm } from "./_components/ClaimForm";
 
 export const metadata: Metadata = {
   title: "Claim your venue",
@@ -12,9 +16,19 @@ type Props = {
   searchParams: Promise<{ venue?: string }>;
 };
 
+function resolveThumbnail(venue: NonNullable<Awaited<ReturnType<typeof getVenueBySlug>>>) {
+  const sportImage = venue.sports?.find((s) => s.image)?.image;
+  if (sportImage) {
+    return urlFor(sportImage)?.width(640).height(360).fit("crop").url() ?? null;
+  }
+  return null;
+}
+
 export default async function ClaimVenuePage({ searchParams }: Props) {
   const { venue: venueSlug } = await searchParams;
   const slug = venueSlug?.trim() || "";
+  const venue = slug ? await getVenueBySlug(slug) : null;
+  const thumbnail = venue ? resolveThumbnail(venue) : null;
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -30,61 +44,88 @@ export default async function ClaimVenuePage({ searchParams }: Props) {
           <p className="mt-4 text-sm leading-relaxed text-zinc-400 sm:text-base">
             Free listing control for match schedules, amenities, and WhatsApp
             bookings.
-            {slug ? (
-              <>
-                {" "}
-                You&apos;re claiming{" "}
-                <span className="font-medium text-white">{slug}</span>.
-              </>
-            ) : null}
           </p>
 
-          <div className="mt-8 rounded-3xl border border-white/8 bg-[#141814] p-6">
-            <p className="text-sm leading-relaxed text-zinc-400">
-              We&apos;ll verify ownership and unlock editing for schedules,
-              screens, and contact details. Email us to get started
-              {slug ? (
-                <>
-                  {" "}
-                  — include the venue slug{" "}
-                  <span className="font-medium text-white">{slug}</span>.
-                </>
-              ) : (
-                "."
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href={`mailto:privacy@leaguesports.co.za?subject=${encodeURIComponent(
-                  slug
-                    ? `Claim venue: ${slug}`
-                    : "Claim venue listing",
-                )}&body=${encodeURIComponent(
-                  slug
-                    ? `Hi LeagueSports,\n\nI'd like to claim the venue listing for ${slug}.\n\nVenue manager name:\nPhone / WhatsApp:\n`
-                    : "Hi LeagueSports,\n\nI'd like to claim my venue listing.\n\nVenue name / slug:\nVenue manager name:\nPhone / WhatsApp:\n",
-                )}`}
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
-              >
-                Email to claim
-              </a>
-              {slug ? (
+          {venue ? (
+            <>
+              <div className="mt-8 overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
+                {thumbnail ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={thumbnail}
+                    alt=""
+                    className="h-36 w-full object-cover sm:h-40"
+                  />
+                ) : (
+                  <div className="h-24 bg-linear-to-br from-emerald-950/50 to-[#141814] sm:h-28" />
+                )}
+                <div className="p-5">
+                  <h2 className="font-display text-3xl tracking-wide text-white">
+                    {venue.name}
+                  </h2>
+                  {[venue.address.suburb, venue.address.city]
+                    .filter(Boolean)
+                    .length > 0 ? (
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-zinc-400">
+                      <MapPin className="h-4 w-4 shrink-0 text-[var(--color-brand)]" />
+                      {[venue.address.suburb, venue.address.city]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <ClaimForm
+                  venue={{
+                    slug: venue.slug,
+                    name: venue.name,
+                    suburb: venue.address.suburb,
+                    city: venue.address.city,
+                    thumbnail,
+                  }}
+                />
+              </div>
+
+              <div className="mt-6">
                 <Link
-                  href={`/venues/${encodeURIComponent(slug)}`}
+                  href={`/venues/${encodeURIComponent(venue.slug)}`}
                   className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
                 >
                   Back to venue
                 </Link>
-              ) : (
+              </div>
+            </>
+          ) : (
+            <div className="mt-8 rounded-3xl border border-white/8 bg-[#141814] p-6">
+              <p className="text-sm leading-relaxed text-zinc-400">
+                {slug ? (
+                  <>
+                    We couldn&apos;t find a venue for{" "}
+                    <span className="font-medium text-white">{slug}</span>. Open
+                    your venue page and tap{" "}
+                    <span className="font-medium text-white">Claim Profile</span>
+                    , or browse the directory.
+                  </>
+                ) : (
+                  <>
+                    Open a venue page and tap{" "}
+                    <span className="font-medium text-white">Claim Profile</span>{" "}
+                    to pre-fill this form, or browse venues to find your listing.
+                  </>
+                )}
+              </p>
+              <div className="mt-6">
                 <Link
                   href="/venues"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
                 >
                   Browse venues
                 </Link>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </div>

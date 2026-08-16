@@ -4,6 +4,7 @@ import {
   SUBURB_COORDINATES,
 } from "@/data/coordinates";
 import { toSlug } from "@/data/suburbs";
+import { urlFor } from "@/sanity/client";
 
 function resolveCoords(venue: VenueDetail): [number, number] | null {
   if (
@@ -24,59 +25,76 @@ function resolveCoords(venue: VenueDetail): [number, number] | null {
   return null;
 }
 
+function resolveImage(venue: VenueDetail): string | undefined {
+  const sportImage = venue.sports?.find((s) => s.image)?.image;
+  if (sportImage) {
+    return urlFor(sportImage)?.width(1200).height(630).fit("crop").url();
+  }
+  return undefined;
+}
+
+type AmenityFeature = {
+  "@type": "LocationFeatureSpecification";
+  name: string;
+  value: true;
+};
+
 export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
   const coords = resolveCoords(venue);
   const [lat, lng] = coords ?? DEFAULT_MAP_CENTER;
+  const image = resolveImage(venue);
 
-  const amenityFeature: { "@type": "LocationFeatureSpecification"; name: string }[] =
-    [];
+  const amenityFeature: AmenityFeature[] = [];
 
   if (venue.has_generator_backup) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
-      name: "Generator / Inverter Backup",
+      name: "Generator Backup",
+      value: true,
     });
   }
   if (venue.has_big_screens) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "HD Big Screens",
+      value: true,
     });
   }
   if (venue.has_live_audio) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "Live Commentary",
+      value: true,
     });
   }
   if (venue.has_craft_drafts) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "Draft Beer",
+      value: true,
     });
   }
   if (venue.has_food_menu) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "Food Menu",
+      value: true,
     });
   }
   if (venue.has_outdoor_area) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "Outdoor Area",
+      value: true,
     });
   }
   if (venue.has_parking) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
       name: "On-site Parking",
+      value: true,
     });
   }
-
-  const streetAddress = [venue.address.street, venue.address.suburb]
-    .filter(Boolean)
-    .join(", ");
 
   const hasPlaySports = (venue.sports?.length ?? 0) > 0;
   const schemaType = hasPlaySports ? "SportsActivityLocation" : "BarOrPub";
@@ -85,13 +103,14 @@ export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
     "@context": "https://schema.org",
     "@type": schemaType,
     name: venue.name,
-    url: pageUrl,
+    image: image || undefined,
+    url: venue.website?.trim() || pageUrl,
     telephone: venue.phone || undefined,
     address: {
       "@type": "PostalAddress",
-      streetAddress: streetAddress || undefined,
-      addressLocality: venue.address.city || venue.address.suburb || undefined,
-      addressRegion: venue.address.province || undefined,
+      streetAddress: venue.address.street || undefined,
+      addressLocality: venue.address.suburb || venue.address.city || undefined,
+      addressRegion: venue.address.province || venue.address.city || undefined,
       postalCode: venue.address.postcode || undefined,
       addressCountry: venue.address.country || "ZA",
     },

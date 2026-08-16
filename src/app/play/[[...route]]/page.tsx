@@ -4,7 +4,7 @@ import {
   getBaseUrl,
   getLocationBySlug,
   getSportBySlug,
-  getVenuesByLocationAndSport,
+  getVenuesByLocationAndSportWithFallback,
 } from "./data";
 import { resolvePlayRoute } from "./types";
 import { PlayShell } from "./_components/PlayShell";
@@ -85,18 +85,24 @@ export default async function PlayPage(route: {
   }
 
   const { sportSlug, locationSlug } = resolved;
-  const [location, sport, venues] = await Promise.all([
+  const [location, sport] = await Promise.all([
     getLocationBySlug(locationSlug),
     getSportBySlug(sportSlug),
-    getVenuesByLocationAndSport(locationSlug, sportSlug),
   ]);
 
   if (!location) {
     notFound();
   }
 
+  const venueResults = await getVenuesByLocationAndSportWithFallback(
+    locationSlug,
+    sportSlug,
+    location,
+  );
+
   const sportName = sport?.name ?? sportSlug;
   const locationTitle = location.title;
+  const venues = venueResults.venues;
 
   return (
     <PlayShell>
@@ -110,6 +116,9 @@ export default async function PlayPage(route: {
         venues={venues}
         locationTitle={locationTitle}
         sportName={sportName}
+        usedCityFallback={venueResults.usedCityFallback}
+        suburbTitle={venueResults.suburbTitle}
+        cityTitle={venueResults.cityTitle}
       />
     </PlayShell>
   );
