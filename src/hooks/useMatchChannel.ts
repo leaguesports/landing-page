@@ -99,7 +99,6 @@ export function useMatchChannel(
       const event = message.data as MatchChannelEvent | undefined;
       if (!event?.state || event.matchId !== matchId) return;
 
-      // Remote snapshots replace local state; undo history stays device-local
       setMatch((prev) => {
         if (event.state.version < prev.version) return prev;
         return event.state;
@@ -109,6 +108,28 @@ export function useMatchChannel(
     for (const name of CHANNEL_EVENTS) {
       channel.subscribe(name, onEvent);
     }
+
+    // Hydrate from Ably history in case SSR/local cache was stale or empty
+    void channel
+      .history({ limit: 50, direction: "backwards" })
+      .then((page) => {
+        if (cancelled) return;
+        let best: PadelMatch | null = null;
+        for (const message of page.items ?? []) {
+          const event = message.data as MatchChannelEvent | undefined;
+          const state = event?.state;
+          if (!state || state.id !== matchId) continue;
+          if (!best || state.version >= best.version) best = state;
+        }
+        if (best) {
+          setMatch((prev) =>
+            best!.version >= prev.version ? best! : prev,
+          );
+        }
+      })
+      .catch((error) => {
+        console.warn("[useMatchChannel] history hydrate failed", error);
+      });
 
     return () => {
       cancelled = true;

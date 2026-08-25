@@ -62,17 +62,37 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!process.env.ABLY_API_KEY) {
+    return NextResponse.json(
+      { error: "Realtime is unavailable — ABLY_API_KEY is not configured" },
+      { status: 503 },
+    );
+  }
+
   const servingTeam =
     body.servingTeam === "B" ? ("B" as const) : ("A" as const);
 
-  const match = await createMatch({
-    ruleset,
-    venue: body.venue ?? null,
-    pairings: body.pairings,
-    servingTeam,
-    createdByUserId:
-      typeof body.createdByUserId === "string" ? body.createdByUserId : null,
-  });
+  try {
+    const match = await createMatch({
+      ruleset,
+      venue: body.venue ?? null,
+      pairings: body.pairings,
+      servingTeam,
+      createdByUserId:
+        typeof body.createdByUserId === "string" ? body.createdByUserId : null,
+    });
 
-  return NextResponse.json(match, { status: 201 });
+    return NextResponse.json(match, { status: 201 });
+  } catch (error) {
+    console.error("[matches] create failed", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not create match on Ably",
+      },
+      { status: 503 },
+    );
+  }
 }

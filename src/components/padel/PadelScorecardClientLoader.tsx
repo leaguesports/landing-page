@@ -1,14 +1,18 @@
 "use client";
 
 import { PadelScorecard } from "@/components/padel/PadelScorecard";
-import { readCachedMatch } from "@/lib/match-api";
+import { fetchPadelMatch, readCachedMatch } from "@/lib/match-api";
 import type { PadelMatch } from "@/types/padel-match";
-import { useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type LoadState =
+  | { status: "ready"; match: PadelMatch }
+  | { status: "loading" }
+  | { status: "missing" };
 
 /**
- * Client fallback when server store misses (e.g. multi-instance deploys
- * before the main DB API is wired). Uses localStorage cache from Start Match.
+ * Resolve match from: SSR prop → localStorage → Ably history via `/api/matches/:id`.
  */
 export function PadelScorecardClientLoader({
   matchId,
@@ -17,15 +21,50 @@ export function PadelScorecardClientLoader({
   matchId: string;
   initialMatch: PadelMatch | null;
 }) {
-  const [match] = useState<PadelMatch | null>(
-    () => initialMatch ?? readCachedMatch(matchId),
-  );
+  const [load, setLoad] = useState<LoadState>(() => {
+    const local = initialMatch ?? readCachedMatch(matchId);
+    return local ? { status: "ready", match: local } : { status: "loading" };
+  });
 
-  if (!match) {
+  useEffect(() => {
+    if (load.status === "ready") return;
+
+    let cancelled = false;
+
+    fetchPadelMatch(matchId)
+      .then((match) => {
+        if (cancelled) return;
+        setLoad({ status: "ready", match });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        const cached = readCachedMatch(matchId);
+        setLoad(
+          cached
+            ? { status: "ready", match: cached }
+            : { status: "missing" },
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId, load.status]);
+
+  if (load.status === "loading") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#050705] px-6 text-center text-sm text-zinc-400">
+        Loading match from realtime…
+      </div>
+    );
+  }
+
+  if (load.status === "missing") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#050705] px-6 text-center">
-        <p className="text-sm text-zinc-400">
-          Match not found. Start a new one from Quick-Start.
+        <p className="max-w-sm text-sm text-zinc-400">
+          No Ably history found for this match. It may have expired, or the
+          match was never published to realtime.
         </p>
         <Link
           href="/padel/new"
@@ -37,5 +76,5 @@ export function PadelScorecardClientLoader({
     );
   }
 
-  return <PadelScorecard key={match.id} initialMatch={match} />;
+  return <PadelScorecard key={load.match.id} initialMatch={load.match} />;
 }

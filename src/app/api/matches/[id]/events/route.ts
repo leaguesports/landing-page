@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { syncMatchState } from "@/lib/match-store";
+import { cacheMatchState } from "@/lib/match-store";
 import type { MatchChannelEvent } from "@/types/padel-match";
 
 /**
- * Async DB sync endpoint — called after Ably publish so the scorecard
- * never blocks on persistence. Accepts a channel event and upserts state.
+ * Warm the in-process cache after a client Ably publish.
+ * Persistence lives on the Ably channel — this does not re-publish.
  */
 export async function POST(
   request: Request,
@@ -23,6 +23,6 @@ export async function POST(
     return NextResponse.json({ error: "Invalid event payload" }, { status: 400 });
   }
 
-  await syncMatchState(event.state);
+  await cacheMatchState(event.state);
   return NextResponse.json({ ok: true });
 }
