@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageCircle, Plus, Users } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 type OpenMatch = {
@@ -69,13 +70,13 @@ export function OpenMatchFeed() {
             </p>
           </div>
 
-          <button
-            type="button"
+          <Link
+            href="/padel/new"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/5 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
           >
             <Plus className="h-4 w-4 shrink-0" aria-hidden />
-            Post match
-          </button>
+            Start padel match
+          </Link>
         </div>
 
         <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
