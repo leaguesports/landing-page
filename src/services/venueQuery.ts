@@ -210,11 +210,29 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
   };
 }
 
-/** Venue photo from `hero_image` only — no heroImage/hero aliases. */
+/** Same-origin card/hero fallback when CMS has no photo. Allowed by CSP `img-src 'self'`. */
+export const VENUE_PLACEHOLDER_IMAGE = "/images/venue-placeholder.svg";
+
+function hasImageAsset(
+  source: SanityImageSource | null | undefined,
+): source is SanityImageSource {
+  if (!source || typeof source !== "object") return false;
+  const asset = (source as { asset?: { _ref?: unknown; url?: unknown } }).asset;
+  return typeof asset?._ref === "string" || typeof asset?.url === "string";
+}
+
+/**
+ * Venue photo from `hero_image`, then the first Play sport image.
+ * No heroImage/hero aliases and no Watch/broadcasts Unsplash heuristic.
+ */
 export function resolveVenueImage(
-  venue: Pick<Venue, "hero_image">,
+  venue: Pick<Venue, "hero_image"> & { sports?: Venue["sports"] | null },
 ): SanityImageSource | undefined {
-  return venue.hero_image ?? undefined;
+  if (hasImageAsset(venue.hero_image)) return venue.hero_image;
+  for (const sport of venue.sports ?? []) {
+    if (sport && hasImageAsset(sport.image)) return sport.image;
+  }
+  return undefined;
 }
 
 /** True when the venue document itself has usable map coordinates. */

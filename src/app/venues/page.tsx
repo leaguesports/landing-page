@@ -3,10 +3,9 @@ import {
   VenueContactActions,
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
-import { urlFor } from "@/sanity/client";
+import { venuePhotoUrl } from "@/lib/venues/photo";
 import {
   listVenueFilterOptions,
-  resolveVenueImage,
   searchVenues,
   type Venue,
 } from "@/services/venues";
@@ -20,13 +19,7 @@ import Link from "next/link";
 import { VenueDirectoryFilters } from "./_components/VenueDirectoryFilters";
 
 function getVenueImageSrc(venue: Venue) {
-  const source = resolveVenueImage(venue);
-  if (source) {
-    const url = urlFor(source)?.url();
-    if (url) return url;
-  }
-
-  return "https://blocks.astratic.com/img/general-img-landscape.png";
+  return venuePhotoUrl(venue, { width: 800, height: 480 });
 }
 
 function VenueCard({ venue }: { venue: Venue }) {
