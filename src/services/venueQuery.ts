@@ -198,10 +198,9 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
   };
 }
 
-/** Prefer the venue hero, then a linked play-sport image. */
+/** Venue photo from `hero_image` only — no heroImage/hero aliases. */
 export function resolveVenueImage(
-  venue: Pick<Venue, "hero_image" | "sports">,
+  venue: Pick<Venue, "hero_image">,
 ): SanityImageSource | undefined {
-  if (venue.hero_image) return venue.hero_image;
-  return venue.sports?.find((s) => s.image)?.image;
+  return venue.hero_image ?? undefined;
 }

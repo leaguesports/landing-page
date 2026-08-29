@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   mapVenueRow,
+  resolveVenueImage,
   VENUE_IN_LOCATION,
   VENUE_PROJECTION,
   type VenueRow,
@@ -57,6 +58,15 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /\bhero_image\b/);
     assert.doesNotMatch(VENUE_PROJECTION, /heroImage/);
     assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(hero_image/);
+  });
+});
+
+describe("resolveVenueImage", () => {
+  it("returns hero_image and ignores other photo names", () => {
+    const hero = { _type: "image", asset: { _ref: "image-hero" } };
+    assert.equal(resolveVenueImage({ hero_image: hero }), hero);
+    assert.equal(resolveVenueImage({ hero_image: null }), undefined);
+    assert.equal(resolveVenueImage({}), undefined);
   });
 });
 
