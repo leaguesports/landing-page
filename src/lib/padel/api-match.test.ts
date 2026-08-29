@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PadelPairing } from "../../types/padel-match.ts";
 import {
+  MATCH_API_UNAVAILABLE,
+  createPadelMatchWith,
   datetimeLocalToIso,
   parseApiMatch,
   toApiPlayer,
@@ -75,16 +77,28 @@ describe("toApiPlayer", () => {
 });
 
 describe("parseApiMatch", () => {
-  it("builds a scorecard match from the API create response", () => {
+  it("builds a scorecard match from the API create snapshot (including slots)", () => {
     const match = parseApiMatch(
       {
         id: "api-match-1",
         venueCmsId: "sanity-padel-1",
         startsAt: "2026-08-29T10:00:00.000Z",
         ruleset: "golden_point",
-        pairings,
-        servingTeam: "B",
         status: "live",
+        servingTeam: "A",
+        pairings: {
+          teamA: [
+            { slot: "A1", userId: null, displayName: "Alex", isGuest: true },
+            { slot: "A2", userId: null, displayName: "Sam", isGuest: true },
+          ],
+          teamB: [
+            { slot: "B1", userId: null, displayName: "Jordan", isGuest: true },
+            { slot: "B2", userId: null, displayName: "Riley", isGuest: true },
+          ],
+        },
+        score: null,
+        winner: null,
+        lockedAt: null,
       },
       {
         venue: {
@@ -99,11 +113,13 @@ describe("parseApiMatch", () => {
     assert.equal(match.id, "api-match-1");
     assert.equal(match.sport, "padel");
     assert.equal(match.ruleset, "golden_point");
-    assert.equal(match.servingTeam, "B");
+    assert.equal(match.servingTeam, "A");
     assert.equal(match.venue?.name, "Padel Social Club");
     assert.equal(match.venueCmsId, "sanity-padel-1");
     assert.equal(match.startsAt, "2026-08-29T10:00:00.000Z");
     assert.equal(match.status, "live");
+    assert.equal(match.pairings.teamA[0].displayName, "Alex");
+    assert.equal(match.pairings.teamA[0].isGuest, true);
   });
 
   it("returns null without an id so callers cannot mint an Ably identity", () => {
@@ -127,3 +143,172 @@ describe("datetime local helpers", () => {
     assert.equal(datetimeLocalToIso(""), null);
   });
 });
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const court = {
+  name: "Padel Social Club",
+  slug: "padel-social-club",
+};
+
+const createInput: Parameters<typeof createPadelMatchWith>[0] = {
+  venueCmsId: "sanity-padel-1",
+  startsAt: "2026-08-29T10:00:00.000Z",
+  ruleset: "golden_point",
+  pairings,
+  servingTeam: "A",
+};
+
+const createdSnapshot = {
+  id: "api-match-1",
+  venueCmsId: "sanity-padel-1",
+  startsAt: "2026-08-29T10:00:00.000Z",
+  ruleset: "golden_point",
+  status: "live",
+  servingTeam: "A",
+  pairings: {
+    teamA: [
+      { slot: "A1", userId: "user-1", displayName: "Alex", isGuest: false },
+      { slot: "A2", userId: null, displayName: "Sam (Guest)", isGuest: true },
+    ],
+    teamB: [
+      { slot: "B1", userId: null, displayName: "Jordan (Guest)", isGuest: true },
+      { slot: "B2", userId: null, displayName: "Riley (Guest)", isGuest: true },
+    ],
+  },
+  score: null,
+  winner: null,
+  lockedAt: null,
+};
+
+const appVenue = {
+  id: "app-1",
+  cmsId: "sanity-padel-1",
+  name: court.name,
+  slug: court.slug,
+};
+
+describe("createPadelMatchWith", () => {
+  it("GETs the venue with no name/slug, then POSTs the create body", async () => {
+    const calls: { url: string; method?: string; body?: string }[] = [];
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: async (url, init = {}) => {
+        calls.push({
+          url: String(url),
+          method: String(init.method ?? "GET"),
+          body: typeof init.body === "string" ? init.body : undefined,
+        });
+        if (String(url).includes("/api/venues/")) {
+          return jsonResponse(200, appVenue);
+        }
+        return jsonResponse(201, createdSnapshot);
+      },
+    });
+
+    assert.equal(match.id, "api-match-1");
+    assert.equal(calls[0]?.method, "GET");
+    assert.equal(calls[0]?.url, "https://api.example.test/api/venues/sanity-padel-1");
+    assert.equal(new URL(calls[0]!.url).search, "");
+    assert.equal(calls[1]?.method, "POST");
+    assert.equal(calls[1]?.url, "https://api.example.test/api/matches");
+    const posted = JSON.parse(calls[1]!.body ?? "{}") as Record<string, unknown>;
+    assert.equal(posted.venueCmsId, "sanity-padel-1");
+    assert.equal("venue" in posted, false);
+    assert.equal("name" in posted, false);
+    assert.equal("slug" in posted, false);
+    const teamA = (posted.pairings as { teamA: { id?: string }[] }).teamA;
+    assert.equal("id" in teamA[0]!, false);
+  });
+
+  it("PUTs { name, slug } only after GET 404, then creates the match", async () => {
+    const calls: string[] = [];
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: async (url, init = {}) => {
+        calls.push(`${init.method ?? "GET"} ${String(url)}`);
+        if (String(url).includes("/api/venues/")) {
+          if (init.method === "PUT") {
+            assert.equal(
+              init.body,
+              JSON.stringify({ name: court.name, slug: court.slug }),
+            );
+            return jsonResponse(201, appVenue);
+          }
+          return jsonResponse(404, { error: "Venue not found" });
+        }
+        return jsonResponse(201, createdSnapshot);
+      },
+    });
+
+    assert.equal(match.id, "api-match-1");
+    assert.deepEqual(calls, [
+      "GET https://api.example.test/api/venues/sanity-padel-1",
+      "PUT https://api.example.test/api/venues/sanity-padel-1",
+      "POST https://api.example.test/api/matches",
+    ]);
+  });
+
+  it("does not POST a match when the venue cannot be ensured", async () => {
+    const methods: string[] = [];
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (_url, init = {}) => {
+            methods.push(String(init.method ?? "GET"));
+            return jsonResponse(503, { error: "Unable to save venue" });
+          },
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+    assert.deepEqual(methods, ["GET"]);
+  });
+
+  it("surfaces Venue not found from POST instead of minting an Ably id", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (url) => {
+            if (String(url).includes("/api/venues/")) {
+              return jsonResponse(200, appVenue);
+            }
+            return jsonResponse(404, { error: "Venue not found" });
+          },
+        }),
+      (err: Error) => {
+        assert.equal(err.message, "Venue not found");
+        return true;
+      },
+    );
+  });
+
+  it("fails clearly when POST /api/matches is missing", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (url) => {
+            if (String(url).includes("/api/venues/")) {
+              return jsonResponse(200, appVenue);
+            }
+            return new Response("Cannot POST /api/matches", { status: 404 });
+          },
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+  });
+});
+

@@ -13,7 +13,8 @@ type LoadState =
 
 /**
  * Resolve match from: SSR prop → localStorage → league-sports-api
- * (same-origin `/api/matches/:id`, with Ably live state when present).
+ * (same-origin `/api/matches/:id` via the Railway proxy).
+ * Live scoring then attaches to Ably on the existing scorecard.
  */
 export function PadelScorecardClientLoader({
   matchId,

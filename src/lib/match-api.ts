@@ -1,8 +1,9 @@
-import { ApiError } from "@/lib/api-client";
+import { getRailwayApiOrigin } from "@/lib/api-origin";
+import { getSiteBaseUrl } from "@/lib/site-url";
 import {
   MATCH_API_UNAVAILABLE,
+  createPadelMatchWith,
   parseApiMatch,
-  toCreateMatchBody,
 } from "@/lib/padel/api-match";
 import type {
   CreatePadelMatchInput,
@@ -12,37 +13,24 @@ import type {
 } from "@/types/padel-match";
 
 /**
- * Browser match API — same-origin `/api/matches*` so cookies stay first-party
- * (mirrors `api-client.ts` auth/pool pattern).
+ * Browser match API — same-origin `/api` so cookies stay first-party.
+ * Server-side uses `getRailwayApiOrigin()`.
  *
- * Create/get identity is league-sports-api (proxied `/api/matches`).
- * `/api/matches/:id/events` stays on this Next app for Ably live scoring.
+ * Create/get identity is league-sports-api. `/api/matches/:id/events`
+ * stays on this Next app for Ably live scoring.
  */
 
-function siteOrigin(): string {
+function getRequestBase(): string {
   if (typeof window !== "undefined") return window.location.origin;
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://leaguesports.co.za").replace(
-    /\/$/,
-    "",
-  );
-}
-
-function unavailableStatus(status: number): boolean {
-  return (
-    status === 0 ||
-    status === 404 ||
-    status === 405 ||
-    status === 501 ||
-    status === 502 ||
-    status === 503
-  );
+  return getRailwayApiOrigin() || getSiteBaseUrl();
 }
 
 async function matchFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${siteOrigin()}${path}`, {
+  const base = getRequestBase();
+  const res = await fetch(`${base}${path}`, {
     ...options,
     credentials: "include",
     headers: {
@@ -53,7 +41,7 @@ async function matchFetch<T>(
 
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body.error ?? "Match request failed");
+    throw new Error(body.error ?? MATCH_API_UNAVAILABLE);
   }
 
   if (res.status === 204) return undefined as T;
@@ -62,43 +50,26 @@ async function matchFetch<T>(
 
 export async function createPadelMatch(
   input: CreatePadelMatchInput,
-  display?: { venue?: PadelMatchVenue | null },
+  display: { venue: PadelMatchVenue },
 ): Promise<PadelMatch> {
-  const body = toCreateMatchBody(input);
+  return createPadelMatchWith(input, display.venue, {
+    fetch,
+    baseUrl: getRequestBase(),
+  });
+}
 
-  let created: unknown;
-  try {
-    created = await matchFetch<unknown>("/api/matches", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new ApiError(0, MATCH_API_UNAVAILABLE);
-    }
-    if (error instanceof ApiError && unavailableStatus(error.status)) {
-      throw new ApiError(
-        error.status || 503,
-        error.message && error.message !== "Match request failed"
-          ? error.message
-          : MATCH_API_UNAVAILABLE,
-      );
-    }
-    throw error;
-  }
-
-  const match = parseApiMatch(created, { venue: display?.venue ?? null });
+export async function fetchPadelMatch(matchId: string): Promise<PadelMatch> {
+  const snapshot = await matchFetch<unknown>(
+    `/api/matches/${encodeURIComponent(matchId)}`,
+  );
+  const match = parseApiMatch(snapshot);
   if (!match?.id) {
-    throw new ApiError(502, "Match API did not return a match id");
+    throw new Error("Match not found");
   }
   return match;
 }
 
-export function fetchPadelMatch(matchId: string) {
-  return matchFetch<PadelMatch>(`/api/matches/${encodeURIComponent(matchId)}`);
-}
-
-/** Fire-and-forget DB sync after Ably publish (does not throw to callers). */
+/** Fire-and-forget Ably cache warm after a client publish (does not throw). */
 export async function syncMatchEvent(event: MatchChannelEvent): Promise<void> {
   try {
     await matchFetch(`/api/matches/${encodeURIComponent(event.matchId)}/events`, {

@@ -1,4 +1,5 @@
 import { createInitialPadelMatch } from "./padelReducer.ts";
+import { ensureVenueFromCmsWith } from "../venues/appVenueApi.ts";
 import type {
   CreatePadelMatchInput,
   PadelMatch,
@@ -12,10 +13,21 @@ import type {
 export const MATCH_API_UNAVAILABLE =
   "Match API is unavailable. The match was not created.";
 
+export class MatchApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "MatchApiError";
+    this.status = status;
+  }
+}
+
 export type ApiPadelPlayer = {
   userId?: string | null;
   displayName: string;
   isGuest: boolean;
+  slot?: string;
 };
 
 export type CreatePadelMatchBody = {
@@ -27,6 +39,22 @@ export type CreatePadelMatchBody = {
     teamB: [ApiPadelPlayer, ApiPadelPlayer];
   };
   servingTeam?: PadelTeamId;
+};
+
+export type ApiMatchSnapshot = {
+  id: string;
+  venueCmsId: string;
+  startsAt: string;
+  ruleset: PadelRuleset;
+  status: "live" | "locked";
+  servingTeam: PadelTeamId | null;
+  pairings: {
+    teamA: [ApiPadelPlayer, ApiPadelPlayer];
+    teamB: [ApiPadelPlayer, ApiPadelPlayer];
+  };
+  score: { sets: unknown[] } | null;
+  winner: PadelTeamId | null;
+  lockedAt: string | null;
 };
 
 export function toApiPlayer(player: PadelPlayer): ApiPadelPlayer {
@@ -81,10 +109,9 @@ export function datetimeLocalToIso(value: string): string | null {
 function fromApiPlayer(player: ApiPadelPlayer, index: number): PadelPlayer {
   const isGuest = Boolean(player.isGuest) || !player.userId;
   const displayName = player.displayName?.trim() || (isGuest ? "Guest" : "Player");
+  const slot = player.slot?.trim();
   return {
-    id:
-      player.userId ||
-      `guest_${index}_${displayName.toLowerCase().replace(/\s+/g, "_")}`,
+    id: player.userId || slot || `guest_${index}_${displayName.toLowerCase().replace(/\s+/g, "_")}`,
     displayName,
     isGuest,
     userId: player.userId ?? null,
@@ -195,3 +222,100 @@ export function parseApiMatch(
 
   return match;
 }
+
+export type CreatePadelMatchDeps = {
+  fetch: typeof fetch;
+  baseUrl: string;
+  cookie?: string;
+};
+
+function jsonError(status: number, body: unknown): MatchApiError {
+  const message =
+    body && typeof body === "object" && "error" in body && typeof body.error === "string"
+      ? body.error
+      : "";
+  if (status === 404 && /venue not found/i.test(message)) {
+    return new MatchApiError(404, message);
+  }
+  if (status === 400 && message) {
+    return new MatchApiError(400, message);
+  }
+  if (status === 503 && message) {
+    return new MatchApiError(503, message);
+  }
+  if (
+    status === 0 ||
+    status === 404 ||
+    status === 405 ||
+    status === 501 ||
+    status === 502 ||
+    status === 503
+  ) {
+    return new MatchApiError(status || 503, MATCH_API_UNAVAILABLE);
+  }
+  return new MatchApiError(status, message || "Match request failed");
+}
+
+/**
+ * Ensure the court exists (GET, PUT { name, slug } only on 404), then
+ * POST /api/matches. Does not mint an Ably id.
+ */
+export async function createPadelMatchWith(
+  input: CreatePadelMatchInput,
+  venue: Pick<PadelMatchVenue, "name" | "slug">,
+  deps: CreatePadelMatchDeps,
+): Promise<PadelMatch> {
+  const name = venue.name.trim();
+  const slug = venue.slug.trim();
+  if (!input.venueCmsId.trim() || !name || !slug || !deps.baseUrl) {
+    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  }
+
+  const ensured = await ensureVenueFromCmsWith(
+    { cmsId: input.venueCmsId, name, slug },
+    {
+      fetch: deps.fetch,
+      baseUrl: deps.baseUrl,
+      cookie: deps.cookie,
+    },
+  );
+  if (!ensured) {
+    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  }
+
+  const body = toCreateMatchBody(input);
+  let res: Response;
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (deps.cookie) headers.Cookie = deps.cookie;
+    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}/api/matches`, {
+      method: "POST",
+      cache: "no-store",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+  }
+
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw jsonError(res.status, payload);
+  }
+
+  const match = parseApiMatch(payload, {
+    venue: {
+      id: input.venueCmsId,
+      name,
+      slug,
+    },
+  });
+  if (!match?.id) {
+    throw new MatchApiError(502, "Match API did not return a match id");
+  }
+  return match;
+}
+

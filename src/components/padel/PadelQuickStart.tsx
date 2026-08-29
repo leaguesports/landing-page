@@ -106,7 +106,7 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
           pairings,
           servingTeam: "A",
         },
-        { venue: toMatchVenue(venue) },
+        { venue: toMatchVenue(venue)! },
       );
       cacheMatchLocally(match);
       startTransition(() => {

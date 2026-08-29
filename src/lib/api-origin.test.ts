@@ -63,10 +63,11 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/pools"), true);
   });
 
-  it("proxies POST /api/matches (identity) and lock, but not live GET/events", () => {
+  it("proxies match identity to Railway and keeps Ably events local", () => {
     assert.equal(shouldProxyApiPath("/api/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/matches/abc"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
-    assert.equal(shouldProxyApiPath("/api/matches/abc"), false);
+    assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -219,7 +220,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/[^/]+$|matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);

@@ -1,4 +1,4 @@
-import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
+import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
 
 export type AppVenue = {
   id: string;

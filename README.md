@@ -28,7 +28,7 @@ GOOGLE_REDIRECT_URI=https://leaguesports.co.za/api/auth/providers/google/callbac
 FRONTEND_URL=https://leaguesports.co.za
 ```
 
-Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `GET /api/matches/:id`, `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. `POST /api/matches` (create identity) is proxied to Railway.
+Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway.
 
 ## Getting Started
 
