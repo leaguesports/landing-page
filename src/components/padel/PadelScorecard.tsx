@@ -269,48 +269,30 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
         />
       </div>
 
-      <div className="safe-area-pb border-t border-white/8 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="safe-area-pb border-t border-white/8 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {locked ? (
           <div className="space-y-3">
             <p className="text-center text-sm text-emerald-300">
               Final — {winnerLabel ?? "a team"} win
             </p>
             <Link
+              href={PADEL_HISTORY_PATH}
+              className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
+            >
+              Match history
+            </Link>
+            <Link
               href="/padel/new"
               className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-400 text-base font-semibold text-zinc-950 hover:bg-emerald-300"
             >
               Play again
             </Link>
-            <Link
-              href={PADEL_HISTORY_PATH}
-              className="flex min-h-12 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
-            >
-              Match history
-            </Link>
           </div>
         ) : (
           <div className="space-y-3">
-            <button
-              type="button"
-              disabled={!canUndo || scoringDisabled}
-              onClick={() => void undoPoint()}
-              className="inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Undo2 className="h-5 w-5" aria-hidden />
-              Undo Point
-            </button>
-            <button
-              type="button"
-              disabled={!lockBody || locking}
-              onClick={() => void handleEnd()}
-              className="inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl bg-emerald-400 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {locking ? (
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-              ) : null}
-              {locking ? "Ending…" : "End match"}
-            </button>
-            {finalized ? (
+            {lockError ? (
+              <p className="text-center text-sm text-red-400">{lockError}</p>
+            ) : finalized ? (
               <p className="text-center text-sm text-emerald-300">
                 Final — {winnerLabel ?? "a team"} win. End to save the result.
               </p>
@@ -324,9 +306,31 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
                 to history.
               </p>
             )}
-            {lockError ? (
-              <p className="text-center text-sm text-red-400">{lockError}</p>
-            ) : null}
+            <button
+              type="button"
+              disabled={!canUndo || scoringDisabled}
+              onClick={() => void undoPoint()}
+              className="inline-flex min-h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Undo2 className="h-5 w-5" aria-hidden />
+              Undo Point
+            </button>
+            <button
+              type="button"
+              disabled={!lockBody || locking}
+              onClick={() => void handleEnd()}
+              className={[
+                "inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl text-base font-semibold transition-colors disabled:cursor-not-allowed",
+                lockBody && !locking
+                  ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
+                  : "border border-white/15 bg-white/5 text-zinc-400 opacity-50",
+              ].join(" ")}
+            >
+              {locking ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : null}
+              {locking ? "Ending…" : "End match"}
+            </button>
           </div>
         )}
       </div>
