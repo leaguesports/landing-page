@@ -292,6 +292,25 @@ describe("createPadelMatchWith", () => {
     );
   });
 
+  it("fails clearly when POST /api/matches is unauthorized (route not deployed)", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (url) => {
+            if (String(url).includes("/api/venues/")) {
+              return jsonResponse(200, appVenue);
+            }
+            return jsonResponse(401, { error: "Unauthorized" });
+          },
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+  });
+
   it("fails clearly when POST /api/matches is missing", async () => {
     await assert.rejects(
       () =>

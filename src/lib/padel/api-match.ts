@@ -245,6 +245,8 @@ function jsonError(status: number, body: unknown): MatchApiError {
   }
   if (
     status === 0 ||
+    status === 401 ||
+    status === 403 ||
     status === 404 ||
     status === 405 ||
     status === 501 ||
