@@ -12,7 +12,8 @@ type LoadState =
   | { status: "missing" };
 
 /**
- * Resolve match from: SSR prop → localStorage → Ably history via `/api/matches/:id`.
+ * Resolve match from: SSR prop → localStorage → league-sports-api
+ * (same-origin `/api/matches/:id`, with Ably live state when present).
  */
 export function PadelScorecardClientLoader({
   matchId,
@@ -54,7 +55,7 @@ export function PadelScorecardClientLoader({
   if (load.status === "loading") {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#050705] px-6 text-center text-sm text-zinc-400">
-        Loading match from realtime…
+        Loading match…
       </div>
     );
   }
@@ -63,8 +64,8 @@ export function PadelScorecardClientLoader({
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#050705] px-6 text-center">
         <p className="max-w-sm text-sm text-zinc-400">
-          No Ably history found for this match. It may have expired, or the
-          match was never published to realtime.
+          This match was not found. It may not have been created on the match
+          API, or the share link is stale.
         </p>
         <Link
           href="/padel/new"

@@ -40,7 +40,10 @@ export function isFrontendOrigin(origin: string): boolean {
 
 /** path-to-regexp negative lookahead for next.config `rewrites`. */
 export function getApiProxySkipPattern(): string {
-  return "matches(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
+  // POST /api/matches → Railway (match identity).
+  // GET /api/matches/:id and POST /api/matches/:id/events stay on Next
+  // (API lookup + Ably live scoring). /api/matches/:id/lock is proxied.
+  return "matches/[^/]+$|matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
 }
 
 /**

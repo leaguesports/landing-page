@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Zap } from "lucide-react";
+import { Clock, Loader2, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
@@ -15,6 +15,10 @@ import {
 } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { createPadelMatch, cacheMatchLocally } from "@/lib/match-api";
+import {
+  datetimeLocalToIso,
+  toDatetimeLocalValue,
+} from "@/lib/padel/api-match";
 import {
   makeGuestPlayer,
   makeUserPlayer,
@@ -42,6 +46,9 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
   const { user, displayName, isAuthenticated } = useAuth();
   const [ruleset, setRuleset] = useState<PadelRuleset>("golden_point");
   const [venue, setVenue] = useState<VenueOption | null>(null);
+  const [startsAtLocal, setStartsAtLocal] = useState(() =>
+    toDatetimeLocalValue(new Date()),
+  );
   const [slots, setSlots] = useState(EMPTY_SLOTS);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -58,10 +65,23 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
     return null;
   }, [isAuthenticated, user, displayName]);
 
+  const startsAtIso = datetimeLocalToIso(startsAtLocal);
   const ready =
-    slots.a1 && slots.a2 && slots.b1 && slots.b2 && !starting && !isPending;
+    Boolean(venue) &&
+    Boolean(startsAtIso) &&
+    Boolean(slots.a1 && slots.a2 && slots.b1 && slots.b2) &&
+    !starting &&
+    !isPending;
 
   async function handleStart() {
+    if (!venue) {
+      setError("Pick a padel court to start");
+      return;
+    }
+    if (!startsAtIso) {
+      setError("Set a start time");
+      return;
+    }
     if (!slots.a1 || !slots.a2 || !slots.b1 || !slots.b2) {
       setError("Pick all four players to start");
       return;
@@ -78,13 +98,16 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
     rememberPlayers([...pairings.teamA, ...pairings.teamB]);
 
     try {
-      const match = await createPadelMatch({
-        ruleset,
-        venue: toMatchVenue(venue),
-        pairings,
-        servingTeam: "A",
-        createdByUserId: user?.id ?? null,
-      });
+      const match = await createPadelMatch(
+        {
+          venueCmsId: venue.id,
+          startsAt: startsAtIso,
+          ruleset,
+          pairings,
+          servingTeam: "A",
+        },
+        { venue: toMatchVenue(venue) },
+      );
       cacheMatchLocally(match);
       startTransition(() => {
         router.push(`/padel/${match.id}`);
@@ -108,20 +131,45 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
-          Padel Quick-Start
+          New padel match
         </p>
         <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-          New match
+          Court, time, players
         </h1>
         <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-          Pick a court, set the rules, load four players — then go live. No lobby
-          wait.
+          A padel court is required. Set the start time, load two pairs, then
+          open the live scorecard.
         </p>
       </header>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-200">Venue</h2>
-        <VenuePicker venues={venues} selected={venue} onSelect={setVenue} />
+        <h2 className="text-sm font-semibold text-zinc-200">Padel court</h2>
+        {venues.length === 0 ? (
+          <p className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 text-sm text-zinc-400">
+            No padel courts in the directory yet. Sports bars and watch venues
+            are not listed here.
+          </p>
+        ) : (
+          <VenuePicker venues={venues} selected={venue} onSelect={setVenue} />
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-zinc-200">Start time</h2>
+        <label className="relative block">
+          <span className="sr-only">Match start time</span>
+          <Clock
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            aria-hidden
+          />
+          <input
+            type="datetime-local"
+            value={startsAtLocal}
+            onChange={(e) => setStartsAtLocal(e.target.value)}
+            required
+            className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40"
+          />
+        </label>
       </section>
 
       <section className="space-y-3">
@@ -131,7 +179,9 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-zinc-200">Pairings</h2>
+          <h2 className="text-sm font-semibold text-zinc-200">
+            Pairings · Team A / Team B
+          </h2>
           <button
             type="button"
             onClick={fillDemoGuests}
@@ -140,6 +190,9 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
             Quick-fill guests
           </button>
         </div>
+        <p className="text-xs text-zinc-500">
+          Named account or guest display name — four players required.
+        </p>
         <PlayerPairings
           slots={slots}
           onChange={setSlots}

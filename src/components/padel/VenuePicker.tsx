@@ -63,7 +63,7 @@ export function VenuePicker({ venues, selected, onSelect }: VenuePickerProps) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search courts & clubs…"
+            placeholder="Search padel courts…"
             className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-emerald-400/40"
           />
         </div>
@@ -88,20 +88,6 @@ export function VenuePicker({ venues, selected, onSelect }: VenuePickerProps) {
       ) : null}
 
       <ul className="max-h-56 space-y-2 overflow-y-auto overscroll-contain pr-1">
-        <li>
-          <button
-            type="button"
-            onClick={() => onSelect(null)}
-            className={[
-              "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
-              selected === null
-                ? "border-emerald-400/50 bg-emerald-400/10 text-white"
-                : "border-white/8 bg-[#141814] text-zinc-300 hover:border-white/16",
-            ].join(" ")}
-          >
-            <span>Skip — pick later</span>
-          </button>
-        </li>
         {sorted.slice(0, 24).map((venue) => {
           const active = selected?.id === venue.id;
           const dist =

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { PadelScorecardClientLoader } from "@/components/padel/PadelScorecardClientLoader";
-import { getMatch } from "@/lib/match-store";
+import { lookupPadelMatch } from "@/lib/padel/lookup-match";
 
 type PageProps = {
   params: Promise<{ matchId: string }>;
@@ -18,7 +19,8 @@ export async function generateMetadata({
 
 export default async function LivePadelMatchPage({ params }: PageProps) {
   const { matchId } = await params;
-  const match = await getMatch(matchId);
+  const cookie = (await headers()).get("cookie") ?? undefined;
+  const match = await lookupPadelMatch(matchId, { cookie });
 
   return (
     <main className="min-h-dvh bg-[#050705]">

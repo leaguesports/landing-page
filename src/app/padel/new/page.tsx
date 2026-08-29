@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PadelQuickStart } from "@/components/padel/PadelQuickStart";
-import {
-  isPadelVenue,
-  toVenueOption,
-} from "@/lib/padel/venue-options";
-import { listVenues } from "@/services/venues";
+import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
+import { searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
   title: "New Padel Match | LeagueSports",
-  description: "Quick-start a live padel match with court-side scoring.",
+  description: "Start a live padel match with a court, time, and four players.",
   robots: { index: false, follow: false },
 };
 
 export default async function NewPadelMatchPage() {
-  const all = await listVenues();
-  const options = all.map(toVenueOption);
-  const padelFirst = [
-    ...options.filter(isPadelVenue),
-    ...options.filter((v) => !isPadelVenue(v)),
-  ];
+  const padelCourts = (
+    await searchVenues({ intent: "play", sportSlug: "padel" })
+  )
+    .map(toVenueOption)
+    .filter(isPadelVenue);
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
@@ -36,7 +32,7 @@ export default async function NewPadelMatchPage() {
           </span>
         </div>
       </div>
-      <PadelQuickStart venues={padelFirst} />
+      <PadelQuickStart venues={padelCourts} />
     </main>
   );
 }

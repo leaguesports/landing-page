@@ -63,9 +63,11 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/pools"), true);
   });
 
-  it("does not proxy local Next.js match, realtime, or claim routes", () => {
-    assert.equal(shouldProxyApiPath("/api/matches"), false);
+  it("proxies POST /api/matches (identity) and lock, but not live GET/events", () => {
+    assert.equal(shouldProxyApiPath("/api/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc"), false);
+    assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
@@ -217,7 +219,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
+              "/api/:path((?!matches/[^/]+$|matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);

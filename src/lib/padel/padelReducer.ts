@@ -288,6 +288,8 @@ export function createInitialPadelMatch(
     status: "ready",
     ruleset: input.ruleset,
     venue: input.venue,
+    venueCmsId: input.venueCmsId ?? input.venue?.id ?? null,
+    startsAt: input.startsAt ?? now,
     pairings: input.pairings,
     servingTeam: input.servingTeam ?? "A",
     sets: [emptySet()],

@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getMatch, syncMatchState } from "@/lib/match-store";
+import { lookupPadelMatch } from "@/lib/padel/lookup-match";
+import { syncMatchState } from "@/lib/match-store";
 import type { PadelMatch } from "@/types/padel-match";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const match = await getMatch(id);
+  const match = await lookupPadelMatch(id, {
+    cookie: request.headers.get("cookie") ?? undefined,
+  });
 
   if (!match) {
     return NextResponse.json({ error: "Match not found" }, { status: 404 });

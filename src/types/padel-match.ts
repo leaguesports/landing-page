@@ -57,6 +57,10 @@ export type PadelMatch = {
   status: PadelMatchStatus;
   ruleset: PadelRuleset;
   venue: PadelMatchVenue | null;
+  /** Sanity venue `_id` sent to league-sports-api as `venueCmsId`. */
+  venueCmsId?: string | null;
+  /** Scheduled start (ISO). Distinct from `createdAt`. */
+  startsAt?: string | null;
   pairings: PadelPairing;
   /** Team currently serving */
   servingTeam: PadelTeamId;
@@ -92,12 +96,13 @@ export type MatchChannelEvent = {
   };
 };
 
+/** POST /api/matches body for league-sports-api (issue #7). */
 export type CreatePadelMatchInput = {
+  venueCmsId: string;
+  startsAt: string;
   ruleset: PadelRuleset;
-  venue: PadelMatchVenue | null;
   pairings: PadelPairing;
   servingTeam?: PadelTeamId;
-  createdByUserId?: string | null;
 };
 
 export type PadelPointAction =
