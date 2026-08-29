@@ -9,6 +9,7 @@ import {
   resolveVenueImage,
   type VenueDetail,
 } from "@/services/venues";
+import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
@@ -24,9 +25,11 @@ import {
   Star,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 
 const venueAboutPortableTextComponents = {
   block: {
@@ -246,6 +249,14 @@ export default async function VenuePage({ params }: Props) {
   const { venue: venueSlug } = await params;
   const venue = await getVenueBySlug(venueSlug);
   if (!venue) return notFound();
+
+  const cookie = (await cookies()).toString();
+  after(() =>
+    ensureVenueFromCms(
+      { cmsId: venue._id, name: venue.name, slug: venue.slug },
+      { cookie },
+    ),
+  );
 
   const mapsSearchUrl = buildMapsUrl(venue);
   const baseUrl = getBaseUrl();
