@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { urlFor } from "@/sanity/client";
-import { getVenueBySlug, resolveVenueImage } from "@/services/venues";
+import { venuePhotoUrl } from "@/lib/venues/photo";
+import { getVenueBySlug } from "@/services/venues";
 import { ClaimForm } from "./_components/ClaimForm";
 
 export const metadata: Metadata = {
@@ -17,11 +17,7 @@ type Props = {
 };
 
 function resolveThumbnail(venue: NonNullable<Awaited<ReturnType<typeof getVenueBySlug>>>) {
-  const source = resolveVenueImage(venue);
-  if (source) {
-    return urlFor(source)?.width(640).height(360).fit("crop").url() ?? null;
-  }
-  return null;
+  return venuePhotoUrl(venue, { width: 640, height: 360 });
 }
 
 export default async function ClaimVenuePage({ searchParams }: Props) {

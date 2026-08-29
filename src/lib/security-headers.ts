@@ -8,6 +8,10 @@ type HeaderTuple = { key: string; value: string };
  * patterns, CARTO tiles on venue maps, Ably websockets, and Google OAuth
  * as a top-level redirect (not an iframe). `unsafe-eval` is omitted.
  *
+ * Venue photos are `cdn.sanity.io` (`hero_image`, then Play sport image)
+ * or the same-origin placeholder (`img-src 'self'`). Do not add
+ * `blocks.astratic.com` — directory cards must not depend on it.
+ *
  * HSTS matches current Vercel production (`max-age=63072000`) without
  * includeSubDomains — unknown HTTPS coverage on other subdomains.
  *

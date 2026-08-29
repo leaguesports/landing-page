@@ -22,6 +22,7 @@ export {
   resolveVenueImage,
   sportSlugVariants,
   VENUE_IN_LOCATION,
+  VENUE_PLACEHOLDER_IMAGE,
   VENUE_PROJECTION,
 } from "./venueQuery";
 

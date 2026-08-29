@@ -6,9 +6,10 @@ import {
   resolveVenueImage,
   sportSlugVariants,
   VENUE_IN_LOCATION,
+  VENUE_PLACEHOLDER_IMAGE,
   VENUE_PROJECTION,
   type VenueRow,
-} from "./venueQuery";
+} from "./venueQuery.ts";
 
 describe("VENUE_PROJECTION", () => {
   it("requests the targeted schema fields the site uses", () => {
@@ -86,10 +87,11 @@ describe("VENUE_PROJECTION", () => {
     );
   });
 
-  it("locks the venue photo to hero_image only", () => {
+  it("locks the venue photo field name to hero_image only", () => {
     assert.match(VENUE_PROJECTION, /\bhero_image\b/);
     assert.doesNotMatch(VENUE_PROJECTION, /heroImage/);
     assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(hero_image/);
+    assert.match(VENUE_PROJECTION, /"sports": sports\[\]-> \{[\s\S]*?\bimage\b/);
   });
 });
 
@@ -103,11 +105,52 @@ describe("sportSlugVariants", () => {
 });
 
 describe("resolveVenueImage", () => {
+  const hero = { _type: "image", asset: { _ref: "image-hero" } };
+  const sportImage = { _type: "image", asset: { _ref: "image-padel" } };
+  const padel = {
+    _id: "sport-padel",
+    name: "Padel",
+    slug: "padel",
+    image: sportImage,
+  };
+
   it("returns hero_image and ignores other photo names", () => {
-    const hero = { _type: "image", asset: { _ref: "image-hero" } };
     assert.equal(resolveVenueImage({ hero_image: hero }), hero);
     assert.equal(resolveVenueImage({ hero_image: null }), undefined);
     assert.equal(resolveVenueImage({}), undefined);
+  });
+
+  it("falls back to the first Play sport image when hero_image is missing", () => {
+    assert.equal(
+      resolveVenueImage({ hero_image: null, sports: [padel] }),
+      sportImage,
+    );
+    assert.equal(
+      resolveVenueImage({ hero_image: hero, sports: [padel] }),
+      hero,
+    );
+    assert.equal(
+      resolveVenueImage({
+        hero_image: null,
+        sports: [{ ...padel, image: undefined }],
+      }),
+      undefined,
+    );
+  });
+
+  it("skips empty image objects without an asset", () => {
+    assert.equal(
+      resolveVenueImage({
+        hero_image: { _type: "image" },
+        sports: [{ ...padel, image: { _type: "image" } }],
+      }),
+      undefined,
+    );
+  });
+
+  it("uses a same-origin placeholder host, not Astratic or Unsplash", () => {
+    assert.equal(VENUE_PLACEHOLDER_IMAGE.startsWith("/"), true);
+    assert.doesNotMatch(VENUE_PLACEHOLDER_IMAGE, /astratic|unsplash/i);
   });
 });
 

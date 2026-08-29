@@ -2,7 +2,11 @@ import {
   VenueContactActions,
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
-import { urlFor } from "@/sanity/client";
+import {
+  isRemoteVenuePhoto,
+  sanityImageUrl,
+  venuePhotoUrl,
+} from "@/lib/venues/photo";
 import {
   getVenueBySlug,
   hasVenueCoordinates,
@@ -124,14 +128,12 @@ function getBaseUrl(): string {
   return "https://leaguesports.co.za";
 }
 
-function venueHeroImageUrl(
-  venue: Pick<VenueDetail, "hero_image">,
+function venueOgImageUrl(
+  venue: Pick<VenueDetail, "hero_image" | "sports">,
   width: number,
   height: number,
 ): string | undefined {
-  const source = resolveVenueImage(venue);
-  if (!source) return undefined;
-  return urlFor(source)?.width(width).height(height).fit("crop").url() ?? undefined;
+  return sanityImageUrl(resolveVenueImage(venue), { width, height });
 }
 
 function buildMapsUrl(venue: VenueDetail): string {
@@ -163,7 +165,7 @@ export async function generateMetadata({
   const description = suburb
     ? `${venue.name} in ${suburb} — screens, amenities, and matchday details on LeagueSports.`
     : `${venue.name} — screens, amenities, and matchday details on LeagueSports.`;
-  const ogImage = venueHeroImageUrl(venue, 1200, 630);
+  const ogImage = venueOgImageUrl(venue, 1200, 630);
 
   return {
     title,
@@ -277,7 +279,7 @@ export default async function VenuePage({ params }: Props) {
   ]
     .filter(Boolean)
     .join(", ");
-  const heroImageUrl = venueHeroImageUrl(venue, 1920, 1080);
+  const heroImageUrl = venuePhotoUrl(venue, { width: 1920, height: 1080 });
 
   return (
     <div>
@@ -314,21 +316,25 @@ export default async function VenuePage({ params }: Props) {
 
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-white/5">
-          {heroImageUrl ? (
-            <>
-              <Image
-                src={heroImageUrl}
-                alt=""
-                fill
-                priority
-                className="object-cover"
-                sizes="100vw"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/80 to-[#0c0f0c]/45" />
-            </>
+          {isRemoteVenuePhoto(heroImageUrl) ? (
+            <Image
+              src={heroImageUrl}
+              alt=""
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
           ) : (
-            <div className="absolute inset-0 bg-linear-to-br from-emerald-950/35 via-[#0c0f0c] to-[#0c0f0c]" />
+            // Same-origin SVG placeholder — next/image does not optimize SVG.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
           )}
+          <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/80 to-[#0c0f0c]/45" />
 
           <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
             <div className="mb-6">

@@ -4,7 +4,7 @@ import {
   SUBURB_COORDINATES,
 } from "@/data/coordinates";
 import { toSlug } from "@/data/suburbs";
-import { urlFor } from "@/sanity/client";
+import { sanityImageUrl } from "@/lib/venues/photo";
 
 function resolveCoords(venue: VenueDetail): [number, number] | null {
   if (
@@ -26,11 +26,7 @@ function resolveCoords(venue: VenueDetail): [number, number] | null {
 }
 
 function resolveImage(venue: VenueDetail): string | undefined {
-  const source = resolveVenueImage(venue);
-  if (source) {
-    return urlFor(source)?.width(1200).height(630).fit("crop").url();
-  }
-  return undefined;
+  return sanityImageUrl(resolveVenueImage(venue), { width: 1200, height: 630 });
 }
 
 type AmenityFeature = {
