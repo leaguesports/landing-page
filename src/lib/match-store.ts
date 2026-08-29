@@ -1,16 +1,12 @@
-import type {
-  CreatePadelMatchInput,
-  PadelMatch,
-} from "@/types/padel-match";
-import { createInitialPadelMatch } from "@/lib/padel/padelReducer";
+import type { PadelMatch } from "@/types/padel-match";
 import {
   loadMatchFromAbly,
   publishMatchToAbly,
 } from "@/lib/ably/match-history";
 
 /**
- * Match persistence is Ably channel history only.
- * In-memory Map is a short-lived cache for the same serverless instance.
+ * Ably live-scoring cache only. Match identity (share/history id) is
+ * created on league-sports-api via POST /api/matches — never mint an id here.
  */
 
 type GlobalMatchStore = {
@@ -25,35 +21,6 @@ function getStore(): GlobalMatchStore {
     g.__leaguesportsPadelMatches = { matches: new Map() };
   }
   return g.__leaguesportsPadelMatches;
-}
-
-function newMatchId(): string {
-  return `match_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-}
-
-export async function createMatch(
-  input: CreatePadelMatchInput,
-): Promise<PadelMatch> {
-  const match = createInitialPadelMatch({
-    id: newMatchId(),
-    ruleset: input.ruleset,
-    venue: input.venue,
-    pairings: input.pairings,
-    servingTeam: input.servingTeam ?? "A",
-    createdByUserId: input.createdByUserId ?? null,
-  });
-
-  getStore().matches.set(match.id, match);
-
-  // Seed Ably history so `/padel/{id}` can hydrate after cold starts
-  const published = await publishMatchToAbly(match, "STATE_SYNC");
-  if (!published) {
-    throw new Error(
-      "Realtime is unavailable — set ABLY_API_KEY to start matches",
-    );
-  }
-
-  return match;
 }
 
 export async function getMatch(id: string): Promise<PadelMatch | null> {

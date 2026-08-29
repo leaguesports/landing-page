@@ -40,7 +40,9 @@ export function isFrontendOrigin(origin: string): boolean {
 
 /** path-to-regexp negative lookahead for next.config `rewrites`. */
 export function getApiProxySkipPattern(): string {
-  return "matches(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
+  // Match identity (POST/GET /api/matches, lock) is league-sports-api.
+  // Only Ably live-scoring event cache stays on Next.
+  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
 }
 
 /**

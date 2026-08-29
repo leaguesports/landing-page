@@ -9,8 +9,17 @@ export type VenueOption = {
   city: string;
   latitude: number | null;
   longitude: number | null;
+  /** Play-sport names and slugs from Sanity `sports` (not `broadcasts`). */
   sports: string[];
 };
+
+function sportLabels(venue: Venue): string[] {
+  const labels = (venue.sports ?? []).flatMap((sport) => [
+    sport.name,
+    sport.slug ?? "",
+  ]);
+  return [...new Set(labels.map((s) => s.trim().toLowerCase()).filter(Boolean))];
+}
 
 export function toVenueOption(venue: Venue): VenueOption {
   return {
@@ -21,7 +30,7 @@ export function toVenueOption(venue: Venue): VenueOption {
     city: venue.address?.city ?? "",
     latitude: venue.latitude ?? null,
     longitude: venue.longitude ?? null,
-    sports: (venue.sports ?? []).map((s) => s.name.toLowerCase()),
+    sports: sportLabels(venue),
   };
 }
 
@@ -38,8 +47,12 @@ export function toMatchVenue(option: VenueOption | null): PadelMatchVenue | null
   };
 }
 
+/** Play sport padel only — tennis/racket/watch broadcasts are not padel courts. */
+export function isPadelSportLabel(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v === "padel" || v === "paddle";
+}
+
 export function isPadelVenue(option: VenueOption): boolean {
-  return option.sports.some(
-    (s) => s.includes("padel") || s.includes("racket") || s.includes("tennis"),
-  );
+  return option.sports.some(isPadelSportLabel);
 }
