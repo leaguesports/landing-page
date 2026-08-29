@@ -87,7 +87,8 @@ export type VenueRow = {
  * Fields the site reads, named to match issue #7 and existing GROQ.
  *
  * Targeted Sanity Venue schema (cms PR may land in parallel):
- * hero_image, latitude/longitude, amenities.*, contact/contactInfo,
+ * hero_image (photo field name is locked; no heroImage/hero aliases),
+ * latitude/longitude, amenities.*, contact/contactInfo,
  * claim_status, upcoming_screenings, rating; Watch = broadcasts, Play = sports.
  *
  * coalesce() also reads names already declared on current `schemaTypes/venue.ts`
@@ -98,7 +99,7 @@ export const VENUE_PROJECTION = `
   name,
   "slug": slug.current,
   description,
-  "hero_image": coalesce(hero_image, heroImage, hero),
+  hero_image,
   "phone": coalesce(contact.phone, contactInfo.phone, phone),
   "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp),
   "website": coalesce(contact.website, contactInfo.website, website),

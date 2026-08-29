@@ -36,6 +36,7 @@ describe("VENUE_PROJECTION", () => {
       "ogTitle",
       "updated_at",
       "claim_request",
+      "heroImage",
     ];
     for (const field of forbidden) {
       assert.doesNotMatch(
@@ -50,6 +51,12 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"broadcasts": broadcasts\[\]->/);
     assert.match(VENUE_PROJECTION, /"sports": sports\[\]->/);
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
+  });
+
+  it("locks the venue photo to hero_image only", () => {
+    assert.match(VENUE_PROJECTION, /\bhero_image\b/);
+    assert.doesNotMatch(VENUE_PROJECTION, /heroImage/);
+    assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(hero_image/);
   });
 });
 
