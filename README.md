@@ -19,6 +19,8 @@ Set these on the Vercel project (Production):
 
 Do **not** set `NEXT_PUBLIC_API_URL` to `https://leaguesports.co.za` — that loops the `/api` proxy.
 
+The hardcoded production Railway origin is a fallback **only** when `VERCEL_ENV=production`. Vercel Preview and local `next dev` without `API_ORIGIN` / `RAILWAY_API_URL` / `NEXT_PUBLIC_API_URL` do not proxy or server-fetch production.
+
 On the Railway API (not this repo), keep:
 
 ```

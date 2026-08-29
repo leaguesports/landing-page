@@ -34,7 +34,7 @@ export function getSecurityHeaders(): HeaderTuple[] {
       "https://*.basemaps.cartocdn.com",
       "https://www.googletagmanager.com",
       "https://www.google-analytics.com",
-      "http://localhost:3002",
+      ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3002"] : []),
     ].join(" "),
     [
       "connect-src 'self'",

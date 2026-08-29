@@ -3,9 +3,12 @@
  * - next.config rewrites (browser `/api/*` → Railway, first-party cookies)
  * - server-side fetches that talk to the API directly
  *
- * Browser code must call same-origin `/api/*` on leaguesports.co.za.
- * Do not point NEXT_PUBLIC_API_URL at the frontend host — that would loop
- * the rewrite.
+ * Browser code MUST call same-origin `/api/*` on the frontend host
+ * (see `getRequestBase` in api-client.ts). Fetching this origin from the
+ * browser skips the first-party proxy and breaks OAuth cookies.
+ *
+ * Do not point API_ORIGIN / NEXT_PUBLIC_API_URL at the frontend host —
+ * that would loop the rewrite.
  */
 export const PRODUCTION_RAILWAY_API_ORIGIN =
   "https://league-sports-api-production.up.railway.app";
@@ -35,11 +38,16 @@ export function isFrontendOrigin(origin: string): boolean {
   return host.endsWith(".vercel.app");
 }
 
+/** path-to-regexp negative lookahead for next.config `rewrites`. */
+export function getApiProxySkipPattern(): string {
+  return "matches(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
+}
+
 /**
  * Paths served by this Next.js app. Everything else under `/api` is proxied
  * to Railway, including `/api/venues/:cmsId` (not `/api/venues/claim`).
  */
-const LOCAL_API_PATH = /^\/api\/(?:matches(?:\/|$)|realtime(?:\/|$)|venues\/claim(?:\/|$))/;
+const LOCAL_API_PATH = new RegExp(`^/api/(?:${getApiProxySkipPattern()})`);
 
 export function shouldProxyApiPath(pathname: string): boolean {
   if (pathname === "/api") return true;
@@ -47,11 +55,20 @@ export function shouldProxyApiPath(pathname: string): boolean {
   return !LOCAL_API_PATH.test(pathname);
 }
 
-/** path-to-regexp negative lookahead for next.config `rewrites`. */
-export function getApiProxySkipPattern(): string {
-  return "matches(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
+function isVercelProduction(): boolean {
+  return process.env.VERCEL_ENV === "production";
 }
 
+/**
+ * Server-side Railway origin. Empty when not configured.
+ *
+ * The hardcoded production Railway host is a fallback only when
+ * `VERCEL_ENV === "production"`. Preview and local `next dev` with no env
+ * must not rewrite or server-fetch production. Frontend origins are
+ * rejected so the `/api` proxy cannot loop.
+ *
+ * Do not use this from browser code — call same-origin `/api/*`.
+ */
 export function getRailwayApiOrigin(): string {
   const candidates = [
     process.env.API_ORIGIN,
@@ -66,9 +83,27 @@ export function getRailwayApiOrigin(): string {
     return origin;
   }
 
-  return PRODUCTION_RAILWAY_API_ORIGIN;
+  if (isVercelProduction()) {
+    return PRODUCTION_RAILWAY_API_ORIGIN;
+  }
+
+  return "";
 }
 
 export function isApiConfigured(): boolean {
   return getRailwayApiOrigin().length > 0;
+}
+
+/** next.config `afterFiles` rewrites. Empty when the API is not configured. */
+export function getApiProxyRewrites(): { source: string; destination: string }[] {
+  const apiOrigin = getRailwayApiOrigin();
+  if (!apiOrigin) return [];
+  const skip = getApiProxySkipPattern();
+  return [
+    { source: "/api", destination: `${apiOrigin}/api` },
+    {
+      source: `/api/:path((?!${skip}).*)`,
+      destination: `${apiOrigin}/api/:path`,
+    },
+  ];
 }

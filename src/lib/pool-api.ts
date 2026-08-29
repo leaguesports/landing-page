@@ -21,6 +21,11 @@ export function isPoolApiConfigured(): boolean {
   return isApiConfigured();
 }
 
+/**
+ * Browser: same-origin `/api` (first-party cookies).
+ * Server: Railway origin from `getRailwayApiOrigin()` — never call that
+ * from the browser.
+ */
 function getRequestBase(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
