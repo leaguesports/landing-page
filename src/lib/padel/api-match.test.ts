@@ -5,9 +5,12 @@ import {
   MATCH_API_UNAVAILABLE,
   createPadelMatchWith,
   datetimeLocalToIso,
+  listPlayerHistoryWith,
+  listVenueHistoryWith,
   lockPadelMatchWith,
   matchWinner,
   parseApiMatch,
+  parseHistoryItem,
   preferMatchSnapshot,
   toApiPlayer,
   toCreateMatchBody,
@@ -599,6 +602,172 @@ describe("preferMatchSnapshot", () => {
     fromApi.version = 1;
     const fromAbly = { ...fromApi, version: 12 };
     assert.equal(preferMatchSnapshot(fromApi, fromAbly)?.version, 12);
+  });
+});
+
+const historyPairings = {
+  teamA: [
+    { slot: "A1", userId: "user-1", displayName: "Alex", isGuest: false },
+    { slot: "A2", userId: null, displayName: "Sam (Guest)", isGuest: true },
+  ],
+  teamB: [
+    { slot: "B1", userId: null, displayName: "Jordan (Guest)", isGuest: true },
+    { slot: "B2", userId: "user-riley", displayName: "Riley", isGuest: false },
+  ],
+};
+
+const playerHistoryItem = {
+  id: "hist-1",
+  startsAt: "2026-08-29T10:00:00.000Z",
+  venueCmsId: "sanity-padel-1",
+  venueName: "Padel Club",
+  venueSlug: "padel-club",
+  pairings: historyPairings,
+  opponents: [
+    { slot: "B1", userId: null, displayName: "Jordan (Guest)", isGuest: true },
+    { slot: "B2", userId: "user-riley", displayName: "Riley", isGuest: false },
+  ],
+  score: lockScore,
+  winner: "A",
+};
+
+const venueHistoryItem = {
+  ...playerHistoryItem,
+  id: "hist-2",
+  opponents: historyPairings,
+};
+
+describe("parseHistoryItem", () => {
+  it("keeps player opponents as the other team", () => {
+    const item = parseHistoryItem(playerHistoryItem);
+    assert.ok(item);
+    assert.equal(item.venueName, "Padel Club");
+    assert.equal(item.venueSlug, "padel-club");
+    assert.ok(Array.isArray(item.opponents));
+    assert.equal(item.opponents.length, 2);
+    assert.equal(item.winner, "A");
+    assert.equal(item.score?.sets[0]?.gamesA, 6);
+  });
+
+  it("keeps venue opponents as both teams", () => {
+    const item = parseHistoryItem(venueHistoryItem);
+    assert.ok(item);
+    assert.equal(Array.isArray(item.opponents), false);
+    if (Array.isArray(item.opponents)) throw new Error("expected pairings");
+    assert.equal(item.opponents.teamA[0]?.displayName, "Alex");
+    assert.equal(item.opponents.teamB[1]?.displayName, "Riley");
+  });
+});
+
+describe("listPlayerHistoryWith", () => {
+  it("GETs /api/matches?playerUserId= and returns locked rows newest first", async () => {
+    const calls: string[] = [];
+    const items = await listPlayerHistoryWith("user-1", {
+      baseUrl: "https://api.example.test",
+      fetch: async (url) => {
+        calls.push(String(url));
+        return jsonResponse(200, [playerHistoryItem]);
+      },
+    });
+    assert.equal(
+      calls[0],
+      "https://api.example.test/api/matches?playerUserId=user-1",
+    );
+    assert.equal(items[0]?.id, "hist-1");
+    assert.ok(Array.isArray(items[0]?.opponents));
+  });
+
+  it("does not call the API without a playerUserId", async () => {
+    let called = false;
+    await assert.rejects(
+      () =>
+        listPlayerHistoryWith("  ", {
+          baseUrl: "https://api.example.test",
+          fetch: async () => {
+            called = true;
+            return jsonResponse(200, []);
+          },
+        }),
+      (err: Error) => {
+        assert.equal(err.message, "playerUserId is required");
+        return true;
+      },
+    );
+    assert.equal(called, false);
+  });
+
+  it("fails visibly when GET /api/matches is missing", async () => {
+    await assert.rejects(
+      () =>
+        listPlayerHistoryWith("user-1", {
+          baseUrl: "https://api.example.test",
+          fetch: async () =>
+            new Response("Cannot GET /api/matches", { status: 404 }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+  });
+
+  it("surfaces 400 when the API rejects a missing playerUserId", async () => {
+    await assert.rejects(
+      () =>
+        listPlayerHistoryWith("user-1", {
+          baseUrl: "https://api.example.test",
+          fetch: async () =>
+            jsonResponse(400, { error: "Invalid match payload" }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, "Invalid match payload");
+        return true;
+      },
+    );
+  });
+});
+
+describe("listVenueHistoryWith", () => {
+  it("GETs /api/venues/:cmsId/matches", async () => {
+    const calls: string[] = [];
+    const items = await listVenueHistoryWith("sanity-padel-1", {
+      baseUrl: "https://api.example.test",
+      fetch: async (url) => {
+        calls.push(String(url));
+        return jsonResponse(200, [venueHistoryItem]);
+      },
+    });
+    assert.equal(
+      calls[0],
+      "https://api.example.test/api/venues/sanity-padel-1/matches",
+    );
+    assert.equal(items[0]?.id, "hist-2");
+    assert.equal(Array.isArray(items[0]?.opponents), false);
+  });
+
+  it("treats unknown cmsId as an empty list", async () => {
+    const items = await listVenueHistoryWith("missing-court", {
+      baseUrl: "https://api.example.test",
+      fetch: async () => jsonResponse(200, []),
+    });
+    assert.deepEqual(items, []);
+  });
+
+  it("fails visibly when the venue matches route is undeployed", async () => {
+    await assert.rejects(
+      () =>
+        listVenueHistoryWith("sanity-padel-1", {
+          baseUrl: "https://api.example.test",
+          fetch: async () =>
+            new Response("Cannot GET /api/venues/:cmsId/matches", {
+              status: 404,
+            }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
   });
 });
 

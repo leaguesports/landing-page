@@ -64,7 +64,7 @@ export function getSecurityHeaders(
     ].join(" "),
     "worker-src 'self' blob:",
     "frame-src 'self' https://www.googletagmanager.com",
-    "upgrade-insecure-requests",
+    ...(nodeEnv === "production" ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 
   return [

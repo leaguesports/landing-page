@@ -43,7 +43,7 @@ export function PlayHub({ partialSportSlug, sportDisplayName }: PlayHubProps) {
             href="/padel/new"
             className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
           >
-            Quick-start padel
+            Play a match
           </a>
           <a
             href="/venues"
@@ -52,10 +52,10 @@ export function PlayHub({ partialSportSlug, sportDisplayName }: PlayHubProps) {
             Browse venues
           </a>
           <a
-            href="/#open-matches"
+            href="/padel/history"
             className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
           >
-            Open matches
+            Match history
           </a>
         </div>
       </div>

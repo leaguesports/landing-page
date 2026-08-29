@@ -27,4 +27,15 @@ describe("getSecurityHeaders img-src", () => {
     assert.equal(VENUE_PLACEHOLDER_IMAGE.startsWith("/"), true);
     assert.doesNotMatch(VENUE_PLACEHOLDER_IMAGE, /astratic|unsplash/i);
   });
+
+  it("does not upgrade HTTP on local next dev so same-origin /api works", () => {
+    assert.equal(
+      cspValue("development").includes("upgrade-insecure-requests"),
+      false,
+    );
+    assert.equal(
+      cspValue("production").includes("upgrade-insecure-requests"),
+      true,
+    );
+  });
 });

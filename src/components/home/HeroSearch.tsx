@@ -22,13 +22,17 @@ import {
 
 type HeroSearchProps = {
   onIntentChange?: (intent: IntentMode) => void;
+  initialIntent?: IntentMode;
 };
 
-export function HeroSearch({ onIntentChange }: HeroSearchProps) {
+export function HeroSearch({
+  onIntentChange,
+  initialIntent = "watch",
+}: HeroSearchProps) {
   const router = useRouter();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [intent, setIntent] = useState<IntentMode>("watch");
+  const [intent, setIntent] = useState<IntentMode>(initialIntent);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<SearchSuggestion | null>(null);
   const [open, setOpen] = useState(false);
