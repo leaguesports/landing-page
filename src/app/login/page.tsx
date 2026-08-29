@@ -56,11 +56,15 @@ export default function LoginPage() {
             </button>
             {!signInUrl && (
               <p className="mt-4 text-center text-xs text-zinc-500">
-                Set{" "}
+                Sign in is unavailable. Set{" "}
+                <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-zinc-400">
+                  API_ORIGIN
+                </code>{" "}
+                or{" "}
                 <code className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-zinc-400">
                   NEXT_PUBLIC_API_URL
                 </code>{" "}
-                in .env to enable sign in.
+                to the Railway API origin.
               </p>
             )}
           </div>

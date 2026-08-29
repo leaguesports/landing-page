@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Production (Vercel) environment
+
+The browser talks to same-origin `/api/*` on `https://leaguesports.co.za`. Next.js rewrites unmatched `/api` paths to the Railway Express API so Google OAuth cookies are first-party.
+
+Set these on the Vercel project (Production):
+
+| Variable | Required | Value |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | yes | `https://leaguesports.co.za` |
+| `NEXT_PUBLIC_API_URL` | recommended | `https://league-sports-api-production.up.railway.app` |
+| `API_ORIGIN` | optional | Same Railway origin. Overrides `NEXT_PUBLIC_API_URL` for the rewrite destination if you ever need them to differ. |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | yes | Sanity project id (sitemap + pages) |
+| `NEXT_PUBLIC_SANITY_DATASET` | yes | Sanity dataset |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional | Google Analytics id |
+| `ABLY_API_KEY` | if padel realtime is used | Ably API key |
+| `SANITY_API_TOKEN` | if venue claim writes | Sanity write token |
+
+Do **not** set `NEXT_PUBLIC_API_URL` to `https://leaguesports.co.za` — that loops the `/api` proxy.
+
+On the Railway API (not this repo), keep:
+
+```
+GOOGLE_REDIRECT_URI=https://leaguesports.co.za/api/auth/providers/google/callback-url
+FRONTEND_URL=https://leaguesports.co.za
+```
+
+Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches*`, `/api/realtime*`, `/api/venues/claim`.
+
 ## Getting Started
 
 First, run the development server:

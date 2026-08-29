@@ -1,4 +1,7 @@
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
+import { getSiteBaseUrl } from "@/lib/site-url";
+
+export { isApiConfigured } from "@/lib/api-origin";
 
 export class ApiError extends Error {
   status: number;
@@ -11,32 +14,26 @@ export class ApiError extends Error {
 }
 
 export function getApiBaseUrl(): string {
-  return API_BASE;
-}
-
-export function isApiConfigured(): boolean {
-  return API_BASE.length > 0;
+  return getRailwayApiOrigin();
 }
 
 function getSiteOrigin(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://leaguesports.co.za").replace(
-    /\/$/,
-    "",
-  );
+  return getSiteBaseUrl();
 }
 
 /**
- * Browser calls use same-origin `/api/*` (proxied to the backend in next.config).
+ * Browser calls use same-origin `/api/*` (proxied to Railway in next.config).
+ * Server-side calls go to the Railway origin directly.
  * This keeps auth cookies first-party on leaguesports.co.za.
  */
 function getRequestBase(): string {
   if (typeof window !== "undefined") {
     return getSiteOrigin();
   }
-  return API_BASE;
+  return getRailwayApiOrigin();
 }
 
 function toAbsoluteReturnTo(returnTo: string): string {
@@ -50,7 +47,7 @@ export async function poolApi<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new ApiError(0, "API URL is not configured");
   }
 
@@ -89,7 +86,7 @@ export interface AuthState {
 }
 
 export async function getAuthState(): Promise<AuthState> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     return {
       isAuthenticated: false,
       user: null,
@@ -134,7 +131,7 @@ export async function getAuthState(): Promise<AuthState> {
 }
 
 export function getGoogleSignInUrl(returnTo?: string): string {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     return "";
   }
 

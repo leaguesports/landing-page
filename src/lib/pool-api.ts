@@ -1,3 +1,4 @@
+import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
 import type {
   CreatePoolInput,
   Leaderboard,
@@ -5,8 +6,6 @@ import type {
   PoolView,
   PredictionFormState,
 } from "@/types/pool";
-
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 export class PoolApiError extends Error {
   status: number;
@@ -19,19 +18,27 @@ export class PoolApiError extends Error {
 }
 
 export function isPoolApiConfigured(): boolean {
-  return API_BASE.length > 0;
+  return isApiConfigured();
+}
+
+function getRequestBase(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return getRailwayApiOrigin();
 }
 
 export async function poolApi<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!API_BASE) {
+  if (!isApiConfigured()) {
     throw new PoolApiError(0, "API URL is not configured");
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getRequestBase()}${path}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
