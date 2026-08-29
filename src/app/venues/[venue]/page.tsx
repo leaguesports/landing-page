@@ -2,10 +2,17 @@ import {
   VenueContactActions,
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
-import { getVenueBySlug, type VenueDetail } from "@/services/venues";
+import { urlFor } from "@/sanity/client";
+import {
+  getVenueBySlug,
+  hasVenueCoordinates,
+  resolveVenueImage,
+  type VenueDetail,
+} from "@/services/venues";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
+import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import {
@@ -16,8 +23,23 @@ import {
   Star,
 } from "lucide-react";
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+const VenueMap = dynamic(
+  () => import("./_components/VenueMap").then((mod) => mod.VenueMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-56 w-full animate-pulse rounded-2xl bg-white/5 sm:h-64"
+        aria-hidden
+      />
+    ),
+  },
+);
 
 const venueAboutPortableTextComponents = {
   block: {
@@ -112,6 +134,16 @@ function getBaseUrl(): string {
   return "https://leaguesports.co.za";
 }
 
+function venueHeroImageUrl(
+  venue: Pick<VenueDetail, "hero_image">,
+  width: number,
+  height: number,
+): string | undefined {
+  const source = resolveVenueImage(venue);
+  if (!source) return undefined;
+  return urlFor(source)?.width(width).height(height).fit("crop").url() ?? undefined;
+}
+
 function buildMapsUrl(venue: VenueDetail): string {
   const query = [
     venue.name,
@@ -141,6 +173,7 @@ export async function generateMetadata({
   const description = suburb
     ? `${venue.name} in ${suburb} — screens, amenities, and matchday details on LeagueSports.`
     : `${venue.name} — screens, amenities, and matchday details on LeagueSports.`;
+  const ogImage = venueHeroImageUrl(venue, 1200, 630);
 
   return {
     title,
@@ -159,11 +192,15 @@ export async function generateMetadata({
       siteName: "LeagueSports",
       type: "website",
       locale: "en_ZA",
+      ...(ogImage
+        ? { images: [{ url: ogImage, width: 1200, height: 630, alt: venue.name }] }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
     alternates: {
       canonical: canonicalUrl,
@@ -242,6 +279,7 @@ export default async function VenuePage({ params }: Props) {
   ]
     .filter(Boolean)
     .join(", ");
+  const heroImageUrl = venueHeroImageUrl(venue, 1920, 1080);
 
   return (
     <div>
@@ -278,7 +316,21 @@ export default async function VenuePage({ params }: Props) {
 
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-white/5">
-          <div className="absolute inset-0 bg-linear-to-br from-emerald-950/35 via-[#0c0f0c] to-[#0c0f0c]" />
+          {heroImageUrl ? (
+            <>
+              <Image
+                src={heroImageUrl}
+                alt=""
+                fill
+                priority
+                className="object-cover"
+                sizes="100vw"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/80 to-[#0c0f0c]/45" />
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-linear-to-br from-emerald-950/35 via-[#0c0f0c] to-[#0c0f0c]" />
+          )}
 
           <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
             <div className="mb-6">
@@ -373,16 +425,11 @@ export default async function VenuePage({ params }: Props) {
                   Watch
                 </h3>
                 {venue.broadcasts.length > 0 ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {venue.broadcasts.map((b) => (
-                      <li
-                        key={b._id}
-                        className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-300"
-                      >
-                        {b.name}
-                      </li>
-                    ))}
-                  </ul>
+                  <VenueSportChips
+                    intent="watch"
+                    items={venue.broadcasts}
+                    venue={venue}
+                  />
                 ) : (
                   <p className="text-sm text-zinc-500">
                     Broadcast sports coming soon.
@@ -394,16 +441,11 @@ export default async function VenuePage({ params }: Props) {
                   Play
                 </h3>
                 {venue.sports.length > 0 ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {venue.sports.map((s) => (
-                      <li
-                        key={s._id}
-                        className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-300"
-                      >
-                        {s.name}
-                      </li>
-                    ))}
-                  </ul>
+                  <VenueSportChips
+                    intent="play"
+                    items={venue.sports}
+                    venue={venue}
+                  />
                 ) : (
                   <p className="text-sm text-zinc-500">
                     Play options coming soon.
@@ -471,6 +513,15 @@ export default async function VenuePage({ params }: Props) {
                   ) : null}
                 </div>
               </div>
+              {hasVenueCoordinates(venue) ? (
+                <div className="mb-5">
+                  <VenueMap
+                    lat={venue.latitude}
+                    lng={venue.longitude}
+                    name={venue.name}
+                  />
+                </div>
+              ) : null}
               <a
                 href={mapsSearchUrl}
                 target="_blank"

@@ -17,6 +17,7 @@ export type {
   VenueScreening,
 } from "./venueQuery";
 export {
+  hasVenueCoordinates,
   mapVenueRow,
   resolveVenueImage,
   sportSlugVariants,

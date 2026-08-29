@@ -28,6 +28,7 @@ export type Venue = {
   sports: {
     _id: string;
     name: string;
+    slug?: string | null;
     image: SanityImageSource | undefined;
   }[];
   /** Watch — sports this venue broadcasts. */
@@ -91,9 +92,10 @@ export type VenueRow = {
  * latitude/longitude, amenities.*, contact/contactInfo,
  * claim_status, upcoming_screenings, rating; Watch = broadcasts, Play = sports.
  *
- * `select(defined(is_verified) => …)` plus contactInfo coalesce so live
- * documents still populate until sanity-cms #1 lands. Explicit
- * `is_verified: false` must not lose a legacy `isVerified: true`.
+ * `select(defined(is_verified) => …)` plus contact/contactInfo coalesce so
+ * live documents still populate. CMS fieldsets are not objects, so phone /
+ * whatsapp / website also read top-level fields. Explicit `is_verified: false`
+ * must not lose a legacy `isVerified: true`.
  */
 export const VENUE_PROJECTION = `
   _id,
@@ -102,7 +104,7 @@ export const VENUE_PROJECTION = `
   description,
   hero_image,
   "phone": coalesce(contact.phone, contactInfo.phone, phone),
-  "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp),
+  "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp, whatsapp),
   "website": coalesce(contact.website, contactInfo.website, website),
   "has_generator_backup": coalesce(amenities.has_generator_backup, has_generator_backup),
   "has_big_screens": coalesce(amenities.has_big_screens, has_big_screens),
@@ -133,6 +135,7 @@ export const VENUE_PROJECTION = `
     _id,
     name,
     image,
+    "slug": slug.current,
   },
   "broadcasts": broadcasts[]-> {
     _id,
@@ -212,4 +215,19 @@ export function resolveVenueImage(
   venue: Pick<Venue, "hero_image">,
 ): SanityImageSource | undefined {
   return venue.hero_image ?? undefined;
+}
+
+/** True when the venue document itself has usable map coordinates. */
+export function hasVenueCoordinates(
+  venue: Pick<Venue, "latitude" | "longitude">,
+): venue is Pick<Venue, "latitude" | "longitude"> & {
+  latitude: number;
+  longitude: number;
+} {
+  return (
+    typeof venue.latitude === "number" &&
+    typeof venue.longitude === "number" &&
+    Number.isFinite(venue.latitude) &&
+    Number.isFinite(venue.longitude)
+  );
 }

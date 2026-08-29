@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  hasVenueCoordinates,
   mapVenueRow,
   resolveVenueImage,
   sportSlugVariants,
@@ -55,12 +56,34 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
   });
 
+  it("projects sport slugs for Watch and Play chips", () => {
+    assert.match(
+      VENUE_PROJECTION,
+      /"sports": sports\[\]-> \{[\s\S]*?"slug": slug\.current/,
+    );
+    assert.match(
+      VENUE_PROJECTION,
+      /"broadcasts": broadcasts\[\]-> \{[\s\S]*?"slug": slug\.current/,
+    );
+  });
+
   it("maps is_verified with defined() so false does not clobber isVerified", () => {
     assert.match(
       VENUE_PROJECTION,
       /select\(defined\(is_verified\) => is_verified, isVerified\)/,
     );
     assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(is_verified/);
+  });
+
+  it("coalesces top-level whatsapp like phone (CMS fieldsets are not objects)", () => {
+    assert.match(
+      VENUE_PROJECTION,
+      /"whatsapp": coalesce\(contact\.whatsapp, contactInfo\.whatsapp, whatsapp\)/,
+    );
+    assert.match(
+      VENUE_PROJECTION,
+      /"phone": coalesce\(contact\.phone, contactInfo\.phone, phone\)/,
+    );
   });
 
   it("locks the venue photo to hero_image only", () => {
@@ -93,6 +116,17 @@ describe("VENUE_IN_LOCATION", () => {
     assert.match(VENUE_IN_LOCATION, /address\.suburb->slug\.current == \$location/);
     assert.match(VENUE_IN_LOCATION, /address\.city->slug\.current == \$location/);
     assert.match(VENUE_IN_LOCATION, /location->slug\.current == \$location/);
+  });
+});
+
+describe("hasVenueCoordinates", () => {
+  it("is true only for finite venue lat/lng", () => {
+    assert.equal(
+      hasVenueCoordinates({ latitude: -33.98, longitude: 18.46 }),
+      true,
+    );
+    assert.equal(hasVenueCoordinates({ latitude: -33.98, longitude: null }), false);
+    assert.equal(hasVenueCoordinates({}), false);
   });
 });
 
