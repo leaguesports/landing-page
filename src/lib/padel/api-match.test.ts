@@ -552,6 +552,23 @@ describe("lockPadelMatchWith", () => {
       },
     );
   });
+
+  it("fails visibly when POST lock is 404 (route not on Railway yet)", async () => {
+    await assert.rejects(
+      () =>
+        lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () =>
+            new Response("Cannot POST /api/matches/api-match-1/lock", {
+              status: 404,
+            }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+  });
 });
 
 describe("preferMatchSnapshot", () => {

@@ -12,8 +12,7 @@ import type {
   SetScore,
 } from "../../types/padel-match.ts";
 
-export const MATCH_API_UNAVAILABLE =
-  "Match API is unavailable. The match was not created.";
+export const MATCH_API_UNAVAILABLE = "Match API is unavailable.";
 
 export class MatchApiError extends Error {
   status: number;
