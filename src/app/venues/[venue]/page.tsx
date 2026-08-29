@@ -12,6 +12,7 @@ import {
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
+import { VenueMap } from "./_components/VenueMap";
 import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
@@ -23,23 +24,9 @@ import {
   Star,
 } from "lucide-react";
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-
-const VenueMap = dynamic(
-  () => import("./_components/VenueMap").then((mod) => mod.VenueMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="h-56 w-full animate-pulse rounded-2xl bg-white/5 sm:h-64"
-        aria-hidden
-      />
-    ),
-  },
-);
 
 const venueAboutPortableTextComponents = {
   block: {
