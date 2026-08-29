@@ -1,5 +1,3 @@
-import { toSlug } from "@/data/suburbs";
-
 export type CityDirectory = {
   name: string;
   slug: string;
@@ -120,110 +118,26 @@ export function filterSuggestions(
   const q = query.trim().toLowerCase();
   if (!q) return SEARCH_SUGGESTIONS.slice(0, limit);
 
-  return SEARCH_SUGGESTIONS.filter((s) =>
-    s.label.toLowerCase().includes(q),
-  ).slice(0, limit);
+  const stop = new Set([
+    "the",
+    "and",
+    "in",
+    "at",
+    "near",
+    "watch",
+    "play",
+    "for",
+    "to",
+  ]);
+  const tokens = q
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 1 && !stop.has(token));
+
+  return SEARCH_SUGGESTIONS.filter((s) => {
+    const label = s.label.toLowerCase();
+    if (label.includes(q)) return true;
+    return tokens.some((token) => label.includes(token));
+  }).slice(0, limit);
 }
 
 export type IntentMode = "watch" | "play";
-
-/**
- * Build silo path from free-text + optional structured suggestion.
- * Watch: /watch/[city]/[suburb] · Play: /play/[city]/[sport]
- */
-export function buildSearchPath(
-  intent: IntentMode,
-  query: string,
-  suggestion?: SearchSuggestion | null,
-): string {
-  if (suggestion) {
-    if (intent === "watch") {
-      if (suggestion.kind === "suburb" && suggestion.citySlug && suggestion.suburbSlug) {
-        return `/watch/${suggestion.citySlug}/${suggestion.suburbSlug}`;
-      }
-      if (suggestion.kind === "city" && suggestion.citySlug) {
-        return `/watch/${suggestion.citySlug}`;
-      }
-      if (suggestion.kind === "sport" && suggestion.sportSlug) {
-        return `/watch/${suggestion.sportSlug}`;
-      }
-    } else {
-      if (suggestion.kind === "sport" && suggestion.sportSlug) {
-        const cityFromQuery = matchCityInQuery(query);
-        if (cityFromQuery) {
-          return `/play/${cityFromQuery}/${suggestion.sportSlug}`;
-        }
-        return `/play/${suggestion.sportSlug}`;
-      }
-      if (suggestion.kind === "city" && suggestion.citySlug) {
-        const sportFromQuery = matchSportInQuery(query);
-        if (sportFromQuery) {
-          return `/play/${suggestion.citySlug}/${sportFromQuery}`;
-        }
-        return `/play/${suggestion.citySlug}`;
-      }
-      if (suggestion.kind === "suburb" && suggestion.citySlug) {
-        const sportFromQuery = matchSportInQuery(query);
-        if (sportFromQuery) {
-          return `/play/${suggestion.citySlug}/${sportFromQuery}`;
-        }
-        return `/play/${suggestion.citySlug}`;
-      }
-    }
-  }
-
-  const city = matchCityInQuery(query);
-  const suburb = matchSuburbInQuery(query);
-  const sport = matchSportInQuery(query);
-
-  if (intent === "watch") {
-    if (city && suburb) return `/watch/${city}/${suburb}`;
-    if (city) return `/watch/${city}`;
-    if (suburb) {
-      const parent = CITY_DIRECTORY.find((c) =>
-        c.suburbs.some((s) => s.slug === suburb),
-      );
-      if (parent) return `/watch/${parent.slug}/${suburb}`;
-    }
-    const slug = toSlug(query.trim()) || "johannesburg";
-    return `/watch/${slug}`;
-  }
-
-  if (city && sport) return `/play/${city}/${sport}`;
-  if (city) return `/play/${city}`;
-  if (sport) return `/play/${sport}`;
-  const slug = toSlug(query.trim()) || "johannesburg";
-  return `/play/${slug}`;
-}
-
-function matchCityInQuery(query: string): string | null {
-  const q = query.toLowerCase();
-  for (const city of CITY_DIRECTORY) {
-    if (q.includes(city.name.toLowerCase()) || q.includes(city.slug)) {
-      return city.slug;
-    }
-  }
-  return null;
-}
-
-function matchSuburbInQuery(query: string): string | null {
-  const q = query.toLowerCase();
-  for (const city of CITY_DIRECTORY) {
-    for (const suburb of city.suburbs) {
-      if (q.includes(suburb.name.toLowerCase()) || q.includes(suburb.slug)) {
-        return suburb.slug;
-      }
-    }
-  }
-  return null;
-}
-
-function matchSportInQuery(query: string): string | null {
-  const q = query.toLowerCase();
-  for (const sport of SEARCH_SPORTS) {
-    if (q.includes(sport.name.toLowerCase()) || q.includes(sport.slug)) {
-      return sport.slug;
-    }
-  }
-  return null;
-}

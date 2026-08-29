@@ -1,4 +1,5 @@
 import { sanityClient } from "@/sanity/client";
+import { sportSlugVariants, VENUE_IN_LOCATION } from "@/services/venueQuery";
 import type {
   PlayLocation,
   PlaySport,
@@ -55,27 +56,27 @@ export async function getVenuesByLocationAndSport(
 ) {
   if (!location || !sport) return [];
 
+  // Play = venue sports (sports hosted at this venue).
+  const sportSlugs = sportSlugVariants(sport);
   const venues = await sanityClient.fetch<PlayVenue[]>(
     `*[_type == "venue" && 
-        $sport in sports[]->slug.current && 
-        (
-            location->slug.current == $location || 
-            location->parent->slug.current == $location
-        )
+        count((sports[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
             "name": name,
         }`,
-    { location, sport },
+    { location, sportSlugs },
   );
 
   return venues;
 }
 
 /**
- * Exact suburb/location match first; if empty and a parent city exists,
- * return city-level venues for a graceful nearby fallback.
+ * Requested location slug first; if that is a suburb with no hits, fall back
+ * to the parent city slug. VENUE_IN_LOCATION also has city/parent clauses,
+ * which are no-ops when $location is a suburb slug.
  */
 export async function getVenuesByLocationAndSportWithFallback(
   locationSlug: string,
@@ -88,8 +89,8 @@ export async function getVenuesByLocationAndSportWithFallback(
 
   const exactQuery = isSuburb
     ? `*[_type == "venue" && 
-        $sport in sports[]->slug.current && 
-        location->slug.current == $location
+        count((sports[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
@@ -100,7 +101,7 @@ export async function getVenuesByLocationAndSportWithFallback(
   const exact = exactQuery
     ? await sanityClient.fetch<PlayVenue[]>(exactQuery, {
         location: locationSlug,
-        sport: sportSlug,
+        sportSlugs: sportSlugVariants(sportSlug),
       })
     : await getVenuesByLocationAndSport(locationSlug, sportSlug);
 

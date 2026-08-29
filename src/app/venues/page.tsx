@@ -4,17 +4,26 @@ import {
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
 import { urlFor } from "@/sanity/client";
-import { listVenues, Venue } from "@/services/venues";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import {
+  listVenueFilterOptions,
+  resolveVenueImage,
+  searchVenues,
+  type Venue,
+} from "@/services/venues";
+import {
+  hasActiveVenueFilters,
+  parseVenueSearchParams,
+  venueSearchSummary,
+} from "@/lib/search/venueSearch";
+import { ArrowUpRight, MapPin, Search } from "lucide-react";
 import Link from "next/link";
+import { VenueDirectoryFilters } from "./_components/VenueDirectoryFilters";
 
 function getVenueImageSrc(venue: Venue) {
-  if (venue.broadcasts && venue.broadcasts.length) {
-    return "https://images.unsplash.com/photo-1775642679594-89bb4b78e26e?q=80&w=1470&auto=format&fit=crop";
-  }
-
-  if (venue.sports && venue.sports.length > 0 && venue.sports[0].image) {
-    return urlFor(venue.sports[0].image)!.url();
+  const source = resolveVenueImage(venue);
+  if (source) {
+    const url = urlFor(source)?.url();
+    if (url) return url;
   }
 
   return "https://blocks.astratic.com/img/general-img-landscape.png";
@@ -54,8 +63,28 @@ function VenueCard({ venue }: { venue: Venue }) {
   );
 }
 
-export default async function VenuesPage() {
-  const venues = await listVenues();
+export default async function VenuesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    intent?: string | string[];
+    sport?: string | string[];
+    location?: string | string[];
+  }>;
+}) {
+  const params = await searchParams;
+  const filters = parseVenueSearchParams(params);
+  const [{ sports, locations }, venues] = await Promise.all([
+    listVenueFilterOptions(),
+    searchVenues({
+      intent: filters.intent,
+      sportSlug: filters.sportSlug,
+      locationSlug: filters.locationSlug,
+    }),
+  ]);
+
+  const filtered = hasActiveVenueFilters(filters);
+  const heading = filtered ? venueSearchSummary(filters) : "Explore the list";
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -105,18 +134,44 @@ export default async function VenuesPage() {
         <div className="mx-auto max-w-7xl">
           <header className="mb-8 sm:mb-10">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-              All venues
+              {filtered ? "Results" : "All venues"}
             </p>
             <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
-              Explore the list
+              {heading}
             </h2>
           </header>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-            {venues.map((venue) => (
-              <VenueCard key={venue._id} venue={venue} />
-            ))}
-          </div>
+          <VenueDirectoryFilters
+            intent={filters.intent}
+            sport={filters.sportSlug}
+            location={filters.locationSlug}
+            sports={sports}
+            locations={locations}
+          />
+
+          {venues.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+              {venues.map((venue) => (
+                <VenueCard key={venue._id} venue={venue} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-14 text-center">
+              <Search className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
+              <p className="text-base font-medium text-white">
+                No venues match this search
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+                Try another sport or area, or browse the full directory.
+              </p>
+              <Link
+                href="/venues"
+                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
+              >
+                Clear filters
+              </Link>
+            </div>
+          )}
         </div>
       </section>
     </div>

@@ -18,11 +18,12 @@ type SitemapVenue = {
 };
 
 async function getVenues() {
+  // Watch directory URLs are built from venue `broadcasts` (not `sports`).
   const venues = await sanityClient.fetch<SitemapVenue[]>(`
     *[_type == "venue"] {
       "id": _id,
       "slug": slug.current,
-      "updatedAt": coalesce(updated_at, _updatedAt),
+      "updatedAt": _updatedAt,
       "location": {
         "slug": location->slug.current,
       },
