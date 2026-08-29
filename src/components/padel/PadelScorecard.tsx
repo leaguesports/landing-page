@@ -3,13 +3,9 @@
 import { Loader2, Share2, Undo2, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
 import { useMatchChannel } from "@/hooks/useMatchChannel";
-import { lockPadelMatch } from "@/lib/match-api";
-import {
-  MatchApiError,
-  matchWinner,
-  toLockMatchBody,
-} from "@/lib/padel/api-match";
+import { matchWinner } from "@/lib/padel/api-match";
 import {
   formatGamePoint,
   formatSetHistory,
@@ -122,8 +118,10 @@ function padelShareUrl(matchId: string): string {
 export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
   const { match, connectionState, scorePoint, undoPoint, canUndo, emitEvent } =
     useMatchChannel(initialMatch.id, initialMatch);
-  const [locking, setLocking] = useState(false);
-  const [lockError, setLockError] = useState<string | null>(null);
+  const { lockMatch, locking, lockError, canLock } = useLockPadelMatch(
+    match,
+    emitEvent,
+  );
   const [copied, setCopied] = useState(false);
 
   const locked = Boolean(match.lockedAt);
@@ -132,7 +130,6 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
   const setHistory = formatSetHistory(match);
   const rulesLabel =
     match.ruleset === "golden_point" ? "Golden Point" : "Advantage";
-  const lockBody = toLockMatchBody(match);
   const winner = matchWinner(match);
   const winnerLabel = winner ? getTeamLabel(match, winner) : null;
 
@@ -164,39 +161,6 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
     }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
-  }
-
-  async function handleEnd() {
-    if (!lockBody || locked || locking) return;
-    setLockError(null);
-    setLocking(true);
-    try {
-      const lockedMatch = await lockPadelMatch(
-        match.id,
-        lockBody,
-        match.venue,
-      );
-      const next: PadelMatch = {
-        ...match,
-        ...lockedMatch,
-        status: "finalized",
-        lockedAt: lockedMatch.lockedAt ?? new Date().toISOString(),
-        winner: lockedMatch.winner ?? lockBody.winner,
-        sets: lockedMatch.sets.length ? lockedMatch.sets : match.sets,
-        version: Math.max(lockedMatch.version, match.version) + 1,
-      };
-      await emitEvent("STATE_SYNC", { state: next });
-    } catch (error) {
-      if (error instanceof MatchApiError) {
-        setLockError(error.message);
-      } else if (error instanceof Error) {
-        setLockError(error.message);
-      } else {
-        setLockError("Could not lock the match");
-      }
-    } finally {
-      setLocking(false);
-    }
   }
 
   return (
@@ -317,11 +281,11 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
             </button>
             <button
               type="button"
-              disabled={!lockBody || locking}
-              onClick={() => void handleEnd()}
+              disabled={!canLock || locking}
+              onClick={() => void lockMatch()}
               className={[
                 "inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl text-base font-semibold transition-colors disabled:cursor-not-allowed",
-                lockBody && !locking
+                canLock
                   ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
                   : "border border-white/15 bg-white/5 text-zinc-400 opacity-50",
               ].join(" ")}
