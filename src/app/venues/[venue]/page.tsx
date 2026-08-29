@@ -8,7 +8,6 @@ import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
-import type { TypedObject } from "@portabletext/types";
 import {
   Bell,
   ChevronRight,
@@ -349,9 +348,7 @@ export default async function VenuePage({ params }: Props) {
 
             <div className="rounded-3xl border border-white/8 bg-[#141814] p-6 sm:p-8">
               <PortableText
-                value={
-                  venue.description as unknown as TypedObject | TypedObject[]
-                }
+                value={venue.description}
                 components={venueAboutPortableTextComponents}
               />
             </div>

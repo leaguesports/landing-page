@@ -1,4 +1,4 @@
-import type { VenueDetail } from "@/services/venues";
+import { resolveVenueImage, type VenueDetail } from "@/services/venues";
 import {
   DEFAULT_MAP_CENTER,
   SUBURB_COORDINATES,
@@ -26,9 +26,9 @@ function resolveCoords(venue: VenueDetail): [number, number] | null {
 }
 
 function resolveImage(venue: VenueDetail): string | undefined {
-  const sportImage = venue.sports?.find((s) => s.image)?.image;
-  if (sportImage) {
-    return urlFor(sportImage)?.width(1200).height(630).fit("crop").url();
+  const source = resolveVenueImage(venue);
+  if (source) {
+    return urlFor(source)?.width(1200).height(630).fit("crop").url();
   }
   return undefined;
 }

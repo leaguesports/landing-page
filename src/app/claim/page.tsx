@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { urlFor } from "@/sanity/client";
-import { getVenueBySlug } from "@/services/venues";
+import { getVenueBySlug, resolveVenueImage } from "@/services/venues";
 import { ClaimForm } from "./_components/ClaimForm";
 
 export const metadata: Metadata = {
@@ -17,9 +17,9 @@ type Props = {
 };
 
 function resolveThumbnail(venue: NonNullable<Awaited<ReturnType<typeof getVenueBySlug>>>) {
-  const sportImage = venue.sports?.find((s) => s.image)?.image;
-  if (sportImage) {
-    return urlFor(sportImage)?.width(640).height(360).fit("crop").url() ?? null;
+  const source = resolveVenueImage(venue);
+  if (source) {
+    return urlFor(source)?.width(640).height(360).fit("crop").url() ?? null;
   }
   return null;
 }

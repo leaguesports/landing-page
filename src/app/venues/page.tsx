@@ -4,17 +4,19 @@ import {
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
 import { urlFor } from "@/sanity/client";
-import { listVenues, Venue } from "@/services/venues";
+import { listVenues, resolveVenueImage, Venue } from "@/services/venues";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import Link from "next/link";
 
 function getVenueImageSrc(venue: Venue) {
-  if (venue.broadcasts && venue.broadcasts.length) {
-    return "https://images.unsplash.com/photo-1775642679594-89bb4b78e26e?q=80&w=1470&auto=format&fit=crop";
+  const source = resolveVenueImage(venue);
+  if (source) {
+    const url = urlFor(source)?.url();
+    if (url) return url;
   }
 
-  if (venue.sports && venue.sports.length > 0 && venue.sports[0].image) {
-    return urlFor(venue.sports[0].image)!.url();
+  if (venue.broadcasts && venue.broadcasts.length) {
+    return "https://images.unsplash.com/photo-1775642679594-89bb4b78e26e?q=80&w=1470&auto=format&fit=crop";
   }
 
   return "https://blocks.astratic.com/img/general-img-landscape.png";

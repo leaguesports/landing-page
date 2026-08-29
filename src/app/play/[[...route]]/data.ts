@@ -55,6 +55,7 @@ export async function getVenuesByLocationAndSport(
 ) {
   if (!location || !sport) return [];
 
+  // Play = venue sports (sports hosted at this venue).
   const venues = await sanityClient.fetch<PlayVenue[]>(
     `*[_type == "venue" && 
         $sport in sports[]->slug.current && 

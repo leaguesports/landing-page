@@ -1,5 +1,6 @@
 import { sanityClient } from "@/sanity/client";
-import { SanityImageSource } from "@sanity/image-url";
+import type { TypedObject } from "@portabletext/types";
+import type { SanityImageSource } from "@sanity/image-url";
 
 export type VenueScreening = {
   title: string;
@@ -12,7 +13,10 @@ export type Venue = {
   _id: string;
   name: string;
   slug: string;
-  description: string;
+  /** Portable Text from Sanity `blockContent`. */
+  description: TypedObject[];
+  /** Venue hero photo (targeted schema field `hero_image`). */
+  hero_image?: SanityImageSource | null;
   address: {
     street: string;
     suburb: string;
@@ -21,17 +25,18 @@ export type Venue = {
     postcode: string;
     country: string;
   };
+  /** Play — sports hosted at the venue. */
   sports: {
     _id: string;
     name: string;
     image: SanityImageSource | undefined;
   }[];
+  /** Watch — sports this venue broadcasts. */
   broadcasts: {
     _id: string;
     name: string;
     slug: string;
   }[];
-  /** SA operational flags — optional until Sanity schema is fully populated */
   has_generator_backup?: boolean | null;
   has_big_screens?: boolean | null;
   has_live_audio?: boolean | null;
@@ -50,38 +55,14 @@ export type Venue = {
 };
 
 /** Full venue document for venue detail pages (watch/play from linked sports). */
-export type VenueDetail = Venue & {
-  // watch: Activity[];
-  // play: Activity[];
-};
+export type VenueDetail = Venue;
 
-const VENUE_UTILITY_PROJECTION = `
-  phone,
-  website,
-  has_generator_backup,
-  has_big_screens,
-  has_live_audio,
-  has_craft_drafts,
-  has_food_menu,
-  has_outdoor_area,
-  has_parking,
-  is_verified,
-  claim_status,
-  rating,
-  latitude,
-  longitude,
-  upcoming_screenings[]{
-    title,
-    startsAt,
-    setupTags
-  },
-`;
-
-function mapVenueRow(row: {
+type VenueRow = {
   _id: string;
   name: string;
   slug: string | null;
-  description: string | null;
+  description: TypedObject[] | null;
+  hero_image?: SanityImageSource | null;
   address: Venue["address"] | null;
   sports: Venue["sports"] | null;
   broadcasts: Venue["broadcasts"] | null;
@@ -98,16 +79,86 @@ function mapVenueRow(row: {
   latitude?: number | null;
   longitude?: number | null;
   phone?: string | null;
+  whatsapp?: string | null;
   website?: string | null;
   upcoming_screenings?: VenueScreening[] | null;
-}): VenueDetail | null {
+};
+
+/**
+ * Fields the site reads, named to match issue #7 and existing GROQ.
+ *
+ * Targeted Sanity Venue schema (cms PR may land in parallel):
+ * hero_image, latitude/longitude, amenities.*, contact/contactInfo,
+ * claim_status, upcoming_screenings, rating; Watch = broadcasts, Play = sports.
+ *
+ * coalesce() also reads names already declared on current `schemaTypes/venue.ts`
+ * (`isVerified`, `contactInfo`) so live documents still populate.
+ */
+const VENUE_PROJECTION = `
+  _id,
+  name,
+  "slug": slug.current,
+  description,
+  "hero_image": coalesce(hero_image, heroImage, hero),
+  "phone": coalesce(contact.phone, contactInfo.phone, phone),
+  "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp),
+  "website": coalesce(contact.website, contactInfo.website, website),
+  "has_generator_backup": coalesce(amenities.has_generator_backup, has_generator_backup),
+  "has_big_screens": coalesce(amenities.has_big_screens, has_big_screens),
+  "has_live_audio": coalesce(amenities.has_live_audio, has_live_audio),
+  "has_craft_drafts": coalesce(amenities.has_craft_drafts, has_craft_drafts),
+  "has_food_menu": coalesce(amenities.has_food_menu, has_food_menu),
+  "has_outdoor_area": coalesce(amenities.has_outdoor_area, has_outdoor_area),
+  "has_parking": coalesce(amenities.has_parking, has_parking),
+  "is_verified": coalesce(is_verified, isVerified),
+  claim_status,
+  rating,
+  latitude,
+  longitude,
+  upcoming_screenings[]{
+    title,
+    startsAt,
+    setupTags
+  },
+  "address": {
+    "street": address.street,
+    "province": address.province,
+    "postcode": address.postcode,
+    "country": address.country,
+    "suburb": address.suburb->title,
+    "city": address.city->title
+  },
+  "sports": sports[]-> {
+    _id,
+    name,
+    image,
+  },
+  "broadcasts": broadcasts[]-> {
+    _id,
+    name,
+    "slug": slug.current,
+  },
+`;
+
+function asPortableText(value: unknown): TypedObject[] {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (block): block is TypedObject =>
+        Boolean(block) && typeof block === "object",
+    );
+  }
+  return [];
+}
+
+function mapVenueRow(row: VenueRow): VenueDetail | null {
   if (!row.slug) return null;
 
   return {
     _id: row._id,
     name: row.name,
     slug: row.slug,
-    description: row.description ?? "",
+    description: asPortableText(row.description),
+    hero_image: row.hero_image ?? null,
     address: row.address ?? {
       street: "",
       suburb: "",
@@ -130,7 +181,8 @@ function mapVenueRow(row: {
     rating: row.rating ?? null,
     latitude: row.latitude ?? null,
     longitude: row.longitude ?? null,
-    phone: row.phone ?? null,
+    // WhatsApp CTA uses `phone`; prefer the dedicated WhatsApp number when set.
+    phone: row.whatsapp || row.phone || null,
     website: row.website ?? null,
     upcoming_screenings: (row.upcoming_screenings ?? []).filter(
       (s) => s?.title && s?.startsAt,
@@ -138,40 +190,22 @@ function mapVenueRow(row: {
   };
 }
 
+/** Prefer the venue hero, then a linked play-sport image. */
+export function resolveVenueImage(
+  venue: Pick<Venue, "hero_image" | "sports">,
+): SanityImageSource | undefined {
+  if (venue.hero_image) return venue.hero_image;
+  return venue.sports?.find((s) => s.image)?.image;
+}
+
 export async function listVenues() {
-  const venues = await sanityClient.fetch<
-    Parameters<typeof mapVenueRow>[0][]
-  >(`
+  const venues = await sanityClient.fetch<VenueRow[]>(`
     *[_type == "venue"] | order(_createdAt desc) {
-      _id,
-      name,
-      "slug": slug.current,
-      description,
-      ${VENUE_UTILITY_PROJECTION}
-      "address": {
-        "street": address.street,
-        "province": address.province,
-        "postcode": address.postcode,
-        "country": address.country,
-        "suburb": address.suburb->title,
-        "city": address.city->title
-      },
-      "sports": sports[]-> {
-        _id,
-        name,
-        image,
-      },
-      "broadcasts": broadcasts[]-> {
-        _id,
-        name,
-        slug,
-      },
+      ${VENUE_PROJECTION}
     }
     `);
 
-  return venues
-    .map(mapVenueRow)
-    .filter((v): v is VenueDetail => v !== null);
+  return venues.map(mapVenueRow).filter((v): v is VenueDetail => v !== null);
 }
 
 export async function getVenueBySlug(
@@ -179,31 +213,9 @@ export async function getVenueBySlug(
 ): Promise<VenueDetail | null> {
   if (!slug) return null;
 
-  const row = await sanityClient.fetch<Parameters<typeof mapVenueRow>[0] | null>(
+  const row = await sanityClient.fetch<VenueRow | null>(
     `*[_type == "venue" && slug.current == $slug][0] {
-      _id,
-      name,
-      "slug": slug.current,
-      description,
-      ${VENUE_UTILITY_PROJECTION}
-      "address": {
-        "street": address.street,
-        "province": address.province,
-        "postcode": address.postcode,
-        "country": address.country,
-        "suburb": address.suburb->title,
-        "city": address.city->title
-      },
-      "sports": sports[]-> {
-        _id,
-        name,
-        image,
-      },
-      "broadcasts": broadcasts[]-> {
-        _id,
-        name,
-        "slug": slug.current,
-      }
+      ${VENUE_PROJECTION}
     }`,
     { slug },
   );

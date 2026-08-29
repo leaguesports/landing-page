@@ -56,6 +56,7 @@ export async function getVenuesByLocationAndSport(
 ) {
   if (!location || !sport) return [];
 
+  // Watch = venue broadcasts (sports this venue screens).
   const venues = await sanityClient.fetch<WatchVenue[]>(
     `*[_type == "venue" && 
         $sport in broadcasts[]->slug.current && 
