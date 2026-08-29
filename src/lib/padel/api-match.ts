@@ -299,7 +299,16 @@ export function parseHistoryItem(value: unknown): PadelHistoryItem | null {
     venueSlug,
     pairings: pairings ?? { teamA: [], teamB: [] },
     opponents,
-    score: sets ? { sets } : null,
+    score: sets
+      ? {
+          sets: sets.map((set) => ({
+            gamesA: set.gamesA,
+            gamesB: set.gamesB,
+            tieBreak: set.tieBreak ?? null,
+            winner: set.winner,
+          })),
+        }
+      : null,
     winner: row.winner === "A" || row.winner === "B" ? row.winner : null,
   };
 }
