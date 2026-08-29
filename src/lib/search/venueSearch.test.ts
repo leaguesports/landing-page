@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import {
   buildVenueDirectoryPath,
   parseVenueSearch,
-  sportSlugVariants,
   venueSearchSummary,
 } from "./venueSearch";
 import { filterSuggestions } from "@/data/cities";
@@ -36,7 +35,6 @@ describe("parseVenueSearch", () => {
   it("maps football to soccer", () => {
     const parsed = parseVenueSearch("watch football in claremont", "play");
     assert.equal(parsed.sportSlug, "soccer");
-    assert.deepEqual(sportSlugVariants(parsed.sportSlug), ["soccer", "football"]);
   });
 
   it("builds a Sanity directory URL", () => {

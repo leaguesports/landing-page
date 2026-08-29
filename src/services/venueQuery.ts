@@ -91,8 +91,9 @@ export type VenueRow = {
  * latitude/longitude, amenities.*, contact/contactInfo,
  * claim_status, upcoming_screenings, rating; Watch = broadcasts, Play = sports.
  *
- * coalesce() also reads names already declared on current `schemaTypes/venue.ts`
- * (`isVerified`, `contactInfo`) so live documents still populate.
+ * `select(defined(is_verified) => …)` plus contactInfo coalesce so live
+ * documents still populate until sanity-cms #1 lands. Explicit
+ * `is_verified: false` must not lose a legacy `isVerified: true`.
  */
 export const VENUE_PROJECTION = `
   _id,
@@ -110,7 +111,7 @@ export const VENUE_PROJECTION = `
   "has_food_menu": coalesce(amenities.has_food_menu, has_food_menu),
   "has_outdoor_area": coalesce(amenities.has_outdoor_area, has_outdoor_area),
   "has_parking": coalesce(amenities.has_parking, has_parking),
-  "is_verified": coalesce(is_verified, isVerified),
+  "is_verified": select(defined(is_verified) => is_verified, isVerified),
   claim_status,
   rating,
   latitude,
@@ -140,13 +141,21 @@ export const VENUE_PROJECTION = `
   },
 `;
 
-/** City/suburb match: address refs and the top-level location ref. */
+/** Match a city or suburb slug on address refs or the venue location ref. */
 export const VENUE_IN_LOCATION = `(
   address.suburb->slug.current == $location ||
   address.city->slug.current == $location ||
   location->slug.current == $location ||
   location->parent->slug.current == $location
 )`;
+
+/** Slugs to send to GROQ so soccer/football documents both match. */
+export function sportSlugVariants(slug: string | null | undefined): string[] {
+  if (!slug) return [];
+  if (slug === "soccer" || slug === "football") return ["soccer", "football"];
+  if (slug === "padel" || slug === "paddle") return ["padel", "paddle"];
+  return [slug];
+}
 
 function asPortableText(value: unknown): TypedObject[] {
   if (Array.isArray(value)) {

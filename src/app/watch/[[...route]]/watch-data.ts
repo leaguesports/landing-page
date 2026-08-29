@@ -1,6 +1,5 @@
 import { sanityClient } from "@/sanity/client";
-import { sportSlugVariants } from "@/lib/search/venueSearch";
-import { VENUE_IN_LOCATION } from "@/services/venueQuery";
+import { sportSlugVariants, VENUE_IN_LOCATION } from "@/services/venueQuery";
 import type {
   WatchLocation,
   WatchSeries,
@@ -76,8 +75,9 @@ export async function getVenuesByLocationAndSport(
 }
 
 /**
- * Exact suburb/location match first; if empty and a parent city exists,
- * return city-level venues for a graceful nearby fallback.
+ * Requested location slug first; if that is a suburb with no hits, fall back
+ * to the parent city slug. VENUE_IN_LOCATION also has city/parent clauses,
+ * which are no-ops when $location is a suburb slug.
  */
 export async function getVenuesByLocationAndSportWithFallback(
   locationSlug: string,
@@ -88,7 +88,6 @@ export async function getVenuesByLocationAndSportWithFallback(
   const isSuburb =
     location?.type === "suburb" || Boolean(parentSlug);
 
-  // Prefer strict suburb match so empty suburb never silently widens.
   const exactQuery = isSuburb
     ? `*[_type == "venue" && 
         count((broadcasts[]->slug.current)[@ in $sportSlugs]) > 0 && 

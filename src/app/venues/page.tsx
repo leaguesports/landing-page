@@ -26,10 +26,6 @@ function getVenueImageSrc(venue: Venue) {
     if (url) return url;
   }
 
-  if (venue.broadcasts && venue.broadcasts.length) {
-    return "https://images.unsplash.com/photo-1775642679594-89bb4b78e26e?q=80&w=1470&auto=format&fit=crop";
-  }
-
   return "https://blocks.astratic.com/img/general-img-landscape.png";
 }
 

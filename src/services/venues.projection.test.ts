@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   mapVenueRow,
   resolveVenueImage,
+  sportSlugVariants,
   VENUE_IN_LOCATION,
   VENUE_PROJECTION,
   type VenueRow,
@@ -54,10 +55,27 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
   });
 
+  it("maps is_verified with defined() so false does not clobber isVerified", () => {
+    assert.match(
+      VENUE_PROJECTION,
+      /select\(defined\(is_verified\) => is_verified, isVerified\)/,
+    );
+    assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(is_verified/);
+  });
+
   it("locks the venue photo to hero_image only", () => {
     assert.match(VENUE_PROJECTION, /\bhero_image\b/);
     assert.doesNotMatch(VENUE_PROJECTION, /heroImage/);
     assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(hero_image/);
+  });
+});
+
+describe("sportSlugVariants", () => {
+  it("expands soccer/football for GROQ", () => {
+    assert.deepEqual(sportSlugVariants("soccer"), ["soccer", "football"]);
+    assert.deepEqual(sportSlugVariants("football"), ["soccer", "football"]);
+    assert.deepEqual(sportSlugVariants("padel"), ["padel", "paddle"]);
+    assert.deepEqual(sportSlugVariants("rugby"), ["rugby"]);
   });
 });
 

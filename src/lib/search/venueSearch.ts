@@ -30,14 +30,6 @@ const SPORT_ALIASES: Record<string, string> = {
   squash: "squash",
 };
 
-/** Slugs to send to GROQ so soccer/football documents both match. */
-export function sportSlugVariants(slug: string | null | undefined): string[] {
-  if (!slug) return [];
-  if (slug === "soccer" || slug === "football") return ["soccer", "football"];
-  if (slug === "padel" || slug === "paddle") return ["padel", "paddle"];
-  return [slug];
-}
-
 type Place = {
   name: string;
   slug: string;
@@ -171,22 +163,11 @@ export function parseVenueSearch(
   };
 }
 
-export function buildVenueDirectoryPath(
-  parsed: ParsedVenueSearch,
-  extraQuery?: string | null,
-): string {
+export function buildVenueDirectoryPath(parsed: ParsedVenueSearch): string {
   const params = new URLSearchParams();
   if (parsed.intent) params.set("intent", parsed.intent);
   if (parsed.sportSlug) params.set("sport", parsed.sportSlug);
   if (parsed.locationSlug) params.set("location", parsed.locationSlug);
-  const leftover = extraQuery?.trim();
-  if (
-    leftover &&
-    !parsed.sportSlug &&
-    !parsed.locationSlug
-  ) {
-    params.set("q", leftover);
-  }
   return `/venues?${params.toString()}`;
 }
 

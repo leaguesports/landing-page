@@ -1,11 +1,9 @@
 import { CITY_DIRECTORY, SEARCH_SPORTS } from "@/data/cities";
-import {
-  sportSlugVariants,
-  type VenueSearchIntent,
-} from "@/lib/search/venueSearch";
+import type { VenueSearchIntent } from "@/lib/search/venueSearch";
 import { sanityClient } from "@/sanity/client";
 import {
   mapVenueRow,
+  sportSlugVariants,
   VENUE_IN_LOCATION,
   VENUE_PROJECTION,
   type VenueDetail,
@@ -21,6 +19,7 @@ export type {
 export {
   mapVenueRow,
   resolveVenueImage,
+  sportSlugVariants,
   VENUE_IN_LOCATION,
   VENUE_PROJECTION,
 } from "./venueQuery";
