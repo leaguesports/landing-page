@@ -1,8 +1,5 @@
 import type { NextConfig } from "next";
-import {
-  getApiProxySkipPattern,
-  getRailwayApiOrigin,
-} from "./src/lib/api-origin";
+import { getApiProxyRewrites } from "./src/lib/api-origin";
 import { getSecurityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
@@ -58,20 +55,9 @@ const nextConfig: NextConfig = {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes
     // (`/api/matches*`, `/api/realtime*`, `/api/venues/claim`) are excluded.
-    const apiOrigin = getRailwayApiOrigin();
-    const skip = getApiProxySkipPattern();
-
+    // No rewrites when the Railway origin is unset (Preview / local without env).
     return {
-      afterFiles: [
-        {
-          source: "/api",
-          destination: `${apiOrigin}/api`,
-        },
-        {
-          source: `/api/:path((?!${skip}).*)`,
-          destination: `${apiOrigin}/api/:path`,
-        },
-      ],
+      afterFiles: getApiProxyRewrites(),
     };
   },
 };

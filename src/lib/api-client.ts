@@ -13,10 +13,6 @@ export class ApiError extends Error {
   }
 }
 
-export function getApiBaseUrl(): string {
-  return getRailwayApiOrigin();
-}
-
 function getSiteOrigin(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
@@ -28,6 +24,9 @@ function getSiteOrigin(): string {
  * Browser calls use same-origin `/api/*` (proxied to Railway in next.config).
  * Server-side calls go to the Railway origin directly.
  * This keeps auth cookies first-party on leaguesports.co.za.
+ *
+ * Do not fetch `getRailwayApiOrigin()` from the browser — that bypasses
+ * the first-party `/api` proxy and breaks OAuth cookies.
  */
 function getRequestBase(): string {
   if (typeof window !== "undefined") {

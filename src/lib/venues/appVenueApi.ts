@@ -1,4 +1,4 @@
-import { getApiBaseUrl, isApiConfigured } from "@/lib/api-client";
+import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
 
 export type AppVenue = {
   id: string;
@@ -114,7 +114,7 @@ export async function ensureVenueFromCms(
   try {
     return await ensureVenueFromCmsWith(input, {
       fetch,
-      baseUrl: getApiBaseUrl(),
+      baseUrl: getRailwayApiOrigin(),
       cookie: options.cookie,
       signal: AbortSignal.timeout(4000),
     });

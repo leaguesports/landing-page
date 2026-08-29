@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/lib/api-origin.test.ts src/lib/security-headers.test.ts"
   },
   "dependencies": {
     "@material-symbols/svg-400": "^0.44.0",
