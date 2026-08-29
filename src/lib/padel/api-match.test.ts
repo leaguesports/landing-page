@@ -5,11 +5,16 @@ import {
   MATCH_API_UNAVAILABLE,
   createPadelMatchWith,
   datetimeLocalToIso,
+  lockPadelMatchWith,
+  matchWinner,
   parseApiMatch,
+  preferMatchSnapshot,
   toApiPlayer,
   toCreateMatchBody,
   toDatetimeLocalValue,
+  toLockMatchBody,
 } from "./api-match.ts";
+import { createInitialPadelMatch } from "./padelReducer.ts";
 import { makeGuestPlayer, makeUserPlayer } from "./recent-players.ts";
 
 const pairings: PadelPairing = {
@@ -120,6 +125,51 @@ describe("parseApiMatch", () => {
     assert.equal(match.status, "live");
     assert.equal(match.pairings.teamA[0].displayName, "Alex");
     assert.equal(match.pairings.teamA[0].isGuest, true);
+  });
+
+  it("applies locked score, winner, and lockedAt from the API snapshot", () => {
+    const match = parseApiMatch({
+      id: "locked-1",
+      venueCmsId: "sanity-padel-1",
+      startsAt: "2026-08-29T10:00:00.000Z",
+      ruleset: "golden_point",
+      status: "locked",
+      servingTeam: "A",
+      pairings: {
+        teamA: [
+          { slot: "A1", userId: null, displayName: "Alex", isGuest: true },
+          { slot: "A2", userId: null, displayName: "Sam", isGuest: true },
+        ],
+        teamB: [
+          { slot: "B1", userId: null, displayName: "Jordan", isGuest: true },
+          { slot: "B2", userId: null, displayName: "Riley", isGuest: true },
+        ],
+      },
+      score: {
+        sets: [
+          { gamesA: 6, gamesB: 4, tieBreak: null, winner: "A" },
+          { gamesA: 3, gamesB: 6, tieBreak: null, winner: "B" },
+          {
+            gamesA: 7,
+            gamesB: 6,
+            tieBreak: { pointsA: 7, pointsB: 5 },
+            winner: "A",
+          },
+        ],
+      },
+      winner: "A",
+      lockedAt: "2026-08-29T11:00:00.000Z",
+    });
+
+    assert.ok(match);
+    assert.equal(match.status, "finalized");
+    assert.equal(match.winner, "A");
+    assert.equal(match.lockedAt, "2026-08-29T11:00:00.000Z");
+    assert.equal(match.sets.length, 3);
+    assert.equal(match.sets[0]?.gamesA, 6);
+    assert.equal(match.sets[2]?.tieBreak?.pointsA, 7);
+    assert.equal(match.sets[2]?.winner, "A");
+    assert.equal(toLockMatchBody(match)?.winner, "A");
   });
 
   it("returns null without an id so callers cannot mint an Ably identity", () => {
@@ -330,4 +380,209 @@ describe("createPadelMatchWith", () => {
     );
   });
 });
+
+const lockScore = {
+  sets: [
+    { gamesA: 6, gamesB: 4, tieBreak: null, winner: "A" as const },
+    { gamesA: 3, gamesB: 6, tieBreak: null, winner: "B" as const },
+    {
+      gamesA: 7,
+      gamesB: 6,
+      tieBreak: { pointsA: 7, pointsB: 5 },
+      winner: "A" as const,
+    },
+  ],
+};
+
+function scoredMatch() {
+  const match = createInitialPadelMatch({
+    id: "api-match-1",
+    ruleset: "golden_point",
+    venue: { id: "sanity-padel-1", slug: "padel-social-club", name: "Padel Social Club" },
+    pairings,
+    servingTeam: "A",
+    startsAt: "2026-08-29T10:00:00.000Z",
+    venueCmsId: "sanity-padel-1",
+  });
+  match.sets = [
+    { gamesA: 6, gamesB: 4, tieBreak: null, winner: "A" },
+    { gamesA: 3, gamesB: 6, tieBreak: null, winner: "B" },
+    {
+      gamesA: 7,
+      gamesB: 6,
+      tieBreak: { pointsA: 7, pointsB: 5 },
+      winner: "A",
+    },
+  ];
+  match.currentSetIndex = 2;
+  match.status = "finalized";
+  return match;
+}
+
+describe("toLockMatchBody", () => {
+  it("maps live scorecard sets into the lock contract, including tie-break", () => {
+    const body = toLockMatchBody(scoredMatch());
+    assert.deepEqual(body, { score: lockScore, winner: "A" });
+    assert.equal(body?.score.sets[0]?.tieBreak, null);
+    assert.equal(JSON.stringify(body).includes("\"tieBreak\":null"), true);
+  });
+
+  it("returns null when no team has won a set", () => {
+    const match = createInitialPadelMatch({
+      id: "live-1",
+      ruleset: "golden_point",
+      venue: null,
+      pairings,
+    });
+    assert.equal(toLockMatchBody(match), null);
+    assert.equal(matchWinner(match), null);
+  });
+
+  it("picks the team with more set wins before the match is finalized", () => {
+    const match = createInitialPadelMatch({
+      id: "early-end",
+      ruleset: "advantage",
+      venue: null,
+      pairings,
+    });
+    match.sets = [
+      { gamesA: 6, gamesB: 4, tieBreak: null, winner: "B" },
+      { gamesA: 2, gamesB: 1, tieBreak: null, winner: null },
+    ];
+    const body = toLockMatchBody(match);
+    assert.equal(body?.winner, "B");
+    assert.equal(body?.score.sets[1]?.winner, null);
+  });
+});
+
+const lockedSnapshot = {
+  ...createdSnapshot,
+  status: "locked",
+  score: lockScore,
+  winner: "A",
+  lockedAt: "2026-08-29T11:00:00.000Z",
+};
+
+describe("lockPadelMatchWith", () => {
+  it("POSTs score and winner to /api/matches/:id/lock", async () => {
+    const calls: { url: string; method?: string; body?: string }[] = [];
+    const match = await lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
+      baseUrl: "https://api.example.test",
+      venue: { id: "sanity-padel-1", slug: court.slug, name: court.name },
+      fetch: async (url, init = {}) => {
+        calls.push({
+          url: String(url),
+          method: String(init.method ?? "GET"),
+          body: typeof init.body === "string" ? init.body : undefined,
+        });
+        return jsonResponse(200, lockedSnapshot);
+      },
+    });
+
+    assert.equal(match.id, "api-match-1");
+    assert.equal(match.status, "finalized");
+    assert.equal(match.lockedAt, "2026-08-29T11:00:00.000Z");
+    assert.equal(match.winner, "A");
+    assert.equal(match.venue?.name, court.name);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.method, "POST");
+    assert.equal(
+      calls[0]?.url,
+      "https://api.example.test/api/matches/api-match-1/lock",
+    );
+    const posted = JSON.parse(calls[0]!.body ?? "{}") as Record<string, unknown>;
+    assert.equal(posted.winner, "A");
+    assert.equal("name" in posted, false);
+    assert.equal("slug" in posted, false);
+    assert.deepEqual(posted.score, lockScore);
+  });
+
+  it("treats a second identical lock as 200", async () => {
+    const match = await lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
+      baseUrl: "https://api.example.test",
+      fetch: async () => jsonResponse(200, lockedSnapshot),
+    });
+    assert.equal(match.lockedAt, "2026-08-29T11:00:00.000Z");
+  });
+
+  it("surfaces 409 when already locked with a different result", async () => {
+    await assert.rejects(
+      () =>
+        lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () =>
+            jsonResponse(409, {
+              error: "Match is already locked with a different result",
+            }),
+        }),
+      (err: Error) => {
+        assert.equal(
+          err.message,
+          "Match is already locked with a different result",
+        );
+        return true;
+      },
+    );
+  });
+
+  it("surfaces 404 when the match is missing", async () => {
+    await assert.rejects(
+      () =>
+        lockPadelMatchWith("missing", { score: lockScore, winner: "A" }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => jsonResponse(404, { error: "Match not found" }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, "Match not found");
+        return true;
+      },
+    );
+  });
+
+  it("maps undeployed lock route 401 to Match API is unavailable", async () => {
+    await assert.rejects(
+      () =>
+        lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => jsonResponse(401, { error: "Unauthorized" }),
+        }),
+      (err: Error) => {
+        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+        return true;
+      },
+    );
+  });
+});
+
+describe("preferMatchSnapshot", () => {
+  it("prefers a locked API snapshot over a newer Ably live score", () => {
+    const fromApi = scoredMatch();
+    fromApi.lockedAt = "2026-08-29T11:00:00.000Z";
+    fromApi.version = 1;
+    const fromAbly = createInitialPadelMatch({
+      id: "api-match-1",
+      ruleset: "golden_point",
+      venue: null,
+      pairings,
+    });
+    fromAbly.version = 40;
+    const chosen = preferMatchSnapshot(fromApi, fromAbly);
+    assert.equal(chosen?.lockedAt, "2026-08-29T11:00:00.000Z");
+    assert.equal(chosen?.version, 1);
+  });
+
+  it("uses the newer Ably snapshot while the match is still live", () => {
+    const fromApi = createInitialPadelMatch({
+      id: "m1",
+      ruleset: "golden_point",
+      venue: null,
+      pairings,
+    });
+    fromApi.status = "live";
+    fromApi.version = 1;
+    const fromAbly = { ...fromApi, version: 12 };
+    assert.equal(preferMatchSnapshot(fromApi, fromAbly)?.version, 12);
+  });
+});
+
 

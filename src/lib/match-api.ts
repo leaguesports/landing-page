@@ -3,10 +3,12 @@ import { getSiteBaseUrl } from "@/lib/site-url";
 import {
   MATCH_API_UNAVAILABLE,
   createPadelMatchWith,
+  lockPadelMatchWith,
   parseApiMatch,
 } from "@/lib/padel/api-match";
 import type {
   CreatePadelMatchInput,
+  LockPadelMatchBody,
   MatchChannelEvent,
   PadelMatch,
   PadelMatchVenue,
@@ -67,6 +69,18 @@ export async function fetchPadelMatch(matchId: string): Promise<PadelMatch> {
     throw new Error("Match not found");
   }
   return match;
+}
+
+export async function lockPadelMatch(
+  matchId: string,
+  body: LockPadelMatchBody,
+  venue?: PadelMatchVenue | null,
+): Promise<PadelMatch> {
+  return lockPadelMatchWith(matchId, body, {
+    fetch,
+    baseUrl: getRequestBase(),
+    venue,
+  });
 }
 
 /** Fire-and-forget Ably cache warm after a client publish (does not throw). */

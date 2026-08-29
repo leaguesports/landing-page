@@ -2,12 +2,14 @@ import { createInitialPadelMatch } from "./padelReducer.ts";
 import { ensureVenueFromCmsWith } from "../venues/appVenueApi.ts";
 import type {
   CreatePadelMatchInput,
+  LockPadelMatchBody,
   PadelMatch,
   PadelMatchVenue,
   PadelPairing,
   PadelPlayer,
   PadelRuleset,
   PadelTeamId,
+  SetScore,
 } from "../../types/padel-match.ts";
 
 export const MATCH_API_UNAVAILABLE =
@@ -161,6 +163,61 @@ function isLiveSnapshot(value: Record<string, unknown>): boolean {
   );
 }
 
+function parseTieBreak(
+  value: unknown,
+): { pointsA: number; pointsB: number } | null {
+  if (!value || typeof value !== "object") return null;
+  const tb = value as { pointsA?: unknown; pointsB?: unknown };
+  if (typeof tb.pointsA !== "number" || typeof tb.pointsB !== "number") {
+    return null;
+  }
+  return { pointsA: tb.pointsA, pointsB: tb.pointsB };
+}
+
+function parseSetScores(value: unknown): SetScore[] | null {
+  if (!value || typeof value !== "object") return null;
+  const score = value as { sets?: unknown };
+  if (!Array.isArray(score.sets) || score.sets.length === 0) return null;
+
+  const sets: SetScore[] = [];
+  for (const raw of score.sets) {
+    if (!raw || typeof raw !== "object") return null;
+    const s = raw as {
+      gamesA?: unknown;
+      gamesB?: unknown;
+      tieBreak?: unknown;
+      winner?: unknown;
+    };
+    if (typeof s.gamesA !== "number" || typeof s.gamesB !== "number") {
+      return null;
+    }
+    sets.push({
+      gamesA: s.gamesA,
+      gamesB: s.gamesB,
+      tieBreak: parseTieBreak(s.tieBreak),
+      winner: s.winner === "A" || s.winner === "B" ? s.winner : null,
+    });
+  }
+  return sets;
+}
+
+function applyLockedResult(
+  match: PadelMatch,
+  row: Record<string, unknown>,
+): void {
+  const sets = parseSetScores(row.score);
+  if (sets) {
+    match.sets = sets;
+    match.currentSetIndex = Math.max(0, sets.length - 1);
+  }
+  if (row.winner === "A" || row.winner === "B") {
+    match.winner = row.winner;
+  }
+  if (typeof row.lockedAt === "string" && row.lockedAt) {
+    match.lockedAt = row.lockedAt;
+  }
+}
+
 export function parseApiMatch(
   value: unknown,
   fallback?: { venue?: PadelMatchVenue | null },
@@ -220,7 +277,56 @@ export function parseApiMatch(
     match.status = "live";
   }
 
+  applyLockedResult(match, row);
+
   return match;
+}
+
+export function matchWinner(match: PadelMatch): PadelTeamId | null {
+  if (match.winner === "A" || match.winner === "B") return match.winner;
+  const a = match.sets.filter((s) => s.winner === "A").length;
+  const b = match.sets.filter((s) => s.winner === "B").length;
+  if (a > b) return "A";
+  if (b > a) return "B";
+  return null;
+}
+
+/**
+ * Map live scorecard state into the lock contract.
+ * `tieBreak` is always `null` (not omitted) so idempotent locks compare equal.
+ */
+export function toLockMatchBody(match: PadelMatch): LockPadelMatchBody | null {
+  const winner = matchWinner(match);
+  if (!winner || match.sets.length === 0) return null;
+
+  return {
+    score: {
+      sets: match.sets.map((set) => ({
+        gamesA: set.gamesA,
+        gamesB: set.gamesB,
+        tieBreak: set.tieBreak
+          ? {
+              pointsA: set.tieBreak.pointsA,
+              pointsB: set.tieBreak.pointsB,
+            }
+          : null,
+        winner: set.winner === "A" || set.winner === "B" ? set.winner : null,
+      })),
+    },
+    winner,
+  };
+}
+
+/** Locked API identity wins over a newer Ably live score. */
+export function preferMatchSnapshot(
+  fromApi: PadelMatch | null,
+  fromAbly: PadelMatch | null,
+): PadelMatch | null {
+  if (fromApi?.lockedAt) return fromApi;
+  if (fromApi && fromAbly) {
+    return fromAbly.version >= fromApi.version ? fromAbly : fromApi;
+  }
+  return fromApi ?? fromAbly;
 }
 
 export type CreatePadelMatchDeps = {
@@ -229,12 +335,25 @@ export type CreatePadelMatchDeps = {
   cookie?: string;
 };
 
+export type LockPadelMatchDeps = CreatePadelMatchDeps & {
+  venue?: PadelMatchVenue | null;
+};
+
 function jsonError(status: number, body: unknown): MatchApiError {
   const message =
     body && typeof body === "object" && "error" in body && typeof body.error === "string"
       ? body.error
       : "";
+  if (status === 409) {
+    return new MatchApiError(
+      409,
+      message || "Match is already locked with a different result",
+    );
+  }
   if (status === 404 && /venue not found/i.test(message)) {
+    return new MatchApiError(404, message);
+  }
+  if (status === 404 && /match not found/i.test(message)) {
     return new MatchApiError(404, message);
   }
   if (status === 400 && message) {
@@ -317,6 +436,53 @@ export async function createPadelMatchWith(
   });
   if (!match?.id) {
     throw new MatchApiError(502, "Match API did not return a match id");
+  }
+  return match;
+}
+
+/**
+ * POST /api/matches/:id/lock. Identity is league-sports-api; does not mint an id.
+ * Browser callers use same-origin `/api` (Railway proxy). Server uses
+ * `getRailwayApiOrigin()`.
+ */
+export async function lockPadelMatchWith(
+  matchId: string,
+  body: LockPadelMatchBody,
+  deps: LockPadelMatchDeps,
+): Promise<PadelMatch> {
+  const id = matchId.trim();
+  if (!id || !deps.baseUrl) {
+    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  }
+
+  let res: Response;
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (deps.cookie) headers.Cookie = deps.cookie;
+    res = await deps.fetch(
+      `${deps.baseUrl.replace(/\/$/, "")}/api/matches/${encodeURIComponent(id)}/lock`,
+      {
+        method: "POST",
+        cache: "no-store",
+        credentials: "include",
+        headers,
+        body: JSON.stringify(body),
+      },
+    );
+  } catch {
+    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+  }
+
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw jsonError(res.status, payload);
+  }
+
+  const match = parseApiMatch(payload, { venue: deps.venue ?? null });
+  if (!match?.id) {
+    throw new MatchApiError(502, "Match API did not return a locked match");
   }
   return match;
 }

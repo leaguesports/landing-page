@@ -47,7 +47,9 @@ export function useMatchChannel(
 ) {
   const [match, setMatch] = useState<PadelMatch>(initialData);
   const [connectionState, setConnectionState] =
-    useState<MatchConnectionState>("connecting");
+    useState<MatchConnectionState>(
+      initialData.lockedAt ? "disconnected" : "connecting",
+    );
   const [historyLen, setHistoryLen] = useState(1);
   const historyRef = useRef<PadelMatch[]>([initialData]);
   const matchRef = useRef(match);
@@ -65,7 +67,7 @@ export function useMatchChannel(
   }, [match]);
 
   useEffect(() => {
-    if (!matchId) return;
+    if (!matchId || initialData.lockedAt) return;
 
     let cancelled = false;
     const sport = initialData.sport || "padel";
@@ -100,6 +102,8 @@ export function useMatchChannel(
       if (!event?.state || event.matchId !== matchId) return;
 
       setMatch((prev) => {
+        if (prev.lockedAt) return prev;
+        if (event.state.lockedAt) return event.state;
         if (event.state.version < prev.version) return prev;
         return event.state;
       });
@@ -122,9 +126,11 @@ export function useMatchChannel(
           if (!best || state.version >= best.version) best = state;
         }
         if (best) {
-          setMatch((prev) =>
-            best!.version >= prev.version ? best! : prev,
-          );
+          setMatch((prev) => {
+            if (prev.lockedAt) return prev;
+            if (best!.lockedAt) return best!;
+            return best!.version >= prev.version ? best! : prev;
+          });
         }
       })
       .catch((error) => {
@@ -141,7 +147,7 @@ export function useMatchChannel(
       clientRef.current = null;
       channelRef.current = null;
     };
-  }, [matchId, initialData.sport]);
+  }, [matchId, initialData.sport, initialData.lockedAt]);
 
   const emitEvent = useCallback(
     async (
@@ -185,6 +191,7 @@ export function useMatchChannel(
   const scorePoint = useCallback(
     async (team: PadelTeamId) => {
       const before = matchRef.current;
+      if (before.lockedAt || before.status === "finalized") return before;
       const after = evaluatePadelPoint(before, { type: "POINT", team });
       if (after.version === before.version) return after;
 
@@ -196,6 +203,7 @@ export function useMatchChannel(
   );
 
   const undoPoint = useCallback(async () => {
+    if (matchRef.current.lockedAt) return matchRef.current;
     const history = historyRef.current;
     if (history.length < 2) return matchRef.current;
 
