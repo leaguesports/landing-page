@@ -1,5 +1,5 @@
 import { createInitialPadelMatch } from "./padelReducer.ts";
-import { ensureVenueFromCmsWith } from "../venues/appVenueApi.ts";
+import { attemptEnsureVenueFromCmsWith } from "../venues/appVenueApi.ts";
 import type {
   CreatePadelMatchInput,
   HistoryPairings,
@@ -16,6 +16,11 @@ import type {
 } from "../../types/padel-match.ts";
 
 export const MATCH_API_UNAVAILABLE = "Match API is unavailable.";
+export const MATCH_API_UNREACHABLE =
+  "Match API is unreachable (network error).";
+export const MATCH_API_PROXY_MISS = "Match API proxy missed this path";
+export const MATCH_API_ORIGIN_UNCONFIGURED =
+  "Match API origin is not configured";
 
 export class MatchApiError extends Error {
   status: number;
@@ -445,42 +450,75 @@ export type LockPadelMatchDeps = CreatePadelMatchDeps & {
   venue?: PadelMatchVenue | null;
 };
 
-function jsonError(status: number, body: unknown): MatchApiError {
-  const message =
-    body && typeof body === "object" && "error" in body && typeof body.error === "string"
-      ? body.error
-      : "";
+function apiErrorMessage(body: unknown): string {
+  if (
+    body &&
+    typeof body === "object" &&
+    "error" in body &&
+    typeof body.error === "string"
+  ) {
+    return body.error.trim();
+  }
+  return "";
+}
+
+function looksLikeHtml(body: unknown): boolean {
+  if (typeof body !== "string") return false;
+  const head = body.trim().slice(0, 256).toLowerCase();
+  return (
+    head.startsWith("<!doctype") ||
+    head.startsWith("<html") ||
+    head.includes("<html")
+  );
+}
+
+function isEmptyErrorBody(body: unknown): boolean {
+  if (body == null) return true;
+  if (typeof body === "string") return body.trim() === "";
+  if (typeof body !== "object") return false;
+  return Object.keys(body as Record<string, unknown>).length === 0;
+}
+
+function statusMessage(status: number, message: string): string {
+  return `${status} ${message}`;
+}
+
+/** Map an HTTP failure to a visible MatchApiError. Never collapses to unavailable. */
+export function jsonError(status: number, body: unknown): MatchApiError {
+  const code = status || 503;
+  const apiMessage = apiErrorMessage(body);
   if (status === 409) {
     return new MatchApiError(
       409,
-      message || "Match is already locked with a different result",
+      statusMessage(
+        409,
+        apiMessage || "Match is already locked with a different result",
+      ),
     );
   }
-  if (status === 404 && /venue not found/i.test(message)) {
-    return new MatchApiError(404, message);
+  if (apiMessage) {
+    return new MatchApiError(code, statusMessage(code, apiMessage));
   }
-  if (status === 404 && /match not found/i.test(message)) {
-    return new MatchApiError(404, message);
+  if (looksLikeHtml(body) || isEmptyErrorBody(body)) {
+    return new MatchApiError(code, statusMessage(code, MATCH_API_PROXY_MISS));
   }
-  if (status === 400 && message) {
-    return new MatchApiError(400, message);
+  if (typeof body === "string") {
+    return new MatchApiError(
+      code,
+      statusMessage(code, body.trim().slice(0, 160)),
+    );
   }
-  if (status === 503 && message) {
-    return new MatchApiError(503, message);
+  return new MatchApiError(code, statusMessage(code, "Match request failed"));
+}
+
+async function readResponseBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
   }
-  if (
-    status === 0 ||
-    status === 401 ||
-    status === 403 ||
-    status === 404 ||
-    status === 405 ||
-    status === 501 ||
-    status === 502 ||
-    status === 503
-  ) {
-    return new MatchApiError(status || 503, MATCH_API_UNAVAILABLE);
-  }
-  return new MatchApiError(status, message || "Match request failed");
 }
 
 /**
@@ -494,11 +532,20 @@ export async function createPadelMatchWith(
 ): Promise<PadelMatch> {
   const name = venue.name.trim();
   const slug = venue.slug.trim();
-  if (!input.venueCmsId.trim() || !name || !slug || !deps.baseUrl) {
-    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  if (!input.venueCmsId.trim()) {
+    throw new MatchApiError(400, "Venue cmsId is required");
+  }
+  if (!name) {
+    throw new MatchApiError(400, "Venue name is required");
+  }
+  if (!slug) {
+    throw new MatchApiError(400, "Venue slug is required");
+  }
+  if (!deps.baseUrl) {
+    throw new MatchApiError(503, MATCH_API_ORIGIN_UNCONFIGURED);
   }
 
-  const ensured = await ensureVenueFromCmsWith(
+  const ensured = await attemptEnsureVenueFromCmsWith(
     { cmsId: input.venueCmsId, name, slug },
     {
       fetch: deps.fetch,
@@ -506,8 +553,17 @@ export async function createPadelMatchWith(
       cookie: deps.cookie,
     },
   );
-  if (!ensured) {
-    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  if (!ensured.ok) {
+    if (ensured.networkError) {
+      throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+    }
+    throw jsonError(ensured.status, ensured.body);
+  }
+  if (!ensured.venue) {
+    console.warn(
+      "[padel] venue ensure succeeded but AppVenue parse failed; continuing to POST /api/matches",
+      ensured.body,
+    );
   }
 
   const body = toCreateMatchBody(input);
@@ -525,10 +581,10 @@ export async function createPadelMatchWith(
       body: JSON.stringify(body),
     });
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
   }
 
-  const payload = await res.json().catch(() => ({}));
+  const payload = await readResponseBody(res);
   if (!res.ok) {
     throw jsonError(res.status, payload);
   }
@@ -557,8 +613,11 @@ export async function lockPadelMatchWith(
   deps: LockPadelMatchDeps,
 ): Promise<PadelMatch> {
   const id = matchId.trim();
-  if (!id || !deps.baseUrl) {
-    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  if (!id) {
+    throw new MatchApiError(400, "Match id is required");
+  }
+  if (!deps.baseUrl) {
+    throw new MatchApiError(503, MATCH_API_ORIGIN_UNCONFIGURED);
   }
 
   let res: Response;
@@ -578,10 +637,10 @@ export async function lockPadelMatchWith(
       },
     );
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
   }
 
-  const payload = await res.json().catch(() => ({}));
+  const payload = await readResponseBody(res);
   if (!res.ok) {
     throw jsonError(res.status, payload);
   }
@@ -598,7 +657,7 @@ async function fetchHistoryList(
   deps: CreatePadelMatchDeps,
 ): Promise<PadelHistoryItem[]> {
   if (!deps.baseUrl) {
-    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+    throw new MatchApiError(503, MATCH_API_ORIGIN_UNCONFIGURED);
   }
 
   let res: Response;
@@ -612,10 +671,10 @@ async function fetchHistoryList(
       headers,
     });
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
   }
 
-  const payload = await res.json().catch(() => null);
+  const payload = await readResponseBody(res);
   if (!res.ok) {
     throw jsonError(res.status, payload);
   }

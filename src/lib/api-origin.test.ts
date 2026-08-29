@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import {
   PRODUCTION_RAILWAY_API_ORIGIN,
+  API_PROXY_EXPLICIT_SOURCES,
   getApiProxyRewrites,
   getRailwayApiOrigin,
   isApiConfigured,
@@ -211,12 +212,21 @@ describe("getRailwayApiOrigin", () => {
 });
 
 describe("getApiProxyRewrites", () => {
-  it("rewrites /api to Railway and excludes local Next routes", () => {
+  it("emits explicit match and venue sources before the catch-all", () => {
     withOriginEnv(
       { NEXT_PUBLIC_API_URL: "https://api.example.test" },
       () => {
         const rewrites = getApiProxyRewrites();
-        assert.deepEqual(rewrites, [
+        const sources = rewrites.map((rule) => rule.source);
+        for (const source of API_PROXY_EXPLICIT_SOURCES) {
+          assert.equal(sources.includes(source), true, source);
+        }
+        assert.equal(sources.includes("/api"), true);
+        assert.equal(
+          sources.some((source) => source.includes("matches/:id/events")),
+          false,
+        );
+        assert.deepEqual(rewrites.slice(-2), [
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
@@ -227,6 +237,31 @@ describe("getApiProxyRewrites", () => {
         assert.equal(
           rewrites.every((rule) => !isFrontendOrigin(rule.destination)),
           true,
+        );
+      },
+    );
+  });
+
+  it("rewrites /api to Railway and excludes local Next routes", () => {
+    withOriginEnv(
+      { NEXT_PUBLIC_API_URL: "https://api.example.test" },
+      () => {
+        const rewrites = getApiProxyRewrites();
+        const catchAll = rewrites.find((rule) => rule.source.includes(":path"));
+        assert.ok(catchAll);
+        assert.equal(
+          catchAll.source,
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
+        );
+        assert.equal(catchAll.destination, "https://api.example.test/api/:path");
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/matches")?.destination,
+          "https://api.example.test/api/matches",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/venues/:cmsId")
+            ?.destination,
+          "https://api.example.test/api/venues/:cmsId",
         );
       },
     );
@@ -246,10 +281,20 @@ describe("getApiProxyRewrites", () => {
   it("emits the production Railway rewrite on Vercel production without env", () => {
     withOriginEnv({ VERCEL_ENV: "production" }, () => {
       const rewrites = getApiProxyRewrites();
-      assert.equal(rewrites.length, 2);
+      assert.equal(rewrites.length, 7);
       assert.equal(
-        rewrites[0]?.destination,
-        `${PRODUCTION_RAILWAY_API_ORIGIN}/api`,
+        rewrites.some(
+          (rule) => rule.destination === `${PRODUCTION_RAILWAY_API_ORIGIN}/api`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/matches`,
+        ),
+        true,
       );
     });
   });
