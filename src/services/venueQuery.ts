@@ -139,6 +139,14 @@ export const VENUE_PROJECTION = `
   },
 `;
 
+/** City/suburb match: address refs and the top-level location ref. */
+export const VENUE_IN_LOCATION = `(
+  address.suburb->slug.current == $location ||
+  address.city->slug.current == $location ||
+  location->slug.current == $location ||
+  location->parent->slug.current == $location
+)`;
+
 function asPortableText(value: unknown): TypedObject[] {
   if (Array.isArray(value)) {
     return value.filter(

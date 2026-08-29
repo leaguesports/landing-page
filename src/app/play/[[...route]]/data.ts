@@ -1,4 +1,6 @@
 import { sanityClient } from "@/sanity/client";
+import { sportSlugVariants } from "@/lib/search/venueSearch";
+import { VENUE_IN_LOCATION } from "@/services/venueQuery";
 import type {
   PlayLocation,
   PlaySport,
@@ -56,19 +58,17 @@ export async function getVenuesByLocationAndSport(
   if (!location || !sport) return [];
 
   // Play = venue sports (sports hosted at this venue).
+  const sportSlugs = sportSlugVariants(sport);
   const venues = await sanityClient.fetch<PlayVenue[]>(
     `*[_type == "venue" && 
-        $sport in sports[]->slug.current && 
-        (
-            location->slug.current == $location || 
-            location->parent->slug.current == $location
-        )
+        count((sports[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
             "name": name,
         }`,
-    { location, sport },
+    { location, sportSlugs },
   );
 
   return venues;
@@ -89,8 +89,8 @@ export async function getVenuesByLocationAndSportWithFallback(
 
   const exactQuery = isSuburb
     ? `*[_type == "venue" && 
-        $sport in sports[]->slug.current && 
-        location->slug.current == $location
+        count((sports[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
@@ -101,7 +101,7 @@ export async function getVenuesByLocationAndSportWithFallback(
   const exact = exactQuery
     ? await sanityClient.fetch<PlayVenue[]>(exactQuery, {
         location: locationSlug,
-        sport: sportSlug,
+        sportSlugs: sportSlugVariants(sportSlug),
       })
     : await getVenuesByLocationAndSport(locationSlug, sportSlug);
 

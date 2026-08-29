@@ -20,7 +20,6 @@ const CITY_IMAGES: Record<string, string> = {
 };
 
 export function CityGrid({ intent = "watch" }: CityGridProps) {
-  const base = intent === "watch" ? "/watch" : "/play";
   const accentText =
     intent === "watch"
       ? "text-sky-400 hover:text-sky-300"
@@ -74,7 +73,7 @@ export function CityGrid({ intent = "watch" }: CityGridProps) {
                       </h3>
                     </div>
                     <Link
-                      href={`${base}/${city.slug}`}
+                      href={`/venues?intent=${intent}&location=${city.slug}`}
                       className={`inline-flex min-h-10 items-center gap-1.5 text-sm font-medium ${accentText}`}
                     >
                       Open directory
@@ -87,11 +86,7 @@ export function CityGrid({ intent = "watch" }: CityGridProps) {
                   {city.suburbs.map((suburb) => (
                     <li key={suburb.slug}>
                       <Link
-                        href={
-                          intent === "watch"
-                            ? `${base}/${city.slug}/${suburb.slug}`
-                            : `${base}/${city.slug}`
-                        }
+                        href={`/venues?intent=${intent}&location=${suburb.slug}`}
                         className={`inline-flex min-h-10 items-center rounded-full border border-white/10 bg-white/4 px-3.5 py-2 text-sm text-zinc-300 transition-colors ${chipHover}`}
                       >
                         {suburb.name}

@@ -1,4 +1,6 @@
 import { sanityClient } from "@/sanity/client";
+import { sportSlugVariants } from "@/lib/search/venueSearch";
+import { VENUE_IN_LOCATION } from "@/services/venueQuery";
 import type {
   WatchLocation,
   WatchSeries,
@@ -57,19 +59,17 @@ export async function getVenuesByLocationAndSport(
   if (!location || !sport) return [];
 
   // Watch = venue broadcasts (sports this venue screens).
+  const sportSlugs = sportSlugVariants(sport);
   const venues = await sanityClient.fetch<WatchVenue[]>(
     `*[_type == "venue" && 
-        $sport in broadcasts[]->slug.current && 
-        (
-            location->slug.current == $location || 
-            location->parent->slug.current == $location
-        )
+        count((broadcasts[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
             "name": name,
         }`,
-    { location, sport },
+    { location, sportSlugs },
   );
 
   return venues;
@@ -91,8 +91,8 @@ export async function getVenuesByLocationAndSportWithFallback(
   // Prefer strict suburb match so empty suburb never silently widens.
   const exactQuery = isSuburb
     ? `*[_type == "venue" && 
-        $sport in broadcasts[]->slug.current && 
-        location->slug.current == $location
+        count((broadcasts[]->slug.current)[@ in $sportSlugs]) > 0 && 
+        ${VENUE_IN_LOCATION}
         ] {
             "id": _id,
             "slug": slug.current,
@@ -103,7 +103,7 @@ export async function getVenuesByLocationAndSportWithFallback(
   const exact = exactQuery
     ? await sanityClient.fetch<WatchVenue[]>(exactQuery, {
         location: locationSlug,
-        sport: sportSlug,
+        sportSlugs: sportSlugVariants(sportSlug),
       })
     : await getVenuesByLocationAndSport(locationSlug, sportSlug);
 
@@ -168,13 +168,16 @@ export async function getBroadcastSeries() {
 export async function getWatchLocationsBySportSlug(sportSlug: string) {
   if (!sportSlug) return [];
 
+  const sportSlugs = sportSlugVariants(sportSlug);
   const locations = await sanityClient.fetch<WatchLocation[]>(
     `*[_type == "location" && type == "suburb" && (
         count(*[_type == "venue" &&
-            $sportSlug in broadcasts[]->slug.current &&
+            count((broadcasts[]->slug.current)[@ in $sportSlugs]) > 0 &&
             (
                 location->_id == ^._id ||
-                location->parent->_id == ^._id
+                location->parent->_id == ^._id ||
+                address.suburb._ref == ^._id ||
+                address.city._ref == ^._id
             )
         ]) > 0
     )] | order(title asc) {
@@ -182,7 +185,7 @@ export async function getWatchLocationsBySportSlug(sportSlug: string) {
         "slug": slug.current,
         "title": title,
     }`,
-    { sportSlug },
+    { sportSlugs },
   );
   return locations;
 }

@@ -1,11 +1,14 @@
 "use client";
 
 import {
-  buildSearchPath,
   filterSuggestions,
   type IntentMode,
   type SearchSuggestion,
 } from "@/data/cities";
+import {
+  buildVenueDirectoryPath,
+  parseVenueSearch,
+} from "@/lib/search/venueSearch";
 import { MapPin, Search, Trophy, Tv } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -41,8 +44,15 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
   }, [intent, onIntentChange]);
 
   function selectSuggestion(suggestion: SearchSuggestion) {
+    const parsed = parseVenueSearch(query, intent);
+    let nextQuery = suggestion.label;
+    if (suggestion.kind !== "sport" && parsed.sportName) {
+      nextQuery = `${parsed.sportName} in ${suggestion.label}`;
+    } else if (suggestion.kind === "sport" && parsed.locationLabel) {
+      nextQuery = `${suggestion.label} in ${parsed.locationLabel}`;
+    }
     setSelected(suggestion);
-    setQuery(suggestion.label);
+    setQuery(nextQuery);
     setOpen(false);
     inputRef.current?.focus();
   }
@@ -53,10 +63,34 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
     });
   }
 
+  function pathFromQuery(
+    nextIntent: IntentMode,
+    nextQuery: string,
+    suggestion?: SearchSuggestion | null,
+  ) {
+    const parsed = parseVenueSearch(nextQuery, nextIntent);
+    if (suggestion?.kind === "sport" && suggestion.sportSlug) {
+      parsed.sportSlug = suggestion.sportSlug;
+      parsed.sportName = suggestion.label;
+    }
+    if (suggestion?.kind === "city" && suggestion.citySlug) {
+      parsed.locationSlug = suggestion.citySlug;
+      parsed.locationLabel = suggestion.label;
+      parsed.locationKind = "city";
+      parsed.citySlug = suggestion.citySlug;
+    }
+    if (suggestion?.kind === "suburb" && suggestion.suburbSlug) {
+      parsed.locationSlug = suggestion.suburbSlug;
+      parsed.locationLabel = suggestion.label;
+      parsed.locationKind = "suburb";
+      parsed.citySlug = suggestion.citySlug ?? parsed.citySlug;
+    }
+    return buildVenueDirectoryPath(parsed);
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const path = buildSearchPath(intent, query, selected);
-    navigate(path);
+    navigate(pathFromQuery(intent, query, selected));
   }
 
   function handleNearMe() {
@@ -79,7 +113,7 @@ export function HeroSearch({ onIntentChange }: HeroSearchProps) {
         setSelected(suggestion);
         setGeoStatus("idle");
         setOpen(false);
-        navigate(buildSearchPath(intent, nearQuery, suggestion));
+        navigate(pathFromQuery(intent, nearQuery, suggestion));
       },
       () => setGeoStatus("error"),
       { enableHighAccuracy: false, timeout: 10000 },

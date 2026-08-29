@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   mapVenueRow,
+  VENUE_IN_LOCATION,
   VENUE_PROJECTION,
   type VenueRow,
 } from "./venueQuery";
@@ -49,6 +50,14 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"broadcasts": broadcasts\[\]->/);
     assert.match(VENUE_PROJECTION, /"sports": sports\[\]->/);
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
+  });
+});
+
+describe("VENUE_IN_LOCATION", () => {
+  it("matches address suburb/city and the location reference", () => {
+    assert.match(VENUE_IN_LOCATION, /address\.suburb->slug\.current == \$location/);
+    assert.match(VENUE_IN_LOCATION, /address\.city->slug\.current == \$location/);
+    assert.match(VENUE_IN_LOCATION, /location->slug\.current == \$location/);
   });
 });
 
