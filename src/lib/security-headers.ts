@@ -14,7 +14,11 @@ type HeaderTuple = { key: string; value: string };
  * Access-Control-Allow-Origin is not set here. Same-origin `/api/*`
  * does not need CORS; wildcard CORS on HTML is not defined in this repo.
  */
-export function getSecurityHeaders(): HeaderTuple[] {
+type NodeEnv = typeof process.env.NODE_ENV;
+
+export function getSecurityHeaders(
+  nodeEnv: NodeEnv = process.env.NODE_ENV,
+): HeaderTuple[] {
   const csp = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -34,7 +38,7 @@ export function getSecurityHeaders(): HeaderTuple[] {
       "https://*.basemaps.cartocdn.com",
       "https://www.googletagmanager.com",
       "https://www.google-analytics.com",
-      ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3002"] : []),
+      ...(nodeEnv !== "production" ? ["http://localhost:3002"] : []),
     ].join(" "),
     [
       "connect-src 'self'",
