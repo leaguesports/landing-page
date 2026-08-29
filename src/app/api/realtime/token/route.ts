@@ -1,5 +1,6 @@
 import Ably from "ably";
 import { NextResponse } from "next/server";
+import { getRailwayApiOrigin } from "@/lib/api-origin";
 
 /**
  * Issues a short-lived Ably TokenRequest for authenticated (or guest) clients.
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
   let clientId = `guest_${crypto.randomUUID().slice(0, 10)}`;
 
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  const apiBase = getRailwayApiOrigin();
   if (apiBase) {
     try {
       const cookie = request.headers.get("cookie") ?? "";

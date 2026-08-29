@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import {
+  getApiProxySkipPattern,
+  getRailwayApiOrigin,
+} from "./src/lib/api-origin";
+import { getSecurityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -39,6 +44,35 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+  },
+  async headers() {
+    const securityHeaders = getSecurityHeaders();
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
+  async rewrites() {
+    // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
+    // to Railway so OAuth Set-Cookie is first-party. Local Next routes
+    // (`/api/matches*`, `/api/realtime*`, `/api/venues/claim`) are excluded.
+    const apiOrigin = getRailwayApiOrigin();
+    const skip = getApiProxySkipPattern();
+
+    return {
+      afterFiles: [
+        {
+          source: "/api",
+          destination: `${apiOrigin}/api`,
+        },
+        {
+          source: `/api/:path((?!${skip}).*)`,
+          destination: `${apiOrigin}/api/:path`,
+        },
+      ],
+    };
   },
 };
 
