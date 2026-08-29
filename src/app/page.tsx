@@ -114,18 +114,11 @@ export default async function Home() {
                 Find your game
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Start a padel match, then find venues to watch or play in your
-                area.
+                Browse Watch and Play directories for venues in your area.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/padel/new"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--color-brand)] px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-              >
-                Play a match
-              </Link>
               <Link
                 href="/watch"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
