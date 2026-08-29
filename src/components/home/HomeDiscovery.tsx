@@ -28,10 +28,9 @@ export function HomeDiscovery() {
           <div className="absolute inset-0 bg-[#0c0f0c]/55" />
           <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/70 to-[#0c0f0c]/25" />
           <div className="absolute inset-0 bg-linear-to-r from-[#0c0f0c]/80 via-transparent to-transparent" />
+          {/* Soft brand wash — kept inside the clipped plane so -right offset cannot widen the page */}
+          <div className="pointer-events-none absolute -right-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         </div>
-
-        {/* Soft brand wash */}
-        <div className="pointer-events-none absolute -right-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
 
         <div className="relative mx-auto w-full max-w-7xl px-4 pb-14 pt-20 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
           <h1 className="font-display animate-rise text-[clamp(3.5rem,14vw,9.5rem)] leading-[0.88] tracking-wide text-white">
