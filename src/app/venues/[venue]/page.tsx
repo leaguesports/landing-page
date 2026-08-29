@@ -14,10 +14,13 @@ import {
   type VenueDetail,
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
+import { lookupVenueHistory } from "@/lib/padel/lookup-history";
+import { isPadelSportLabel } from "@/lib/padel/venue-options";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
 import { VenueMap } from "./_components/VenueMap";
+import { VenuePadelHistory } from "./_components/VenuePadelHistory";
 import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
@@ -111,6 +114,7 @@ const venueAboutPortableTextComponents = {
 const NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "This weekend", href: "#weekend" },
+  { label: "Padel history", href: "#padel-history" },
   { label: "Sports", href: "#sports" },
   { label: "Amenities", href: "#amenities" },
   { label: "Location", href: "#location" },
@@ -259,6 +263,16 @@ export default async function VenuePage({ params }: Props) {
       { cookie },
     ),
   );
+  const padelHistory = await lookupVenueHistory(venue._id, { cookie });
+  const isPadelCourt = venue.sports.some(
+    (sport) =>
+      isPadelSportLabel(sport.name) || isPadelSportLabel(sport.slug ?? ""),
+  );
+  const showPadelHistory =
+    isPadelCourt || padelHistory.items.length > 0;
+  const navLinks = showPadelHistory
+    ? NAV_LINKS
+    : NAV_LINKS.filter((link) => link.href !== "#padel-history");
 
   const mapsSearchUrl = buildMapsUrl(venue);
   const baseUrl = getBaseUrl();
@@ -301,7 +315,7 @@ export default async function VenuePage({ params }: Props) {
             </span>
 
             <div className="ml-auto flex items-center gap-1">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
@@ -393,6 +407,10 @@ export default async function VenuePage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        {showPadelHistory ? (
+          <VenuePadelHistory venueName={venue.name} lookup={padelHistory} />
+        ) : null}
 
         {/* About */}
         <section

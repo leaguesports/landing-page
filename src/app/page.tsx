@@ -1,5 +1,4 @@
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
-import { OpenMatchFeed } from "@/components/home/OpenMatchFeed";
 import { PoolsCtaBanner } from "@/components/home/PoolsCtaBanner";
 import { urlFor } from "@/sanity/client";
 import { ArrowUpRight } from "lucide-react";
@@ -43,8 +42,6 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
       <HomeDiscovery />
-
-      <OpenMatchFeed />
 
       <PoolsCtaBanner />
 
@@ -117,17 +114,17 @@ export default async function Home() {
                 Find your game
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Discover venues, join open matches, and connect with players in
-                your area.
+                Start a padel match, then find venues to watch or play in your
+                area.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
-                href="/venues"
+                href="/padel/new"
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--color-brand)] px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
               >
-                Explore venues
+                Play a match
               </Link>
               <Link
                 href="/watch"

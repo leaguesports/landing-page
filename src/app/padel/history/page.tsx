@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { PadelHistoryClient } from "@/components/padel/PadelHistoryClient";
 
 export const metadata: Metadata = {
   title: "Padel match history | LeagueSports",
@@ -32,13 +34,16 @@ export default function PadelHistoryPage() {
           Locked padel matches
         </h1>
         <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-          Only ended matches appear here. Unlocked and abandoned scorecards
-          are omitted — if the result was not locked, it did not happen.
+          Date, venue, opponents, and score. Only ended matches appear here —
+          if the result was not locked, it did not happen.
         </p>
-        <p className="text-sm text-zinc-500">
-          Player and venue lists land with the history ticket. End a live
-          match to write the first result.
-        </p>
+        <Suspense
+          fallback={
+            <p className="text-sm text-zinc-500">Loading locked matches…</p>
+          }
+        >
+          <PadelHistoryClient />
+        </Suspense>
         <Link
           href="/padel/new"
           className="inline-flex min-h-12 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"

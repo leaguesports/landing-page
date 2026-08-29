@@ -113,6 +113,42 @@ export type MatchChannelEvent = {
   };
 };
 
+/** Locked history row from GET /api/matches?playerUserId= or GET /api/venues/:cmsId/matches. */
+export type HistoryPlayer = {
+  slot?: string;
+  userId?: string | null;
+  displayName: string;
+  isGuest: boolean;
+};
+
+export type HistoryPairings = {
+  teamA: HistoryPlayer[];
+  teamB: HistoryPlayer[];
+};
+
+export type PadelHistoryItem = {
+  id: string;
+  startsAt: string;
+  venueCmsId: string;
+  venueName: string | null;
+  venueSlug: string | null;
+  pairings: HistoryPairings;
+  /**
+   * Player list: the other team (two players).
+   * Venue list: both teams (same shape as pairings).
+   */
+  opponents: HistoryPlayer[] | HistoryPairings;
+  score: {
+    sets: Array<{
+      gamesA: number;
+      gamesB: number;
+      tieBreak: { pointsA: number; pointsB: number } | null;
+      winner?: PadelTeamId | null;
+    }>;
+  } | null;
+  winner: PadelTeamId | null;
+};
+
 /** POST /api/matches body for league-sports-api (issue #7). */
 export type CreatePadelMatchInput = {
   venueCmsId: string;

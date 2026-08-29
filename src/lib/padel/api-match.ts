@@ -2,7 +2,10 @@ import { createInitialPadelMatch } from "./padelReducer.ts";
 import { ensureVenueFromCmsWith } from "../venues/appVenueApi.ts";
 import type {
   CreatePadelMatchInput,
+  HistoryPairings,
+  HistoryPlayer,
   LockPadelMatchBody,
+  PadelHistoryItem,
   PadelMatch,
   PadelMatchVenue,
   PadelPairing,
@@ -215,6 +218,101 @@ function applyLockedResult(
   if (typeof row.lockedAt === "string" && row.lockedAt) {
     match.lockedAt = row.lockedAt;
   }
+}
+
+function parseHistoryPlayer(
+  value: unknown,
+  index: number,
+): HistoryPlayer | null {
+  if (!isApiPlayer(value)) return null;
+  const player = fromApiPlayer(value, index);
+  return {
+    slot: value.slot?.trim() || undefined,
+    userId: player.userId ?? null,
+    displayName: player.displayName,
+    isGuest: player.isGuest,
+  };
+}
+
+function parseHistoryPairings(value: unknown): HistoryPairings | null {
+  if (!value || typeof value !== "object") return null;
+  const p = value as { teamA?: unknown; teamB?: unknown };
+  if (!Array.isArray(p.teamA) || !Array.isArray(p.teamB)) return null;
+  if (p.teamA.length !== 2 || p.teamB.length !== 2) return null;
+  const teamA = [
+    parseHistoryPlayer(p.teamA[0], 0),
+    parseHistoryPlayer(p.teamA[1], 1),
+  ];
+  const teamB = [
+    parseHistoryPlayer(p.teamB[0], 2),
+    parseHistoryPlayer(p.teamB[1], 3),
+  ];
+  if (!teamA[0] || !teamA[1] || !teamB[0] || !teamB[1]) return null;
+  return { teamA: [teamA[0], teamA[1]], teamB: [teamB[0], teamB[1]] };
+}
+
+function parseHistoryOpponents(
+  value: unknown,
+  pairings: HistoryPairings | null,
+): HistoryPlayer[] | HistoryPairings | null {
+  if (Array.isArray(value)) {
+    const players = value
+      .map((player, i) => parseHistoryPlayer(player, i))
+      .filter((player): player is HistoryPlayer => player !== null);
+    return players.length > 0 ? players : null;
+  }
+  return parseHistoryPairings(value) ?? pairings;
+}
+
+export function parseHistoryItem(value: unknown): PadelHistoryItem | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== "string" || !row.id.trim()) return null;
+
+  const pairings = parseHistoryPairings(row.pairings);
+  const opponents = parseHistoryOpponents(row.opponents, pairings);
+  if (!opponents) return null;
+
+  const venueCmsId =
+    typeof row.venueCmsId === "string" && row.venueCmsId.trim()
+      ? row.venueCmsId.trim()
+      : "";
+  const venueName =
+    typeof row.venueName === "string" && row.venueName.trim()
+      ? row.venueName.trim()
+      : null;
+  const venueSlug =
+    typeof row.venueSlug === "string" && row.venueSlug.trim()
+      ? row.venueSlug.trim()
+      : null;
+  const startsAt =
+    typeof row.startsAt === "string" && row.startsAt
+      ? row.startsAt
+      : "";
+  const sets = parseSetScores(row.score);
+
+  return {
+    id: row.id,
+    startsAt,
+    venueCmsId,
+    venueName,
+    venueSlug,
+    pairings: pairings ?? { teamA: [], teamB: [] },
+    opponents,
+    score: sets ? { sets } : null,
+    winner: row.winner === "A" || row.winner === "B" ? row.winner : null,
+  };
+}
+
+export function parseHistoryList(value: unknown): PadelHistoryItem[] | null {
+  if (!Array.isArray(value)) return null;
+  const items: PadelHistoryItem[] = [];
+  for (const row of value) {
+    const item = parseHistoryItem(row);
+    if (!item) return null;
+    items.push(item);
+  }
+  return items;
 }
 
 export function parseApiMatch(
@@ -484,5 +582,75 @@ export async function lockPadelMatchWith(
     throw new MatchApiError(502, "Match API did not return a locked match");
   }
   return match;
+}
+
+async function fetchHistoryList(
+  path: string,
+  deps: CreatePadelMatchDeps,
+): Promise<PadelHistoryItem[]> {
+  if (!deps.baseUrl) {
+    throw new MatchApiError(503, MATCH_API_UNAVAILABLE);
+  }
+
+  let res: Response;
+  try {
+    const headers: Record<string, string> = {};
+    if (deps.cookie) headers.Cookie = deps.cookie;
+    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}${path}`, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers,
+    });
+  } catch {
+    throw new MatchApiError(0, MATCH_API_UNAVAILABLE);
+  }
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw jsonError(res.status, payload);
+  }
+
+  const items = parseHistoryList(payload);
+  if (!items) {
+    throw new MatchApiError(502, "Match API did not return history");
+  }
+  return items;
+}
+
+/**
+ * GET /api/matches?playerUserId= — locked matches for a named account.
+ * 400 without playerUserId. Guests have no player history list.
+ */
+export async function listPlayerHistoryWith(
+  playerUserId: string,
+  deps: CreatePadelMatchDeps,
+): Promise<PadelHistoryItem[]> {
+  const userId = playerUserId.trim();
+  if (!userId) {
+    throw new MatchApiError(400, "playerUserId is required");
+  }
+  return fetchHistoryList(
+    `/api/matches?playerUserId=${encodeURIComponent(userId)}`,
+    deps,
+  );
+}
+
+/**
+ * GET /api/venues/:cmsId/matches — locked matches at that court.
+ * Unknown cmsId is 200 [].
+ */
+export async function listVenueHistoryWith(
+  venueCmsId: string,
+  deps: CreatePadelMatchDeps,
+): Promise<PadelHistoryItem[]> {
+  const cmsId = venueCmsId.trim();
+  if (!cmsId) {
+    throw new MatchApiError(400, "venue cmsId is required");
+  }
+  return fetchHistoryList(
+    `/api/venues/${encodeURIComponent(cmsId)}/matches`,
+    deps,
+  );
 }
 

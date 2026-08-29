@@ -20,7 +20,7 @@ export default async function NewPadelMatchPage() {
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 px-4 py-3 sm:px-6">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+        <div className="mx-auto grid max-w-2xl grid-cols-[1fr_auto_1fr] items-center">
           <Link
             href="/play/padel"
             className="text-sm text-zinc-400 transition-colors hover:text-white"
@@ -30,6 +30,12 @@ export default async function NewPadelMatchPage() {
           <span className="font-display text-lg tracking-wide text-white">
             LEAGUE<span className="text-[var(--color-brand)]">SPORTS</span>
           </span>
+          <Link
+            href="/padel/history"
+            className="justify-self-end text-sm text-zinc-400 transition-colors hover:text-white"
+          >
+            History
+          </Link>
         </div>
       </div>
       <PadelQuickStart venues={padelCourts} />
