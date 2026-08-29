@@ -74,6 +74,23 @@ export type PadelMatch = {
   updatedAt: string;
   createdByUserId?: string | null;
   version: number;
+  /** Set when POST /api/matches/:id/lock succeeds. Immutable result. */
+  lockedAt?: string | null;
+  /** Winning team once the match is locked (or locally finalized). */
+  winner?: PadelTeamId | null;
+};
+
+/** POST /api/matches/:id/lock body (league-sports-api). */
+export type LockPadelMatchBody = {
+  score: {
+    sets: Array<{
+      gamesA: number;
+      gamesB: number;
+      tieBreak: { pointsA: number; pointsB: number } | null;
+      winner: PadelTeamId | null;
+    }>;
+  };
+  winner: PadelTeamId;
 };
 
 export type MatchChannelEventType =

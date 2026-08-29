@@ -1,8 +1,11 @@
 "use client";
 
-import { Undo2, Wifi, WifiOff } from "lucide-react";
+import { Loader2, Share2, Undo2, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
 import { useMatchChannel } from "@/hooks/useMatchChannel";
+import { matchWinner } from "@/lib/padel/api-match";
 import {
   formatGamePoint,
   formatSetHistory,
@@ -10,6 +13,8 @@ import {
   getTeamLabel,
 } from "@/lib/padel/padelReducer";
 import type { PadelMatch, PadelTeamId } from "@/types/padel-match";
+
+export const PADEL_HISTORY_PATH = "/padel/history";
 
 type PadelScorecardProps = {
   initialMatch: PadelMatch;
@@ -103,14 +108,60 @@ function ScoreColumn({
   );
 }
 
-export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
-  const { match, connectionState, scorePoint, undoPoint, canUndo } =
-    useMatchChannel(initialMatch.id, initialMatch);
+function padelShareUrl(matchId: string): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/padel/${matchId}`;
+  }
+  return `/padel/${matchId}`;
+}
 
-  const finalized = match.status === "finalized";
+export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
+  const { match, connectionState, scorePoint, undoPoint, canUndo, emitEvent } =
+    useMatchChannel(initialMatch.id, initialMatch);
+  const { lockMatch, locking, lockError, canLock } = useLockPadelMatch(
+    match,
+    emitEvent,
+  );
+  const [copied, setCopied] = useState(false);
+
+  const locked = Boolean(match.lockedAt);
+  const finalized = match.status === "finalized" || locked;
+  const scoringDisabled = finalized || locked;
   const setHistory = formatSetHistory(match);
   const rulesLabel =
     match.ruleset === "golden_point" ? "Golden Point" : "Advantage";
+  const winner = matchWinner(match);
+  const winnerLabel = winner ? getTeamLabel(match, winner) : null;
+
+  async function handleShare() {
+    const url = padelShareUrl(match.id);
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: "Padel match",
+          url,
+        });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#050705] text-white">
@@ -125,22 +176,38 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
           <span className="font-display text-lg tracking-wide">
             PADEL
           </span>
-          <ConnectionBadge state={connectionState} />
+          {locked ? (
+            <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+              Saved
+            </span>
+          ) : (
+            <ConnectionBadge state={connectionState} />
+          )}
         </div>
-        <span className="text-right text-[11px] text-zinc-500">{rulesLabel}</span>
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          className="inline-flex items-center gap-1.5 text-right text-[11px] font-medium text-zinc-300 hover:text-white"
+        >
+          <Share2 className="h-3.5 w-3.5" aria-hidden />
+          {copied ? "Copied" : "Share"}
+        </button>
       </header>
 
       <div className="px-4 pt-4 text-center">
-        {match.venue ? (
+        {match.venue?.name ? (
           <p className="truncate text-xs text-zinc-500">{match.venue.name}</p>
         ) : null}
         <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-          {finalized
-            ? "Match complete"
-            : match.game.isTieBreak
-              ? `Tie-break · Set ${match.currentSetIndex + 1}`
-              : `Set ${match.currentSetIndex + 1}`}
+          {locked
+            ? "Result locked"
+            : finalized
+              ? "Match complete"
+              : match.game.isTieBreak
+                ? `Tie-break · Set ${match.currentSetIndex + 1}`
+                : `Set ${match.currentSetIndex + 1}`}
         </p>
+        <p className="mt-1 text-[11px] text-zinc-600">{rulesLabel}</p>
         {setHistory ? (
           <p className="mt-2 text-xs leading-relaxed text-zinc-500">
             {setHistory}
@@ -152,7 +219,7 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
         <ScoreColumn
           team="A"
           match={match}
-          disabled={finalized}
+          disabled={scoringDisabled}
           onScore={() => void scorePoint("A")}
         />
         <div className="flex w-px shrink-0 flex-col items-center justify-center self-stretch py-8">
@@ -161,31 +228,75 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
         <ScoreColumn
           team="B"
           match={match}
-          disabled={finalized}
+          disabled={scoringDisabled}
           onScore={() => void scorePoint("B")}
         />
       </div>
 
-      <div className="safe-area-pb border-t border-white/8 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <button
-          type="button"
-          disabled={!canUndo || finalized}
-          onClick={() => void undoPoint()}
-          className="inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Undo2 className="h-5 w-5" aria-hidden />
-          Undo Point
-        </button>
-        {finalized ? (
-          <p className="mt-3 text-center text-sm text-emerald-300">
-            Final —{" "}
-            {match.sets.filter((s) => s.winner === "A").length >
-            match.sets.filter((s) => s.winner === "B").length
-              ? getTeamLabel(match, "A")
-              : getTeamLabel(match, "B")}{" "}
-            win
-          </p>
-        ) : null}
+      <div className="safe-area-pb border-t border-white/8 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {locked ? (
+          <div className="space-y-3">
+            <p className="text-center text-sm text-emerald-300">
+              Final — {winnerLabel ?? "a team"} win
+            </p>
+            <Link
+              href={PADEL_HISTORY_PATH}
+              className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
+            >
+              Match history
+            </Link>
+            <Link
+              href="/padel/new"
+              className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-400 text-base font-semibold text-zinc-950 hover:bg-emerald-300"
+            >
+              Play again
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {lockError ? (
+              <p className="text-center text-sm text-red-400">{lockError}</p>
+            ) : finalized ? (
+              <p className="text-center text-sm text-emerald-300">
+                Final — {winnerLabel ?? "a team"} win. End to save the result.
+              </p>
+            ) : (
+              <p className="text-center text-xs text-zinc-500">
+                Share{" "}
+                <span className="font-mono text-zinc-400">
+                  /padel/{match.id}
+                </span>{" "}
+                so the other pair opens this scorecard. End writes the result
+                to history.
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={!canUndo || scoringDisabled}
+              onClick={() => void undoPoint()}
+              className="inline-flex min-h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Undo2 className="h-5 w-5" aria-hidden />
+              Undo Point
+            </button>
+            <button
+              type="button"
+              disabled={!canLock || locking}
+              onClick={() => void lockMatch()}
+              className={[
+                "inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl text-base font-semibold transition-colors disabled:cursor-not-allowed",
+                canLock
+                  ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
+                  : "border border-white/15 bg-white/5 text-zinc-400 opacity-50",
+              ].join(" ")}
+            >
+              {locking ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : null}
+              {locking ? "Ending…" : "End match"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

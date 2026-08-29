@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/api-origin.test.ts src/lib/security-headers.test.ts src/services/venues.projection.test.ts src/lib/padel/venue-options.test.ts src/lib/padel/api-match.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/api-origin.test.ts src/lib/security-headers.test.ts src/services/venues.projection.test.ts src/lib/padel/venue-options.test.ts src/lib/padel/api-match.test.ts src/lib/padel/apply-locked-result.test.ts"
   },
   "dependencies": {
     "@material-symbols/svg-400": "^0.44.0",
