@@ -30,7 +30,7 @@ export async function getTopGuides(limit: number = 4) {
 
 export async function listGuides() {
   return sanityClient.fetch<Guide[]>(
-    `*[_type == "guide"] {
+    `*[_type == "guide"] | order(_createdAt desc) {
       _id,
       _createdAt,
       title,
