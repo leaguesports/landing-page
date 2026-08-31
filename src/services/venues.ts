@@ -13,17 +13,12 @@ import {
 export type {
   Venue,
   VenueDetail,
-  VenueRow,
   VenueScreening,
 } from "./venueQuery";
 export {
   hasVenueCoordinates,
-  mapVenueRow,
   resolveVenueImage,
-  sportSlugVariants,
-  VENUE_IN_LOCATION,
   VENUE_PLACEHOLDER_IMAGE,
-  VENUE_PROJECTION,
 } from "./venueQuery";
 
 export type VenueSearchFilters = {
@@ -37,10 +32,6 @@ export type VenueFilterOption = {
   slug: string;
   kind?: string;
 };
-
-export async function listVenues() {
-  return searchVenues();
-}
 
 /**
  * Directory search against Sanity.

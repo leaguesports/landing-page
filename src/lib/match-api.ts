@@ -4,7 +4,6 @@ import {
   MATCH_API_UNAVAILABLE,
   createPadelMatchWith,
   listPlayerHistoryWith,
-  listVenueHistoryWith,
   lockPadelMatchWith,
   parseApiMatch,
 } from "@/lib/padel/api-match";
@@ -90,15 +89,6 @@ export async function listPlayerHistory(
   playerUserId: string,
 ): Promise<PadelHistoryItem[]> {
   return listPlayerHistoryWith(playerUserId, {
-    fetch,
-    baseUrl: getRequestBase(),
-  });
-}
-
-export async function listVenueHistory(
-  venueCmsId: string,
-): Promise<PadelHistoryItem[]> {
-  return listVenueHistoryWith(venueCmsId, {
     fetch,
     baseUrl: getRequestBase(),
   });

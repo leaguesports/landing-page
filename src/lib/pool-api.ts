@@ -17,10 +17,6 @@ export class PoolApiError extends Error {
   }
 }
 
-export function isPoolApiConfigured(): boolean {
-  return isApiConfigured();
-}
-
 /**
  * Browser: same-origin `/api` (first-party cookies).
  * Server: Railway origin from `getRailwayApiOrigin()` — never call that
@@ -33,7 +29,7 @@ function getRequestBase(): string {
   return getRailwayApiOrigin();
 }
 
-export async function poolApi<T>(
+async function poolApi<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {

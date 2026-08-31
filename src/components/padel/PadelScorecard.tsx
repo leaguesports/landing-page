@@ -14,7 +14,7 @@ import {
 } from "@/lib/padel/padelReducer";
 import type { PadelMatch, PadelTeamId } from "@/types/padel-match";
 
-export const PADEL_HISTORY_PATH = "/padel/history";
+const PADEL_HISTORY_PATH = "/padel/history";
 
 type PadelScorecardProps = {
   initialMatch: PadelMatch;

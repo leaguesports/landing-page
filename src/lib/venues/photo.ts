@@ -6,8 +6,6 @@ import {
 } from "@/services/venues";
 import type { SanityImageSource } from "@sanity/image-url";
 
-export { VENUE_PLACEHOLDER_IMAGE };
-
 export type VenuePhotoSource = Pick<Venue, "hero_image" | "sports">;
 
 export function sanityImageUrl(

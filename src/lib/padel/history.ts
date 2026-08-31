@@ -12,7 +12,7 @@ function playerNames(players: HistoryPlayer[]): string {
   return players.map(firstName).filter(Boolean).join(" / ");
 }
 
-export function isHistoryPairings(
+function isHistoryPairings(
   value: HistoryPlayer[] | HistoryPairings,
 ): value is HistoryPairings {
   return !Array.isArray(value) && Array.isArray(value.teamA) && Array.isArray(value.teamB);

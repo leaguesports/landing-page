@@ -10,9 +10,9 @@
     "test": "node --experimental-strip-types --test src/lib/api-origin.test.ts src/lib/security-headers.test.ts src/services/venues.projection.test.ts src/lib/padel/venue-options.test.ts src/lib/padel/api-match.test.ts src/lib/padel/apply-locked-result.test.ts src/lib/padel/history.test.ts"
   },
   "dependencies": {
-    "@material-symbols/svg-400": "^0.44.0",
     "@next/third-parties": "^16.2.7",
     "@portabletext/react": "^6.0.2",
+    "@portabletext/types": "^4.0.2",
     "@sanity/image-url": "^2.0.3",
     "ably": "^2.28.0",
     "leaflet": "^1.9.4",

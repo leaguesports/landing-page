@@ -18,7 +18,7 @@ function getAblyRest(): Ably.Rest | null {
   return new Ably.Rest({ key: apiKey });
 }
 
-export function matchChannelName(sport: string, matchId: string): string {
+function matchChannelName(sport: string, matchId: string): string {
   return `${sport}:${matchId}`;
 }
 
@@ -78,38 +78,3 @@ export async function loadMatchFromAbly(
   }
 }
 
-/**
- * Persist a full match snapshot onto the Ably channel (durable history).
- */
-export async function publishMatchToAbly(
-  match: PadelMatch,
-  eventType: MatchChannelEvent["type"] = "STATE_SYNC",
-): Promise<boolean> {
-  const rest = getAblyRest();
-  if (!rest) {
-    console.warn("[ably] ABLY_API_KEY missing — cannot persist match");
-    return false;
-  }
-
-  const channel = rest.channels.get(
-    matchChannelName(match.sport || "padel", match.id),
-  );
-
-  const event: MatchChannelEvent = {
-    type: eventType,
-    matchId: match.id,
-    state: match,
-    meta: {
-      clientEventId: crypto.randomUUID(),
-      emittedAt: new Date().toISOString(),
-    },
-  };
-
-  try {
-    await channel.publish(eventType, event);
-    return true;
-  } catch (error) {
-    console.error("[ably] publish failed", match.id, error);
-    return false;
-  }
-}

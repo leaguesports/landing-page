@@ -666,13 +666,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@material-symbols/svg-400@npm:^0.44.0":
-  version: 0.44.0
-  resolution: "@material-symbols/svg-400@npm:0.44.0"
-  checksum: 10c0/3aa9a42c38f21734d6298dfc32465eff314ac866a46fa9583f95faf4c34295a0374667c403d8508e63d8052ce24fa9a5fec8a7c8ff47a57fd784b02a2a3e5794
-  languageName: node
-  linkType: hard
-
 "@napi-rs/wasm-runtime@npm:^0.2.11":
   version: 0.2.12
   resolution: "@napi-rs/wasm-runtime@npm:0.2.12"
@@ -3815,9 +3808,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "landing-page@workspace:."
   dependencies:
-    "@material-symbols/svg-400": "npm:^0.44.0"
     "@next/third-parties": "npm:^16.2.7"
     "@portabletext/react": "npm:^6.0.2"
+    "@portabletext/types": "npm:^4.0.2"
     "@sanity/image-url": "npm:^2.0.3"
     "@tailwindcss/postcss": "npm:^4"
     "@types/leaflet": "npm:^1.9.21"

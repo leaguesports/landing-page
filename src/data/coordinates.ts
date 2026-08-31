@@ -24,4 +24,3 @@ export const SUBURB_COORDINATES: Record<string, [number, number]> = {
 
 /** Default map center (Johannesburg) */
 export const DEFAULT_MAP_CENTER: [number, number] = [-26.135, 28.065];
-export const DEFAULT_MAP_ZOOM = 11;

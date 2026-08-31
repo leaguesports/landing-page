@@ -313,7 +313,7 @@ export function parseHistoryItem(value: unknown): PadelHistoryItem | null {
   };
 }
 
-export function parseHistoryList(value: unknown): PadelHistoryItem[] | null {
+function parseHistoryList(value: unknown): PadelHistoryItem[] | null {
   if (!Array.isArray(value)) return null;
   const items: PadelHistoryItem[] = [];
   for (const row of value) {

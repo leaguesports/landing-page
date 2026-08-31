@@ -17,7 +17,7 @@ export function getPoolUiState(pool: PoolView): PoolUiState {
   return "locked";
 }
 
-export function getSiteBaseUrl(): string {
+function getSiteBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }

@@ -51,7 +51,7 @@ export async function getSportBySlug(slug: string) {
   return sport;
 }
 
-export async function getVenuesByLocationAndSport(
+async function getVenuesByLocationAndSport(
   location: string,
   sport: string,
 ) {

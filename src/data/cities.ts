@@ -109,7 +109,7 @@ function buildSuggestions(): SearchSuggestion[] {
   return suggestions;
 }
 
-export const SEARCH_SUGGESTIONS = buildSuggestions();
+const SEARCH_SUGGESTIONS = buildSuggestions();
 
 export function filterSuggestions(
   query: string,

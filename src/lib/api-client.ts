@@ -1,9 +1,7 @@
 import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
 import { getSiteBaseUrl } from "@/lib/site-url";
 
-export { isApiConfigured } from "@/lib/api-origin";
-
-export class ApiError extends Error {
+class ApiError extends Error {
   status: number;
 
   constructor(status: number, message: string) {
@@ -42,7 +40,7 @@ function toAbsoluteReturnTo(returnTo: string): string {
   return `${getSiteOrigin()}${returnTo.startsWith("/") ? returnTo : `/${returnTo}`}`;
 }
 
-export async function poolApi<T>(
+async function poolApi<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -71,7 +69,7 @@ export async function poolApi<T>(
   return res.json() as Promise<T>;
 }
 
-export interface AuthUser {
+interface AuthUser {
   id: string;
   displayName?: string;
   email?: string;

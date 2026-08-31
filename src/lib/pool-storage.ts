@@ -11,7 +11,3 @@ export function getPoolMemberId(inviteCode: string): string | null {
 export function savePoolMemberId(inviteCode: string, poolMemberId: string): void {
   localStorage.setItem(storageKey(inviteCode), poolMemberId);
 }
-
-export function clearPoolMemberId(inviteCode: string): void {
-  localStorage.removeItem(storageKey(inviteCode));
-}

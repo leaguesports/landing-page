@@ -1,8 +1,5 @@
 import type { PadelMatch } from "@/types/padel-match";
-import {
-  loadMatchFromAbly,
-  publishMatchToAbly,
-} from "@/lib/ably/match-history";
+import { loadMatchFromAbly } from "@/lib/ably/match-history";
 
 /**
  * Ably live-scoring cache only. Match identity (share/history id) is
@@ -32,15 +29,6 @@ export async function getMatch(id: string): Promise<PadelMatch | null> {
     getStore().matches.set(fromAbly.id, fromAbly);
   }
   return fromAbly;
-}
-
-/**
- * Cache locally and write the latest snapshot to Ably history.
- */
-export async function syncMatchState(match: PadelMatch): Promise<PadelMatch> {
-  getStore().matches.set(match.id, match);
-  await publishMatchToAbly(match, "STATE_SYNC");
-  return match;
 }
 
 /** In-process cache only — Ably already holds the published event. */

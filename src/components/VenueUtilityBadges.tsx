@@ -25,7 +25,7 @@ export type VenueUtilityFlags = {
   website?: string | null;
 };
 
-export function normalizePhoneForWhatsApp(phone: string): string | null {
+function normalizePhoneForWhatsApp(phone: string): string | null {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return null;
   // SA local 0XX… → 27XX…
@@ -35,7 +35,7 @@ export function normalizePhoneForWhatsApp(phone: string): string | null {
   return digits;
 }
 
-export function buildVenueWhatsAppUrl(
+function buildVenueWhatsAppUrl(
   phone: string,
   venueName: string,
 ): string | null {

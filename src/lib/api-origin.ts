@@ -38,8 +38,7 @@ export function isFrontendOrigin(origin: string): boolean {
   return host.endsWith(".vercel.app");
 }
 
-/** path-to-regexp negative lookahead for next.config `rewrites`. */
-export function getApiProxySkipPattern(): string {
+function getApiProxySkipPattern(): string {
   // Match identity (POST/GET /api/matches, lock) is league-sports-api.
   // Only Ably live-scoring event cache stays on Next.
   return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
