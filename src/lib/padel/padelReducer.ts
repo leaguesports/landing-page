@@ -330,11 +330,20 @@ export function getActiveSet(match: PadelMatch): SetScore {
   return match.sets[match.currentSetIndex] ?? emptySet();
 }
 
+/** First names for a pair, in court order. Shared by scorecard and share copy. */
+export function getTeamFirstNames(
+  match: Pick<PadelMatch, "pairings">,
+  team: PadelTeamId,
+): string[] {
+  const pair =
+    team === "A" ? match.pairings.teamA : match.pairings.teamB;
+  return pair.map((p) => p.displayName.split(" ")[0] ?? p.displayName);
+}
+
 export function getTeamLabel(
   match: Pick<PadelMatch, "pairings">,
   team: PadelTeamId,
+  separator = " / ",
 ): string {
-  const pair =
-    team === "A" ? match.pairings.teamA : match.pairings.teamB;
-  return pair.map((p) => p.displayName.split(" ")[0] ?? p.displayName).join(" / ");
+  return getTeamFirstNames(match, team).join(separator);
 }
