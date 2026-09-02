@@ -1,3 +1,5 @@
+import { getGuideFaqs, type GuideFaq } from "@/data/guides/faqs";
+import { stripMatchingFaqBlocks } from "@/lib/guides/stripFaqBlocks";
 import { urlFor } from "@/sanity/client";
 import { Bell, Flag } from "lucide-react";
 import { PortableText } from "next-sanity";
@@ -7,8 +9,46 @@ import type { Guide } from "../actions";
 import { guidePortableTextComponents } from "../textComponents";
 import { getGuideJsonLd } from "./guideJsonLd";
 
+function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
+  if (faqs.length === 0) return null;
+
+  return (
+    <section
+      id="faq"
+      aria-labelledby="guide-faq-heading"
+      className="scroll-mt-24 border-t border-white/5 py-12 sm:py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2
+          id="guide-faq-heading"
+          className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]"
+        >
+          Frequently asked questions
+        </h2>
+        <div>
+          {faqs.map((faq) => (
+            <article key={faq.question} className="mt-10 first:mt-6">
+              <h3 className="mb-3 font-display text-2xl tracking-wide text-white sm:text-3xl">
+                {faq.question}
+              </h3>
+              <p className="text-balance text-base font-medium leading-[1.75] text-zinc-300 sm:text-lg">
+                {faq.answer}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function GuideDetail({ guide }: { guide: Guide }) {
-  const jsonLd = getGuideJsonLd(guide);
+  const faqs = getGuideFaqs(guide.slug);
+  const jsonLd = getGuideJsonLd(guide, faqs);
+  const content =
+    faqs.length > 0
+      ? stripMatchingFaqBlocks(guide.content, faqs)
+      : guide.content;
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -58,11 +98,13 @@ export function GuideDetail({ guide }: { guide: Guide }) {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <PortableText
-            value={guide.content}
+            value={content}
             components={guidePortableTextComponents}
           />
         </div>
       </section>
+
+      <GuideFaqSection faqs={faqs} />
 
       <section className="relative overflow-hidden border-t border-white/5 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-950/30 via-[#0c0f0c] to-[#0c0f0c]" />
