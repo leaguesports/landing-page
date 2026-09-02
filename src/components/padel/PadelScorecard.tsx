@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2, Share2, Undo2, Wifi, WifiOff } from "lucide-react";
+import { Loader2, MessageCircle, Undo2, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
 import { useMatchChannel } from "@/hooks/useMatchChannel";
 import { matchWinner } from "@/lib/padel/api-match";
@@ -12,6 +12,8 @@ import {
   getActiveSet,
   getTeamLabel,
 } from "@/lib/padel/padelReducer";
+import { buildPadelWhatsAppShare } from "@/lib/padel/whatsapp-share";
+import { getSiteBaseUrl } from "@/lib/site-url";
 import type { PadelMatch, PadelTeamId } from "@/types/padel-match";
 
 const PADEL_HISTORY_PATH = "/padel/history";
@@ -108,11 +110,35 @@ function ScoreColumn({
   );
 }
 
-function padelShareUrl(matchId: string): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/padel/${matchId}`;
-  }
-  return `/padel/${matchId}`;
+function subscribeNoop() {
+  return () => {};
+}
+
+function useShareOrigin(): string {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => window.location.origin,
+    () => getSiteBaseUrl(),
+  );
+}
+
+function WhatsAppShareControl({ match }: { match: PadelMatch }) {
+  const origin = useShareOrigin();
+  const share = buildPadelWhatsAppShare(match, origin);
+
+  return (
+    <a
+      href={share.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Share match on WhatsApp"
+      title="Share this match on WhatsApp"
+      className="inline-flex min-h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-400/25 hover:text-emerald-200"
+    >
+      <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+      WhatsApp
+    </a>
+  );
 }
 
 export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
@@ -122,8 +148,6 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
     match,
     emitEvent,
   );
-  const [copied, setCopied] = useState(false);
-
   const locked = Boolean(match.lockedAt);
   const finalized = match.status === "finalized" || locked;
   const scoringDisabled = finalized || locked;
@@ -132,36 +156,6 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
     match.ruleset === "golden_point" ? "Golden Point" : "Advantage";
   const winner = matchWinner(match);
   const winnerLabel = winner ? getTeamLabel(match, winner) : null;
-
-  async function handleShare() {
-    const url = padelShareUrl(match.id);
-    try {
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({
-          title: "Padel match",
-          url,
-        });
-        return;
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      const input = document.createElement("input");
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-    }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#050705] text-white">
@@ -184,14 +178,7 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
             <ConnectionBadge state={connectionState} />
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => void handleShare()}
-          className="inline-flex items-center gap-1.5 text-right text-[11px] font-medium text-zinc-300 hover:text-white"
-        >
-          <Share2 className="h-3.5 w-3.5" aria-hidden />
-          {copied ? "Copied" : "Share"}
-        </button>
+        <WhatsAppShareControl match={match} />
       </header>
 
       <div className="px-4 pt-4 text-center">
@@ -262,12 +249,8 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
               </p>
             ) : (
               <p className="text-center text-xs text-zinc-500">
-                Share{" "}
-                <span className="font-mono text-zinc-400">
-                  /padel/{match.id}
-                </span>{" "}
-                so the other pair opens this scorecard. End writes the result
-                to history.
+                WhatsApp this scorecard so the other pair can follow live. End
+                writes the result to history.
               </p>
             )}
             <button
