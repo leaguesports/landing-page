@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { PadelMatchVenue, PadelPairing } from "../../types/padel-match.ts";
+import type {
+  PadelMatchVenue,
+  PadelPairing,
+  SetScore,
+} from "../../types/padel-match.ts";
 import {
+  buildPadelLockedShare,
   buildPadelWhatsAppShare,
+  formatPadelShareDate,
+  formatPadelShareScore,
+  padelLockedShareText,
   padelMatchAbsoluteUrl,
   padelShareText,
   padelWhatsAppHref,
@@ -235,5 +243,159 @@ describe("buildPadelWhatsAppShare", () => {
     const url = new URL(href);
     assert.equal(url.searchParams.get("text"), share.text);
     assert.equal(url.searchParams.get("foo"), null);
+  });
+});
+
+describe("formatPadelShareScore", () => {
+  it("joins set games and includes tie-break points", () => {
+    const sets: SetScore[] = [
+      { gamesA: 6, gamesB: 4, winner: "A" },
+      {
+        gamesA: 7,
+        gamesB: 6,
+        tieBreak: { pointsA: 7, pointsB: 5 },
+        winner: "A",
+      },
+    ];
+    assert.equal(formatPadelShareScore(sets), "6-4, 7-6 (7-5)");
+  });
+});
+
+describe("padelLockedShareText", () => {
+  it("includes venue, teams, score, date, and deep link", () => {
+    assert.equal(
+      padelLockedShareText({
+        matchId: "api-match-1",
+        teamALabel: "Alex & Sam",
+        teamBLabel: "Jordan & Riley",
+        venueName: "Padel Lab Rivonia",
+        scoreLine: "6-4, 6-3",
+        dateLine: "Sat, 29 Aug 2026",
+        origin: "https://leaguesports.co.za",
+      }),
+      [
+        "Padel result at Padel Lab Rivonia",
+        "Alex & Sam vs Jordan & Riley",
+        "6-4, 6-3",
+        "Sat, 29 Aug 2026",
+        "https://leaguesports.co.za/padel/api-match-1",
+      ].join("\n"),
+    );
+  });
+
+  it("omits venue and date lines when missing", () => {
+    assert.equal(
+      padelLockedShareText({
+        matchId: "api-match-1",
+        teamALabel: "Alex & Sam",
+        teamBLabel: "Jordan & Riley",
+        venueName: null,
+        scoreLine: "6-4",
+        dateLine: null,
+        origin: "https://leaguesports.co.za",
+      }),
+      [
+        "Alex & Sam vs Jordan & Riley",
+        "6-4",
+        "https://leaguesports.co.za/padel/api-match-1",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("buildPadelLockedShare", () => {
+  const sets: SetScore[] = [
+    { gamesA: 6, gamesB: 4, winner: "A" },
+    { gamesA: 6, gamesB: 3, winner: "A" },
+  ];
+
+  it("prefers startsAt for the date line and builds wa.me href", () => {
+    const share = buildPadelLockedShare(
+      {
+        id: "api-match-1",
+        pairings,
+        venue,
+        sets,
+        startsAt: "2026-08-29T14:00:00.000Z",
+        lockedAt: "2026-08-29T15:30:00.000Z",
+        createdAt: "2026-08-29T13:00:00.000Z",
+      },
+      "https://leaguesports.co.za",
+    );
+
+    const dateLine = formatPadelShareDate("2026-08-29T14:00:00.000Z");
+    assert.ok(dateLine);
+    assert.equal(
+      share.text,
+      [
+        "Padel result at Padel Lab Rivonia",
+        "Alex & Sam vs Jordan & Riley",
+        "6-4, 6-3",
+        dateLine,
+        "https://leaguesports.co.za/padel/api-match-1",
+      ].join("\n"),
+    );
+    assert.equal(
+      share.matchUrl,
+      "https://leaguesports.co.za/padel/api-match-1",
+    );
+    const url = new URL(share.href);
+    assert.equal(url.origin + url.pathname, "https://wa.me/");
+    assert.equal(url.searchParams.get("text"), share.text);
+  });
+
+  it("falls back to lockedAt then createdAt when startsAt is missing", () => {
+    const withLockedAt = buildPadelLockedShare(
+      {
+        id: "m",
+        pairings,
+        venue: null,
+        sets,
+        startsAt: null,
+        lockedAt: "2026-08-30T10:00:00.000Z",
+        createdAt: "2026-08-29T13:00:00.000Z",
+      },
+      "https://leaguesports.co.za",
+    );
+    assert.ok(
+      withLockedAt.text.includes(
+        formatPadelShareDate("2026-08-30T10:00:00.000Z")!,
+      ),
+    );
+
+    const withCreatedAt = buildPadelLockedShare(
+      {
+        id: "m",
+        pairings,
+        venue: null,
+        sets,
+        startsAt: null,
+        lockedAt: null,
+        createdAt: "2026-08-29T13:00:00.000Z",
+      },
+      "https://leaguesports.co.za",
+    );
+    assert.ok(
+      withCreatedAt.text.includes(
+        formatPadelShareDate("2026-08-29T13:00:00.000Z")!,
+      ),
+    );
+  });
+
+  it("does not mint a new id — share path is the API match id", () => {
+    const share = buildPadelLockedShare(
+      {
+        id: "match_01HZX",
+        pairings,
+        venue: null,
+        sets,
+        startsAt: null,
+        lockedAt: "2026-08-29T15:30:00.000Z",
+        createdAt: "2026-08-29T13:00:00.000Z",
+      },
+      "https://leaguesports.co.za",
+    );
+    assert.match(share.matchUrl, /\/padel\/match_01HZX$/);
+    assert.equal(share.text.includes("match_01HZX"), true);
   });
 });
