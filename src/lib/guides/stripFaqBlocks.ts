@@ -58,6 +58,9 @@ function isClosingCtaHeading(text: string): boolean {
  * structured FAQ question, so the dedicated FAQ section is the only
  * visible copy. Also drops a wrapping "FAQ" heading and the rest of
  * that section until the next same-level heading or a "Ready to…" CTA.
+ *
+ * The "Ready to…" stop is a temporary heuristic (brittle by design)
+ * until the CMS FAQ blocks are deleted; then this stripper can go.
  */
 export function stripMatchingFaqBlocks(
   content: TypedObject[] | null | undefined,
