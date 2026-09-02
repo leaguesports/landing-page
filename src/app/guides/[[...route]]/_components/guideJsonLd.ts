@@ -1,6 +1,6 @@
 import type { GuideFaq } from "@/data/guides/faqs";
 import { buildGuideJsonLd } from "@/lib/guides/guideJsonLd";
-import { urlFor } from "@/sanity/client";
+import { safeSanityImageUrl } from "@/lib/sanity-image";
 import type { Guide } from "../actions";
 
 export function getGuideJsonLd(guide: Guide, faqs: GuideFaq[]) {
@@ -8,8 +8,8 @@ export function getGuideJsonLd(guide: Guide, faqs: GuideFaq[]) {
     title: guide.title,
     description: guide.description,
     slug: guide.slug,
-    imageUrl: urlFor(guide.mainImage)?.url() ?? "",
-    datePublished: guide._createdAt,
+    imageUrl: safeSanityImageUrl(guide.mainImage),
+    datePublished: guide._createdAt ?? undefined,
     faqs,
   });
 }

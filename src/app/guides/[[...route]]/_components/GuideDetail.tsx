@@ -1,6 +1,7 @@
 import { getGuideFaqs, type GuideFaq } from "@/data/guides/faqs";
+import { normalizeGuideContent } from "@/lib/guides/portableText";
 import { stripMatchingFaqBlocks } from "@/lib/guides/stripFaqBlocks";
-import { urlFor } from "@/sanity/client";
+import { safeSanityImageUrl } from "@/lib/sanity-image";
 import { Bell, Flag } from "lucide-react";
 import { PortableText } from "next-sanity";
 import Image from "next/image";
@@ -45,10 +46,12 @@ function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
 export function GuideDetail({ guide }: { guide: Guide }) {
   const faqs = getGuideFaqs(guide.slug);
   const jsonLd = getGuideJsonLd(guide, faqs);
-  const content =
+  const stripped =
     faqs.length > 0
       ? stripMatchingFaqBlocks(guide.content, faqs)
-      : guide.content;
+      : (guide.content ?? []);
+  const content = normalizeGuideContent(stripped);
+  const imageUrl = safeSanityImageUrl(guide.mainImage);
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -76,21 +79,23 @@ export function GuideDetail({ guide }: { guide: Guide }) {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
-            <div className="aspect-21/9 w-full sm:aspect-[2.4/1]">
-              <Image
-                src={urlFor(guide.mainImage)?.url() ?? ""}
-                alt={guide.title}
-                width={1500}
-                height={1000}
-                className="h-full w-full object-cover"
-              />
+      {imageUrl ? (
+        <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
+              <div className="aspect-21/9 w-full sm:aspect-[2.4/1]">
+                <Image
+                  src={imageUrl}
+                  alt={guide.title}
+                  width={1500}
+                  height={1000}
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section
         id="content"

@@ -1,4 +1,4 @@
-import { urlFor } from "@/sanity/client";
+import { safeSanityImageUrl } from "@/lib/sanity-image";
 import { notFound } from "next/navigation";
 import { GuideDetail } from "./_components/GuideDetail";
 import { GuidesIndex } from "./_components/GuidesIndex";
@@ -46,7 +46,8 @@ export async function generateMetadata({
     return notFound();
   }
 
-  const imageUrl = urlFor(guide.mainImage)?.url() ?? "";
+  const imageUrl = safeSanityImageUrl(guide.mainImage);
+  const images = imageUrl ? [imageUrl] : [];
 
   return {
     title: guide.title,
@@ -54,13 +55,13 @@ export async function generateMetadata({
     openGraph: {
       title: guide.title,
       description: guide.description,
-      images: [imageUrl],
+      images,
     },
     twitter: {
-      card: "summary_large_image",
+      card: imageUrl ? "summary_large_image" : "summary",
       title: guide.title,
       description: guide.description,
-      images: [imageUrl],
+      images,
     },
     alternates: {
       canonical: `/guides/${guide.slug}`,
@@ -69,7 +70,7 @@ export async function generateMetadata({
       index: true,
       follow: true,
     },
-    keywords: [guide.title, ...guide.keywords, "LeagueSports"],
+    keywords: [guide.title, ...(guide.keywords ?? []), "LeagueSports"],
   };
 }
 
