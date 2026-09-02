@@ -12,6 +12,12 @@ import {
 
 const JOBURG_FAQS = getGuideFaqs(JOBURG_PADEL_GUIDE_SLUG);
 
+const REQUIRED_JOBURG_QUESTIONS = [
+  "How much does it cost to book a padel court in Johannesburg?",
+  "Do I need to buy an expensive racket before my first game?",
+  "How do I find other players if I don't have a four-ball?",
+];
+
 const JOBURG_GUIDE = {
   title: "The Ultimate Guide to the Best Padel Courts in Johannesburg",
   description:
@@ -24,10 +30,14 @@ const JOBURG_GUIDE = {
 
 describe("getGuideFaqs", () => {
   it("returns the Joburg padel FAQs by slug", () => {
-    assert.equal(JOBURG_FAQS.length, 3);
+    assert.equal(JOBURG_FAQS.length, 6);
     assert.equal(
       GUIDE_FAQS_BY_SLUG[JOBURG_PADEL_GUIDE_SLUG],
       JOBURG_FAQS,
+    );
+    assert.deepEqual(
+      JOBURG_FAQS.slice(0, 3).map((faq) => faq.question),
+      REQUIRED_JOBURG_QUESTIONS,
     );
   });
 
@@ -60,7 +70,11 @@ describe("buildGuideJsonLd", () => {
     const faqPage = findJsonLdNode(jsonLd, "FAQPage");
 
     assert.ok(faqPage);
-    assert.equal(faqPage.mainEntity.length, 3);
+    assert.equal(faqPage.mainEntity.length, 6);
+    assert.deepEqual(
+      faqPage.mainEntity.slice(0, 3).map((entity) => entity.name),
+      REQUIRED_JOBURG_QUESTIONS,
+    );
     assert.deepEqual(
       faqPage.mainEntity.map((entity) => entity.name),
       JOBURG_FAQS.map((faq) => faq.question),
@@ -89,9 +103,9 @@ describe("buildGuideJsonLd", () => {
     });
     const faqPage = findJsonLdNode(jsonLd, "FAQPage");
 
-    assert.equal(faqPage?.mainEntity.length, 4);
-    assert.equal(faqPage?.mainEntity[3]?.name, extra.question);
-    assert.equal(faqPage?.mainEntity[3]?.acceptedAnswer.text, extra.answer);
+    assert.equal(faqPage?.mainEntity.length, JOBURG_FAQS.length + 1);
+    assert.equal(faqPage?.mainEntity.at(-1)?.name, extra.question);
+    assert.equal(faqPage?.mainEntity.at(-1)?.acceptedAnswer.text, extra.answer);
   });
 
   it("builds BreadcrumbList Home → Guides → title with canonical URLs", () => {

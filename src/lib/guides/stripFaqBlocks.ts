@@ -1,5 +1,8 @@
 import type { TypedObject } from "@portabletext/types";
-import type { GuideFaq } from "../../data/guides/faqs.ts";
+import {
+  faqHeadingsToStrip,
+  type GuideFaq,
+} from "../../data/guides/faqs.ts";
 
 type PortableTextChild = {
   text?: unknown;
@@ -10,10 +13,14 @@ function blockStyle(block: TypedObject): string | undefined {
   return block.style;
 }
 
-function isHeadingBlock(block: TypedObject): boolean {
-  if (block._type !== "block") return false;
+function headingLevel(block: TypedObject): number | null {
   const style = blockStyle(block);
-  return typeof style === "string" && /^h[1-6]$/.test(style);
+  const match = style?.match(/^h([1-6])$/);
+  return match ? Number(match[1]) : null;
+}
+
+function isHeadingBlock(block: TypedObject): boolean {
+  return headingLevel(block) !== null && block._type === "block";
 }
 
 function blockPlainText(block: TypedObject): string {
@@ -42,10 +49,15 @@ const FAQ_SECTION_HEADINGS = new Set(
   ["faq", "faqs", "frequently asked questions"].map(normalizeFaqQuestion),
 );
 
+function isClosingCtaHeading(text: string): boolean {
+  return /^ready to\b/i.test(text.trim());
+}
+
 /**
  * Drop Portable Text heading+answer blocks whose heading matches a
  * structured FAQ question, so the dedicated FAQ section is the only
- * visible copy.
+ * visible copy. Also drops a wrapping "FAQ" heading and the rest of
+ * that section until the next same-level heading or a "Ready to…" CTA.
  */
 export function stripMatchingFaqBlocks(
   content: TypedObject[] | null | undefined,
@@ -55,12 +67,7 @@ export function stripMatchingFaqBlocks(
   if (!faqs.length) return content;
 
   const questions = new Set(
-    faqs.map((faq) => normalizeFaqQuestion(faq.question)),
-  );
-  const hasMatchingQuestion = content.some(
-    (block) =>
-      isHeadingBlock(block) &&
-      questions.has(normalizeFaqQuestion(blockPlainText(block))),
+    faqHeadingsToStrip(faqs).map((heading) => normalizeFaqQuestion(heading)),
   );
   const result: TypedObject[] = [];
 
@@ -71,11 +78,33 @@ export function stripMatchingFaqBlocks(
       continue;
     }
 
-    const heading = normalizeFaqQuestion(blockPlainText(block));
-    const isFaqSectionHeading =
-      hasMatchingQuestion && FAQ_SECTION_HEADINGS.has(heading);
-    if (!questions.has(heading) && !isFaqSectionHeading) {
+    const headingText = blockPlainText(block);
+    const heading = normalizeFaqQuestion(headingText);
+    const isFaqSectionHeading = FAQ_SECTION_HEADINGS.has(heading);
+    const isFaqQuestion = questions.has(heading);
+
+    if (!isFaqQuestion && !isFaqSectionHeading) {
       result.push(block);
+      continue;
+    }
+
+    if (isFaqSectionHeading) {
+      const sectionLevel = headingLevel(block) ?? 2;
+      while (i + 1 < content.length) {
+        const next = content[i + 1];
+        if (isHeadingBlock(next)) {
+          const nextText = blockPlainText(next);
+          const nextLevel = headingLevel(next) ?? 6;
+          if (isClosingCtaHeading(nextText)) break;
+          if (
+            nextLevel <= sectionLevel &&
+            !FAQ_SECTION_HEADINGS.has(normalizeFaqQuestion(nextText))
+          ) {
+            break;
+          }
+        }
+        i += 1;
+      }
       continue;
     }
 

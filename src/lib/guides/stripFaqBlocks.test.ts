@@ -85,6 +85,29 @@ describe("stripMatchingFaqBlocks", () => {
     );
   });
 
+  it("strips reworded Sanity FAQ headings via aliases", () => {
+    const content: TypedObject[] = [
+      block("h2", "FAQ"),
+      block("h3", "How much does a padel court cost in Johannesburg?"),
+      block("normal", "Sanity cost answer."),
+      block("h3", "Do I need to buy a racket first?"),
+      block("normal", "Sanity racket answer."),
+      block("h3", "How do I find players if I do not have a four-ball?"),
+      block("normal", "Sanity players answer."),
+      block("h3", "What are the best indoor padel courts in Johannesburg?"),
+      block("normal", "Sanity indoor answer."),
+      block("h2", "Ready to book?"),
+      block("normal", "Head over to the venue directory."),
+    ];
+
+    const stripped = stripMatchingFaqBlocks(content, faqs);
+    const texts = stripped.map((item) => JSON.stringify(item)).join("\n");
+    assert.equal(texts.includes("Ready to book?"), true);
+    assert.equal(texts.includes("Head over to the venue directory."), true);
+    assert.equal(texts.includes("Sanity cost answer."), false);
+    assert.equal(texts.includes("Sanity indoor answer."), false);
+  });
+
   it("drops a leftover FAQ section heading when questions are stripped", () => {
     const content: TypedObject[] = [
       block("h2", "Frequently asked questions"),
