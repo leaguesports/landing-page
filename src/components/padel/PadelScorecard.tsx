@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MessageCircle, Undo2, Wifi, WifiOff } from "lucide-react";
+import { Loader2, MessageCircle, Share2, Undo2, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
@@ -13,7 +13,9 @@ import {
   getTeamLabel,
 } from "@/lib/padel/padelReducer";
 import {
+  buildPadelLockedShare,
   buildPadelWhatsAppShare,
+  type PadelLockedShareMatch,
   type PadelWhatsAppShareMatch,
 } from "@/lib/padel/whatsapp-share";
 import { getSiteBaseUrl } from "@/lib/site-url";
@@ -144,6 +146,42 @@ function WhatsAppShareControl({ match }: { match: PadelWhatsAppShareMatch }) {
   );
 }
 
+/** Locked-result Share: Web Share API when available, else WhatsApp `wa.me`. */
+function LockedResultShareButton({ match }: { match: PadelLockedShareMatch }) {
+  const origin = useShareOrigin();
+  const share = buildPadelLockedShare(match, origin);
+
+  async function handleShare() {
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        // Text already includes the deep link — omit `url` to avoid duplication.
+        await navigator.share({
+          title: "Padel result",
+          text: share.text,
+        });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+    }
+
+    window.open(share.href, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleShare()}
+      className="inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-emerald-400/35 bg-emerald-400/15 text-base font-semibold text-emerald-200 transition-colors hover:bg-emerald-400/25"
+    >
+      <Share2 className="h-5 w-5" aria-hidden />
+      Share
+    </button>
+  );
+}
+
 export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
   const { match, connectionState, scorePoint, undoPoint, canUndo, emitEvent } =
     useMatchChannel(initialMatch.id, initialMatch);
@@ -181,13 +219,18 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
             <ConnectionBadge state={connectionState} />
           )}
         </div>
-        <WhatsAppShareControl
-          match={{
-            id: match.id,
-            pairings: match.pairings,
-            venue: match.venue,
-          }}
-        />
+        {locked ? (
+          // Keep header balance; Share lives on the locked-result footer.
+          <span className="inline-block min-h-9 min-w-[5.5rem]" aria-hidden />
+        ) : (
+          <WhatsAppShareControl
+            match={{
+              id: match.id,
+              pairings: match.pairings,
+              venue: match.venue,
+            }}
+          />
+        )}
       </header>
 
       <div className="px-4 pt-4 text-center">
@@ -235,6 +278,17 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
             <p className="text-center text-sm text-emerald-300">
               Final — {winnerLabel ?? "a team"} win
             </p>
+            <LockedResultShareButton
+              match={{
+                id: match.id,
+                pairings: match.pairings,
+                venue: match.venue,
+                sets: match.sets,
+                startsAt: match.startsAt,
+                lockedAt: match.lockedAt,
+                createdAt: match.createdAt,
+              }}
+            />
             <Link
               href={PADEL_HISTORY_PATH}
               className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
