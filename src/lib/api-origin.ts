@@ -95,12 +95,30 @@ export function isApiConfigured(): boolean {
   return getRailwayApiOrigin().length > 0;
 }
 
+/**
+ * Explicit Railway proxy sources. These must not rely only on the
+ * negative-lookahead catch-all. `/api/matches/:id/events` stays local
+ * (filesystem + skip pattern); `:id` is a single segment so it cannot
+ * swallow `/lock` or `/events`.
+ */
+export const API_PROXY_EXPLICIT_SOURCES = [
+  "/api/matches",
+  "/api/matches/:id/lock",
+  "/api/matches/:id",
+  "/api/venues/:cmsId/matches",
+  "/api/venues/:cmsId",
+] as const;
+
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */
 export function getApiProxyRewrites(): { source: string; destination: string }[] {
   const apiOrigin = getRailwayApiOrigin();
   if (!apiOrigin) return [];
   const skip = getApiProxySkipPattern();
   return [
+    ...API_PROXY_EXPLICIT_SOURCES.map((source) => ({
+      source,
+      destination: `${apiOrigin}${source}`,
+    })),
     { source: "/api", destination: `${apiOrigin}/api` },
     {
       source: `/api/:path((?!${skip}).*)`,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ensureVenueFromCmsWith } from "./appVenueApi";
+import { attemptEnsureVenueFromCmsWith, ensureVenueFromCmsWith } from "./appVenueApi.ts";
 
 const venue = {
   cmsId: "sanity-venue-1",
@@ -104,5 +104,44 @@ describe("ensureVenueFromCmsWith", () => {
     });
     assert.equal(result, null);
     assert.equal(called, false);
+  });
+
+  it("treats PUT 201 with an unparseable body as success", async () => {
+    const attempt = await attemptEnsureVenueFromCmsWith(venue, {
+      baseUrl: "https://api.example.test",
+      fetch: async (_url, init = {}) => {
+        if (init.method === "PUT") {
+          return jsonResponse(201, { ok: true });
+        }
+        return jsonResponse(404, { error: "Venue not found" });
+      },
+    });
+    assert.equal(attempt.ok, true);
+    assert.equal(attempt.status, 201);
+    assert.equal(attempt.venue, null);
+    assert.equal(attempt.networkError, false);
+  });
+
+  it("returns the GET status and body when lookup is not 200 or 404", async () => {
+    const attempt = await attemptEnsureVenueFromCmsWith(venue, {
+      baseUrl: "https://api.example.test",
+      fetch: async () => jsonResponse(405, { error: "Method Not Allowed" }),
+    });
+    assert.equal(attempt.ok, false);
+    assert.equal(attempt.status, 405);
+    assert.deepEqual(attempt.body, { error: "Method Not Allowed" });
+    assert.equal(attempt.venue, null);
+  });
+
+  it("marks a thrown GET as a network error", async () => {
+    const attempt = await attemptEnsureVenueFromCmsWith(venue, {
+      baseUrl: "https://api.example.test",
+      fetch: async () => {
+        throw new TypeError("Failed to fetch");
+      },
+    });
+    assert.equal(attempt.ok, false);
+    assert.equal(attempt.networkError, true);
+    assert.equal(attempt.status, 0);
   });
 });

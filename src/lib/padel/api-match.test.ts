@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PadelPairing } from "../../types/padel-match.ts";
 import {
-  MATCH_API_UNAVAILABLE,
+  MATCH_API_PROXY_MISS,
+  MATCH_API_UNREACHABLE,
+  MatchApiError,
   createPadelMatchWith,
   datetimeLocalToIso,
+  jsonError,
   listPlayerHistoryWith,
   listVenueHistoryWith,
   lockPadelMatchWith,
@@ -307,7 +310,7 @@ describe("createPadelMatchWith", () => {
     ]);
   });
 
-  it("does not POST a match when the venue cannot be ensured", async () => {
+  it("does not POST a match when venue GET fails with a non-404", async () => {
     const methods: string[] = [];
     await assert.rejects(
       () =>
@@ -318,12 +321,99 @@ describe("createPadelMatchWith", () => {
             return jsonResponse(503, { error: "Unable to save venue" });
           },
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 503);
+        assert.equal(err.message, "503 Unable to save venue");
         return true;
       },
     );
     assert.deepEqual(methods, ["GET"]);
+  });
+
+  it("POSTs after GET 200 even when the venue body is unparseable", async () => {
+    const calls: string[] = [];
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: async (url, init = {}) => {
+        calls.push(`${init.method ?? "GET"} ${String(url)}`);
+        if (String(url).includes("/api/venues/")) {
+          return jsonResponse(200, { cmsId: "sanity-padel-1" });
+        }
+        return jsonResponse(201, createdSnapshot);
+      },
+    });
+    assert.equal(match.id, "api-match-1");
+    assert.deepEqual(calls, [
+      "GET https://api.example.test/api/venues/sanity-padel-1",
+      "POST https://api.example.test/api/matches",
+    ]);
+  });
+
+  it("POSTs after PUT 201 even when the venue body is unparseable", async () => {
+    const calls: string[] = [];
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: async (url, init = {}) => {
+        calls.push(`${init.method ?? "GET"} ${String(url)}`);
+        if (String(url).includes("/api/venues/")) {
+          if (init.method === "PUT") {
+            return jsonResponse(201, { ok: true, venue: "created" });
+          }
+          return jsonResponse(404, { error: "Venue not found" });
+        }
+        return jsonResponse(201, createdSnapshot);
+      },
+    });
+
+    assert.equal(match.id, "api-match-1");
+    assert.deepEqual(calls, [
+      "GET https://api.example.test/api/venues/sanity-padel-1",
+      "PUT https://api.example.test/api/venues/sanity-padel-1",
+      "POST https://api.example.test/api/matches",
+    ]);
+  });
+
+  it("rejects an empty venue slug before any HTTP", async () => {
+    let called = false;
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, { name: court.name, slug: "  " }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => {
+            called = true;
+            return jsonResponse(200, appVenue);
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 400);
+        assert.equal(err.message, "Venue slug is required");
+        return true;
+      },
+    );
+    assert.equal(called, false);
+  });
+
+  it("rejects a missing venue name before any HTTP", async () => {
+    let called = false;
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, { name: " ", slug: court.slug }, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => {
+            called = true;
+            return jsonResponse(200, appVenue);
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 400);
+        assert.equal(err.message, "Venue name is required");
+        return true;
+      },
+    );
+    assert.equal(called, false);
   });
 
   it("surfaces Venue not found from POST instead of minting an Ably id", async () => {
@@ -338,8 +428,10 @@ describe("createPadelMatchWith", () => {
             return jsonResponse(404, { error: "Venue not found" });
           },
         }),
-      (err: Error) => {
-        assert.equal(err.message, "Venue not found");
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 404);
+        assert.equal(err.message, "404 Venue not found");
         return true;
       },
     );
@@ -357,8 +449,11 @@ describe("createPadelMatchWith", () => {
             return jsonResponse(401, { error: "Unauthorized" });
           },
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 401);
+        assert.equal(err.message, "401 Unauthorized");
+        assert.equal(err.message.includes("unavailable"), false);
         return true;
       },
     );
@@ -376,8 +471,53 @@ describe("createPadelMatchWith", () => {
             return new Response("Cannot POST /api/matches", { status: 404 });
           },
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 404);
+        assert.equal(err.message, "404 Cannot POST /api/matches");
+        assert.equal(err.message.includes("unavailable"), false);
+        return true;
+      },
+    );
+  });
+
+  it("surfaces POST 405 instead of collapsing to unavailable", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (url) => {
+            if (String(url).includes("/api/venues/")) {
+              return jsonResponse(200, appVenue);
+            }
+            return jsonResponse(405, { error: "Method Not Allowed" });
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 405);
+        assert.equal(err.message, "405 Method Not Allowed");
+        return true;
+      },
+    );
+  });
+
+  it("surfaces a network error when POST fetch throws", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async (url) => {
+            if (String(url).includes("/api/venues/")) {
+              return jsonResponse(200, appVenue);
+            }
+            throw new TypeError("Failed to fetch");
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 0);
+        assert.equal(err.message, MATCH_API_UNREACHABLE);
         return true;
       },
     );
@@ -518,10 +658,11 @@ describe("lockPadelMatchWith", () => {
               error: "Match is already locked with a different result",
             }),
         }),
-      (err: Error) => {
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
         assert.equal(
           err.message,
-          "Match is already locked with a different result",
+          "409 Match is already locked with a different result",
         );
         return true;
       },
@@ -535,22 +676,25 @@ describe("lockPadelMatchWith", () => {
           baseUrl: "https://api.example.test",
           fetch: async () => jsonResponse(404, { error: "Match not found" }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, "Match not found");
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.message, "404 Match not found");
         return true;
       },
     );
   });
 
-  it("maps undeployed lock route 401 to Match API is unavailable", async () => {
+  it("surfaces lock 401 status and API error instead of unavailable", async () => {
     await assert.rejects(
       () =>
         lockPadelMatchWith("api-match-1", { score: lockScore, winner: "A" }, {
           baseUrl: "https://api.example.test",
           fetch: async () => jsonResponse(401, { error: "Unauthorized" }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 401);
+        assert.equal(err.message, "401 Unauthorized");
         return true;
       },
     );
@@ -566,8 +710,13 @@ describe("lockPadelMatchWith", () => {
               status: 404,
             }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 404);
+        assert.equal(
+          err.message,
+          "404 Cannot POST /api/matches/api-match-1/lock",
+        );
         return true;
       },
     );
@@ -637,6 +786,41 @@ const venueHistoryItem = {
   opponents: historyPairings,
 };
 
+describe("jsonError", () => {
+  it("always prefixes HTTP status and the API error string", () => {
+    const unauthorized = jsonError(401, { error: "Unauthorized" });
+    assert.equal(unauthorized.status, 401);
+    assert.equal(unauthorized.message, "401 Unauthorized");
+
+    const badRequest = jsonError(400, { error: "Invalid match payload" });
+    assert.equal(badRequest.message, "400 Invalid match payload");
+
+    const missing = jsonError(404, { error: "Venue not found" });
+    assert.equal(missing.message, "404 Venue not found");
+
+    const method = jsonError(405, { error: "Method Not Allowed" });
+    assert.equal(method.message, "405 Method Not Allowed");
+
+    const badGateway = jsonError(502, { error: "Bad gateway" });
+    assert.equal(badGateway.message, "502 Bad gateway");
+
+    const unavailable = jsonError(503, { error: "Unable to save venue" });
+    assert.equal(unavailable.message, "503 Unable to save venue");
+    assert.equal(unavailable.message.includes("Match API is unavailable"), false);
+  });
+
+  it("uses a proxy-miss hint for HTML or empty bodies", () => {
+    const html = jsonError(
+      404,
+      "<!DOCTYPE html><html><body>Not Found</body></html>",
+    );
+    assert.equal(html.message, `404 ${MATCH_API_PROXY_MISS}`);
+
+    const empty = jsonError(405, {});
+    assert.equal(empty.message, `405 ${MATCH_API_PROXY_MISS}`);
+  });
+});
+
 describe("parseHistoryItem", () => {
   it("keeps player opponents as the other team", () => {
     const item = parseHistoryItem(playerHistoryItem);
@@ -704,8 +888,10 @@ describe("listPlayerHistoryWith", () => {
           fetch: async () =>
             new Response("Cannot GET /api/matches", { status: 404 }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 404);
+        assert.equal(err.message, "404 Cannot GET /api/matches");
         return true;
       },
     );
@@ -719,8 +905,9 @@ describe("listPlayerHistoryWith", () => {
           fetch: async () =>
             jsonResponse(400, { error: "Invalid match payload" }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, "Invalid match payload");
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.message, "400 Invalid match payload");
         return true;
       },
     );
@@ -763,8 +950,10 @@ describe("listVenueHistoryWith", () => {
               status: 404,
             }),
         }),
-      (err: Error) => {
-        assert.equal(err.message, MATCH_API_UNAVAILABLE);
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 404);
+        assert.equal(err.message, "404 Cannot GET /api/venues/:cmsId/matches");
         return true;
       },
     );

@@ -20,6 +20,14 @@ export type EnsureVenueDeps = {
   signal?: AbortSignal;
 };
 
+export type EnsureVenueAttempt = {
+  ok: boolean;
+  status: number;
+  body: unknown;
+  venue: AppVenue | null;
+  networkError: boolean;
+};
+
 function venueUrl(baseUrl: string, cmsId: string): string {
   return `${baseUrl.replace(/\/$/, "")}/api/venues/${encodeURIComponent(cmsId)}`;
 }
@@ -50,18 +58,50 @@ function parseAppVenue(value: unknown): AppVenue | null {
   };
 }
 
+async function readBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function missingInputAttempt(): EnsureVenueAttempt {
+  return {
+    ok: false,
+    status: 400,
+    body: { error: "Venue slug is required" },
+    venue: null,
+    networkError: false,
+  };
+}
+
+function networkAttempt(): EnsureVenueAttempt {
+  return {
+    ok: false,
+    status: 0,
+    body: { error: "Match API is unreachable (network error)." },
+    venue: null,
+    networkError: true,
+  };
+}
+
 /**
  * GET lookup, PUT create-if-missing only after 404.
- * Never PUT on a successful GET. Failures return null.
+ * Never PUT on a successful GET.
+ * 200/201 with an unparseable body is still ok (venue null) so match
+ * create can POST with venueCmsId.
  */
-export async function ensureVenueFromCmsWith(
+export async function attemptEnsureVenueFromCmsWith(
   input: EnsureVenueInput,
   deps: EnsureVenueDeps,
-): Promise<AppVenue | null> {
+): Promise<EnsureVenueAttempt> {
   const cmsId = input.cmsId.trim();
   const name = input.name.trim();
   const slug = input.slug.trim();
-  if (!cmsId || !name || !slug || !deps.baseUrl) return null;
+  if (!cmsId || !name || !slug || !deps.baseUrl) return missingInputAttempt();
 
   const url = venueUrl(deps.baseUrl, cmsId);
 
@@ -75,15 +115,35 @@ export async function ensureVenueFromCmsWith(
       signal: deps.signal,
     });
   } catch {
-    return null;
+    return networkAttempt();
   }
 
+  const lookupBody = await readBody(lookup);
   if (lookup.status === 200) {
-    return parseAppVenue(await lookup.json().catch(() => null));
+    const venue = parseAppVenue(lookupBody);
+    if (!venue) {
+      console.warn(
+        "[venues] GET /api/venues/:cmsId succeeded but body was not a parseable AppVenue",
+        lookupBody,
+      );
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: lookupBody,
+      venue,
+      networkError: false,
+    };
   }
 
   if (lookup.status !== 404) {
-    return null;
+    return {
+      ok: false,
+      status: lookup.status,
+      body: lookupBody,
+      venue: null,
+      networkError: false,
+    };
   }
 
   try {
@@ -95,13 +155,45 @@ export async function ensureVenueFromCmsWith(
       body: JSON.stringify({ name, slug }),
       signal: deps.signal,
     });
+    const createdBody = await readBody(created);
     if (created.status !== 200 && created.status !== 201) {
-      return null;
+      return {
+        ok: false,
+        status: created.status,
+        body: createdBody,
+        venue: null,
+        networkError: false,
+      };
     }
-    return parseAppVenue(await created.json().catch(() => null));
+    const venue = parseAppVenue(createdBody);
+    if (!venue) {
+      console.warn(
+        "[venues] PUT /api/venues/:cmsId succeeded but body was not a parseable AppVenue",
+        createdBody,
+      );
+    }
+    return {
+      ok: true,
+      status: created.status,
+      body: createdBody,
+      venue,
+      networkError: false,
+    };
   } catch {
-    return null;
+    return networkAttempt();
   }
+}
+
+/**
+ * GET lookup, PUT create-if-missing only after 404.
+ * Never PUT on a successful GET. Failures return null.
+ */
+export async function ensureVenueFromCmsWith(
+  input: EnsureVenueInput,
+  deps: EnsureVenueDeps,
+): Promise<AppVenue | null> {
+  const attempt = await attemptEnsureVenueFromCmsWith(input, deps);
+  return attempt.venue;
 }
 
 /** Page-load ensure. Never throws; missing API config is a no-op. */
