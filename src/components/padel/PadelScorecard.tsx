@@ -12,7 +12,10 @@ import {
   getActiveSet,
   getTeamLabel,
 } from "@/lib/padel/padelReducer";
-import { buildPadelWhatsAppShare } from "@/lib/padel/whatsapp-share";
+import {
+  buildPadelWhatsAppShare,
+  type PadelWhatsAppShareMatch,
+} from "@/lib/padel/whatsapp-share";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import type { PadelMatch, PadelTeamId } from "@/types/padel-match";
 
@@ -122,7 +125,7 @@ function useShareOrigin(): string {
   );
 }
 
-function WhatsAppShareControl({ match }: { match: PadelMatch }) {
+function WhatsAppShareControl({ match }: { match: PadelWhatsAppShareMatch }) {
   const origin = useShareOrigin();
   const share = buildPadelWhatsAppShare(match, origin);
 
@@ -178,7 +181,13 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
             <ConnectionBadge state={connectionState} />
           )}
         </div>
-        <WhatsAppShareControl match={match} />
+        <WhatsAppShareControl
+          match={{
+            id: match.id,
+            pairings: match.pairings,
+            venue: match.venue,
+          }}
+        />
       </header>
 
       <div className="px-4 pt-4 text-center">
