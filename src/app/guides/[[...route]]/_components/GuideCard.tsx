@@ -1,18 +1,20 @@
-import { urlFor } from "@/sanity/client";
+import { safeSanityImageUrl } from "@/lib/sanity-image";
 import Image from "next/image";
 import Link from "next/link";
 import type { Guide } from "../actions";
 
 export function GuideCard({ guide }: { guide: Guide }) {
+  const imageUrl = safeSanityImageUrl(guide.mainImage);
+
   return (
     <Link
       href={`/guides/${guide.slug}`}
       className="group block overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-zinc-800">
-        {guide.mainImage ? (
+        {imageUrl ? (
           <Image
-            src={urlFor(guide.mainImage)?.url() ?? ""}
+            src={imageUrl}
             alt={guide.title}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"

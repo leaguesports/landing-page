@@ -7,7 +7,7 @@ export type GuideJsonLdInput = {
   description: string;
   slug: string;
   imageUrl?: string;
-  datePublished: string;
+  datePublished?: string;
   faqs?: GuideFaq[];
   siteUrl?: string;
 };
@@ -29,7 +29,7 @@ export type BlogPostingJsonLd = {
   image?: string;
   author: OrganizationJsonLd;
   publisher: OrganizationJsonLd;
-  datePublished: string;
+  datePublished?: string;
   mainEntityOfPage: {
     "@type": "WebPage";
     "@id": string;
@@ -64,9 +64,10 @@ export type GuideJsonLdGraph = {
   "@graph": Array<BlogPostingJsonLd | FaqPageJsonLd | BreadcrumbListJsonLd>;
 };
 
-function toIsoDate(value: string): string {
+function toIsoDate(value: string | undefined): string | undefined {
+  if (!value) return undefined;
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 function leagueSportsOrg(siteUrl: string, withLogo: boolean): OrganizationJsonLd {
@@ -121,12 +122,16 @@ export function buildBlogPostingJsonLd(
     description: input.description,
     author: leagueSportsOrg(siteUrl, false),
     publisher: leagueSportsOrg(siteUrl, true),
-    datePublished: toIsoDate(input.datePublished),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": pageUrl,
     },
   };
+
+  const datePublished = toIsoDate(input.datePublished);
+  if (datePublished) {
+    posting.datePublished = datePublished;
+  }
 
   if (input.imageUrl) {
     posting.image = input.imageUrl;

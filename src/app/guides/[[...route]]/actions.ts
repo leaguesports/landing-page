@@ -4,13 +4,13 @@ import { SanityImageSource } from "@sanity/image-url";
 
 export type Guide = {
   _id: string;
-  _createdAt: string;
+  _createdAt?: string | null;
   title: string;
-  mainImage: SanityImageSource;
+  mainImage?: SanityImageSource | null;
   slug: string;
   description: string;
-  keywords: string[];
-  content: TypedObject[];
+  keywords?: string[] | null;
+  content?: TypedObject[] | null;
 };
 
 export async function getTopGuides(limit: number = 4) {

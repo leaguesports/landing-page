@@ -155,6 +155,18 @@ describe("buildGuideJsonLd", () => {
     );
   });
 
+  it("omits image and datePublished when they are missing", () => {
+    const jsonLd = buildGuideJsonLd({
+      title: "Premier League sports bars in Joburg",
+      description: "Where to watch.",
+      slug: "premier-league-sports-bars-joburg",
+    });
+    const posting = findJsonLdNode(jsonLd, "BlogPosting");
+
+    assert.equal("image" in (posting ?? {}), false);
+    assert.equal("datePublished" in (posting ?? {}), false);
+  });
+
   it("strips HTML from FAQ JSON-LD text", () => {
     const jsonLd = buildGuideJsonLd({
       ...JOBURG_GUIDE,

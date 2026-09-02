@@ -1,7 +1,36 @@
 import type { PortableTextComponents } from "@portabletext/react";
+import {
+    resolveGuideLinkHref,
+    unknownPortableTextMark,
+    unknownPortableTextType,
+} from "@/lib/guides/portableText";
+import { safeSanityImageUrl } from "@/lib/sanity-image";
+import Image from "next/image";
 import Link from "next/link";
 
+const LINK_CLASS_NAME =
+    "font-semibold text-[var(--color-brand)] underline decoration-[var(--color-brand)]/35 underline-offset-[3px] transition-colors hover:text-emerald-300";
+
 export const guidePortableTextComponents = {
+    types: {
+        image: ({ value }) => {
+            const src = safeSanityImageUrl(value);
+            if (!src) return null;
+            const alt =
+                value && typeof value === "object" && "alt" in value
+                    ? String((value as { alt?: string }).alt ?? "")
+                    : "";
+            return (
+                <Image
+                    src={src}
+                    alt={alt}
+                    width={1200}
+                    height={800}
+                    className="my-8 h-auto w-full rounded-3xl border border-white/8 object-cover"
+                />
+            );
+        },
+    },
     block: {
         normal: ({ children }) => (
             <p className="mb-5 text-balance text-zinc-300 text-base sm:text-lg leading-[1.75] font-medium last:mb-0">
@@ -58,16 +87,44 @@ export const guidePortableTextComponents = {
         link: ({ children, value }) => {
             const href =
                 value && typeof value === "object" && "href" in value
-                    ? String((value as { href?: string }).href ?? "#")
-                    : "#";
+                    ? (value as { href?: unknown }).href
+                    : undefined;
+            const resolved = resolveGuideLinkHref(href);
+
+            if (resolved.kind === "internal") {
+                return (
+                    <Link href={resolved.href} className={LINK_CLASS_NAME}>
+                        {children}
+                    </Link>
+                );
+            }
+
             return (
-                <Link
-                    href={href}
-                    className="font-semibold text-[var(--color-brand)] underline decoration-[var(--color-brand)]/35 underline-offset-[3px] transition-colors hover:text-emerald-300"
+                <a
+                    href={resolved.href}
+                    className={LINK_CLASS_NAME}
+                    {...(resolved.kind === "external"
+                        ? { rel: "noopener noreferrer", target: "_blank" }
+                        : {})}
                 >
                     {children}
-                </Link>
+                </a>
             );
         },
     },
+    unknownType: unknownPortableTextType,
+    unknownMark: unknownPortableTextMark,
+    unknownBlockStyle: ({ children }) => (
+        <p className="mb-5 text-balance text-zinc-300 text-base sm:text-lg leading-[1.75] font-medium last:mb-0">
+            {children}
+        </p>
+    ),
+    unknownList: ({ children }) => (
+        <ul className="my-6 space-y-4 sm:my-8">{children}</ul>
+    ),
+    unknownListItem: ({ children }) => (
+        <li className="text-zinc-300 text-base sm:text-lg leading-relaxed font-medium">
+            {children}
+        </li>
+    ),
 } satisfies PortableTextComponents;
