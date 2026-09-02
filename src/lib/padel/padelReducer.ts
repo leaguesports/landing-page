@@ -331,7 +331,7 @@ export function getActiveSet(match: PadelMatch): SetScore {
 }
 
 export function getTeamLabel(
-  match: PadelMatch,
+  match: Pick<PadelMatch, "pairings">,
   team: PadelTeamId,
 ): string {
   const pair =
