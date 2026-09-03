@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 
 export type AppVenue = {
   id: string;
@@ -26,6 +27,10 @@ export type EnsureVenueAttempt = {
   body: unknown;
   venue: AppVenue | null;
   networkError: boolean;
+  /** Present when `networkError` is true — underlying `fetch` failure. */
+  networkCause?: string;
+  /** Request URL that failed when `networkError` is true. */
+  networkUrl?: string;
 };
 
 function venueUrl(baseUrl: string, cmsId: string): string {
@@ -78,13 +83,21 @@ function missingInputAttempt(): EnsureVenueAttempt {
   };
 }
 
-function networkAttempt(): EnsureVenueAttempt {
+function networkCauseMessage(err: unknown): string {
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  return "Failed to fetch";
+}
+
+function networkAttempt(url: string, err: unknown): EnsureVenueAttempt {
+  const cause = networkCauseMessage(err);
   return {
     ok: false,
     status: 0,
     body: { error: "Match API is unreachable (network error)." },
     venue: null,
     networkError: true,
+    networkCause: cause,
+    networkUrl: url,
   };
 }
 
@@ -107,15 +120,15 @@ export async function attemptEnsureVenueFromCmsWith(
 
   let lookup: Response;
   try {
-    lookup = await deps.fetch(url, {
+    lookup = await invokeFetch(deps.fetch, url, {
       method: "GET",
       cache: "no-store",
       credentials: "include",
       headers: requestHeaders(deps.cookie),
       signal: deps.signal,
     });
-  } catch {
-    return networkAttempt();
+  } catch (err) {
+    return networkAttempt(url, err);
   }
 
   const lookupBody = await readBody(lookup);
@@ -147,7 +160,7 @@ export async function attemptEnsureVenueFromCmsWith(
   }
 
   try {
-    const created = await deps.fetch(url, {
+    const created = await invokeFetch(deps.fetch, url, {
       method: "PUT",
       cache: "no-store",
       credentials: "include",
@@ -179,8 +192,8 @@ export async function attemptEnsureVenueFromCmsWith(
       venue,
       networkError: false,
     };
-  } catch {
-    return networkAttempt();
+  } catch (err) {
+    return networkAttempt(url, err);
   }
 }
 

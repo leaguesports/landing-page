@@ -1,5 +1,7 @@
-import { createInitialPadelMatch } from "./padelReducer.ts";
+import { getLoopbackApiProxyOrigin } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 import { attemptEnsureVenueFromCmsWith } from "../venues/appVenueApi.ts";
+import { createInitialPadelMatch } from "./padelReducer.ts";
 import type {
   CreatePadelMatchInput,
   HistoryPairings,
@@ -22,6 +24,19 @@ export const MATCH_API_PROXY_MISS = "Match API proxy missed this path";
 export const MATCH_API_ORIGIN_UNCONFIGURED =
   "Match API origin is not configured";
 
+/**
+ * Browser `fetch` threw (no HTTP response). Local/dev names the proxy
+ * target so you start `league-sports-api` on that port; production stays
+ * the generic unreachable string.
+ */
+export function matchApiUnreachableMessage(
+  env: NodeJS.Dict<string> = process.env,
+): string {
+  const origin = getLoopbackApiProxyOrigin(env);
+  if (!origin) return MATCH_API_UNREACHABLE;
+  return `${MATCH_API_UNREACHABLE} Start league-sports-api on ${origin} (Postgres required).`;
+}
+
 export class MatchApiError extends Error {
   status: number;
 
@@ -30,6 +45,25 @@ export class MatchApiError extends Error {
     this.name = "MatchApiError";
     this.status = status;
   }
+}
+
+function fetchFailureDetail(err: unknown): string {
+  if (typeof err === "string" && err.trim()) return err.trim();
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  return "";
+}
+
+function unreachableMatchApi(opts?: {
+  cause?: unknown;
+  url?: string;
+}): never {
+  const base = matchApiUnreachableMessage();
+  const detail = fetchFailureDetail(opts?.cause);
+  const url = opts?.url?.trim() ?? "";
+  const parts = [base];
+  if (detail) parts.push(detail);
+  if (url) parts.push(url);
+  throw new MatchApiError(0, parts.join(" · "));
 }
 
 export type ApiPadelPlayer = {
@@ -555,7 +589,10 @@ export async function createPadelMatchWith(
   );
   if (!ensured.ok) {
     if (ensured.networkError) {
-      throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+      unreachableMatchApi({
+        cause: ensured.networkCause,
+        url: ensured.networkUrl,
+      });
     }
     throw jsonError(ensured.status, ensured.body);
   }
@@ -567,21 +604,22 @@ export async function createPadelMatchWith(
   }
 
   const body = toCreateMatchBody(input);
+  const matchUrl = `${deps.baseUrl.replace(/\/$/, "")}/api/matches`;
   let res: Response;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}/api/matches`, {
+    res = await invokeFetch(deps.fetch, matchUrl, {
       method: "POST",
       cache: "no-store",
       credentials: "include",
       headers,
       body: JSON.stringify(body),
     });
-  } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: matchUrl });
   }
 
   const payload = await readResponseBody(res);
@@ -621,23 +659,21 @@ export async function lockPadelMatchWith(
   }
 
   let res: Response;
+  const lockUrl = `${deps.baseUrl.replace(/\/$/, "")}/api/matches/${encodeURIComponent(id)}/lock`;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(
-      `${deps.baseUrl.replace(/\/$/, "")}/api/matches/${encodeURIComponent(id)}/lock`,
-      {
-        method: "POST",
-        cache: "no-store",
-        credentials: "include",
-        headers,
-        body: JSON.stringify(body),
-      },
-    );
-  } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+    res = await invokeFetch(deps.fetch, lockUrl, {
+      method: "POST",
+      cache: "no-store",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: lockUrl });
   }
 
   const payload = await readResponseBody(res);
@@ -661,17 +697,18 @@ async function fetchHistoryList(
   }
 
   let res: Response;
+  const historyUrl = `${deps.baseUrl.replace(/\/$/, "")}${path}`;
   try {
     const headers: Record<string, string> = {};
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}${path}`, {
+    res = await invokeFetch(deps.fetch, historyUrl, {
       method: "GET",
       cache: "no-store",
       credentials: "include",
       headers,
     });
-  } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: historyUrl });
   }
 
   const payload = await readResponseBody(res);

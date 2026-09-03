@@ -11,6 +11,7 @@ import {
   listPlayerHistoryWith,
   listVenueHistoryWith,
   lockPadelMatchWith,
+  matchApiUnreachableMessage,
   matchWinner,
   parseApiMatch,
   parseHistoryItem,
@@ -517,10 +518,97 @@ describe("createPadelMatchWith", () => {
       (err: unknown) => {
         assert.ok(err instanceof MatchApiError);
         assert.equal(err.status, 0);
-        assert.equal(err.message, MATCH_API_UNREACHABLE);
+        assert.equal(err.message.startsWith(MATCH_API_UNREACHABLE), true);
+        assert.match(err.message, /Failed to fetch/);
+        assert.match(err.message, /\/api\/matches/);
         return true;
       },
     );
+  });
+
+  it("surfaces a network error when venue ensure fetch throws", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => {
+            throw new TypeError("Failed to fetch");
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 0);
+        assert.equal(err.message.startsWith(MATCH_API_UNREACHABLE), true);
+        assert.match(err.message, /Failed to fetch/);
+        assert.match(err.message, /\/api\/venues\//);
+        return true;
+      },
+    );
+  });
+
+  it("accepts unbound window.fetch without Illegal invocation", async () => {
+    const calls: string[] = [];
+    /**
+     * Mimics browsers that reject `deps.fetch(url)` when `fetch` was taken
+     * off `window` — `this` must be the global object.
+     */
+    function browserFetch(
+      this: unknown,
+      url: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<Response> {
+      if (this !== globalThis) {
+        throw new TypeError(
+          "Failed to execute 'fetch' on 'Window': Illegal invocation",
+        );
+      }
+      calls.push(`${init?.method ?? "GET"} ${String(url)}`);
+      if (String(url).includes("/api/venues/")) {
+        return Promise.resolve(jsonResponse(200, appVenue));
+      }
+      return Promise.resolve(jsonResponse(201, createdSnapshot));
+    }
+
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: browserFetch as typeof fetch,
+    });
+    assert.equal(match.id, "api-match-1");
+    assert.deepEqual(calls, [
+      "GET https://api.example.test/api/venues/sanity-padel-1",
+      "POST https://api.example.test/api/matches",
+    ]);
+  });
+});
+
+describe("matchApiUnreachableMessage", () => {
+  it("keeps a generic message when the proxy target is not local", () => {
+    assert.equal(
+      matchApiUnreachableMessage({
+        NEXT_PUBLIC_API_URL:
+          "https://league-sports-api-production.up.railway.app",
+      }),
+      MATCH_API_UNREACHABLE,
+    );
+  });
+
+  it("tells local/dev to start league-sports-api on the configured port", () => {
+    const message = matchApiUnreachableMessage({
+      NEXT_PUBLIC_API_URL: "http://localhost:3100",
+    });
+    assert.equal(
+      message,
+      `${MATCH_API_UNREACHABLE} Start league-sports-api on http://localhost:3100 (Postgres required).`,
+    );
+  });
+
+  it("prefers API_ORIGIN for the local hint", () => {
+    const message = matchApiUnreachableMessage({
+      API_ORIGIN: "http://127.0.0.1:3100",
+      NEXT_PUBLIC_API_URL: "http://localhost:9999",
+    });
+    assert.equal(message.includes("127.0.0.1:3100"), true);
+    assert.equal(message.includes("localhost:9999"), false);
   });
 });
 

@@ -30,6 +30,41 @@ function hostnameOf(origin: string): string | null {
   }
 }
 
+/** True when the proxy target is a local `league-sports-api` process. */
+export function isLoopbackApiOrigin(origin: string): boolean {
+  const host = hostnameOf(origin);
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "[::1]"
+  );
+}
+
+/**
+ * Loopback rewrite target from `API_ORIGIN` / `RAILWAY_API_URL` /
+ * `NEXT_PUBLIC_API_URL`. Empty for Railway or an unconfigured origin —
+ * production must not tell users to start a local API.
+ */
+export function getLoopbackApiProxyOrigin(
+  env: NodeJS.Dict<string> = process.env,
+): string {
+  const candidates = [
+    env.API_ORIGIN,
+    env.RAILWAY_API_URL,
+    env.NEXT_PUBLIC_API_URL,
+  ];
+
+  for (const raw of candidates) {
+    const origin = stripTrailingSlash((raw ?? "").trim());
+    if (!origin) continue;
+    if (isFrontendOrigin(origin)) continue;
+    return isLoopbackApiOrigin(origin) ? origin : "";
+  }
+
+  return "";
+}
+
 /** True when `origin` is this Next.js site (rewrite loop if used as proxy dest). */
 export function isFrontendOrigin(origin: string): boolean {
   const host = hostnameOf(origin);
