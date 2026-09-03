@@ -518,8 +518,9 @@ describe("createPadelMatchWith", () => {
       (err: unknown) => {
         assert.ok(err instanceof MatchApiError);
         assert.equal(err.status, 0);
-        assert.equal(err.message, matchApiUnreachableMessage());
         assert.equal(err.message.startsWith(MATCH_API_UNREACHABLE), true);
+        assert.match(err.message, /Failed to fetch/);
+        assert.match(err.message, /\/api\/matches/);
         return true;
       },
     );
@@ -537,7 +538,9 @@ describe("createPadelMatchWith", () => {
       (err: unknown) => {
         assert.ok(err instanceof MatchApiError);
         assert.equal(err.status, 0);
-        assert.equal(err.message, matchApiUnreachableMessage());
+        assert.equal(err.message.startsWith(MATCH_API_UNREACHABLE), true);
+        assert.match(err.message, /Failed to fetch/);
+        assert.match(err.message, /\/api\/venues\//);
         return true;
       },
     );

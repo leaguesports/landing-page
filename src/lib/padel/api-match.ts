@@ -46,8 +46,23 @@ export class MatchApiError extends Error {
   }
 }
 
-function unreachableMatchApi(): never {
-  throw new MatchApiError(0, matchApiUnreachableMessage());
+function fetchFailureDetail(err: unknown): string {
+  if (typeof err === "string" && err.trim()) return err.trim();
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  return "";
+}
+
+function unreachableMatchApi(opts?: {
+  cause?: unknown;
+  url?: string;
+}): never {
+  const base = matchApiUnreachableMessage();
+  const detail = fetchFailureDetail(opts?.cause);
+  const url = opts?.url?.trim() ?? "";
+  const parts = [base];
+  if (detail) parts.push(detail);
+  if (url) parts.push(url);
+  throw new MatchApiError(0, parts.join(" · "));
 }
 
 export type ApiPadelPlayer = {
@@ -573,7 +588,10 @@ export async function createPadelMatchWith(
   );
   if (!ensured.ok) {
     if (ensured.networkError) {
-      unreachableMatchApi();
+      unreachableMatchApi({
+        cause: ensured.networkCause,
+        url: ensured.networkUrl,
+      });
     }
     throw jsonError(ensured.status, ensured.body);
   }
@@ -585,21 +603,22 @@ export async function createPadelMatchWith(
   }
 
   const body = toCreateMatchBody(input);
+  const matchUrl = `${deps.baseUrl.replace(/\/$/, "")}/api/matches`;
   let res: Response;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}/api/matches`, {
+    res = await deps.fetch(matchUrl, {
       method: "POST",
       cache: "no-store",
       credentials: "include",
       headers,
       body: JSON.stringify(body),
     });
-  } catch {
-    unreachableMatchApi();
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: matchUrl });
   }
 
   const payload = await readResponseBody(res);
@@ -639,23 +658,21 @@ export async function lockPadelMatchWith(
   }
 
   let res: Response;
+  const lockUrl = `${deps.baseUrl.replace(/\/$/, "")}/api/matches/${encodeURIComponent(id)}/lock`;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(
-      `${deps.baseUrl.replace(/\/$/, "")}/api/matches/${encodeURIComponent(id)}/lock`,
-      {
-        method: "POST",
-        cache: "no-store",
-        credentials: "include",
-        headers,
-        body: JSON.stringify(body),
-      },
-    );
-  } catch {
-    unreachableMatchApi();
+    res = await deps.fetch(lockUrl, {
+      method: "POST",
+      cache: "no-store",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: lockUrl });
   }
 
   const payload = await readResponseBody(res);
@@ -679,17 +696,18 @@ async function fetchHistoryList(
   }
 
   let res: Response;
+  const historyUrl = `${deps.baseUrl.replace(/\/$/, "")}${path}`;
   try {
     const headers: Record<string, string> = {};
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(`${deps.baseUrl.replace(/\/$/, "")}${path}`, {
+    res = await deps.fetch(historyUrl, {
       method: "GET",
       cache: "no-store",
       credentials: "include",
       headers,
     });
-  } catch {
-    unreachableMatchApi();
+  } catch (err) {
+    unreachableMatchApi({ cause: err, url: historyUrl });
   }
 
   const payload = await readResponseBody(res);

@@ -26,6 +26,10 @@ export type EnsureVenueAttempt = {
   body: unknown;
   venue: AppVenue | null;
   networkError: boolean;
+  /** Present when `networkError` is true — underlying `fetch` failure. */
+  networkCause?: string;
+  /** Request URL that failed when `networkError` is true. */
+  networkUrl?: string;
 };
 
 function venueUrl(baseUrl: string, cmsId: string): string {
@@ -78,13 +82,21 @@ function missingInputAttempt(): EnsureVenueAttempt {
   };
 }
 
-function networkAttempt(): EnsureVenueAttempt {
+function networkCauseMessage(err: unknown): string {
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  return "Failed to fetch";
+}
+
+function networkAttempt(url: string, err: unknown): EnsureVenueAttempt {
+  const cause = networkCauseMessage(err);
   return {
     ok: false,
     status: 0,
     body: { error: "Match API is unreachable (network error)." },
     venue: null,
     networkError: true,
+    networkCause: cause,
+    networkUrl: url,
   };
 }
 
@@ -114,8 +126,8 @@ export async function attemptEnsureVenueFromCmsWith(
       headers: requestHeaders(deps.cookie),
       signal: deps.signal,
     });
-  } catch {
-    return networkAttempt();
+  } catch (err) {
+    return networkAttempt(url, err);
   }
 
   const lookupBody = await readBody(lookup);
@@ -179,8 +191,8 @@ export async function attemptEnsureVenueFromCmsWith(
       venue,
       networkError: false,
     };
-  } catch {
-    return networkAttempt();
+  } catch (err) {
+    return networkAttempt(url, err);
   }
 }
 
