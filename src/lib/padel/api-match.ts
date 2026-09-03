@@ -1,4 +1,5 @@
 import { getLoopbackApiProxyOrigin } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 import { attemptEnsureVenueFromCmsWith } from "../venues/appVenueApi.ts";
 import { createInitialPadelMatch } from "./padelReducer.ts";
 import type {
@@ -610,7 +611,7 @@ export async function createPadelMatchWith(
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(matchUrl, {
+    res = await invokeFetch(deps.fetch, matchUrl, {
       method: "POST",
       cache: "no-store",
       credentials: "include",
@@ -664,7 +665,7 @@ export async function lockPadelMatchWith(
       "Content-Type": "application/json",
     };
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(lockUrl, {
+    res = await invokeFetch(deps.fetch, lockUrl, {
       method: "POST",
       cache: "no-store",
       credentials: "include",
@@ -700,7 +701,7 @@ async function fetchHistoryList(
   try {
     const headers: Record<string, string> = {};
     if (deps.cookie) headers.Cookie = deps.cookie;
-    res = await deps.fetch(historyUrl, {
+    res = await invokeFetch(deps.fetch, historyUrl, {
       method: "GET",
       cache: "no-store",
       credentials: "include",

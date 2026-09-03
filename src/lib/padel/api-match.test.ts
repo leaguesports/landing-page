@@ -545,6 +545,40 @@ describe("createPadelMatchWith", () => {
       },
     );
   });
+
+  it("accepts unbound window.fetch without Illegal invocation", async () => {
+    const calls: string[] = [];
+    /**
+     * Mimics browsers that reject `deps.fetch(url)` when `fetch` was taken
+     * off `window` — `this` must be the global object.
+     */
+    function browserFetch(
+      this: unknown,
+      url: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<Response> {
+      if (this !== globalThis) {
+        throw new TypeError(
+          "Failed to execute 'fetch' on 'Window': Illegal invocation",
+        );
+      }
+      calls.push(`${init?.method ?? "GET"} ${String(url)}`);
+      if (String(url).includes("/api/venues/")) {
+        return Promise.resolve(jsonResponse(200, appVenue));
+      }
+      return Promise.resolve(jsonResponse(201, createdSnapshot));
+    }
+
+    const match = await createPadelMatchWith(createInput, court, {
+      baseUrl: "https://api.example.test",
+      fetch: browserFetch as typeof fetch,
+    });
+    assert.equal(match.id, "api-match-1");
+    assert.deepEqual(calls, [
+      "GET https://api.example.test/api/venues/sanity-padel-1",
+      "POST https://api.example.test/api/matches",
+    ]);
+  });
 });
 
 describe("matchApiUnreachableMessage", () => {

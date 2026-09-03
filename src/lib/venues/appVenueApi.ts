@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 
 export type AppVenue = {
   id: string;
@@ -119,7 +120,7 @@ export async function attemptEnsureVenueFromCmsWith(
 
   let lookup: Response;
   try {
-    lookup = await deps.fetch(url, {
+    lookup = await invokeFetch(deps.fetch, url, {
       method: "GET",
       cache: "no-store",
       credentials: "include",
@@ -159,7 +160,7 @@ export async function attemptEnsureVenueFromCmsWith(
   }
 
   try {
-    const created = await deps.fetch(url, {
+    const created = await invokeFetch(deps.fetch, url, {
       method: "PUT",
       cache: "no-store",
       credentials: "include",
