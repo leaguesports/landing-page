@@ -30,6 +30,26 @@ FRONTEND_URL=https://leaguesports.co.za
 
 Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway.
 
+## Local development (padel match create)
+
+The browser always calls same-origin `/api/*` on this Next.js app. Do **not** fetch Railway (or `:3100`) from client code.
+
+To create a match on `/padel/new`:
+
+1. Run Postgres (the API needs `DATABASE_URL`).
+2. Start the sibling `league-sports-api` on port **3100**.
+3. Point this app’s rewrite at that process:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:3100
+```
+
+`API_ORIGIN` overrides `NEXT_PUBLIC_API_URL` for the rewrite destination if you need them to differ.
+
+4. `npm run dev` and open [http://localhost:3000](http://localhost:3000).
+
+If `league-sports-api` is not listening, Start Match shows an unreachable error that names that origin (Postgres is required for a real create).
+
 ## Getting Started
 
 First, run the development server:

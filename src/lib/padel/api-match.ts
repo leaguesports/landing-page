@@ -1,5 +1,6 @@
-import { createInitialPadelMatch } from "./padelReducer.ts";
+import { getLoopbackApiProxyOrigin } from "../api-origin.ts";
 import { attemptEnsureVenueFromCmsWith } from "../venues/appVenueApi.ts";
+import { createInitialPadelMatch } from "./padelReducer.ts";
 import type {
   CreatePadelMatchInput,
   HistoryPairings,
@@ -22,6 +23,19 @@ export const MATCH_API_PROXY_MISS = "Match API proxy missed this path";
 export const MATCH_API_ORIGIN_UNCONFIGURED =
   "Match API origin is not configured";
 
+/**
+ * Browser `fetch` threw (no HTTP response). Local/dev names the proxy
+ * target so you start `league-sports-api` on that port; production stays
+ * the generic unreachable string.
+ */
+export function matchApiUnreachableMessage(
+  env: NodeJS.Dict<string> = process.env,
+): string {
+  const origin = getLoopbackApiProxyOrigin(env);
+  if (!origin) return MATCH_API_UNREACHABLE;
+  return `${MATCH_API_UNREACHABLE} Start league-sports-api on ${origin} (Postgres required).`;
+}
+
 export class MatchApiError extends Error {
   status: number;
 
@@ -30,6 +44,10 @@ export class MatchApiError extends Error {
     this.name = "MatchApiError";
     this.status = status;
   }
+}
+
+function unreachableMatchApi(): never {
+  throw new MatchApiError(0, matchApiUnreachableMessage());
 }
 
 export type ApiPadelPlayer = {
@@ -555,7 +573,7 @@ export async function createPadelMatchWith(
   );
   if (!ensured.ok) {
     if (ensured.networkError) {
-      throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+      unreachableMatchApi();
     }
     throw jsonError(ensured.status, ensured.body);
   }
@@ -581,7 +599,7 @@ export async function createPadelMatchWith(
       body: JSON.stringify(body),
     });
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+    unreachableMatchApi();
   }
 
   const payload = await readResponseBody(res);
@@ -637,7 +655,7 @@ export async function lockPadelMatchWith(
       },
     );
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+    unreachableMatchApi();
   }
 
   const payload = await readResponseBody(res);
@@ -671,7 +689,7 @@ async function fetchHistoryList(
       headers,
     });
   } catch {
-    throw new MatchApiError(0, MATCH_API_UNREACHABLE);
+    unreachableMatchApi();
   }
 
   const payload = await readResponseBody(res);

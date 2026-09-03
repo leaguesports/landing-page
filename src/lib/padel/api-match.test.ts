@@ -11,6 +11,7 @@ import {
   listPlayerHistoryWith,
   listVenueHistoryWith,
   lockPadelMatchWith,
+  matchApiUnreachableMessage,
   matchWinner,
   parseApiMatch,
   parseHistoryItem,
@@ -517,10 +518,60 @@ describe("createPadelMatchWith", () => {
       (err: unknown) => {
         assert.ok(err instanceof MatchApiError);
         assert.equal(err.status, 0);
-        assert.equal(err.message, MATCH_API_UNREACHABLE);
+        assert.equal(err.message, matchApiUnreachableMessage());
+        assert.equal(err.message.startsWith(MATCH_API_UNREACHABLE), true);
         return true;
       },
     );
+  });
+
+  it("surfaces a network error when venue ensure fetch throws", async () => {
+    await assert.rejects(
+      () =>
+        createPadelMatchWith(createInput, court, {
+          baseUrl: "https://api.example.test",
+          fetch: async () => {
+            throw new TypeError("Failed to fetch");
+          },
+        }),
+      (err: unknown) => {
+        assert.ok(err instanceof MatchApiError);
+        assert.equal(err.status, 0);
+        assert.equal(err.message, matchApiUnreachableMessage());
+        return true;
+      },
+    );
+  });
+});
+
+describe("matchApiUnreachableMessage", () => {
+  it("keeps a generic message when the proxy target is not local", () => {
+    assert.equal(
+      matchApiUnreachableMessage({
+        NEXT_PUBLIC_API_URL:
+          "https://league-sports-api-production.up.railway.app",
+      }),
+      MATCH_API_UNREACHABLE,
+    );
+  });
+
+  it("tells local/dev to start league-sports-api on the configured port", () => {
+    const message = matchApiUnreachableMessage({
+      NEXT_PUBLIC_API_URL: "http://localhost:3100",
+    });
+    assert.equal(
+      message,
+      `${MATCH_API_UNREACHABLE} Start league-sports-api on http://localhost:3100 (Postgres required).`,
+    );
+  });
+
+  it("prefers API_ORIGIN for the local hint", () => {
+    const message = matchApiUnreachableMessage({
+      API_ORIGIN: "http://127.0.0.1:3100",
+      NEXT_PUBLIC_API_URL: "http://localhost:9999",
+    });
+    assert.equal(message.includes("127.0.0.1:3100"), true);
+    assert.equal(message.includes("localhost:9999"), false);
   });
 });
 

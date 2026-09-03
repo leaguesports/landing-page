@@ -4,9 +4,11 @@ import {
   PRODUCTION_RAILWAY_API_ORIGIN,
   API_PROXY_EXPLICIT_SOURCES,
   getApiProxyRewrites,
+  getLoopbackApiProxyOrigin,
   getRailwayApiOrigin,
   isApiConfigured,
   isFrontendOrigin,
+  isLoopbackApiOrigin,
   shouldProxyApiPath,
 } from "./api-origin.ts";
 
@@ -84,6 +86,49 @@ describe("shouldProxyApiPath", () => {
 
   it("does not treat a venues-claim prefix as the local claim route", () => {
     assert.equal(shouldProxyApiPath("/api/venues/claimant"), true);
+  });
+});
+
+describe("isLoopbackApiOrigin", () => {
+  it("accepts localhost and loopback hosts", () => {
+    assert.equal(isLoopbackApiOrigin("http://localhost:3100"), true);
+    assert.equal(isLoopbackApiOrigin("http://127.0.0.1:3100"), true);
+    assert.equal(isLoopbackApiOrigin("http://[::1]:3100"), true);
+  });
+
+  it("rejects Railway and other remote API origins", () => {
+    assert.equal(isLoopbackApiOrigin(PRODUCTION_RAILWAY_API_ORIGIN), false);
+    assert.equal(isLoopbackApiOrigin("https://api.example.test"), false);
+    assert.equal(isLoopbackApiOrigin("not a url"), false);
+  });
+});
+
+describe("getLoopbackApiProxyOrigin", () => {
+  it("returns a local NEXT_PUBLIC_API_URL", () => {
+    withOriginEnv({ NEXT_PUBLIC_API_URL: "http://localhost:3100/" }, () => {
+      assert.equal(getLoopbackApiProxyOrigin(), "http://localhost:3100");
+    });
+  });
+
+  it("prefers API_ORIGIN when that target is local", () => {
+    withOriginEnv(
+      {
+        API_ORIGIN: "http://127.0.0.1:3100",
+        NEXT_PUBLIC_API_URL: "http://localhost:9999",
+      },
+      () => {
+        assert.equal(getLoopbackApiProxyOrigin(), "http://127.0.0.1:3100");
+      },
+    );
+  });
+
+  it("is empty for Railway so production messages stay generic", () => {
+    withOriginEnv(
+      { NEXT_PUBLIC_API_URL: PRODUCTION_RAILWAY_API_ORIGIN },
+      () => {
+        assert.equal(getLoopbackApiProxyOrigin(), "");
+      },
+    );
   });
 });
 
