@@ -39,16 +39,18 @@ export function useAuth() {
   }, [refresh]);
 
   useEffect(() => {
+    // Refresh when the tab becomes visible again (e.g. after OAuth).
+    // Do not listen to window "focus" — clicking the page after DevTools
+    // (or any focus steal) would spam GET /api/auth/me and look like
+    // Start Match is hitting auth.
     function handleVisibility() {
       if (document.visibilityState === "visible") {
         refresh();
       }
     }
 
-    window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [refresh]);
