@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   eventToFeedItem,
+  filterFeedByVenueSlugs,
   formatHubWhen,
   guidesToFeedItems,
   HUB_EVENTS_QUERY,
+  HUB_FOLLOWED_SCREENINGS_QUERY,
   HUB_GUIDES_QUERY,
   HUB_SCREENINGS_QUERY,
+  mergeHubFeedItems,
   screeningsToFeedItems,
   sortHubFeed,
   type HubFeedItem,
@@ -18,6 +21,7 @@ describe("hub feed queries", () => {
     assert.match(HUB_EVENTS_QUERY, /_type == "event"/);
     assert.match(HUB_EVENTS_QUERY, /f1Details\.dateTime/);
     assert.match(HUB_SCREENINGS_QUERY, /upcoming_screenings/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /slug\.current in \$slugs/);
     assert.match(HUB_GUIDES_QUERY, /_type == "guide"/);
     assert.doesNotMatch(HUB_EVENTS_QUERY, /Monaco|Verstappen/);
   });

@@ -17,6 +17,8 @@ export type HubFeedItem = {
   subtitle: string;
   href: string;
   startsAt: string | null;
+  /** Present on screening items — used to surface followed venues on the hub. */
+  venueSlug?: string | null;
 };
 
 export const HUB_EVENTS_QUERY = `*[_type == "event"] | order(coalesce(f1Details.dateTime, _createdAt) asc) [0...12] {
@@ -29,6 +31,14 @@ export const HUB_EVENTS_QUERY = `*[_type == "event"] | order(coalesce(f1Details.
 }`;
 
 export const HUB_SCREENINGS_QUERY = `*[_type == "venue" && count(upcoming_screenings) > 0] | order(_updatedAt desc) [0...8] {
+  name,
+  "slug": slug.current,
+  "broadcasts": broadcasts[]->{ name, "slug": slug.current },
+  upcoming_screenings[]{ title, startsAt }
+}`;
+
+/** Screenings for specific followed venue slugs (hub return-visit payoff). */
+export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current in $slugs] {
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
@@ -135,11 +145,42 @@ export function screeningsToFeedItems(
         subtitle: venueName,
         href,
         startsAt: asIso(screening.startsAt),
+        venueSlug: venueSlug || null,
       });
     }
   }
 
   return items.slice(0, limit);
+}
+
+/** Screenings (and any items tagged with venueSlug) for venues the user follows. */
+export function filterFeedByVenueSlugs(
+  items: HubFeedItem[],
+  venueSlugs: Iterable<string>,
+): HubFeedItem[] {
+  const allowed = new Set(
+    [...venueSlugs].map((slug) => slug.trim()).filter(Boolean),
+  );
+  if (allowed.size === 0) return [];
+  return items.filter(
+    (item) => item.venueSlug && allowed.has(item.venueSlug),
+  );
+}
+
+/** Dedupe by id, preferring earlier entries (e.g. followed screenings first). */
+export function mergeHubFeedItems(
+  ...groups: HubFeedItem[][]
+): HubFeedItem[] {
+  const seen = new Set<string>();
+  const out: HubFeedItem[] = [];
+  for (const group of groups) {
+    for (const item of group) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  return out;
 }
 
 export function guidesToFeedItems(

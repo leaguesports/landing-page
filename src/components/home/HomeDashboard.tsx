@@ -14,14 +14,15 @@ type HomeDashboardProps = {
 };
 
 export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
-  const [history, golfHistory, hub, followedVenues, friends] =
-    await Promise.all([
-      lookupPlayerHistory(user.id, { cookie }),
-      lookupPlayerGolfHistory(user.id, { cookie }),
-      getDashboardHub(),
-      listFollowedVenues({ cookie }),
-      listFriends({ cookie }),
-    ]);
+  const [history, golfHistory, followedVenues, friends] = await Promise.all([
+    lookupPlayerHistory(user.id, { cookie }),
+    lookupPlayerGolfHistory(user.id, { cookie }),
+    listFollowedVenues({ cookie }),
+    listFriends({ cookie }),
+  ]);
+  const hub = await getDashboardHub({
+    followedVenueSlugs: followedVenues.map((venue) => venue.slug),
+  });
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
   const golfItems: GolfHistoryItem[] = golfHistory.error
     ? []

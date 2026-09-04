@@ -25,6 +25,7 @@ import {
   type SportDefinition,
 } from "@/lib/sports/catalog";
 import {
+  filterFeedByVenueSlugs,
   formatHubWhen,
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
@@ -195,12 +196,34 @@ export function SportsHub({
   const active = prefs.active;
   const utilities = utilitiesForActiveSport(active, sports);
   const visibleFeed = filterFeedBySport(feed, active);
-  const nextUp = visibleFeed.find((item) => {
-    if (!item.startsAt) return false;
-    const time = new Date(item.startsAt).getTime();
-    return !Number.isNaN(time) && Number.isFinite(nowMs) && time >= nowMs;
-  });
-  const restFeed = visibleFeed.filter((item) => item.id !== nextUp?.id);
+  const followedSlugs = useMemo(
+    () => followedVenues.map((venue) => venue.slug),
+    [followedVenues],
+  );
+  const followedFeed = useMemo(
+    () => filterFeedByVenueSlugs(visibleFeed, followedSlugs),
+    [followedSlugs, visibleFeed],
+  );
+  const followedUpcoming = useMemo(() => {
+    return followedFeed.filter((item) => {
+      if (!item.startsAt) return false;
+      const time = new Date(item.startsAt).getTime();
+      return !Number.isNaN(time) && Number.isFinite(nowMs) && time >= nowMs;
+    });
+  }, [followedFeed, nowMs]);
+  // Prefer an upcoming screening from a followed venue when one exists.
+  const nextUp =
+    followedUpcoming[0] ??
+    visibleFeed.find((item) => {
+      if (!item.startsAt) return false;
+      const time = new Date(item.startsAt).getTime();
+      return !Number.isNaN(time) && Number.isFinite(nowMs) && time >= nowMs;
+    });
+  const followedRest = followedFeed.filter((item) => item.id !== nextUp?.id);
+  const followedRestIds = new Set(followedRest.map((item) => item.id));
+  const generalRest = visibleFeed.filter(
+    (item) => item.id !== nextUp?.id && !followedRestIds.has(item.id),
+  );
   const showPadel =
     active === ALL_SPORTS_SLUG || active === "padel";
   const stats = summarisePlayerHistory(historyItems, user.id);
@@ -444,17 +467,17 @@ export function SportsHub({
               })}
             </ul>
 
-            {followedVenues.length > 0 ? (
-              <div className="mt-8">
-                <div className="mb-3 flex items-center gap-2">
-                  <Heart
-                    className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
-                    aria-hidden
-                  />
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                    Followed venues
-                  </p>
-                </div>
+            <div className="mt-8">
+              <div className="mb-3 flex items-center gap-2">
+                <Heart
+                  className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
+                  aria-hidden
+                />
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  Followed venues
+                </p>
+              </div>
+              {followedVenues.length > 0 ? (
                 <ul className="space-y-2">
                   {followedVenues.slice(0, 6).map((venue) => (
                     <li key={venue.id}>
@@ -475,8 +498,21 @@ export function SportsHub({
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : null}
+              ) : (
+                <div className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-5">
+                  <p className="text-sm leading-relaxed text-zinc-400">
+                    Follow a venue from its listing and it will show up here —
+                    with upcoming screenings in your feed.
+                  </p>
+                  <Link
+                    href="/venues"
+                    className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  >
+                    Find venues
+                  </Link>
+                </div>
+              )}
+            </div>
 
             <FriendsPanel initial={friends} />
 
@@ -525,7 +561,11 @@ export function SportsHub({
                 className="group mb-4 block overflow-hidden rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5 transition-colors hover:border-emerald-400/40 sm:p-6"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                  Next up · {feedKindLabel(nextUp.kind)}
+                  {nextUp.venueSlug &&
+                  followedSlugs.includes(nextUp.venueSlug)
+                    ? "From venues you follow · "
+                    : "Next up · "}
+                  {feedKindLabel(nextUp.kind)}
                 </p>
                 <h3 className="mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl">
                   {nextUp.title}
@@ -537,9 +577,60 @@ export function SportsHub({
               </Link>
             ) : null}
 
-            {restFeed.length > 0 ? (
+            {followedVenues.length > 0 && followedRest.length > 0 ? (
+              <div className="mb-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Heart
+                    className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
+                    aria-hidden
+                  />
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    From venues you follow
+                  </p>
+                </div>
+                <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-emerald-400/15 bg-[#141814]">
+                  {followedRest.slice(0, 4).map((item) => {
+                    const Icon = feedIcon(item.kind);
+                    return (
+                      <li key={item.id}>
+                        <Link
+                          href={item.href}
+                          className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
+                        >
+                          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
+                            <Icon className="h-4 w-4" aria-hidden />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                              {feedKindLabel(item.kind)}
+                              {item.startsAt
+                                ? ` · ${formatHubWhen(item.startsAt)}`
+                                : ""}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-white">
+                              {item.title}
+                            </p>
+                            <p className="mt-1 text-sm text-zinc-500">
+                              {item.subtitle}
+                            </p>
+                          </div>
+                          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : followedVenues.length > 0 && followedFeed.length === 0 ? (
+              <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+                No upcoming screenings from venues you follow yet. Check back
+                when they post fixtures.
+              </p>
+            ) : null}
+
+            {generalRest.length > 0 ? (
               <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
-                {restFeed.slice(0, 8).map((item) => {
+                {generalRest.slice(0, 8).map((item) => {
                   const Icon = feedIcon(item.kind);
                   return (
                     <li key={item.id}>
@@ -570,7 +661,7 @@ export function SportsHub({
                   );
                 })}
               </ul>
-            ) : !nextUp ? (
+            ) : !nextUp && followedRest.length === 0 ? (
               <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
                 <p className="max-w-md text-sm leading-relaxed text-zinc-400">
                   {activeSport
