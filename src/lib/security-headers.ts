@@ -39,6 +39,7 @@ export function getSecurityHeaders(
       "https://images.motorsport-magazin.com",
       "https://images.sportschau.de",
       "https://img.redbull.com",
+      "https://*.googleusercontent.com",
       "https://*.basemaps.cartocdn.com",
       "https://www.googletagmanager.com",
       "https://www.google-analytics.com",

@@ -24,6 +24,7 @@ describe("getSecurityHeaders img-src", () => {
     const csp = cspValue("production");
     assert.match(csp, /img-src[^;]*'self'/);
     assert.match(csp, /img-src[^;]*https:\/\/cdn\.sanity\.io/);
+    assert.match(csp, /img-src[^;]*https:\/\/\*\.googleusercontent\.com/);
     assert.equal(VENUE_PLACEHOLDER_IMAGE.startsWith("/"), true);
     assert.doesNotMatch(VENUE_PLACEHOLDER_IMAGE, /astratic|unsplash/i);
   });
