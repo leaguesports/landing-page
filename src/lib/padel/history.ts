@@ -60,3 +60,51 @@ export function formatHistoryDate(startsAt: string): string {
 export function playerHistoryPath(playerUserId: string): string {
   return `/padel/history?playerUserId=${encodeURIComponent(playerUserId.trim())}`;
 }
+
+function playerOnTeam(
+  players: HistoryPlayer[] | undefined,
+  userId: string,
+): boolean {
+  const id = userId.trim();
+  if (!id || !players?.length) return false;
+  return players.some((player) => player.userId === id);
+}
+
+/** Which pair the named account played on, if they were bound into the match. */
+export function playerTeam(
+  item: PadelHistoryItem,
+  playerUserId: string,
+): "A" | "B" | null {
+  if (playerOnTeam(item.pairings.teamA, playerUserId)) return "A";
+  if (playerOnTeam(item.pairings.teamB, playerUserId)) return "B";
+  return null;
+}
+
+export function didPlayerWin(
+  item: PadelHistoryItem,
+  playerUserId: string,
+): boolean | null {
+  const side = playerTeam(item, playerUserId);
+  if (!side || (item.winner !== "A" && item.winner !== "B")) return null;
+  return item.winner === side;
+}
+
+export function summarisePlayerHistory(
+  items: PadelHistoryItem[],
+  playerUserId: string,
+) {
+  let wins = 0;
+  let losses = 0;
+  for (const item of items) {
+    const won = didPlayerWin(item, playerUserId);
+    if (won === true) wins += 1;
+    else if (won === false) losses += 1;
+  }
+  const decided = wins + losses;
+  return {
+    locked: items.length,
+    wins,
+    losses,
+    winRate: decided === 0 ? 0 : Math.round((wins / decided) * 100),
+  };
+}

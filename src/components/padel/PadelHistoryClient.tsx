@@ -99,7 +99,7 @@ export function PadelHistoryClient() {
           result.
         </p>
       ) : items ? (
-        <PadelHistoryList items={items} />
+        <PadelHistoryList items={items} playerUserId={playerUserId} />
       ) : null}
 
       {viewingOwn && playerUserId && !error ? (

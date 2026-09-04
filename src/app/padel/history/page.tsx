@@ -64,7 +64,7 @@ export default async function PadelHistoryPage({ searchParams }: PageProps) {
               write the first result.
             </p>
           ) : (
-            <PadelHistoryList items={shared.items} />
+            <PadelHistoryList items={shared.items} playerUserId={sharedId} />
           )
         ) : (
           <Suspense
