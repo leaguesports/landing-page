@@ -10,22 +10,36 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function NewPadelMatchPage() {
+function firstParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0]?.trim() ?? "";
+  return value?.trim() ?? "";
+}
+
+export default async function NewPadelMatchPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ venue?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const requestedSlug = firstParam(params.venue);
   const padelCourts = (
     await searchVenues({ intent: "play", sportSlug: "padel" })
   )
     .map(toVenueOption)
     .filter(isPadelVenue);
+  const initialVenue = padelCourts.find(
+    (court) => court.slug.toLowerCase() === requestedSlug.toLowerCase(),
+  );
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 px-4 py-3 sm:px-6">
         <div className="mx-auto grid max-w-2xl grid-cols-[1fr_auto_1fr] items-center">
           <Link
-            href="/play/padel"
+            href={initialVenue ? `/venues/${initialVenue.slug}` : "/play/padel"}
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            ← Play padel
+            {initialVenue ? "← Venue" : "← Play padel"}
           </Link>
           <span className="font-display text-lg tracking-wide text-white">
             LEAGUE<span className="text-[var(--color-brand)]">SPORTS</span>
@@ -38,7 +52,11 @@ export default async function NewPadelMatchPage() {
           </Link>
         </div>
       </div>
-      <PadelQuickStart venues={padelCourts} />
+      <PadelQuickStart
+        venues={padelCourts}
+        initialVenueSlug={initialVenue?.slug}
+        lockVenue={Boolean(initialVenue)}
+      />
     </main>
   );
 }

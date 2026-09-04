@@ -4,6 +4,7 @@ import {
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
 import { venuePhotoUrl } from "@/lib/venues/photo";
+import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import {
   listVenueFilterOptions,
   searchVenues,
@@ -14,7 +15,7 @@ import {
   parseVenueSearchParams,
   venueSearchSummary,
 } from "@/lib/search/venueSearch";
-import { ArrowUpRight, MapPin, Search } from "lucide-react";
+import { ArrowUpRight, MapPin, Search, Zap } from "lucide-react";
 import Link from "next/link";
 import { VenueDirectoryFilters } from "./_components/VenueDirectoryFilters";
 
@@ -23,6 +24,8 @@ function getVenueImageSrc(venue: Venue) {
 }
 
 function VenueCard({ venue }: { venue: Venue }) {
+  const quickStart = venueQuickStartActivities(venue.sports, venue.slug)[0];
+
   return (
     <div className="group overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16">
       <Link href={`/venues/${venue.slug}`} className="block">
@@ -49,8 +52,17 @@ function VenueCard({ venue }: { venue: Venue }) {
           <VenueUtilityBadges venue={venue} className="mt-3" />
         </div>
       </Link>
-      <div className="px-5 pb-5">
+      <div className="space-y-3 px-5 pb-5">
         <VenueContactActions venue={venue} />
+        {quickStart ? (
+          <Link
+            href={quickStart.href}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+          >
+            <Zap className="h-4 w-4" aria-hidden />
+            {quickStart.cta}
+          </Link>
+        ) : null}
       </div>
     </div>
   );
