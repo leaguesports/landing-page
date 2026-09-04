@@ -1,5 +1,4 @@
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
-import { PoolsCtaBanner } from "@/components/home/PoolsCtaBanner";
 import { formatStat } from "@/lib/format-stat";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
 import { getHomepageStats } from "@/services/homepageStats";
@@ -56,8 +55,6 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
       <HomeDiscovery />
-
-      <PoolsCtaBanner />
 
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
