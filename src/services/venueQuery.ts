@@ -1,5 +1,6 @@
 import type { TypedObject } from "@portabletext/types";
 import type { SanityImageSource } from "@sanity/image-url";
+import type { GolfCourseCms } from "@/types/golf-round";
 
 export type VenueScreening = {
   title: string;
@@ -52,6 +53,8 @@ export type Venue = {
   phone?: string | null;
   website?: string | null;
   upcoming_screenings?: VenueScreening[] | null;
+  /** Hole-by-hole golf scorecard when the venue hosts golf. */
+  golfCourse?: GolfCourseCms | null;
 };
 
 /** Full venue document for venue detail pages (watch/play from linked sports). */
@@ -82,6 +85,7 @@ export type VenueRow = {
   whatsapp?: string | null;
   website?: string | null;
   upcoming_screenings?: VenueScreening[] | null;
+  golfCourse?: GolfCourseCms | null;
 };
 
 /**
@@ -141,6 +145,28 @@ export const VENUE_PROJECTION = `
     _id,
     name,
     "slug": slug.current,
+  },
+  golfCourse{
+    courseName,
+    holesTotal,
+    parTotal,
+    notes,
+    tees[]{
+      name,
+      color,
+      courseRating,
+      slope,
+      totalMeters
+    },
+    holes[]{
+      number,
+      par,
+      strokeIndex,
+      distances[]{
+        teeName,
+        meters
+      }
+    }
   },
 `;
 
@@ -207,6 +233,21 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
     upcoming_screenings: (row.upcoming_screenings ?? []).filter(
       (s) => s?.title && s?.startsAt,
     ),
+    golfCourse: mapGolfCourse(row.golfCourse),
+  };
+}
+
+function mapGolfCourse(
+  value: GolfCourseCms | null | undefined,
+): GolfCourseCms | null {
+  if (!value || typeof value !== "object") return null;
+  return {
+    courseName: value.courseName ?? null,
+    holesTotal: value.holesTotal ?? null,
+    parTotal: value.parTotal ?? null,
+    notes: value.notes ?? null,
+    tees: Array.isArray(value.tees) ? value.tees : null,
+    holes: Array.isArray(value.holes) ? value.holes : null,
   };
 }
 

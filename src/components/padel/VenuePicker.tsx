@@ -12,9 +12,15 @@ type VenuePickerProps = {
   venues: VenueOption[];
   selected: VenueOption | null;
   onSelect: (venue: VenueOption | null) => void;
+  searchPlaceholder?: string;
 };
 
-export function VenuePicker({ venues, selected, onSelect }: VenuePickerProps) {
+export function VenuePicker({
+  venues,
+  selected,
+  onSelect,
+  searchPlaceholder = "Search padel courts…",
+}: VenuePickerProps) {
   const { coords, status, error, request } = useGeolocation();
   const [query, setQuery] = useState("");
 
@@ -63,7 +69,7 @@ export function VenuePicker({ venues, selected, onSelect }: VenuePickerProps) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search padel courts…"
+            placeholder={searchPlaceholder}
             className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-emerald-400/40"
           />
         </div>
