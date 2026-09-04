@@ -7,6 +7,11 @@ import {
   logout as apiLogout,
   type AuthState,
 } from "@/lib/api-client";
+import {
+  consumeAuthReturnTo,
+  stashAuthReturnTo,
+} from "@/lib/auth-return-to";
+import { usePathname } from "next/navigation";
 
 const INITIAL_AUTH: AuthState = {
   isAuthenticated: false,
@@ -15,6 +20,7 @@ const INITIAL_AUTH: AuthState = {
 };
 
 export function useAuth() {
+  const pathname = usePathname();
   const [auth, setAuth] = useState<AuthState>(INITIAL_AUTH);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,7 +61,13 @@ export function useAuth() {
     };
   }, [refresh]);
 
+  useEffect(() => {
+    if (isLoading || !auth.isAuthenticated) return;
+    consumeAuthReturnTo(pathname || "/");
+  }, [auth.isAuthenticated, isLoading, pathname]);
+
   const signIn = useCallback((returnTo?: string) => {
+    stashAuthReturnTo(returnTo);
     const url = getGoogleSignInUrl(returnTo);
     if (url) {
       window.location.href = url;
