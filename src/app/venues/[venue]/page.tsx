@@ -14,7 +14,7 @@ import {
   type VenueDetail,
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
-import { toVenueOption } from "@/lib/padel/venue-options";
+import { toGolfVenueOption } from "@/lib/golf/venue-options";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
@@ -292,7 +292,7 @@ export default async function VenuePage({ params }: Props) {
     .join(", ");
   const heroImageUrl = venuePhotoUrl(venue, { width: 1920, height: 1080 });
   const quickStartActivities = venueQuickStartActivities(
-    toVenueOption(venue),
+    toGolfVenueOption(venue),
   );
   const primaryQuickStart = quickStartActivities[0];
   const navLinks = venueNavLinks(quickStartActivities.length > 0);

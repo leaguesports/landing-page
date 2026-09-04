@@ -59,7 +59,7 @@ export const SPORT_CATALOG: SportDefinition[] = [
     slug: "golf",
     name: "Golf",
     noun: "course",
-    capabilities: ["play"],
+    capabilities: ["play", "scorecard"],
   },
   {
     slug: "motorsport",
@@ -236,22 +236,27 @@ export function utilitiesForSport(sport: SportDefinition): HubUtility[] {
     sport.slug === "motorsport" ? "/watch" : `/watch/${sport.slug}`;
 
   if (sport.capabilities.includes("scorecard")) {
+    const isGolf = sport.slug === "golf";
     list.push({
       id: `${sport.slug}-start`,
       sportSlug: sport.slug,
       kind: "scorecard",
-      title: "Start a match",
-      description: "Live scorecard for a four-ball.",
-      href: "/padel/new",
+      title: isGolf ? "Start a round" : "Start a match",
+      description: isGolf
+        ? "Hole-by-hole scorecard for your group."
+        : "Live scorecard for a four-ball.",
+      href: isGolf ? "/golf/new" : "/padel/new",
       emphasis: "primary",
     });
     list.push({
       id: `${sport.slug}-history`,
       sportSlug: sport.slug,
       kind: "history",
-      title: "Match history",
-      description: "Locked results on your record.",
-      href: "/padel/history",
+      title: isGolf ? "Round history" : "Match history",
+      description: isGolf
+        ? "Locked rounds on your record."
+        : "Locked results on your record.",
+      href: isGolf ? "/golf/history" : "/padel/history",
       emphasis: "secondary",
     });
   }
@@ -328,6 +333,15 @@ export function utilitiesForAll(): HubUtility[] {
       description: "Live scorecard — lock the result onto your history.",
       href: "/padel/new",
       emphasis: "primary",
+    },
+    {
+      id: "all-golf-start",
+      sportSlug: "golf",
+      kind: "scorecard",
+      title: "Start a golf round",
+      description: "Hole-by-hole scorecard — lock the round onto your history.",
+      href: "/golf/new",
+      emphasis: "secondary",
     },
     {
       id: "all-play",

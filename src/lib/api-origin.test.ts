@@ -69,7 +69,11 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/matches"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
+    assert.equal(shouldProxyApiPath("/api/golf-rounds"), true);
+    assert.equal(shouldProxyApiPath("/api/golf-rounds/abc"), true);
+    assert.equal(shouldProxyApiPath("/api/golf-rounds/abc/lock"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/venues/sanity-court/golf-rounds"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);

@@ -93,6 +93,13 @@ describe("VENUE_PROJECTION", () => {
     assert.doesNotMatch(VENUE_PROJECTION, /coalesce\(hero_image/);
     assert.match(VENUE_PROJECTION, /"sports": sports\[\]-> \{[\s\S]*?\bimage\b/);
   });
+
+  it("projects golfCourse scorecard fields for round start", () => {
+    assert.match(VENUE_PROJECTION, /golfCourse\{/);
+    assert.match(VENUE_PROJECTION, /courseName/);
+    assert.match(VENUE_PROJECTION, /strokeIndex/);
+    assert.match(VENUE_PROJECTION, /totalMeters/);
+  });
 });
 
 describe("sportSlugVariants", () => {
@@ -207,5 +214,20 @@ describe("mapVenueRow", () => {
   it("normalizes missing portable-text description to an empty array", () => {
     const venue = mapVenueRow({ ...base, description: null });
     assert.deepEqual(venue?.description, []);
+  });
+
+  it("maps golfCourse when present", () => {
+    const venue = mapVenueRow({
+      ...base,
+      golfCourse: {
+        courseName: "East",
+        holesTotal: 18,
+        parTotal: 72,
+        holes: [{ number: 1, par: 4, strokeIndex: 7 }],
+        tees: [{ name: "Club" }],
+      },
+    });
+    assert.equal(venue?.golfCourse?.courseName, "East");
+    assert.equal(venue?.golfCourse?.holes?.[0]?.strokeIndex, 7);
   });
 });

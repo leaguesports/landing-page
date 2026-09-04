@@ -67,6 +67,25 @@ describe("utilities", () => {
     assert.ok(hrefs.includes("/watch/padel"));
   });
 
+  it("gives golf a round start and history, not padel paths", () => {
+    const golf = SPORT_CATALOG.find((sport) => sport.slug === "golf");
+    assert.ok(golf);
+    assert.ok(golf.capabilities.includes("scorecard"));
+    const utilities = utilitiesForSport(golf);
+    const hrefs = utilities.map((item) => item.href);
+    assert.ok(hrefs.includes("/golf/new"));
+    assert.ok(hrefs.includes("/golf/history"));
+    assert.ok(hrefs.includes("/venues?intent=play&sport=golf"));
+    assert.equal(
+      utilities.some((item) => item.href === "/padel/new"),
+      false,
+    );
+    assert.equal(
+      utilities.find((item) => item.kind === "scorecard")?.title,
+      "Start a round",
+    );
+  });
+
   it("focuses motorsport on calendar and watch, not a padel scorecard", () => {
     const utilities = utilitiesForActiveSport("motorsport", SPORT_CATALOG);
     const hrefs = utilities.map((item) => item.href);
@@ -77,10 +96,11 @@ describe("utilities", () => {
     );
   });
 
-  it("keeps the all-sports mix spanning play, watch, and padel", () => {
+  it("keeps the all-sports mix spanning play, watch, padel, and golf", () => {
     const utilities = utilitiesForActiveSport(ALL_SPORTS_SLUG, SPORT_CATALOG);
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/padel/new"));
+    assert.ok(hrefs.includes("/golf/new"));
     assert.ok(hrefs.includes("/venues?intent=play"));
     assert.ok(hrefs.includes("/watch"));
   });

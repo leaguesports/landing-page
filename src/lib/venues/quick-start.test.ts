@@ -1,15 +1,36 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { padelNewHref, venueQuickStartActivities } from "./quick-start.ts";
+import {
+  golfNewHref,
+  padelNewHref,
+  venueQuickStartActivities,
+} from "./quick-start.ts";
+import type { GolfCourseCms } from "../../types/golf-round.ts";
+
+function playableCourse(): GolfCourseCms {
+  return {
+    courseName: "Test",
+    holes: Array.from({ length: 18 }, (_, i) => ({
+      number: i + 1,
+      par: 4,
+      strokeIndex: i + 1,
+    })),
+  };
+}
 
 function venue(
-  partial: Partial<{ slug: string; sports: string[] }> & {
+  partial: Partial<{
+    slug: string;
+    sports: string[];
+    golfCourse: GolfCourseCms | null;
+  }> & {
     sports: string[];
   },
 ) {
   return {
     slug: partial.slug ?? "court-one",
     sports: partial.sports,
+    golfCourse: partial.golfCourse,
   };
 }
 
@@ -27,6 +48,20 @@ describe("padelNewHref", () => {
     assert.equal(
       padelNewHref("padel & co"),
       `/padel/new?venue=${encodeURIComponent("padel & co")}`,
+    );
+  });
+});
+
+describe("golfNewHref", () => {
+  it("returns the bare new-round path without a slug", () => {
+    assert.equal(golfNewHref(), "/golf/new");
+    assert.equal(golfNewHref("  "), "/golf/new");
+  });
+
+  it("encodes the venue slug as a query param", () => {
+    assert.equal(
+      golfNewHref("glendower-golf-club"),
+      "/golf/new?venue=glendower-golf-club",
     );
   });
 });
@@ -58,6 +93,47 @@ describe("venueQuickStartActivities", () => {
       venue({ sports: ["padel", "paddle"] }),
     );
     assert.equal(activities.length, 1);
+  });
+
+  it("offers golf when the venue has a playable golfCourse", () => {
+    const activities = venueQuickStartActivities(
+      venue({
+        slug: "glendower",
+        sports: ["golf"],
+        golfCourse: playableCourse(),
+      }),
+    );
+    assert.equal(activities.length, 1);
+    assert.equal(activities[0]?.id, "golf");
+    assert.equal(activities[0]?.href, "/golf/new?venue=glendower");
+    assert.equal(activities[0]?.cta, "Start golf round");
+  });
+
+  it("offers both padel and golf when both apply", () => {
+    const activities = venueQuickStartActivities(
+      venue({
+        slug: "multi-club",
+        sports: ["padel", "golf"],
+        golfCourse: playableCourse(),
+      }),
+    );
+    assert.deepEqual(
+      activities.map((a) => a.id),
+      ["padel", "golf"],
+    );
+  });
+
+  it("ignores golf sport tags without playable hole data", () => {
+    assert.deepEqual(
+      venueQuickStartActivities(
+        venue({
+          slug: "golf-without-scorecard",
+          sports: ["golf"],
+          golfCourse: { holes: [] },
+        }),
+      ),
+      [],
+    );
   });
 
   it("returns nothing for watch-only sports bars", () => {

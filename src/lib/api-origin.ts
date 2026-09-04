@@ -140,8 +140,12 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/matches",
   "/api/matches/:id/lock",
   "/api/matches/:id",
+  "/api/golf-rounds",
+  "/api/golf-rounds/:id/lock",
+  "/api/golf-rounds/:id",
   "/api/me/followed-venues",
   "/api/venues/:cmsId/matches",
+  "/api/venues/:cmsId/golf-rounds",
   "/api/venues/:cmsId/follow",
   "/api/venues/:cmsId",
 ] as const;
