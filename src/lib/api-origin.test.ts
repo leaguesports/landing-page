@@ -63,7 +63,6 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/auth/session"), true);
     assert.equal(shouldProxyApiPath("/api/auth/providers/google/signin"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-venue-1"), true);
-    assert.equal(shouldProxyApiPath("/api/pools"), true);
   });
 
   it("proxies match identity to Railway and keeps Ably events local", () => {

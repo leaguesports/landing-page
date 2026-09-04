@@ -64,14 +64,6 @@ export default function Footer() {
               <ul className="space-y-3">
                 <li>
                   <Link
-                    href="/pools/create"
-                    className="text-sm text-zinc-300 transition-colors hover:text-white"
-                  >
-                    Prediction pools
-                  </Link>
-                </li>
-                <li>
-                  <Link
                     href="/guides"
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >
