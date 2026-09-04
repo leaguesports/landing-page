@@ -103,6 +103,15 @@ describe("filterFeedBySport", () => {
       ["2"],
     );
   });
+
+  it("keeps untagged items on All and hides them from a focused sport", () => {
+    const mixed = [...feed, { id: "4", sportSlug: null }];
+    assert.equal(filterFeedBySport(mixed, ALL_SPORTS_SLUG).length, 4);
+    assert.deepEqual(
+      filterFeedBySport(mixed, "padel").map((item) => item.id),
+      ["1"],
+    );
+  });
 });
 
 describe("hub preferences", () => {

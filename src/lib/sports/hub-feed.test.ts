@@ -47,6 +47,20 @@ describe("eventToFeedItem", () => {
     assert.equal(eventToFeedItem({ id: "x" }, SPORT_CATALOG), null);
     assert.equal(eventToFeedItem({ title: "Race" }, SPORT_CATALOG), null);
   });
+
+  it("leaves untagged events unscoped instead of defaulting to motorsport", () => {
+    const item = eventToFeedItem(
+      {
+        id: "evt-2",
+        title: "Community open day",
+        slug: "open-day",
+        series: "",
+      },
+      SPORT_CATALOG,
+    );
+    assert.ok(item);
+    assert.equal(item.sportSlug, null);
+  });
 });
 
 describe("screeningsToFeedItems", () => {
@@ -70,6 +84,23 @@ describe("screeningsToFeedItems", () => {
     assert.equal(items[0]?.href, "/venues/the-local");
     assert.equal(items[0]?.subtitle, "The Local");
   });
+
+  it("does not force rugby when the title and broadcasts are untagged", () => {
+    const items = screeningsToFeedItems(
+      [
+        {
+          name: "Town Hall",
+          slug: "town-hall",
+          broadcasts: [],
+          upcoming_screenings: [
+            { title: "Live on the big screen", startsAt: "2026-09-05T16:00:00.000Z" },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+    );
+    assert.equal(items[0]?.sportSlug, null);
+  });
 });
 
 describe("guidesToFeedItems", () => {
@@ -89,6 +120,25 @@ describe("guidesToFeedItems", () => {
     assert.equal(items[0]?.sportSlug, "padel");
     assert.equal(items[0]?.href, "/guides/joburg-padel");
     assert.equal(items[0]?.kind, "guide");
+    assert.equal(items[0]?.startsAt, null);
+  });
+
+  it("does not force padel when a guide mentions no sport", () => {
+    const items = guidesToFeedItems(
+      [
+        {
+          _id: "g2",
+          title: "How to pick a Saturday venue",
+          slug: "saturday-venue",
+          description: "Vibe, screens, and parking.",
+          keywords: ["venues"],
+          _createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      SPORT_CATALOG,
+    );
+    assert.equal(items[0]?.sportSlug, null);
+    assert.equal(items[0]?.startsAt, null);
   });
 });
 

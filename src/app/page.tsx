@@ -1,7 +1,6 @@
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { formatStat } from "@/lib/format-stat";
-import type { AuthUser } from "@/lib/api-client";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
 import { getHomepageStats } from "@/services/homepageStats";
@@ -149,31 +148,12 @@ async function MarketingHome() {
   );
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ hubPreview?: string | string[] }>;
-}) {
-  const [auth, params] = await Promise.all([
-    getServerAuthState(),
-    searchParams,
-  ]);
+export default async function Home() {
+  const auth = await getServerAuthState();
 
-  const previewValue = params.hubPreview;
-  const hubPreview =
-    process.env.NODE_ENV !== "production" &&
-    (Array.isArray(previewValue) ? previewValue[0] : previewValue) === "1";
-
-  if (hubPreview || (auth.isAuthenticated && auth.user?.id)) {
-    const user: AuthUser =
-      auth.user ??
-      ({
-        id: "preview",
-        displayName: "Alex Player",
-        handle: "alex",
-      } satisfies AuthUser);
+  if (auth.isAuthenticated && auth.user?.id) {
     const cookie = (await cookies()).toString();
-    return <HomeDashboard user={user} cookie={cookie} />;
+    return <HomeDashboard user={auth.user} cookie={cookie} />;
   }
 
   return <MarketingHome />;

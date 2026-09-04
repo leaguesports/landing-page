@@ -11,7 +11,8 @@ export type HubFeedKind = "event" | "screening" | "guide";
 export type HubFeedItem = {
   id: string;
   kind: HubFeedKind;
-  sportSlug: string;
+  /** Null when the CMS row cannot be tagged — All feed only. */
+  sportSlug: string | null;
   title: string;
   subtitle: string;
   href: string;
@@ -91,8 +92,7 @@ export function eventToFeedItem(
   const slug = asString(row.slug);
   const sportSlug =
     resolveSportSlug(series, sports) ??
-    inferSportSlug(`${series} ${title}`, sports) ??
-    "motorsport";
+    inferSportSlug(`${series} ${title}`, sports);
   const track = asString(row.track);
   const startsAt = asIso(row.dateTime);
   return {
@@ -126,7 +126,7 @@ export function screeningsToFeedItems(
       const title = asString(screening.title);
       if (!title) continue;
       const sportSlug =
-        inferSportSlug(title, sports) ?? broadcastSport ?? "rugby";
+        inferSportSlug(title, sports) ?? broadcastSport;
       items.push({
         id: `screening-${venueSlug || venueName}-${title}-${asString(screening.startsAt)}`,
         kind: "screening",
@@ -158,11 +158,11 @@ export function guidesToFeedItems(
       {
         id: `guide-${asString(guide._id) || slug}`,
         kind: "guide" as const,
-        sportSlug: inferSportSlug(blob, sports) ?? "padel",
+        sportSlug: inferSportSlug(blob, sports),
         title,
         subtitle: "Guide",
         href: `/guides/${slug}`,
-        startsAt: asIso(guide._createdAt),
+        startsAt: null,
       },
     ];
   });
