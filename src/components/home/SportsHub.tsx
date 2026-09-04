@@ -29,7 +29,6 @@ import {
   formatHubWhen,
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
-import type { GolfHistoryItem } from "@/types/golf-round";
 import type { PadelHistoryItem } from "@/types/padel-match";
 import type { FollowedVenue } from "@/lib/venues/follow";
 import {
@@ -60,11 +59,20 @@ type ActivitySport = {
   count: number;
 };
 
+/** Locked-activity counts derived on the server — not full history rows. */
+export type LockedActivityCounts = {
+  padel: number;
+  golf: number;
+  /** Set when either padel or golf lookup failed — Games must not look certain. */
+  error: string | null;
+};
+
 type SportsHubProps = {
   user: AuthUser;
   historyError: string | null;
   historyItems: PadelHistoryItem[];
-  golfHistoryItems?: GolfHistoryItem[];
+  /** Prefer this over shipping full golf history into the client hub. */
+  lockedActivity?: LockedActivityCounts;
   followedVenues?: FollowedVenue[];
   friends?: FriendsSnapshot;
   sports: SportDefinition[];
@@ -165,7 +173,7 @@ export function SportsHub({
   user,
   historyError,
   historyItems,
-  golfHistoryItems = [],
+  lockedActivity,
   followedVenues = [],
   friends = emptyFriendsSnapshot(),
   sports,
@@ -175,8 +183,10 @@ export function SportsHub({
   const name = displayName(user);
   const handle = user.handle?.trim();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
-  const padelLocked = historyItems.length;
-  const golfLocked = golfHistoryItems.length;
+  const padelLocked = lockedActivity?.padel ?? historyItems.length;
+  const golfLocked = lockedActivity?.golf ?? 0;
+  const activityError = lockedActivity?.error ?? historyError;
+  const gamesKnown = !activityError;
   const gamesPlayed = padelLocked + golfLocked;
   const seedFollowed = useMemo(() => {
     const seeds: string[] = [];
@@ -316,11 +326,16 @@ export function SportsHub({
               <div className="mt-5 flex flex-wrap items-end gap-4">
                 <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
                   <p className="font-display text-2xl tracking-wide text-white tabular-nums">
-                    {gamesPlayed}
+                    {gamesKnown ? gamesPlayed : "—"}
                   </p>
                   <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
                     Games
                   </p>
+                  {activityError ? (
+                    <p className="mt-1 max-w-[11rem] text-[11px] leading-snug text-amber-300/90">
+                      Couldn’t load all activity
+                    </p>
+                  ) : null}
                 </div>
                 {activitySports.length > 0 ? (
                   <div className="flex min-w-0 flex-col gap-2">
