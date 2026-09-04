@@ -239,7 +239,7 @@ function SectionHeader({
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
         {label}
       </p>
-      <h2 className="font-display text-3xl tracking-wide text-white sm:text-5xl sm:text-4xl">
+      <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
         {title}
       </h2>
       {description ? (
