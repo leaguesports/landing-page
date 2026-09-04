@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2, MessageCircle, Share2, Undo2, Wifi, WifiOff } from "lucide-react";
+import { Loader2, MessageCircle, Share2, Undo2, Wifi, WifiOff, X } from "lucide-react";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
 import { useMatchChannel } from "@/hooks/useMatchChannel";
 import { matchWinner } from "@/lib/padel/api-match";
@@ -12,6 +12,10 @@ import {
   getActiveSet,
   getTeamLabel,
 } from "@/lib/padel/padelReducer";
+import {
+  dismissPadelShareNudge,
+  isPadelShareNudgeDismissed,
+} from "@/lib/padel/share-nudge";
 import {
   buildPadelLockedShare,
   buildPadelWhatsAppShare,
@@ -146,6 +150,49 @@ function WhatsAppShareControl({ match }: { match: PadelWhatsAppShareMatch }) {
   );
 }
 
+/** First-open sticky nudge — does not auto-open WhatsApp; scoring stays usable. */
+function LiveShareNudgeBar({
+  match,
+  onDismiss,
+}: {
+  match: PadelWhatsAppShareMatch;
+  onDismiss: () => void;
+}) {
+  const origin = useShareOrigin();
+  const share = buildPadelWhatsAppShare(match, origin);
+
+  return (
+    <div
+      role="region"
+      aria-label="Share this live match"
+      className="sticky bottom-0 z-20 border-t border-emerald-400/25 bg-[#0a120c]/95 px-4 py-3 backdrop-blur-md"
+    >
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-sm font-medium text-emerald-100">
+          WhatsApp the other pair
+        </p>
+        <a
+          href={share.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-10 shrink-0 touch-manipulation items-center gap-1.5 rounded-full bg-emerald-400 px-3.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden />
+          Share
+        </a>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss share reminder"
+          className="inline-flex min-h-10 min-w-10 shrink-0 touch-manipulation items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Locked-result Share: Web Share API when available, else WhatsApp `wa.me`. */
 function LockedResultShareButton({ match }: { match: PadelLockedShareMatch }) {
   const origin = useShareOrigin();
@@ -197,6 +244,24 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
     match.ruleset === "golden_point" ? "Golden Point" : "Advantage";
   const winner = matchWinner(match);
   const winnerLabel = winner ? getTeamLabel(match, winner) : null;
+  // Start hidden to avoid SSR/hydration flash; reveal after reading sessionStorage.
+  const [shareNudgeDismissed, setShareNudgeDismissed] = useState(true);
+
+  useEffect(() => {
+    setShareNudgeDismissed(isPadelShareNudgeDismissed(match.id));
+  }, [match.id]);
+
+  const liveShareMatch = {
+    id: match.id,
+    pairings: match.pairings,
+    venue: match.venue,
+  };
+  const showShareNudge = !locked && !shareNudgeDismissed;
+
+  function handleDismissShareNudge() {
+    dismissPadelShareNudge(match.id);
+    setShareNudgeDismissed(true);
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#050705] text-white">
@@ -223,13 +288,7 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
           // Keep header balance; Share lives on the locked-result footer.
           <span className="inline-block min-h-9 min-w-[5.5rem]" aria-hidden />
         ) : (
-          <WhatsAppShareControl
-            match={{
-              id: match.id,
-              pairings: match.pairings,
-              venue: match.venue,
-            }}
-          />
+          <WhatsAppShareControl match={liveShareMatch} />
         )}
       </header>
 
@@ -271,6 +330,13 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
           onScore={() => void scorePoint("B")}
         />
       </div>
+
+      {showShareNudge ? (
+        <LiveShareNudgeBar
+          match={liveShareMatch}
+          onDismiss={handleDismissShareNudge}
+        />
+      ) : null}
 
       <div className="safe-area-pb border-t border-white/8 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {locked ? (
