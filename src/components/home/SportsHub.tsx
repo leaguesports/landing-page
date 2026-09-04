@@ -485,9 +485,15 @@ export function SportsHub({
                 </div>
 
                 {historyError ? (
-                  <p className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
-                    {historyError}
-                  </p>
+                  <div className="space-y-5 rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-8 sm:px-8">
+                    <p className="text-sm text-red-300">{historyError}</p>
+                    <Link
+                      href="/padel/new"
+                      className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                    >
+                      Start a match anyway
+                    </Link>
+                  </div>
                 ) : recent.length === 0 ? (
                   <div className="space-y-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
                     <p className="max-w-md text-sm leading-relaxed text-zinc-400">

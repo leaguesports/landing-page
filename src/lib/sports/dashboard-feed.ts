@@ -1,5 +1,3 @@
-import { sanityClient } from "@/sanity/client";
-import { listVenueFilterOptions } from "@/services/venues";
 import {
   mergeHubSports,
   SPORT_CATALOG,
@@ -48,15 +46,6 @@ function isSanityConfigured(): boolean {
   );
 }
 
-async function loadHubSports(): Promise<SportDefinition[]> {
-  try {
-    const { sports } = await listVenueFilterOptions();
-    return mergeHubSports(SPORT_CATALOG, sports);
-  } catch {
-    return SPORT_CATALOG;
-  }
-}
-
 /**
  * Editorial + fixture feed for the signed-in hub.
  * Failures degrade to catalog sports and an empty feed — never throw.
@@ -65,8 +54,15 @@ export async function getDashboardHub(): Promise<HubDashboardData> {
   if (!isSanityConfigured()) return { ...EMPTY_HUB_DASHBOARD };
 
   try {
+    const [{ sanityClient }, { listVenueFilterOptions }] = await Promise.all([
+      import("@/sanity/client"),
+      import("@/services/venues"),
+    ]);
+
     const [sports, eventRows, screeningRows, guides] = await Promise.all([
-      loadHubSports(),
+      listVenueFilterOptions()
+        .then((options) => mergeHubSports(SPORT_CATALOG, options.sports))
+        .catch(() => SPORT_CATALOG),
       sanityClient.fetch<HubEventRow[]>(HUB_EVENTS_QUERY).catch(() => []),
       sanityClient
         .fetch<HubScreeningVenueRow[]>(HUB_SCREENINGS_QUERY)
