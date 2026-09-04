@@ -1,8 +1,11 @@
+import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { formatStat } from "@/lib/format-stat";
+import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
 import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
@@ -39,7 +42,7 @@ function GuideCard({ guide }: { guide: Guide }) {
   );
 }
 
-export default async function Home() {
+async function MarketingHome() {
   const [topGuides, stats] = await Promise.all([
     getTopGuides(),
     getHomepageStats(),
@@ -143,4 +146,15 @@ export default async function Home() {
       </section>
     </div>
   );
+}
+
+export default async function Home() {
+  const auth = await getServerAuthState();
+
+  if (auth.isAuthenticated && auth.user?.id) {
+    const cookie = (await cookies()).toString();
+    return <HomeDashboard user={auth.user} cookie={cookie} />;
+  }
+
+  return <MarketingHome />;
 }
