@@ -31,7 +31,7 @@ export function HomeDiscovery() {
           <div className="pointer-events-none absolute -right-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-7xl px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
+        <div className="relative mx-auto w-full max-w-7xl px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-14 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
           <h1 className="font-display animate-rise text-[clamp(3.25rem,12vw,9.5rem)] leading-[0.88] tracking-wide text-white">
             LEAGUE
             <span className="text-[var(--color-brand)]">SPORTS</span>
