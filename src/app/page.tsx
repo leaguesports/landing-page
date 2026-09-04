@@ -129,16 +129,16 @@ export default async function Home() {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
-                href="/watch"
+                href="/venues"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
               >
-                Watch directory
+                Find a venue
               </Link>
               <Link
-                href="/play"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                href="/padel/new"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
               >
-                Play directory
+                Play now
               </Link>
             </div>
           </div>
