@@ -15,7 +15,7 @@ export function HomeDiscovery() {
 
   return (
     <>
-      <section className="relative flex min-h-[88vh] items-end overflow-visible">
+      <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-visible sm:min-h-[88vh] sm:items-end">
         <div className="absolute inset-0 overflow-hidden">
           <Image
             src={HERO_IMAGE}
@@ -31,18 +31,18 @@ export function HomeDiscovery() {
           <div className="pointer-events-none absolute -right-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-7xl px-4 pb-14 pt-20 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
-          <h1 className="font-display animate-rise text-[clamp(3.5rem,14vw,9.5rem)] leading-[0.88] tracking-wide text-white">
+        <div className="relative mx-auto w-full max-w-7xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
+          <h1 className="font-display animate-rise text-[clamp(3.25rem,12vw,9.5rem)] leading-[0.88] tracking-wide text-white">
             LEAGUE
             <span className="text-[var(--color-brand)]">SPORTS</span>
           </h1>
 
-          <p className="animate-rise-delay mt-5 max-w-xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+          <p className="animate-rise-delay mt-4 max-w-xl text-base leading-relaxed text-zinc-300 sm:mt-5 sm:text-lg">
             Play a padel match on a live scorecard. Lock the result so it
             lands on your history and the court.
           </p>
 
-          <div className="animate-rise-delay-2 mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap">
+          <div className="animate-rise-delay-2 mt-7 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap">
             <Link
               href="/venues"
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
