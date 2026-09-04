@@ -44,22 +44,16 @@ export function HomeDiscovery() {
 
           <div className="animate-rise-delay-2 mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap">
             <Link
+              href="/venues"
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+            >
+              Find a venue
+            </Link>
+            <Link
               href="/padel/new"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
             >
-              Play a match
-            </Link>
-            <Link
-              href="/watch"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-            >
-              Watch directory
-            </Link>
-            <Link
-              href="/play"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-            >
-              Play directory
+              Play now
             </Link>
           </div>
         </div>
