@@ -72,12 +72,17 @@ export function useAuth() {
   }, []);
 
   const displayName =
-    auth.user?.displayName ?? auth.user?.name ?? auth.user?.email ?? "";
+    auth.user?.displayName ??
+    auth.user?.name ??
+    (auth.user?.handle ? `@${auth.user.handle}` : undefined) ??
+    auth.user?.email ??
+    "";
 
   return {
     isAuthenticated: auth.isAuthenticated,
     user: auth.user,
     displayName,
+    handle: auth.user?.handle ?? "",
     authError: auth.error,
     isLoading,
     signIn,

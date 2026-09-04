@@ -65,11 +65,26 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
     return null;
   }, [isAuthenticated, user, displayName]);
 
+  // Keep signed-in user in A1 when that slot is empty so history binds.
+  const resolvedSlots = useMemo(() => {
+    if (!selfPlayer) return slots;
+    const alreadySeated = Object.values(slots).some(
+      (player) => player?.userId === selfPlayer.userId,
+    );
+    if (alreadySeated || slots.a1) return slots;
+    return { ...slots, a1: selfPlayer };
+  }, [slots, selfPlayer]);
+
   const startsAtIso = datetimeLocalToIso(startsAtLocal);
   const ready =
     Boolean(venue) &&
     Boolean(startsAtIso) &&
-    Boolean(slots.a1 && slots.a2 && slots.b1 && slots.b2) &&
+    Boolean(
+      resolvedSlots.a1 &&
+        resolvedSlots.a2 &&
+        resolvedSlots.b1 &&
+        resolvedSlots.b2,
+    ) &&
     !starting &&
     !isPending;
 
@@ -82,7 +97,12 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
       setError("Set a start time");
       return;
     }
-    if (!slots.a1 || !slots.a2 || !slots.b1 || !slots.b2) {
+    if (
+      !resolvedSlots.a1 ||
+      !resolvedSlots.a2 ||
+      !resolvedSlots.b1 ||
+      !resolvedSlots.b2
+    ) {
       setError("Pick all four players to start");
       return;
     }
@@ -91,8 +111,8 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
     setStarting(true);
 
     const pairings = {
-      teamA: [slots.a1, slots.a2] as [PadelPlayer, PadelPlayer],
-      teamB: [slots.b1, slots.b2] as [PadelPlayer, PadelPlayer],
+      teamA: [resolvedSlots.a1, resolvedSlots.a2] as [PadelPlayer, PadelPlayer],
+      teamB: [resolvedSlots.b1, resolvedSlots.b2] as [PadelPlayer, PadelPlayer],
     };
 
     rememberPlayers([...pairings.teamA, ...pairings.teamB]);
@@ -192,13 +212,18 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
         </div>
         <p className="text-xs text-zinc-500">
           Named account or guest display name — four players required.
+          {selfPlayer
+            ? " You are seated in Team A until you pick someone else."
+            : null}
         </p>
         <PlayerPairings
-          slots={slots}
+          slots={resolvedSlots}
           onChange={setSlots}
           selfPlayer={selfPlayer}
         />
-        <SwapTeamsButton onSwap={() => setSlots((s) => swapTeamSlots(s))} />
+        <SwapTeamsButton
+          onSwap={() => setSlots(swapTeamSlots(resolvedSlots))}
+        />
       </section>
 
       {error ? (

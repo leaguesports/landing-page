@@ -40,7 +40,9 @@ function toAbsoluteReturnTo(returnTo: string): string {
   return `${getSiteOrigin()}${returnTo.startsWith("/") ? returnTo : `/${returnTo}`}`;
 }
 
-async function poolApi<T>(
+async function poolApi<
+  T
+>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -69,11 +71,13 @@ async function poolApi<T>(
   return res.json() as Promise<T>;
 }
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   displayName?: string;
   email?: string;
   name?: string;
+  handle?: string;
+  avatarUrl?: string | null;
 }
 
 export interface AuthState {
