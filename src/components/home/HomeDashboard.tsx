@@ -14,15 +14,20 @@ type HomeDashboardProps = {
 };
 
 export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
-  const [history, golfHistory, followedVenues, friends] = await Promise.all([
-    lookupPlayerHistory(user.id, { cookie }),
-    lookupPlayerGolfHistory(user.id, { cookie }),
-    listFollowedVenues({ cookie }),
-    listFriends({ cookie }),
-  ]);
-  const hub = await getDashboardHub({
-    followedVenueSlugs: followedVenues.map((venue) => venue.slug),
-  });
+  // Start follow I/O immediately; hub generic Sanity reads do not wait on it.
+  const followedVenuesPromise = listFollowedVenues({ cookie });
+  const followedSlugsPromise = followedVenuesPromise.then((venues) =>
+    venues.map((venue) => venue.slug),
+  );
+
+  const [history, golfHistory, hub, followedVenues, friends] =
+    await Promise.all([
+      lookupPlayerHistory(user.id, { cookie }),
+      lookupPlayerGolfHistory(user.id, { cookie }),
+      getDashboardHub({ followedVenueSlugs: followedSlugsPromise }),
+      followedVenuesPromise,
+      listFriends({ cookie }),
+    ]);
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
   const golfItems: GolfHistoryItem[] = golfHistory.error
     ? []

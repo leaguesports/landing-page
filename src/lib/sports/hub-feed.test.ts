@@ -9,9 +9,11 @@ import {
   HUB_FOLLOWED_SCREENINGS_QUERY,
   HUB_GUIDES_QUERY,
   HUB_SCREENINGS_QUERY,
+  MAX_FOLLOWED_VENUE_SLUGS,
   mergeHubFeedItems,
   screeningsToFeedItems,
   sortHubFeed,
+  uniqueFollowedVenueSlugs,
   type HubFeedItem,
 } from "./hub-feed.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
@@ -22,8 +24,22 @@ describe("hub feed queries", () => {
     assert.match(HUB_EVENTS_QUERY, /f1Details\.dateTime/);
     assert.match(HUB_SCREENINGS_QUERY, /upcoming_screenings/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /slug\.current in \$slugs/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /count\(upcoming_screenings\) > 0/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /order\(_updatedAt desc\)/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /\[0\.\.\.24\]/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /upcoming_screenings\[0\.\.\.12\]/);
     assert.match(HUB_GUIDES_QUERY, /_type == "guide"/);
     assert.doesNotMatch(HUB_EVENTS_QUERY, /Monaco|Verstappen/);
+  });
+});
+
+describe("uniqueFollowedVenueSlugs", () => {
+  it("dedupes, trims, and caps length", () => {
+    assert.deepEqual(uniqueFollowedVenueSlugs([" a ", "a", "b", ""]), ["a", "b"]);
+    const many = Array.from({ length: MAX_FOLLOWED_VENUE_SLUGS + 5 }, (_, i) =>
+      `v${i}`,
+    );
+    assert.equal(uniqueFollowedVenueSlugs(many).length, MAX_FOLLOWED_VENUE_SLUGS);
   });
 });
 
@@ -121,6 +137,33 @@ describe("screeningsToFeedItems", () => {
       SPORT_CATALOG,
     );
     assert.equal(items[0]?.venueSlug, "the-local");
+  });
+
+  it("preferSoonest keeps the nearest fixture when capping across venues", () => {
+    const now = new Date("2026-09-04T12:00:00.000Z");
+    const items = screeningsToFeedItems(
+      [
+        {
+          name: "Later Bar",
+          slug: "later-bar",
+          upcoming_screenings: [
+            { title: "Far out", startsAt: "2026-10-01T16:00:00.000Z" },
+          ],
+        },
+        {
+          name: "Soon Bar",
+          slug: "soon-bar",
+          upcoming_screenings: [
+            { title: "Tomorrow", startsAt: "2026-09-05T16:00:00.000Z" },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+      1,
+      { preferSoonest: true, now },
+    );
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.venueSlug, "soon-bar");
   });
 });
 

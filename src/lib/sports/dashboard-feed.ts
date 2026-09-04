@@ -13,6 +13,7 @@ import {
   mergeHubFeedItems,
   screeningsToFeedItems,
   sortHubFeed,
+  uniqueFollowedVenueSlugs,
   type HubEventRow,
   type HubFeedItem,
   type HubGuideRow,
@@ -32,6 +33,7 @@ export {
   mergeHubFeedItems,
   screeningsToFeedItems,
   sortHubFeed,
+  uniqueFollowedVenueSlugs,
 } from "./hub-feed";
 
 export type HubDashboardData = {
@@ -40,14 +42,19 @@ export type HubDashboardData = {
 };
 
 export type GetDashboardHubOptions = {
-  /** Sanity venue slugs the signed-in user follows — merged into the feed. */
-  followedVenueSlugs?: string[];
+  /**
+   * Sanity venue slugs the signed-in user follows — merged into the feed.
+   * Accept a Promise so callers can start this while Railway follow I/O is still in flight.
+   */
+  followedVenueSlugs?: string[] | Promise<string[]>;
 };
 
 export const EMPTY_HUB_DASHBOARD: HubDashboardData = {
   sports: SPORT_CATALOG,
   feed: [],
 };
+
+const FOLLOWED_SCREENING_FEED_LIMIT = 24;
 
 function isSanityConfigured(): boolean {
   return Boolean(
@@ -56,29 +63,23 @@ function isSanityConfigured(): boolean {
   );
 }
 
-function uniqueSlugs(slugs: string[] | undefined): string[] {
-  if (!slugs?.length) return [];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of slugs) {
-    const slug = raw.trim();
-    if (!slug || seen.has(slug)) continue;
-    seen.add(slug);
-    out.push(slug);
-  }
-  return out;
-}
-
 /**
  * Editorial + fixture feed for the signed-in hub.
  * Failures degrade to catalog sports and an empty feed — never throw.
+ *
+ * Generic Sanity reads start immediately. The followed-venue query waits only
+ * on `followedVenueSlugs` (when provided), not on the rest of the homepage.
  */
 export async function getDashboardHub(
   options: GetDashboardHubOptions = {},
 ): Promise<HubDashboardData> {
   if (!isSanityConfigured()) return { ...EMPTY_HUB_DASHBOARD };
 
-  const followedSlugs = uniqueSlugs(options.followedVenueSlugs);
+  const followedSlugsPromise = Promise.resolve(
+    options.followedVenueSlugs ?? [],
+  )
+    .then((slugs) => uniqueFollowedVenueSlugs(slugs))
+    .catch(() => [] as string[]);
 
   try {
     const [{ sanityClient }, { listVenueFilterOptions }] = await Promise.all([
@@ -86,32 +87,46 @@ export async function getDashboardHub(
       import("@/services/venues"),
     ]);
 
+    const sportsPromise = listVenueFilterOptions()
+      .then((opts) => mergeHubSports(SPORT_CATALOG, opts.sports))
+      .catch(() => SPORT_CATALOG);
+    const eventsPromise = sanityClient
+      .fetch<HubEventRow[]>(HUB_EVENTS_QUERY)
+      .catch(() => [] as HubEventRow[]);
+    const screeningsPromise = sanityClient
+      .fetch<HubScreeningVenueRow[]>(HUB_SCREENINGS_QUERY)
+      .catch(() => [] as HubScreeningVenueRow[]);
+    const guidesPromise = sanityClient
+      .fetch<HubGuideRow[]>(HUB_GUIDES_QUERY)
+      .catch(() => [] as HubGuideRow[]);
+    const followedScreeningsPromise = followedSlugsPromise.then((slugs) =>
+      slugs.length > 0
+        ? sanityClient
+            .fetch<HubScreeningVenueRow[]>(HUB_FOLLOWED_SCREENINGS_QUERY, {
+              slugs,
+            })
+            .catch(() => [] as HubScreeningVenueRow[])
+        : ([] as HubScreeningVenueRow[]),
+    );
+
     const [sports, eventRows, screeningRows, followedScreeningRows, guides] =
       await Promise.all([
-        listVenueFilterOptions()
-          .then((opts) => mergeHubSports(SPORT_CATALOG, opts.sports))
-          .catch(() => SPORT_CATALOG),
-        sanityClient.fetch<HubEventRow[]>(HUB_EVENTS_QUERY).catch(() => []),
-        sanityClient
-          .fetch<HubScreeningVenueRow[]>(HUB_SCREENINGS_QUERY)
-          .catch(() => []),
-        followedSlugs.length > 0
-          ? sanityClient
-              .fetch<HubScreeningVenueRow[]>(HUB_FOLLOWED_SCREENINGS_QUERY, {
-                slugs: followedSlugs,
-              })
-              .catch(() => [])
-          : Promise.resolve([] as HubScreeningVenueRow[]),
-        sanityClient.fetch<HubGuideRow[]>(HUB_GUIDES_QUERY).catch(() => []),
+        sportsPromise,
+        eventsPromise,
+        screeningsPromise,
+        followedScreeningsPromise,
+        guidesPromise,
       ]);
 
     const events = (eventRows ?? [])
       .map((row) => eventToFeedItem(row, sports))
       .filter((item): item is HubFeedItem => item !== null);
+    // Prefer soonest fixtures before capping so later venues are not dropped.
     const followedScreenings = screeningsToFeedItems(
       followedScreeningRows ?? [],
       sports,
-      24,
+      FOLLOWED_SCREENING_FEED_LIMIT,
+      { preferSoonest: true },
     );
     const screenings = screeningsToFeedItems(screeningRows ?? [], sports);
     const guideItems = guidesToFeedItems(guides ?? [], sports);

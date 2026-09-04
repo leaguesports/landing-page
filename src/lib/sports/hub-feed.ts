@@ -37,12 +37,15 @@ export const HUB_SCREENINGS_QUERY = `*[_type == "venue" && count(upcoming_screen
   upcoming_screenings[]{ title, startsAt }
 }`;
 
+/** Cap followed-venue GROQ params — keeps CDN query strings bounded. */
+export const MAX_FOLLOWED_VENUE_SLUGS = 24;
+
 /** Screenings for specific followed venue slugs (hub return-visit payoff). */
-export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current in $slugs] {
+export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current in $slugs && count(upcoming_screenings) > 0] | order(_updatedAt desc) [0...24] {
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  upcoming_screenings[]{ title, startsAt }
+  upcoming_screenings[0...12]{ title, startsAt }
 }`;
 
 export const HUB_GUIDES_QUERY = `*[_type == "guide"] | order(_createdAt desc) [0...6] {
@@ -120,6 +123,7 @@ export function screeningsToFeedItems(
   venues: HubScreeningVenueRow[],
   sports: SportDefinition[] = SPORT_CATALOG,
   limit = 8,
+  options: { preferSoonest?: boolean; now?: Date } = {},
 ): HubFeedItem[] {
   const items: HubFeedItem[] = [];
 
@@ -150,7 +154,28 @@ export function screeningsToFeedItems(
     }
   }
 
-  return items.slice(0, limit);
+  const ordered = options.preferSoonest
+    ? sortHubFeed(items, options.now)
+    : items;
+  return ordered.slice(0, limit);
+}
+
+/** Dedupe + cap follow slugs before binding `$slugs` in GROQ. */
+export function uniqueFollowedVenueSlugs(
+  slugs: Iterable<string> | null | undefined,
+  max = MAX_FOLLOWED_VENUE_SLUGS,
+): string[] {
+  if (!slugs) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of slugs) {
+    if (out.length >= max) break;
+    const slug = typeof raw === "string" ? raw.trim() : "";
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(slug);
+  }
+  return out;
 }
 
 /** Screenings (and any items tagged with venueSlug) for venues the user follows. */
