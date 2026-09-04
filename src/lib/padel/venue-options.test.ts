@@ -95,4 +95,29 @@ describe("toVenueOption", () => {
     assert.equal(mapped.sports.includes("rugby"), false);
     assert.equal(isPadelVenue(mapped), true);
   });
+
+  it("treats a name-only paddle tag as padel for court locking", () => {
+    const venue = {
+      _id: "sanity-paddle-1",
+      name: "Court One",
+      slug: "court-one",
+      address: {
+        street: "",
+        suburb: "",
+        city: "",
+        province: "",
+        postcode: "",
+        country: "",
+      },
+      sports: [{ _id: "s1", name: "Paddle", slug: null, image: undefined }],
+      broadcasts: [],
+      description: [],
+    };
+
+    const mapped = toVenueOption(
+      venue as Parameters<typeof toVenueOption>[0],
+    );
+    assert.equal(mapped.sports.includes("paddle"), true);
+    assert.equal(isPadelVenue(mapped), true);
+  });
 });

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PadelQuickStart } from "@/components/padel/PadelQuickStart";
 import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
-import { searchVenues } from "@/services/venues";
+import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
   title: "New Padel Match | LeagueSports",
@@ -22,14 +22,32 @@ export default async function NewPadelMatchPage({
 }) {
   const params = await searchParams;
   const requestedSlug = firstParam(params.venue);
-  const padelCourts = (
-    await searchVenues({ intent: "play", sportSlug: "padel" })
-  )
-    .map(toVenueOption)
-    .filter(isPadelVenue);
-  const initialVenue = padelCourts.find(
-    (court) => court.slug.toLowerCase() === requestedSlug.toLowerCase(),
-  );
+
+  const [padelCourts, requestedVenue] = await Promise.all([
+    searchVenues({ intent: "play", sportSlug: "padel" }).then((venues) =>
+      venues.map(toVenueOption).filter(isPadelVenue),
+    ),
+    requestedSlug ? getVenueBySlug(requestedSlug) : Promise.resolve(null),
+  ]);
+
+  // Same predicate as the venue-page CTA: resolve by slug, then isPadelVenue.
+  // Do not require the court to appear in the sportSlug GROQ filter — name-only
+  // padel tags still lock. Keep searchVenues for the unlocked picker only.
+  const requestedOption = requestedVenue
+    ? toVenueOption(requestedVenue)
+    : null;
+  const initialVenue =
+    requestedOption && isPadelVenue(requestedOption) ? requestedOption : null;
+
+  const venues = initialVenue
+    ? [
+        initialVenue,
+        ...padelCourts.filter(
+          (court) =>
+            court.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
+        ),
+      ]
+    : padelCourts;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
@@ -53,7 +71,7 @@ export default async function NewPadelMatchPage({
         </div>
       </div>
       <PadelQuickStart
-        venues={padelCourts}
+        venues={venues}
         initialVenueSlug={initialVenue?.slug}
         lockVenue={Boolean(initialVenue)}
       />

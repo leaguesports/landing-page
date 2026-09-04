@@ -2,6 +2,17 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { padelNewHref, venueQuickStartActivities } from "./quick-start.ts";
 
+function venue(
+  partial: Partial<{ slug: string; sports: string[] }> & {
+    sports: string[];
+  },
+) {
+  return {
+    slug: partial.slug ?? "court-one",
+    sports: partial.sports,
+  };
+}
+
 describe("padelNewHref", () => {
   it("returns the bare new-match path without a slug", () => {
     assert.equal(padelNewHref(), "/padel/new");
@@ -23,11 +34,10 @@ describe("padelNewHref", () => {
 describe("venueQuickStartActivities", () => {
   it("offers padel when Play sports include padel", () => {
     const activities = venueQuickStartActivities(
-      [
-        { name: "Tennis", slug: "tennis" },
-        { name: "Padel", slug: "padel" },
-      ],
-      "padel-social-club",
+      venue({
+        slug: "padel-social-club",
+        sports: ["tennis", "padel"],
+      }),
     );
     assert.equal(activities.length, 1);
     assert.equal(activities[0]?.id, "padel");
@@ -35,22 +45,17 @@ describe("venueQuickStartActivities", () => {
     assert.equal(activities[0]?.cta, "Start padel match");
   });
 
-  it("accepts the paddle alias and a missing slug", () => {
+  it("accepts the paddle alias and a name-only padel tag", () => {
     const activities = venueQuickStartActivities(
-      [{ name: "Paddle", slug: null }],
-      "court-one",
+      venue({ sports: ["paddle"] }),
     );
     assert.equal(activities.length, 1);
     assert.equal(activities[0]?.sportSlug, "padel");
   });
 
-  it("dedupes padel when both padel and paddle are listed", () => {
+  it("dedupes to a single padel activity", () => {
     const activities = venueQuickStartActivities(
-      [
-        { name: "Padel", slug: "padel" },
-        { name: "Paddle", slug: "paddle" },
-      ],
-      "court-one",
+      venue({ sports: ["padel", "paddle"] }),
     );
     assert.equal(activities.length, 1);
   });
@@ -58,22 +63,20 @@ describe("venueQuickStartActivities", () => {
   it("returns nothing for watch-only sports bars", () => {
     assert.deepEqual(
       venueQuickStartActivities(
-        [
-          { name: "Rugby", slug: "rugby" },
-          { name: "Soccer", slug: "soccer" },
-        ],
-        "tigers-milk",
+        venue({
+          slug: "tigers-milk",
+          sports: ["rugby", "soccer"],
+        }),
       ),
       [],
     );
   });
 
-  it("returns nothing without a venue slug or sports", () => {
+  it("returns nothing without a venue slug or padel sports", () => {
     assert.deepEqual(
-      venueQuickStartActivities([{ name: "Padel", slug: "padel" }], "  "),
+      venueQuickStartActivities(venue({ slug: "  ", sports: ["padel"] })),
       [],
     );
-    assert.deepEqual(venueQuickStartActivities([], "court"), []);
-    assert.deepEqual(venueQuickStartActivities(null, "court"), []);
+    assert.deepEqual(venueQuickStartActivities(venue({ sports: [] })), []);
   });
 });

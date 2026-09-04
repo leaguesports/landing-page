@@ -53,6 +53,6 @@ export function isPadelSportLabel(value: string): boolean {
   return v === "padel" || v === "paddle";
 }
 
-export function isPadelVenue(option: VenueOption): boolean {
+export function isPadelVenue(option: Pick<VenueOption, "sports">): boolean {
   return option.sports.some(isPadelSportLabel);
 }

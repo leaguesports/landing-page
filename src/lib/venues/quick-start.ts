@@ -1,9 +1,7 @@
-import { isPadelSportLabel } from "../padel/venue-options.ts";
-
-export type VenueSportRef = {
-  name?: string | null;
-  slug?: string | null;
-};
+import {
+  isPadelVenue,
+  type VenueOption,
+} from "../padel/venue-options.ts";
 
 export type VenueQuickStartActivity = {
   id: string;
@@ -21,40 +19,26 @@ export function padelNewHref(venueSlug?: string | null): string {
   return `/padel/new?venue=${encodeURIComponent(slug)}`;
 }
 
-function sportKeys(sport: VenueSportRef): string[] {
-  return [sport.slug, sport.name]
-    .map((value) => value?.trim().toLowerCase() ?? "")
-    .filter(Boolean);
-}
-
 /**
  * Match-start actions for Play sports this venue actually hosts.
- * Watch-only broadcasts (sports bars) are ignored. Padel is the only
- * startable activity today.
+ * Uses the same padel predicate as `/padel/new` court locking
+ * (`isPadelVenue` on a `toVenueOption` result). Watch-only broadcasts
+ * are ignored. Padel is the only startable activity today.
  */
 export function venueQuickStartActivities(
-  sports: VenueSportRef[] | null | undefined,
-  venueSlug: string,
+  venue: Pick<VenueOption, "slug" | "sports">,
 ): VenueQuickStartActivity[] {
-  const slug = venueSlug.trim();
-  if (!slug) return [];
+  const slug = venue.slug.trim();
+  if (!slug || !isPadelVenue(venue)) return [];
 
-  const activities: VenueQuickStartActivity[] = [];
-  const seen = new Set<string>();
-
-  for (const sport of sports ?? []) {
-    if (!sportKeys(sport).some(isPadelSportLabel)) continue;
-    if (seen.has("padel")) continue;
-    seen.add("padel");
-    activities.push({
+  return [
+    {
       id: "padel",
       sportSlug: "padel",
       name: "Padel",
       href: padelNewHref(slug),
       cta: "Start padel match",
       description: "Open a live scorecard at this court.",
-    });
-  }
-
-  return activities;
+    },
+  ];
 }
