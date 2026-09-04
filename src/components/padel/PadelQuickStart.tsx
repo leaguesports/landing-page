@@ -150,17 +150,13 @@ export function PadelQuickStart({
       return;
     }
 
-    // Belt-and-suspenders: re-seat known self before POST so a fast tap
-    // cannot create unbound guests when we already know the session user.
-    const slotsForCreate = knownSelf
-      ? seatSelfInA1IfNeeded(resolvedSlots, knownSelf)
-      : resolvedSlots;
-
+    // Use resolvedSlots only: fills empty A1 with known self, but never
+    // overwrites an intentional A1 pick (seatSelfInA1IfNeeded would).
     if (
-      !slotsForCreate.a1 ||
-      !slotsForCreate.a2 ||
-      !slotsForCreate.b1 ||
-      !slotsForCreate.b2
+      !resolvedSlots.a1 ||
+      !resolvedSlots.a2 ||
+      !resolvedSlots.b1 ||
+      !resolvedSlots.b2
     ) {
       setError("Pick all four players to start");
       return;
@@ -170,11 +166,11 @@ export function PadelQuickStart({
     setStarting(true);
 
     const pairings = {
-      teamA: [slotsForCreate.a1, slotsForCreate.a2] as [
+      teamA: [resolvedSlots.a1, resolvedSlots.a2] as [
         PadelPlayer,
         PadelPlayer,
       ],
-      teamB: [slotsForCreate.b1, slotsForCreate.b2] as [
+      teamB: [resolvedSlots.b1, resolvedSlots.b2] as [
         PadelPlayer,
         PadelPlayer,
       ],
