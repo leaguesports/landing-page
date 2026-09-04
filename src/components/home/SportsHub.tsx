@@ -24,11 +24,13 @@ import {
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
 import type { PadelHistoryItem } from "@/types/padel-match";
+import type { FollowedVenue } from "@/lib/venues/follow";
 import {
   ArrowUpRight,
   BookOpen,
   Calendar,
   Flag,
+  Heart,
   History,
   MapPin,
   Trophy,
@@ -49,6 +51,7 @@ type SportsHubProps = {
   user: AuthUser;
   historyError: string | null;
   historyItems: PadelHistoryItem[];
+  followedVenues?: FollowedVenue[];
   sports: SportDefinition[];
   feed: HubFeedItem[];
   nowIso: string;
@@ -147,6 +150,7 @@ export function SportsHub({
   user,
   historyError,
   historyItems,
+  followedVenues = [],
   sports,
   feed,
   nowIso,
@@ -354,6 +358,40 @@ export function SportsHub({
                 );
               })}
             </ul>
+
+            {followedVenues.length > 0 ? (
+              <div className="mt-8">
+                <div className="mb-3 flex items-center gap-2">
+                  <Heart
+                    className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
+                    aria-hidden
+                  />
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    Followed venues
+                  </p>
+                </div>
+                <ul className="space-y-2">
+                  {followedVenues.slice(0, 6).map((venue) => (
+                    <li key={venue.id}>
+                      <Link
+                        href={`/venues/${venue.slug}`}
+                        className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 transition-colors hover:border-white/16"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-white group-hover:text-[var(--color-brand)]">
+                            {venue.name}
+                          </span>
+                        </span>
+                        <ArrowUpRight
+                          className="h-4 w-4 shrink-0 text-zinc-600 group-hover:text-white"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             {showPadel ? (
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

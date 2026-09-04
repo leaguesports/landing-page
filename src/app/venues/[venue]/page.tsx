@@ -16,6 +16,7 @@ import {
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
+import { VenueFollowButton } from "./_components/VenueFollowButton";
 import { VenueMatchHistory } from "./_components/VenueMatchHistory";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
 import { VenueMap } from "./_components/VenueMap";
@@ -23,7 +24,6 @@ import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import {
-  Bell,
   ChevronRight,
   Flag,
   MapPin,
@@ -369,7 +369,12 @@ export default async function VenuePage({ params }: Props) {
               <VenueUtilityBadges venue={venue} />
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap items-start gap-3">
+              <VenueFollowButton
+                venueCmsId={venue._id}
+                venueName={venue.name}
+                venueSlug={venue.slug}
+              />
               <VenueContactActions
                 venue={venue}
                 directionsUrl={mapsSearchUrl}
@@ -557,27 +562,27 @@ export default async function VenuePage({ params }: Props) {
                   </span>
                 </div>
                 <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                  More venues
+                  Stay close to {venue.name}
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-500">
-                  Discover screenings, fan zones, and places to play near you.
+                  Follow this venue to keep it on your list, or browse more
+                  screenings and places to play nearby.
                 </p>
               </div>
 
               <div className="flex shrink-0 flex-col gap-3">
+                <VenueFollowButton
+                  venueCmsId={venue._id}
+                  venueName={venue.name}
+                  venueSlug={venue.slug}
+                  variant="secondary"
+                />
                 <Link
                   href="/venues"
                   className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-8 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand)]"
                 >
                   Browse all venues
                 </Link>
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
-                >
-                  <Bell className="h-4 w-4" />
-                  Venue alerts
-                </button>
               </div>
             </div>
           </div>
