@@ -1,9 +1,14 @@
 "use client";
 
+import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/lib/api-client";
+import {
+  emptyFriendsSnapshot,
+  type FriendsSnapshot,
+} from "@/lib/friends/friends";
 import { summarisePlayerHistory } from "@/lib/padel/history";
 import {
   ALL_SPORTS_SLUG,
@@ -52,6 +57,7 @@ type SportsHubProps = {
   historyError: string | null;
   historyItems: PadelHistoryItem[];
   followedVenues?: FollowedVenue[];
+  friends?: FriendsSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
   nowIso: string;
@@ -151,6 +157,7 @@ export function SportsHub({
   historyError,
   historyItems,
   followedVenues = [],
+  friends = emptyFriendsSnapshot(),
   sports,
   feed,
   nowIso,
@@ -392,6 +399,8 @@ export function SportsHub({
                 </ul>
               </div>
             ) : null}
+
+            <FriendsPanel initial={friends} />
 
             {showPadel ? (
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -290,6 +290,12 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
               }}
             />
             <Link
+              href="/padel/new"
+              className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              Challenge a friend
+            </Link>
+            <Link
               href={PADEL_HISTORY_PATH}
               className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
             >
