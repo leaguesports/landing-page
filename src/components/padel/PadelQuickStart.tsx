@@ -3,7 +3,7 @@
 import { Clock, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   PlayerPairings,
   swapTeamSlots,
@@ -21,37 +21,24 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/padel/api-match";
 import {
-  makeGuestPlayer,
-  makeUserPlayer,
-  rememberPlayers,
-} from "@/lib/padel/recent-players";
+  buildDemoGuestSlots,
+  readLastPadelVenueSlug,
+  seatSelfInA1IfNeeded,
+  selectDefaultPadelVenue,
+  writeLastPadelVenueSlug,
+} from "@/lib/padel/quick-start-defaults";
+import { makeUserPlayer, rememberPlayers } from "@/lib/padel/recent-players";
 import {
   toMatchVenue,
   type VenueOption,
 } from "@/lib/padel/venue-options";
 import type { PadelPlayer, PadelRuleset } from "@/types/padel-match";
 
-const EMPTY_SLOTS: Record<SlotKey, PadelPlayer | null> = {
-  a1: null,
-  a2: null,
-  b1: null,
-  b2: null,
-};
-
 type PadelQuickStartProps = {
   venues: VenueOption[];
   initialVenueSlug?: string | null;
   lockVenue?: boolean;
 };
-
-function findVenueBySlug(
-  venues: VenueOption[],
-  slug: string | null | undefined,
-): VenueOption | null {
-  const key = slug?.trim().toLowerCase();
-  if (!key) return null;
-  return venues.find((venue) => venue.slug.toLowerCase() === key) ?? null;
-}
 
 export function PadelQuickStart({
   venues,
@@ -61,13 +48,18 @@ export function PadelQuickStart({
   const router = useRouter();
   const { user, displayName, isAuthenticated } = useAuth();
   const [ruleset, setRuleset] = useState<PadelRuleset>("golden_point");
+  // First paint: locked slug or first court (SSR-safe). Last-used applied after mount.
   const [venue, setVenue] = useState<VenueOption | null>(() =>
-    findVenueBySlug(venues, initialVenueSlug),
+    selectDefaultPadelVenue(venues, { initialVenueSlug }),
   );
   const [startsAtLocal, setStartsAtLocal] = useState(() =>
     toDatetimeLocalValue(new Date()),
   );
-  const [slots, setSlots] = useState(EMPTY_SLOTS);
+  // Signed-out defaults: all four guests so Start Match is ready immediately.
+  // When auth resolves, seatSelfInA1IfNeeded swaps A1 to the signed-in user.
+  const [slots, setSlots] = useState<Record<SlotKey, PadelPlayer | null>>(() =>
+    buildDemoGuestSlots(null),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
@@ -82,6 +74,34 @@ export function PadelQuickStart({
     }
     return null;
   }, [isAuthenticated, user, displayName]);
+
+  useEffect(() => {
+    if (lockVenue || initialVenueSlug) return;
+    const lastUsed = selectDefaultPadelVenue(venues, {
+      lastUsedSlug: readLastPadelVenueSlug(),
+    });
+    if (!lastUsed) return;
+    setVenue((current) => {
+      if (current?.slug.toLowerCase() === lastUsed.slug.toLowerCase()) {
+        return current;
+      }
+      // Only upgrade from the SSR/first-court default — keep user picks.
+      const first = venues[0];
+      if (
+        current &&
+        first &&
+        current.slug.toLowerCase() !== first.slug.toLowerCase()
+      ) {
+        return current;
+      }
+      return lastUsed;
+    });
+  }, [venues, lockVenue, initialVenueSlug]);
+
+  useEffect(() => {
+    if (!selfPlayer) return;
+    setSlots((prev) => seatSelfInA1IfNeeded(prev, selfPlayer));
+  }, [selfPlayer]);
 
   // Keep signed-in user in A1 when that slot is empty so history binds.
   const resolvedSlots = useMemo(() => {
@@ -146,6 +166,7 @@ export function PadelQuickStart({
         },
         { venue: toMatchVenue(venue)! },
       );
+      writeLastPadelVenueSlug(venue.slug);
       cacheMatchLocally(match);
       startTransition(() => {
         router.push(`/padel/${match.id}`);
@@ -157,12 +178,7 @@ export function PadelQuickStart({
   }
 
   function fillDemoGuests() {
-    setSlots({
-      a1: selfPlayer ?? makeGuestPlayer("Alex"),
-      a2: makeGuestPlayer("Sam"),
-      b1: makeGuestPlayer("Jordan"),
-      b2: makeGuestPlayer("Riley"),
-    });
+    setSlots(buildDemoGuestSlots(selfPlayer));
   }
 
   return (
