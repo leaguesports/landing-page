@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PadelQuickStart } from "@/components/padel/PadelQuickStart";
+import type { AuthUser } from "@/lib/api-client";
+import type { QuickStartInitialSelf } from "@/lib/padel/quick-start-defaults";
 import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
+import { getServerAuthState } from "@/lib/server-auth";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
@@ -15,6 +18,18 @@ function firstParam(value: string | string[] | undefined): string {
   return value?.trim() ?? "";
 }
 
+/** Serializable self for PadelQuickStart first paint (mirrors useAuth displayName). */
+function toInitialSelf(user: AuthUser | null): QuickStartInitialSelf | null {
+  if (!user?.id) return null;
+  const displayName =
+    user.displayName?.trim() ||
+    user.name?.trim() ||
+    (user.handle?.trim() ? `@${user.handle.trim()}` : "") ||
+    user.email?.trim() ||
+    "You";
+  return { id: user.id, displayName };
+}
+
 export default async function NewPadelMatchPage({
   searchParams,
 }: {
@@ -23,12 +38,15 @@ export default async function NewPadelMatchPage({
   const params = await searchParams;
   const requestedSlug = firstParam(params.venue);
 
-  const [padelCourts, requestedVenue] = await Promise.all([
+  const [padelCourts, requestedVenue, auth] = await Promise.all([
     searchVenues({ intent: "play", sportSlug: "padel" }).then((venues) =>
       venues.map(toVenueOption).filter(isPadelVenue),
     ),
     requestedSlug ? getVenueBySlug(requestedSlug) : Promise.resolve(null),
+    getServerAuthState(),
   ]);
+
+  const initialSelf = toInitialSelf(auth.user);
 
   // Same predicate as the venue-page CTA: resolve by slug, then isPadelVenue.
   // Do not require the court to appear in the sportSlug GROQ filter — name-only
@@ -74,6 +92,7 @@ export default async function NewPadelMatchPage({
         venues={venues}
         initialVenueSlug={initialVenue?.slug}
         lockVenue={Boolean(initialVenue)}
+        initialSelf={initialSelf}
       />
     </main>
   );

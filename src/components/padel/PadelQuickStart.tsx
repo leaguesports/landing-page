@@ -22,10 +22,13 @@ import {
 } from "@/lib/padel/api-match";
 import {
   buildDemoGuestSlots,
+  playerFromInitialSelf,
   readLastPadelVenueSlug,
+  resolveInitialQuickStartSlots,
   seatSelfInA1IfNeeded,
   selectDefaultPadelVenue,
   writeLastPadelVenueSlug,
+  type QuickStartInitialSelf,
 } from "@/lib/padel/quick-start-defaults";
 import { makeUserPlayer, rememberPlayers } from "@/lib/padel/recent-players";
 import {
@@ -38,12 +41,15 @@ type PadelQuickStartProps = {
   venues: VenueOption[];
   initialVenueSlug?: string | null;
   lockVenue?: boolean;
+  /** Server-seeded self so first paint seats A1 before client auth resolves. */
+  initialSelf?: QuickStartInitialSelf | null;
 };
 
 export function PadelQuickStart({
   venues,
   initialVenueSlug,
   lockVenue = false,
+  initialSelf = null,
 }: PadelQuickStartProps) {
   const router = useRouter();
   const { user, displayName, isAuthenticated } = useAuth();
@@ -55,14 +61,19 @@ export function PadelQuickStart({
   const [startsAtLocal, setStartsAtLocal] = useState(() =>
     toDatetimeLocalValue(new Date()),
   );
-  // Signed-out defaults: all four guests so Start Match is ready immediately.
-  // When auth resolves, seatSelfInA1IfNeeded swaps A1 to the signed-in user.
+  // Seed from server auth when present; otherwise four guests for one-tap.
+  // Client useAuth still re-seats when auth resolves later / changes.
   const [slots, setSlots] = useState<Record<SlotKey, PadelPlayer | null>>(() =>
-    buildDemoGuestSlots(null),
+    resolveInitialQuickStartSlots(initialSelf),
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
+
+  const seededSelfPlayer = useMemo(
+    () => playerFromInitialSelf(initialSelf),
+    [initialSelf],
+  );
 
   const selfPlayer = useMemo(() => {
     if (isAuthenticated && user?.id) {
@@ -74,6 +85,9 @@ export function PadelQuickStart({
     }
     return null;
   }, [isAuthenticated, user, displayName]);
+
+  // Prefer live client auth; fall back to RSC seed until /api/auth/me resolves.
+  const knownSelf = selfPlayer ?? seededSelfPlayer;
 
   useEffect(() => {
     if (lockVenue || initialVenueSlug) return;
@@ -105,13 +119,13 @@ export function PadelQuickStart({
 
   // Keep signed-in user in A1 when that slot is empty so history binds.
   const resolvedSlots = useMemo(() => {
-    if (!selfPlayer) return slots;
+    if (!knownSelf) return slots;
     const alreadySeated = Object.values(slots).some(
-      (player) => player?.userId === selfPlayer.userId,
+      (player) => player?.userId === knownSelf.userId,
     );
     if (alreadySeated || slots.a1) return slots;
-    return { ...slots, a1: selfPlayer };
-  }, [slots, selfPlayer]);
+    return { ...slots, a1: knownSelf };
+  }, [slots, knownSelf]);
 
   const startsAtIso = datetimeLocalToIso(startsAtLocal);
   const ready =
@@ -135,11 +149,18 @@ export function PadelQuickStart({
       setError("Set a start time");
       return;
     }
+
+    // Belt-and-suspenders: re-seat known self before POST so a fast tap
+    // cannot create unbound guests when we already know the session user.
+    const slotsForCreate = knownSelf
+      ? seatSelfInA1IfNeeded(resolvedSlots, knownSelf)
+      : resolvedSlots;
+
     if (
-      !resolvedSlots.a1 ||
-      !resolvedSlots.a2 ||
-      !resolvedSlots.b1 ||
-      !resolvedSlots.b2
+      !slotsForCreate.a1 ||
+      !slotsForCreate.a2 ||
+      !slotsForCreate.b1 ||
+      !slotsForCreate.b2
     ) {
       setError("Pick all four players to start");
       return;
@@ -149,8 +170,14 @@ export function PadelQuickStart({
     setStarting(true);
 
     const pairings = {
-      teamA: [resolvedSlots.a1, resolvedSlots.a2] as [PadelPlayer, PadelPlayer],
-      teamB: [resolvedSlots.b1, resolvedSlots.b2] as [PadelPlayer, PadelPlayer],
+      teamA: [slotsForCreate.a1, slotsForCreate.a2] as [
+        PadelPlayer,
+        PadelPlayer,
+      ],
+      teamB: [slotsForCreate.b1, slotsForCreate.b2] as [
+        PadelPlayer,
+        PadelPlayer,
+      ],
     };
 
     rememberPlayers([...pairings.teamA, ...pairings.teamB]);
@@ -178,7 +205,7 @@ export function PadelQuickStart({
   }
 
   function fillDemoGuests() {
-    setSlots(buildDemoGuestSlots(selfPlayer));
+    setSlots(buildDemoGuestSlots(knownSelf));
   }
 
   return (
@@ -263,14 +290,14 @@ export function PadelQuickStart({
         </div>
         <p className="text-xs text-zinc-500">
           Named account or guest display name — four players required.
-          {selfPlayer
+          {knownSelf
             ? " You are seated in Team A until you pick someone else."
             : null}
         </p>
         <PlayerPairings
           slots={resolvedSlots}
           onChange={setSlots}
-          selfPlayer={selfPlayer}
+          selfPlayer={knownSelf}
         />
         <SwapTeamsButton
           onSwap={() => setSlots(swapTeamSlots(resolvedSlots))}

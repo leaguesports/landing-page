@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   buildDemoGuestSlots,
   findVenueBySlug,
+  playerFromInitialSelf,
+  resolveInitialQuickStartSlots,
   seatSelfInA1IfNeeded,
   selectDefaultPadelVenue,
 } from "./quick-start-defaults.ts";
@@ -141,5 +143,45 @@ describe("seatSelfInA1IfNeeded", () => {
       b2: makeGuestPlayer("Riley"),
     };
     assert.equal(seatSelfInA1IfNeeded(slots, self), slots);
+  });
+});
+
+describe("playerFromInitialSelf", () => {
+  it("returns null when signed out or missing id", () => {
+    assert.equal(playerFromInitialSelf(null), null);
+    assert.equal(playerFromInitialSelf(undefined), null);
+    assert.equal(playerFromInitialSelf({ id: "  ", displayName: "Pat" }), null);
+  });
+
+  it("builds a bound user player with fallback display name", () => {
+    const player = playerFromInitialSelf({ id: "u1", displayName: "  " });
+    assert.ok(player);
+    assert.equal(player.userId, "u1");
+    assert.equal(player.isGuest, false);
+    assert.equal(player.displayName, "You");
+  });
+});
+
+describe("resolveInitialQuickStartSlots", () => {
+  it("fills four guests when there is no server self", () => {
+    const slots = resolveInitialQuickStartSlots(null);
+    assert.equal(slots.a1.isGuest, true);
+    assert.match(slots.a1.displayName, /Alex/i);
+    assert.equal(slots.a2.isGuest, true);
+    assert.equal(slots.b1.isGuest, true);
+    assert.equal(slots.b2.isGuest, true);
+  });
+
+  it("seats server self in A1 on first paint with guests elsewhere", () => {
+    const slots = resolveInitialQuickStartSlots({
+      id: "u42",
+      displayName: "Pat Rivera",
+    });
+    assert.equal(slots.a1.userId, "u42");
+    assert.equal(slots.a1.isGuest, false);
+    assert.equal(slots.a1.displayName, "Pat Rivera");
+    assert.equal(slots.a2.isGuest, true);
+    assert.equal(slots.b1.isGuest, true);
+    assert.equal(slots.b2.isGuest, true);
   });
 });

@@ -1,10 +1,16 @@
-import { makeGuestPlayer } from "./recent-players.ts";
+import { makeGuestPlayer, makeUserPlayer } from "./recent-players.ts";
 import type { VenueOption } from "./venue-options.ts";
 import type { PadelPlayer } from "../../types/padel-match.ts";
 
 export const LAST_PADEL_VENUE_SLUG_KEY = "leaguesports:last-padel-venue-slug";
 
 export type QuickStartSlotKey = "a1" | "a2" | "b1" | "b2";
+
+/** Serializable signed-in self seeded from RSC `getServerAuthState()`. */
+export type QuickStartInitialSelf = {
+  id: string;
+  displayName: string;
+};
 
 export function findVenueBySlug(
   venues: VenueOption[],
@@ -69,6 +75,30 @@ export function buildDemoGuestSlots(
     b1: makeGuestPlayer("Jordan"),
     b2: makeGuestPlayer("Riley"),
   };
+}
+
+/**
+ * Turn a server-seeded self into a padel player, or null when signed out.
+ * Used so first paint can seat A1 before client `/api/auth/me` resolves.
+ */
+export function playerFromInitialSelf(
+  initialSelf: QuickStartInitialSelf | null | undefined,
+): PadelPlayer | null {
+  const id = initialSelf?.id?.trim();
+  if (!id) return null;
+  const displayName = initialSelf?.displayName?.trim() || "You";
+  return makeUserPlayer({
+    id,
+    displayName,
+    userId: id,
+  });
+}
+
+/** Resolve one-tap default slots from optional server auth self. */
+export function resolveInitialQuickStartSlots(
+  initialSelf: QuickStartInitialSelf | null | undefined,
+): Record<QuickStartSlotKey, PadelPlayer> {
+  return buildDemoGuestSlots(playerFromInitialSelf(initialSelf));
 }
 
 /**
