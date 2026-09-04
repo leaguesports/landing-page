@@ -105,6 +105,87 @@ describe("screeningsToFeedItems", () => {
     );
     assert.equal(items[0]?.sportSlug, null);
   });
+
+  it("tags screening items with venueSlug for followed-venue filtering", () => {
+    const items = screeningsToFeedItems(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [],
+          upcoming_screenings: [
+            { title: "Derby day", startsAt: "2026-09-05T16:00:00.000Z" },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+    );
+    assert.equal(items[0]?.venueSlug, "the-local");
+  });
+});
+
+describe("filterFeedByVenueSlugs", () => {
+  it("keeps only screenings from followed venue slugs", () => {
+    const feed: HubFeedItem[] = [
+      {
+        id: "s1",
+        kind: "screening",
+        sportSlug: "rugby",
+        title: "A",
+        subtitle: "The Local",
+        href: "/venues/the-local",
+        startsAt: "2026-09-05T16:00:00.000Z",
+        venueSlug: "the-local",
+      },
+      {
+        id: "s2",
+        kind: "screening",
+        sportSlug: "soccer",
+        title: "B",
+        subtitle: "Other",
+        href: "/venues/other",
+        startsAt: "2026-09-06T16:00:00.000Z",
+        venueSlug: "other",
+      },
+      {
+        id: "e1",
+        kind: "event",
+        sportSlug: "motorsport",
+        title: "Race",
+        subtitle: "",
+        href: "/motorsport",
+        startsAt: "2026-09-10T12:00:00.000Z",
+      },
+    ];
+    assert.deepEqual(
+      filterFeedByVenueSlugs(feed, ["the-local"]).map((item) => item.id),
+      ["s1"],
+    );
+    assert.deepEqual(filterFeedByVenueSlugs(feed, []), []);
+  });
+});
+
+describe("mergeHubFeedItems", () => {
+  it("dedupes by id preferring earlier groups", () => {
+    const a: HubFeedItem = {
+      id: "same",
+      kind: "screening",
+      sportSlug: null,
+      title: "First",
+      subtitle: "",
+      href: "/venues/a",
+      startsAt: null,
+      venueSlug: "a",
+    };
+    const b: HubFeedItem = {
+      ...a,
+      title: "Second",
+    };
+    assert.deepEqual(
+      mergeHubFeedItems([a], [b]).map((item) => item.title),
+      ["First"],
+    );
+  });
 });
 
 describe("guidesToFeedItems", () => {
