@@ -1,12 +1,23 @@
-"use client";
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
+import { getServerAuthState } from "@/lib/server-auth";
+import { lookupVenueHistory } from "@/lib/padel/lookup-history";
+import { VenueHistorySignIn } from "./VenueHistorySignIn";
 
-import { usePathname } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
-
-export function VenueMatchHistory({ venueName }: { venueName: string }) {
-  const pathname = usePathname();
-  const { isAuthenticated, isLoading, signIn } = useAuth();
-  const returnTo = pathname || "/";
+export async function VenueMatchHistory({
+  venueName,
+  venueCmsId,
+}: {
+  venueName: string;
+  venueCmsId: string;
+}) {
+  const auth = await getServerAuthState();
+  const history = auth.isAuthenticated
+    ? await lookupVenueHistory(venueCmsId, {
+        cookie: (await cookies()).toString(),
+      })
+    : null;
 
   return (
     <section
@@ -27,35 +38,28 @@ export function VenueMatchHistory({ venueName }: { venueName: string }) {
         </header>
 
         <div className="max-w-3xl">
-          {isLoading ? (
-            <p className="text-sm text-zinc-500">Checking your account…</p>
-          ) : !isAuthenticated ? (
-            <div className="space-y-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-6 sm:py-7">
-              <p className="text-sm leading-relaxed text-zinc-400">
-                Sign up or log in to see match history at this venue.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => signIn(returnTo)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
-                >
-                  Sign up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => signIn(returnTo)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  Log in
-                </button>
-              </div>
+          {!auth.isAuthenticated ? (
+            <VenueHistorySignIn />
+          ) : history?.error ? (
+            <p className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
+              {history.error}
+            </p>
+          ) : history && history.items.length === 0 ? (
+            <div className="space-y-5 rounded-3xl border border-dashed border-white/12 bg-[#141814] px-5 py-6 text-sm leading-relaxed text-zinc-400">
+              <p>No locked matches at this venue yet.</p>
+              <Link
+                href="/padel/new"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+              >
+                Play a match
+              </Link>
             </div>
-          ) : (
-            <div className="rounded-3xl border border-dashed border-white/12 bg-[#141814] px-5 py-6 text-sm leading-relaxed text-zinc-400">
-              No matches at this venue yet.
-            </div>
-          )}
+          ) : history ? (
+            <PadelHistoryList
+              items={history.items}
+              playerUserId={auth.user?.id}
+            />
+          ) : null}
         </div>
       </div>
     </section>

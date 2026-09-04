@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { PadelHistoryItem } from "../../types/padel-match.ts";
 import {
+  didPlayerWin,
   formatHistoryDate,
   formatHistoryOpponents,
   formatHistoryScore,
   playerHistoryPath,
+  summarisePlayerHistory,
 } from "./history.ts";
 
 describe("formatHistoryOpponents", () => {
@@ -71,5 +74,60 @@ describe("playerHistoryPath", () => {
       playerHistoryPath("user-1"),
       "/padel/history?playerUserId=user-1",
     );
+  });
+});
+
+function lockedItem(
+  winner: "A" | "B",
+  teamAUserId: string | null,
+  teamBUserId: string | null,
+): PadelHistoryItem {
+  return {
+    id: "m1",
+    startsAt: "2026-09-04T10:00:00.000Z",
+    venueCmsId: "court-1",
+    venueName: "THE GRID",
+    venueSlug: "the-grid",
+    pairings: {
+      teamA: [
+        { displayName: "Alex", isGuest: !teamAUserId, userId: teamAUserId },
+        { displayName: "Sam", isGuest: true },
+      ],
+      teamB: [
+        { displayName: "Jordan", isGuest: !teamBUserId, userId: teamBUserId },
+        { displayName: "Riley", isGuest: true },
+      ],
+    },
+    opponents: [],
+    score: { sets: [{ gamesA: 6, gamesB: 4, tieBreak: null, winner: "A" }] },
+    winner,
+  };
+}
+
+describe("didPlayerWin", () => {
+  it("is a win when the account is on the winning pair", () => {
+    assert.equal(didPlayerWin(lockedItem("A", "user-1", "user-2"), "user-1"), true);
+  });
+
+  it("is a loss when the account is on the other pair", () => {
+    assert.equal(didPlayerWin(lockedItem("A", "user-1", "user-2"), "user-2"), false);
+  });
+
+  it("is unknown when the account was not bound into the match", () => {
+    assert.equal(didPlayerWin(lockedItem("A", "user-1", null), "user-9"), null);
+  });
+});
+
+describe("summarisePlayerHistory", () => {
+  it("counts wins and losses for the named account", () => {
+    const stats = summarisePlayerHistory(
+      [
+        lockedItem("A", "me", "them"),
+        lockedItem("B", "me", "them"),
+        lockedItem("A", "other", "them"),
+      ],
+      "me",
+    );
+    assert.deepEqual(stats, { locked: 3, wins: 1, losses: 1, winRate: 50 });
   });
 });

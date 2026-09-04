@@ -396,7 +396,7 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </section>
 
-        <VenueMatchHistory venueName={venue.name} />
+        <VenueMatchHistory venueName={venue.name} venueCmsId={venue._id} />
 
         {/* About */}
         <section

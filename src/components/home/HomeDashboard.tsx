@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import type { AuthUser } from "@/lib/api-client";
+import { summarisePlayerHistory } from "@/lib/padel/history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 import type { PadelHistoryItem } from "@/types/padel-match";
 
@@ -23,6 +24,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
   const history = await lookupPlayerHistory(user.id, { cookie });
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
   const recent = items.slice(0, 8);
+  const stats = summarisePlayerHistory(items, user.id);
   const name = displayName(user);
   const handle = user.handle?.trim();
 
@@ -87,9 +89,33 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
           >
             Padel
             <span className="tabular-nums text-emerald-300/80">
-              {items.length}
+              {stats.locked}
             </span>
           </Link>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Locked", value: String(stats.locked) },
+            { label: "Wins", value: String(stats.wins) },
+            { label: "Losses", value: String(stats.losses) },
+            {
+              label: "Win rate",
+              value: stats.locked ? `${stats.winRate}%` : "—",
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-3xl border border-white/8 bg-[#141814] px-4 py-5"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                {stat.label}
+              </p>
+              <p className="mt-2 font-display text-3xl tracking-wide text-white">
+                {stat.value}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -131,7 +157,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
             </Link>
           </div>
         ) : (
-          <PadelHistoryList items={recent} />
+          <PadelHistoryList items={recent} playerUserId={user.id} />
         )}
       </section>
     </div>
