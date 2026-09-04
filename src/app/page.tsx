@@ -1,6 +1,8 @@
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { PoolsCtaBanner } from "@/components/home/PoolsCtaBanner";
+import { formatStat } from "@/lib/format-stat";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
+import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +41,17 @@ function GuideCard({ guide }: { guide: Guide }) {
 }
 
 export default async function Home() {
-  const topGuides = await getTopGuides();
+  const [topGuides, stats] = await Promise.all([
+    getTopGuides(),
+    getHomepageStats(),
+  ]);
+
+  const homepageStats = [
+    { value: formatStat(stats.watchVenues), label: "Watch venues", tone: "text-sky-400" },
+    { value: formatStat(stats.playVenues), label: "Play venues", tone: "text-emerald-400" },
+    { value: formatStat(stats.events), label: "Events", tone: "text-white" },
+    { value: formatStat(stats.guides), label: "Guides", tone: "text-zinc-300" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -50,12 +62,7 @@ export default async function Home() {
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-            {[
-              { value: "500+", label: "Watch venues", tone: "text-sky-400" },
-              { value: "200+", label: "Play venues", tone: "text-emerald-400" },
-              { value: "1,200+", label: "Events / year", tone: "text-white" },
-              { value: "10K+", label: "Active players", tone: "text-zinc-300" },
-            ].map((stat) => (
+            {homepageStats.map((stat) => (
               <div
                 key={stat.label}
                 className="rounded-3xl border border-white/8 bg-[#141814] px-4 py-6 text-center sm:px-5 sm:py-8"
