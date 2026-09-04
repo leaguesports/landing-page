@@ -1,4 +1,5 @@
-import { Bell } from "lucide-react";
+import { Heart } from "lucide-react";
+import Link from "next/link";
 
 export function WatchFollowBanner() {
   return (
@@ -14,17 +15,18 @@ export function WatchFollowBanner() {
             Follow venues
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Get notified when new watch spots open near you.
+            Follow venues from a listing to keep them on your home hub — upcoming
+            screenings show up when you come back.
           </p>
         </div>
 
-        <button
-          type="button"
+        <Link
+          href="/venues"
           className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
         >
-          <Bell className="h-4 w-4" aria-hidden />
-          Enable venue alerts
-        </button>
+          <Heart className="h-4 w-4" aria-hidden />
+          Find venues to follow
+        </Link>
       </div>
     </section>
   );

@@ -5,7 +5,6 @@ import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 import { getDashboardHub } from "@/lib/sports/dashboard-feed";
 import { listFollowedVenues } from "@/lib/venues/follow";
-import type { GolfHistoryItem } from "@/types/golf-round";
 import type { PadelHistoryItem } from "@/types/padel-match";
 
 type HomeDashboardProps = {
@@ -14,25 +13,36 @@ type HomeDashboardProps = {
 };
 
 export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
+  // Start follow I/O immediately; hub generic Sanity reads do not wait on it.
+  const followedVenuesPromise = listFollowedVenues({ cookie });
+  const followedSlugsPromise = followedVenuesPromise.then((venues) =>
+    venues.map((venue) => venue.slug),
+  );
+
   const [history, golfHistory, hub, followedVenues, friends] =
     await Promise.all([
       lookupPlayerHistory(user.id, { cookie }),
       lookupPlayerGolfHistory(user.id, { cookie }),
-      getDashboardHub(),
-      listFollowedVenues({ cookie }),
+      getDashboardHub({ followedVenueSlugs: followedSlugsPromise }),
+      followedVenuesPromise,
       listFriends({ cookie }),
     ]);
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
-  const golfItems: GolfHistoryItem[] = golfHistory.error
-    ? []
-    : golfHistory.items;
+  const padelCount = history.error ? 0 : history.items.length;
+  const golfCount = golfHistory.error ? 0 : golfHistory.items.length;
+  const activityError =
+    [history.error, golfHistory.error].filter(Boolean).join(" · ") || null;
 
   return (
     <SportsHub
       user={user}
       historyError={history.error}
       historyItems={items}
-      golfHistoryItems={golfItems}
+      lockedActivity={{
+        padel: padelCount,
+        golf: golfCount,
+        error: activityError,
+      }}
       followedVenues={followedVenues}
       friends={friends}
       sports={hub.sports}
