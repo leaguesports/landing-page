@@ -36,7 +36,14 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState } from "react";
+import {
+  useCallback,
+  useId,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+
+const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
 type SportsHubProps = {
   user: AuthUser;
@@ -44,7 +51,56 @@ type SportsHubProps = {
   historyItems: PadelHistoryItem[];
   sports: SportDefinition[];
   feed: HubFeedItem[];
+  nowIso: string;
 };
+
+function useHubPreferences(
+  userId: string,
+  knownSlugs: string[],
+  seedFollowed: string[],
+) {
+  const key = hubStorageKey(userId);
+  const fallbackJson = useMemo(
+    () =>
+      serializeHubPreferences(
+        defaultHubPreferences(seedFollowed, knownSlugs),
+      ),
+    [knownSlugs, seedFollowed],
+  );
+
+  const subscribe = useCallback((onChange: () => void) => {
+    const handler = () => onChange();
+    window.addEventListener("storage", handler);
+    window.addEventListener(HUB_PREFS_EVENT, handler);
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener(HUB_PREFS_EVENT, handler);
+    };
+  }, []);
+
+  const getSnapshot = useCallback(() => {
+    try {
+      return window.localStorage.getItem(key) ?? fallbackJson;
+    } catch {
+      return fallbackJson;
+    }
+  }, [key, fallbackJson]);
+
+  const getServerSnapshot = useCallback(() => fallbackJson, [fallbackJson]);
+  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const prefs = parseHubPreferences(raw, { knownSlugs, seedFollowed });
+
+  function setPrefs(next: HubPreferences) {
+    try {
+      window.localStorage.setItem(key, serializeHubPreferences(next));
+    } catch {
+      // Private mode / quota — hub still works for this session.
+    }
+    window.dispatchEvent(new Event(HUB_PREFS_EVENT));
+  }
+
+  return [prefs, setPrefs] as const;
+}
 
 function displayName(user: AuthUser): string {
   return (
@@ -93,47 +149,23 @@ export function SportsHub({
   historyItems,
   sports,
   feed,
+  nowIso,
 }: SportsHubProps) {
   const name = displayName(user);
   const handle = user.handle?.trim();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
-  const seedFollowed = historyItems.length > 0 ? ["padel"] : [];
-  const [prefs, setPrefs] = useState<HubPreferences>(() =>
-    defaultHubPreferences(seedFollowed, knownSlugs),
+  const seedFollowed = useMemo(
+    () => (historyItems.length > 0 ? ["padel"] : []),
+    [historyItems.length],
   );
-  const [prefsReady, setPrefsReady] = useState(false);
+  const [prefs, setPrefs] = useHubPreferences(
+    user.id,
+    knownSlugs,
+    seedFollowed,
+  );
   const tablistId = useId();
   const { signOut } = useAuth();
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(hubStorageKey(user.id));
-      setPrefs(
-        parseHubPreferences(stored, {
-          knownSlugs,
-          seedFollowed,
-        }),
-      );
-    } catch {
-      setPrefs(defaultHubPreferences(seedFollowed, knownSlugs));
-    } finally {
-      setPrefsReady(true);
-    }
-    // Re-read when the account or catalog changes; seed follows padel history.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id, knownSlugs.join("|"), seedFollowed[0] ?? ""]);
-
-  useEffect(() => {
-    if (!prefsReady) return;
-    try {
-      window.localStorage.setItem(
-        hubStorageKey(user.id),
-        serializeHubPreferences(prefs),
-      );
-    } catch {
-      // Private mode / quota — hub still works for this session.
-    }
-  }, [prefs, prefsReady, user.id]);
+  const nowMs = new Date(nowIso).getTime();
 
   const active = prefs.active;
   const utilities = utilitiesForActiveSport(active, sports);
@@ -141,7 +173,7 @@ export function SportsHub({
   const nextUp = visibleFeed.find((item) => {
     if (!item.startsAt) return false;
     const time = new Date(item.startsAt).getTime();
-    return !Number.isNaN(time) && time >= Date.now();
+    return !Number.isNaN(time) && Number.isFinite(nowMs) && time >= nowMs;
   });
   const restFeed = visibleFeed.filter((item) => item.id !== nextUp?.id);
   const showPadel =
@@ -156,11 +188,11 @@ export function SportsHub({
   const followedSet = new Set(prefs.followed);
 
   function focusSport(slug: string) {
-    setPrefs((current) => selectHubSport(current, slug, knownSlugs));
+    setPrefs(selectHubSport(prefs, slug, knownSlugs));
   }
 
   function unfollow(slug: string) {
-    setPrefs((current) => unfollowHubSport(current, slug, knownSlugs));
+    setPrefs(unfollowHubSport(prefs, slug, knownSlugs));
   }
 
   return (

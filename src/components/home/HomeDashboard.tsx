@@ -23,6 +23,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       historyItems={items}
       sports={hub.sports}
       feed={hub.feed}
+      nowIso={new Date().toISOString()}
     />
   );
 }
