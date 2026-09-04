@@ -123,6 +123,9 @@ export default function FeaturesPage() {
             {/* Left Side - Text Content */}
             <div className="space-y-8 lg:pr-4">
               <div>
+                <p className="mb-3 text-sm font-medium uppercase tracking-wider text-gray-500">
+                  Live today
+                </p>
                 <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
                   <span className="block">Better Sports</span>
                   <span className="block bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
@@ -132,18 +135,32 @@ export default function FeaturesPage() {
                 <p className="mt-8 text-xl leading-8 text-gray-400 sm:text-2xl">
                   Everything you need to track, improve, and share your sporting journey. All connected, all in one place.
                 </p>
+                <p className="mt-4 text-sm leading-6 text-gray-500">
+                  Padel and golf scorecards lock to your account today — ratings,
+                  badges, and training integrations are on the roadmap.
+                </p>
               </div>
 
-              {/* CTA Button */}
-              <div>
+              {/* CTA Buttons */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  href="/signup"
+                  href="/padel/new"
                   className="group relative inline-block overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
                 >
-                  <span className="relative z-10">Sign Up Free</span>
+                  <span className="relative z-10">Play now</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
                 </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                >
+                  Log in
+                </Link>
               </div>
+              <p className="text-sm text-gray-500">
+                Scorecards are live for padel and golf. Sign in to keep locked
+                results on your hub.
+              </p>
             </div>
 
             {/* Right Side - Phone Mockup */}
@@ -1172,21 +1189,22 @@ export default function FeaturesPage() {
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold sm:text-5xl">Ready to Elevate Your Game?</h2>
           <p className="mt-4 text-lg text-gray-400">
-            Join thousands of players already using LeagueSports to track, improve, and share their sporting journey.
+            Start a padel scorecard or log in to see locked results on your hub.
+            Golf rounds lock the same way.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <Link
-              href="/signup"
+              href="/padel/new"
               className="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
             >
-              <span className="relative z-10">Get Started Free</span>
+              <span className="relative z-10">Play now</span>
               <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
             </Link>
             <Link
-              href="/"
+              href="/login"
               className="group rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
             >
-              Back to Home
+              Log in
               <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">
                 →
               </span>
