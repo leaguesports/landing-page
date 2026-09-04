@@ -70,6 +70,8 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/matches/abc"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
+    assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -325,7 +327,8 @@ describe("getApiProxyRewrites", () => {
   it("emits the production Railway rewrite on Vercel production without env", () => {
     withOriginEnv({ VERCEL_ENV: "production" }, () => {
       const rewrites = getApiProxyRewrites();
-      assert.equal(rewrites.length, 7);
+      // Explicit sources + `/api` + catch-all
+      assert.equal(rewrites.length, API_PROXY_EXPLICIT_SOURCES.length + 2);
       assert.equal(
         rewrites.some(
           (rule) => rule.destination === `${PRODUCTION_RAILWAY_API_ORIGIN}/api`,
@@ -337,6 +340,22 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/matches`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/follow`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/followed-venues`,
         ),
         true,
       );

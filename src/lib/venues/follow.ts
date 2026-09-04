@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 import { attemptEnsureVenueFromCmsWith } from "./appVenueApi.ts";
 
 export type VenueFollowStatus = {
@@ -97,7 +98,7 @@ export async function getVenueFollowStatusWith(
   const id = cmsId.trim();
   if (!id || !deps.baseUrl) return null;
 
-  const res = await deps.fetch(followUrl(deps.baseUrl, id), {
+  const res = await invokeFetch(deps.fetch, followUrl(deps.baseUrl, id), {
     method: "GET",
     credentials: "include",
     cache: "no-store",
@@ -130,7 +131,7 @@ export async function followVenueWith(
   );
   if (!ensured.ok) return null;
 
-  const res = await deps.fetch(followUrl(deps.baseUrl, cmsId), {
+  const res = await invokeFetch(deps.fetch, followUrl(deps.baseUrl, cmsId), {
     method: "POST",
     credentials: "include",
     cache: "no-store",
@@ -152,7 +153,7 @@ export async function unfollowVenueWith(
   const id = cmsId.trim();
   if (!id || !deps.baseUrl) return null;
 
-  const res = await deps.fetch(followUrl(deps.baseUrl, id), {
+  const res = await invokeFetch(deps.fetch, followUrl(deps.baseUrl, id), {
     method: "DELETE",
     credentials: "include",
     cache: "no-store",
@@ -172,7 +173,7 @@ export async function listFollowedVenuesWith(
 ): Promise<FollowedVenue[]> {
   if (!deps.baseUrl) return [];
 
-  const res = await deps.fetch(followedListUrl(deps.baseUrl), {
+  const res = await invokeFetch(deps.fetch, followedListUrl(deps.baseUrl), {
     method: "GET",
     credentials: "include",
     cache: "no-store",

@@ -99,6 +99,45 @@ describe("venue follow client", () => {
     });
   });
 
+  it("invokes window-style fetch without illegal-invocation", async () => {
+    // Mimic browsers: `fetch` as a method must keep `this === globalThis`.
+    const calls: string[] = [];
+    const fakeWindow = {
+      fetch(this: unknown, url: RequestInfo | URL, init?: RequestInit) {
+        if (this !== fakeWindow && this !== globalThis) {
+          throw new TypeError(
+            "Failed to execute 'fetch' on 'Window': Illegal invocation",
+          );
+        }
+        calls.push(String(init?.method ?? "GET"));
+        const path = String(url);
+        if (path.endsWith("/follow") && init?.method === "POST") {
+          return Promise.resolve(
+            jsonResponse(200, {
+              following: true,
+              venueCmsId: venue.cmsId,
+            }),
+          );
+        }
+        if (path.includes("/api/venues/") && !path.endsWith("/follow")) {
+          return Promise.resolve(jsonResponse(200, appVenue));
+        }
+        return Promise.resolve(jsonResponse(404, { error: "missing" }));
+      },
+    };
+
+    const status = await followVenueWith(venue, {
+      baseUrl: "https://api.example.test",
+      fetch: fakeWindow.fetch as typeof fetch,
+    });
+
+    assert.deepEqual(status, {
+      following: true,
+      venueCmsId: venue.cmsId,
+    });
+    assert.ok(calls.includes("POST"));
+  });
+
   it("lists followed venues for the session user", async () => {
     const venues = await listFollowedVenuesWith({
       baseUrl: "https://api.example.test",
