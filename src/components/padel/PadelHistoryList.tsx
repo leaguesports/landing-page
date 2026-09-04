@@ -64,6 +64,12 @@ export function PadelHistoryList({
             >
               Open scorecard
             </Link>
+            <Link
+              href="/padel/new"
+              className="mt-3 ml-4 inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              Challenge a friend
+            </Link>
           </li>
         );
       })}
