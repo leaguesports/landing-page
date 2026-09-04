@@ -14,12 +14,15 @@ import {
   type VenueDetail,
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
+import { toVenueOption } from "@/lib/padel/venue-options";
+import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueFollowButton } from "./_components/VenueFollowButton";
 import { VenueMatchHistory } from "./_components/VenueMatchHistory";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
 import { VenueMap } from "./_components/VenueMap";
+import { VenueQuickStart } from "./_components/VenueQuickStart";
 import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
@@ -28,6 +31,7 @@ import {
   Flag,
   MapPin,
   Star,
+  Zap,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -109,7 +113,7 @@ const venueAboutPortableTextComponents = {
   },
 } satisfies PortableTextComponents;
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "This weekend", href: "#weekend" },
   { label: "Match history", href: "#match-history" },
@@ -117,6 +121,11 @@ const NAV_LINKS = [
   { label: "Amenities", href: "#amenities" },
   { label: "Location", href: "#location" },
 ];
+
+function venueNavLinks(hasQuickStart: boolean) {
+  if (!hasQuickStart) return BASE_NAV_LINKS;
+  return [{ label: "Quick start", href: "#quick-start" }, ...BASE_NAV_LINKS];
+}
 
 type Props = { params: Promise<{ venue: string }> };
 
@@ -282,6 +291,11 @@ export default async function VenuePage({ params }: Props) {
     .filter(Boolean)
     .join(", ");
   const heroImageUrl = venuePhotoUrl(venue, { width: 1920, height: 1080 });
+  const quickStartActivities = venueQuickStartActivities(
+    toVenueOption(venue),
+  );
+  const primaryQuickStart = quickStartActivities[0];
+  const navLinks = venueNavLinks(quickStartActivities.length > 0);
 
   return (
     <div>
@@ -303,7 +317,7 @@ export default async function VenuePage({ params }: Props) {
             </span>
 
             <div className="ml-auto flex items-center gap-1">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
@@ -380,8 +394,25 @@ export default async function VenuePage({ params }: Props) {
                 directionsUrl={mapsSearchUrl}
               />
             </div>
+
+            {primaryQuickStart ? (
+              <div className="mt-6">
+                <Link
+                  href={primaryQuickStart.href}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                >
+                  <Zap className="h-4 w-4" aria-hidden />
+                  {primaryQuickStart.cta}
+                </Link>
+              </div>
+            ) : null}
           </div>
         </section>
+
+        <VenueQuickStart
+          venueName={venue.name}
+          activities={quickStartActivities}
+        />
 
         {/* Weekend hub */}
         <section
@@ -401,7 +432,11 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </section>
 
-        <VenueMatchHistory venueName={venue.name} venueCmsId={venue._id} />
+        <VenueMatchHistory
+          venueName={venue.name}
+          venueCmsId={venue._id}
+          startHref={primaryQuickStart?.href}
+        />
 
         {/* About */}
         <section
@@ -454,11 +489,27 @@ export default async function VenuePage({ params }: Props) {
                   Play
                 </h3>
                 {venue.sports.length > 0 ? (
-                  <VenueSportChips
-                    intent="play"
-                    items={venue.sports}
-                    venue={venue}
-                  />
+                  <>
+                    <VenueSportChips
+                      intent="play"
+                      items={venue.sports}
+                      venue={venue}
+                    />
+                    {quickStartActivities.length > 0 ? (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {quickStartActivities.map((activity) => (
+                          <Link
+                            key={activity.id}
+                            href={activity.href}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                          >
+                            <Zap className="h-4 w-4" aria-hidden />
+                            {activity.cta}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
                 ) : (
                   <p className="text-sm text-zinc-500">
                     Play options coming soon.

@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Loader2, Zap } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
@@ -39,13 +40,30 @@ const EMPTY_SLOTS: Record<SlotKey, PadelPlayer | null> = {
 
 type PadelQuickStartProps = {
   venues: VenueOption[];
+  initialVenueSlug?: string | null;
+  lockVenue?: boolean;
 };
 
-export function PadelQuickStart({ venues }: PadelQuickStartProps) {
+function findVenueBySlug(
+  venues: VenueOption[],
+  slug: string | null | undefined,
+): VenueOption | null {
+  const key = slug?.trim().toLowerCase();
+  if (!key) return null;
+  return venues.find((venue) => venue.slug.toLowerCase() === key) ?? null;
+}
+
+export function PadelQuickStart({
+  venues,
+  initialVenueSlug,
+  lockVenue = false,
+}: PadelQuickStartProps) {
   const router = useRouter();
   const { user, displayName, isAuthenticated } = useAuth();
   const [ruleset, setRuleset] = useState<PadelRuleset>("golden_point");
-  const [venue, setVenue] = useState<VenueOption | null>(null);
+  const [venue, setVenue] = useState<VenueOption | null>(() =>
+    findVenueBySlug(venues, initialVenueSlug),
+  );
   const [startsAtLocal, setStartsAtLocal] = useState(() =>
     toDatetimeLocalValue(new Date()),
   );
@@ -154,17 +172,34 @@ export function PadelQuickStart({ venues }: PadelQuickStartProps) {
           New padel match
         </p>
         <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-          Court, time, players
+          {lockVenue && venue ? "Time and players" : "Court, time, players"}
         </h1>
         <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-          A padel court is required. Set the start time, load two pairs, then
-          open the live scorecard.
+          {lockVenue && venue
+            ? `Starting at ${venue.name}. Set the start time, load two pairs, then open the live scorecard.`
+            : "A padel court is required. Set the start time, load two pairs, then open the live scorecard."}
         </p>
       </header>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-zinc-200">Padel court</h2>
-        {venues.length === 0 ? (
+        {lockVenue && venue ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">{venue.name}</p>
+              <p className="mt-0.5 text-xs text-zinc-400">
+                {[venue.suburb, venue.city].filter(Boolean).join(" · ") ||
+                  "Selected court"}
+              </p>
+            </div>
+            <Link
+              href="/padel/new"
+              className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              Choose a different court
+            </Link>
+          </div>
+        ) : venues.length === 0 ? (
           <p className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 text-sm text-zinc-400">
             No padel courts in the directory yet. Sports bars and watch venues
             are not listed here.

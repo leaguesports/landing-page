@@ -8,9 +8,11 @@ import { VenueHistorySignIn } from "./VenueHistorySignIn";
 export async function VenueMatchHistory({
   venueName,
   venueCmsId,
+  startHref,
 }: {
   venueName: string;
   venueCmsId: string;
+  startHref?: string | null;
 }) {
   const auth = await getServerAuthState();
   const history = auth.isAuthenticated
@@ -47,12 +49,14 @@ export async function VenueMatchHistory({
           ) : history && history.items.length === 0 ? (
             <div className="space-y-5 rounded-3xl border border-dashed border-white/12 bg-[#141814] px-5 py-6 text-sm leading-relaxed text-zinc-400">
               <p>No locked matches at this venue yet.</p>
-              <Link
-                href="/padel/new"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-              >
-                Play a match
-              </Link>
+              {startHref ? (
+                <Link
+                  href={startHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                >
+                  Play a match
+                </Link>
+              ) : null}
             </div>
           ) : history ? (
             <PadelHistoryList
