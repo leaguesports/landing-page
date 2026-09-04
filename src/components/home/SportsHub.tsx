@@ -28,6 +28,7 @@ import {
   formatHubWhen,
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
+import type { GolfHistoryItem } from "@/types/golf-round";
 import type { PadelHistoryItem } from "@/types/padel-match";
 import type { FollowedVenue } from "@/lib/venues/follow";
 import {
@@ -52,10 +53,17 @@ import {
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
+type ActivitySport = {
+  slug: string;
+  name: string;
+  count: number;
+};
+
 type SportsHubProps = {
   user: AuthUser;
   historyError: string | null;
   historyItems: PadelHistoryItem[];
+  golfHistoryItems?: GolfHistoryItem[];
   followedVenues?: FollowedVenue[];
   friends?: FriendsSnapshot;
   sports: SportDefinition[];
@@ -156,6 +164,7 @@ export function SportsHub({
   user,
   historyError,
   historyItems,
+  golfHistoryItems = [],
   followedVenues = [],
   friends = emptyFriendsSnapshot(),
   sports,
@@ -165,10 +174,15 @@ export function SportsHub({
   const name = displayName(user);
   const handle = user.handle?.trim();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
-  const seedFollowed = useMemo(
-    () => (historyItems.length > 0 ? ["padel"] : []),
-    [historyItems.length],
-  );
+  const padelLocked = historyItems.length;
+  const golfLocked = golfHistoryItems.length;
+  const gamesPlayed = padelLocked + golfLocked;
+  const seedFollowed = useMemo(() => {
+    const seeds: string[] = [];
+    if (padelLocked > 0) seeds.push("padel");
+    if (golfLocked > 0) seeds.push("golf");
+    return seeds;
+  }, [golfLocked, padelLocked]);
   const [prefs, setPrefs] = useHubPreferences(
     user.id,
     knownSlugs,
@@ -190,6 +204,24 @@ export function SportsHub({
   const showPadel =
     active === ALL_SPORTS_SLUG || active === "padel";
   const stats = summarisePlayerHistory(historyItems, user.id);
+  const activitySports = useMemo((): ActivitySport[] => {
+    const chips: ActivitySport[] = [];
+    if (padelLocked > 0) {
+      chips.push({
+        slug: "padel",
+        name: sports.find((sport) => sport.slug === "padel")?.name ?? "Padel",
+        count: padelLocked,
+      });
+    }
+    if (golfLocked > 0) {
+      chips.push({
+        slug: "golf",
+        name: sports.find((sport) => sport.slug === "golf")?.name ?? "Golf",
+        count: golfLocked,
+      });
+    }
+    return chips;
+  }, [golfLocked, padelLocked, sports]);
   const activeSport =
     active === ALL_SPORTS_SLUG
       ? null
@@ -229,31 +261,71 @@ export function SportsHub({
           </div>
 
           <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex items-center gap-4">
-              {user.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.avatarUrl}
-                  alt=""
-                  className="h-14 w-14 rounded-full border border-white/10 object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#141814] font-display text-2xl text-emerald-300">
-                  {name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div>
-                <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                  {name}
-                </h1>
-                {handle ? (
-                  <p className="mt-1 text-sm text-zinc-400">@{handle}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-4">
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatarUrl}
+                    alt=""
+                    className="h-14 w-14 rounded-full border border-white/10 object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
-                  <p className="mt-1 text-sm text-zinc-400">
-                    Watch, play, and keep your results in one place.
-                  </p>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#141814] font-display text-2xl text-emerald-300">
+                    {name.charAt(0).toUpperCase()}
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+                    {name}
+                  </h1>
+                  {handle ? (
+                    <p className="mt-1 text-sm text-zinc-400">@{handle}</p>
+                  ) : (
+                    <p className="mt-1 text-sm text-zinc-400">
+                      Watch, play, and keep your results in one place.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-end gap-4">
+                <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
+                  <p className="font-display text-2xl tracking-wide text-white tabular-nums">
+                    {gamesPlayed}
+                  </p>
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Games
+                  </p>
+                </div>
+                {activitySports.length > 0 ? (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                      Sports
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {activitySports.map((sport) => (
+                        <button
+                          key={sport.slug}
+                          type="button"
+                          onClick={() => focusSport(sport.slug)}
+                          className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
+                        >
+                          <SportIcon
+                            sportSlug={sport.slug}
+                            size={14}
+                            color="currentColor"
+                          />
+                          {sport.name}
+                          <span className="tabular-nums text-emerald-300/80">
+                            {sport.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -311,7 +383,13 @@ export function SportsHub({
                 sportSlug={sport.slug}
                 selected={active === sport.slug}
                 followed={followedSet.has(sport.slug)}
-                count={sport.slug === "padel" ? stats.locked : undefined}
+                count={
+                  sport.slug === "padel"
+                    ? padelLocked
+                    : sport.slug === "golf"
+                      ? golfLocked
+                      : undefined
+                }
                 onSelect={() => focusSport(sport.slug)}
                 onUnfollow={
                   followedSet.has(sport.slug)
