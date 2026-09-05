@@ -50,6 +50,7 @@ type BadgeTone = "power" | "av" | "amenity";
 type BadgeDef = {
   key: string;
   label: string;
+  shortLabel: string;
   emoji: string;
   icon: ReactNode;
   tone: BadgeTone;
@@ -65,9 +66,11 @@ const TONE_CLASS: Record<BadgeTone, string> = {
 export function VenueUtilityBadges({
   venue,
   className = "",
+  compact = false,
 }: {
   venue: VenueUtilityFlags;
   className?: string;
+  compact?: boolean;
 }) {
   const badges: BadgeDef[] = [];
 
@@ -75,6 +78,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "generator",
       label: "Generator / Inverter Backup",
+      shortLabel: "Generator",
       emoji: "⚡",
       icon: <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "power",
@@ -84,6 +88,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "screens",
       label: "HD Big Screens",
+      shortLabel: "Screens",
       emoji: "📺",
       icon: <Tv className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "av",
@@ -93,6 +98,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "audio",
       label: "Live Commentary On",
+      shortLabel: "Audio",
       emoji: "🔊",
       icon: <Volume2 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "av",
@@ -102,6 +108,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "drafts",
       label: "Draft Beer",
+      shortLabel: "Drafts",
       emoji: "🍺",
       icon: <Beer className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "amenity",
@@ -111,6 +118,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "food",
       label: "Food Menu",
+      shortLabel: "Food",
       emoji: "🍔",
       icon: <UtensilsCrossed className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "amenity",
@@ -120,6 +128,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "outdoor",
       label: "Outdoor Area",
+      shortLabel: "Outdoor",
       emoji: "🚬",
       icon: <Cigarette className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "amenity",
@@ -129,6 +138,7 @@ export function VenueUtilityBadges({
     badges.push({
       key: "parking",
       label: "On-site Parking",
+      shortLabel: "Parking",
       emoji: "🚗",
       icon: <Car className="h-3.5 w-3.5 shrink-0" aria-hidden />,
       tone: "amenity",
@@ -142,10 +152,14 @@ export function VenueUtilityBadges({
       {badges.map((badge) => (
         <li
           key={badge.key}
-          className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold tracking-wide ${TONE_CLASS[badge.tone]}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border font-semibold tracking-wide ${
+            compact
+              ? `min-h-7 px-2.5 py-1 text-[10px] ${TONE_CLASS[badge.tone]}`
+              : `min-h-9 px-3 py-1.5 text-[11px] ${TONE_CLASS[badge.tone]}`
+          }`}
         >
-          <span aria-hidden>{badge.emoji}</span>
-          {badge.label}
+          {compact ? badge.icon : <span aria-hidden>{badge.emoji}</span>}
+          {compact ? badge.shortLabel : badge.label}
         </li>
       ))}
     </ul>

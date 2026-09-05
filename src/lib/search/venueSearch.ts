@@ -164,11 +164,51 @@ export function parseVenueSearch(
 }
 
 export function buildVenueDirectoryPath(parsed: ParsedVenueSearch): string {
+  return venueDirectoryHref({
+    intent: parsed.intent,
+    sport: parsed.sportSlug,
+    location: parsed.locationSlug,
+  });
+}
+
+export function venueDirectoryHref(next: {
+  intent?: string | null;
+  sport?: string | null;
+  location?: string | null;
+}): string {
   const params = new URLSearchParams();
-  if (parsed.intent) params.set("intent", parsed.intent);
-  if (parsed.sportSlug) params.set("sport", parsed.sportSlug);
-  if (parsed.locationSlug) params.set("location", parsed.locationSlug);
-  return `/venues?${params.toString()}`;
+  if (next.intent === "play" || next.intent === "watch") {
+    params.set("intent", next.intent);
+  }
+  if (next.sport) params.set("sport", next.sport);
+  if (next.location) params.set("location", next.location);
+  const qs = params.toString();
+  return qs ? `/venues?${qs}` : "/venues";
+}
+
+/**
+ * Directory search box → filters. A Watch/Play verb in the query wins;
+ * otherwise the current intent (including "all") is kept.
+ */
+export function venueDirectoryHrefFromQuery(
+  query: string,
+  currentIntent: string | null,
+): string {
+  const fallback: VenueSearchIntent =
+    currentIntent === "play" ? "play" : "watch";
+  const parsed = parseVenueSearch(query, fallback);
+  const hasVerb = /\b(watch|play)\b/i.test(query);
+  if (!hasVerb) {
+    parsed.intent =
+      currentIntent === "play" || currentIntent === "watch"
+        ? currentIntent
+        : null;
+  }
+  return buildVenueDirectoryPath(parsed);
+}
+
+export function venueResultCountLabel(count: number): string {
+  return `${count} ${count === 1 ? "venue" : "venues"}`;
 }
 
 export function venueSearchSummary(parsed: ParsedVenueSearch): string {
