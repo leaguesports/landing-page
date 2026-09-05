@@ -278,6 +278,9 @@ export function SportsHub({
   const tablistId = useId();
   const sectionTablistId = useId();
   const [section, setSection] = useState<HubSection>("for-you");
+  const [friendRequestCount, setFriendRequestCount] = useState(
+    () => friends.incoming.length,
+  );
   const { signOut } = useAuth();
   const nowMs = new Date(nowIso).getTime();
 
@@ -340,7 +343,6 @@ export function SportsHub({
   const primary = utilities.filter((item) => item.emphasis === "primary");
   const recent = historyItems.slice(0, 8);
   const followedSet = new Set(prefs.followed);
-  const friendRequestCount = friends.incoming.length;
   const activeSectionMeta =
     HUB_SECTIONS.find((item) => item.id === section) ?? HUB_SECTIONS[0];
 
@@ -802,20 +804,30 @@ export function SportsHub({
             </div>
           ) : null}
 
-          {section === "friends" ? (
-            <div className="mx-auto max-w-2xl">
-              <SectionHeading
-                eyebrow="Friends"
-                title="Your circle"
-                description={activeSectionMeta.description}
-              />
-              <FriendsPanel
-                initial={friends}
-                className="mt-0"
-                showHeading={false}
-              />
-            </div>
-          ) : null}
+          {/* Keep FriendsPanel mounted so accept/decline/add survive section switches. */}
+          <div
+            className={
+              section === "friends" ? "mx-auto max-w-2xl" : "hidden"
+            }
+            hidden={section !== "friends"}
+            inert={section !== "friends" ? true : undefined}
+            aria-hidden={section !== "friends"}
+          >
+            <SectionHeading
+              eyebrow="Friends"
+              title="Your circle"
+              description={
+                HUB_SECTIONS.find((item) => item.id === "friends")
+                  ?.description ?? activeSectionMeta.description
+              }
+            />
+            <FriendsPanel
+              initial={friends}
+              className="mt-0"
+              showHeading={false}
+              onIncomingCountChange={setFriendRequestCount}
+            />
+          </div>
 
           {section === "progress" ? (
             <div>
