@@ -77,6 +77,7 @@ export default function NotificationCenter() {
     status,
     error: loadError,
     applySnapshot,
+    ensureLoaded,
   } = useFriendsSession();
   const [open, setOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
@@ -90,6 +91,13 @@ export default function NotificationCenter() {
     setMenuPathname(pathname);
     setOpen(false);
   }
+
+  // Fetch the friends graph only when the inbox opens and no RSC seed exists.
+  // Avoids GET /api/me/friends on every signed-in route view.
+  useEffect(() => {
+    if (!open) return;
+    ensureLoaded();
+  }, [open, ensureLoaded]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,7 +125,7 @@ export default function NotificationCenter() {
   const items: AppNotification[] = snapshot
     ? notificationsFromFriends(snapshot)
     : [];
-  const loaded = !isAuthenticated || status === "ready" || status === "error";
+  const loaded = status === "ready" || status === "error";
   const error =
     actionError ?? (status === "error" ? loadError : null);
 

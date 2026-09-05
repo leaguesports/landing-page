@@ -59,6 +59,12 @@ export type FriendsSessionValue = {
   seedSnapshot: (snapshot: FriendsSnapshot) => void;
   /** Replace the shared snapshot after a local mutation. */
   applySnapshot: (snapshot: FriendsSnapshot) => void;
+  /**
+   * Load friends once when no RSC seed is present. Safe to call repeatedly.
+   * NotificationCenter calls this when the inbox opens so non-hub routes do
+   * not eagerly GET /api/me/friends on every page view.
+   */
+  ensureLoaded: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -165,9 +171,11 @@ function useProvideFriends(
   );
   const [error, setError] = useState<string | null>(null);
   const seededRef = useRef(false);
+  const loadInFlightRef = useRef(false);
 
   const seedSnapshot = useCallback((next: FriendsSnapshot) => {
     seededRef.current = true;
+    loadInFlightRef.current = false;
     setSnapshot(next);
     setStatus("ready");
     setError(null);
@@ -179,41 +187,18 @@ function useProvideFriends(
     setError(null);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    // While auth is unresolved, keep any RSC seed — do not clear or fetch.
-    if (authLoading) {
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (!isAuthenticated) {
-      seededRef.current = false;
-      void (async () => {
-        await Promise.resolve();
-        if (cancelled) return;
-        setSnapshot(null);
-        setStatus("idle");
-        setError(null);
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    // FriendsSnapshotSeed's useLayoutEffect runs before this effect, so a
-    // home RSC snapshot skips the client GET. Other routes still fetch once.
+  const ensureLoaded = useCallback(() => {
+    if (authLoading || !isAuthenticated) return;
     if (seededRef.current || snapshot !== null) return;
+    if (loadInFlightRef.current || status === "loading") return;
 
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled || seededRef.current) return;
-      setStatus("loading");
+    loadInFlightRef.current = true;
+    setStatus("loading");
+    setError(null);
 
-      const result = await listFriendsResult();
-      if (cancelled || seededRef.current) return;
+    void listFriendsResult().then((result) => {
+      loadInFlightRef.current = false;
+      if (seededRef.current) return;
       if (result.ok) {
         setSnapshot(result.snapshot);
         setStatus("ready");
@@ -223,12 +208,35 @@ function useProvideFriends(
       // Leave snapshot null — do not treat failure as an empty graph.
       setStatus("error");
       setError(result.error);
-    })();
+    });
+  }, [authLoading, isAuthenticated, snapshot, status]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // While auth is unresolved, keep any RSC seed — do not clear.
+    if (authLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!isAuthenticated) {
+      seededRef.current = false;
+      loadInFlightRef.current = false;
+      void (async () => {
+        await Promise.resolve();
+        if (cancelled) return;
+        setSnapshot(null);
+        setStatus("idle");
+        setError(null);
+      })();
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, snapshot]);
+  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     function onFriendsChanged(event: Event) {
@@ -247,6 +255,7 @@ function useProvideFriends(
     error,
     seedSnapshot,
     applySnapshot,
+    ensureLoaded,
   };
 }
 
