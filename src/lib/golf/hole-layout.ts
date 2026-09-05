@@ -23,6 +23,8 @@ export type HoleLayoutTree = {
   r: number;
 };
 
+export type HoleLayoutPoint = { x: number; y: number };
+
 export type HoleLayout = {
   viewBoxWidth: number;
   viewBoxHeight: number;
@@ -30,7 +32,14 @@ export type HoleLayout = {
   shapeLabel: string;
   /** Fairway centerline from tee → green (SVG path d). */
   centerline: string;
+  /** Closed fairway corridor outline (for hatch + double-wall edges). */
+  fairwayOutline: string;
+  /** Left / right corridor edge strokes. */
+  fairwayLeft: string;
+  fairwayRight: string;
   fairwayWidth: number;
+  /** Sample points along the centerline for dimension ticks. */
+  stations: HoleLayoutPoint[];
   tee: { x: number; y: number; width: number; height: number };
   green: { cx: number; cy: number; rx: number; ry: number };
   flag: { x: number; y: number };
@@ -153,8 +162,8 @@ function pointAlongPar(
   spine: Spine,
   t: number,
   par: number,
-): { x: number; y: number } {
-  // Approximate Bezier samples for bunker placement.
+): HoleLayoutPoint {
+  // Approximate Bezier samples for bunker placement / corridor edges.
   if (par === 3) {
     const u = 1 - t;
     return {
@@ -175,6 +184,60 @@ function pointAlongPar(
     x: spine.midX + (spine.greenX - spine.midX) * local,
     y: spine.midY + (spine.greenY - spine.midY) * local,
   };
+}
+
+function sampleSpine(
+  spine: Spine,
+  par: number,
+  steps: number,
+): HoleLayoutPoint[] {
+  const points: HoleLayoutPoint[] = [];
+  for (let i = 0; i <= steps; i++) {
+    points.push(pointAlongPar(spine, i / steps, par));
+  }
+  return points;
+}
+
+function offsetCorridor(
+  points: HoleLayoutPoint[],
+  halfWidth: number,
+): { left: HoleLayoutPoint[]; right: HoleLayoutPoint[] } {
+  const left: HoleLayoutPoint[] = [];
+  const right: HoleLayoutPoint[] = [];
+  for (let i = 0; i < points.length; i++) {
+    const prev = points[Math.max(0, i - 1)]!;
+    const next = points[Math.min(points.length - 1, i + 1)]!;
+    const dx = next.x - prev.x;
+    const dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const p = points[i]!;
+    left.push({ x: p.x + nx * halfWidth, y: p.y + ny * halfWidth });
+    right.push({ x: p.x - nx * halfWidth, y: p.y - ny * halfWidth });
+  }
+  return { left, right };
+}
+
+function polylinePath(points: HoleLayoutPoint[]): string {
+  if (points.length === 0) return "";
+  const [first, ...rest] = points;
+  return `M ${first!.x.toFixed(1)} ${first!.y.toFixed(1)}${rest
+    .map((p) => ` L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join("")}`;
+}
+
+function closedCorridorPath(
+  left: HoleLayoutPoint[],
+  right: HoleLayoutPoint[],
+): string {
+  if (left.length === 0 || right.length === 0) return "";
+  const forward = polylinePath(left);
+  const back = [...right].reverse();
+  const backSeg = back
+    .map((p) => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  return `${forward} ${backSeg} Z`;
 }
 
 /**
@@ -274,13 +337,21 @@ export function buildHoleLayout(
   const teeWidth = 16 + rand() * 4;
   const teeHeight = 10;
 
+  const stations = sampleSpine(spine, safePar, 24);
+  const halfWidth = fairwayWidth * 0.5;
+  const { left, right } = offsetCorridor(stations, halfWidth);
+
   return {
     viewBoxWidth,
     viewBoxHeight,
     shape,
     shapeLabel: shapeLabel(shape, safePar),
     centerline: centerlinePath(spine, safePar),
+    fairwayOutline: closedCorridorPath(left, right),
+    fairwayLeft: polylinePath(left),
+    fairwayRight: polylinePath(right),
     fairwayWidth,
+    stations,
     tee: {
       x: spine.teeX - teeWidth / 2,
       y: spine.teeY - teeHeight / 2,

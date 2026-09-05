@@ -22,6 +22,10 @@ describe("buildHoleLayout", () => {
   it("returns a labeled schematic with tee, green, and fairway", () => {
     const layout = buildHoleLayout(3, 3, 12);
     assert.ok(layout.centerline.startsWith("M "));
+    assert.ok(layout.fairwayOutline.includes("Z"));
+    assert.ok(layout.fairwayLeft.startsWith("M "));
+    assert.ok(layout.fairwayRight.startsWith("M "));
+    assert.ok(layout.stations.length > 4);
     assert.ok(layout.fairwayWidth > 10);
     assert.ok(layout.tee.width > 0);
     assert.ok(layout.green.rx > 0);

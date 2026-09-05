@@ -321,7 +321,7 @@ button {
 
 .golf-hole-layout {
   animation: golf-hole-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  background: #071525;
+  background: #050805;
 }
 
 .golf-hole-layout__fairway {
