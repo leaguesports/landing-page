@@ -60,7 +60,7 @@ export function HomeValueSections() {
               <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                 <Link
                   href="/padel/new"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
                 >
                   Start a padel match
                 </Link>
