@@ -155,7 +155,10 @@ function useProvideAuth(): AuthContextValue {
   };
 }
 
-function useProvideFriends(isAuthenticated: boolean): FriendsSessionValue {
+function useProvideFriends(
+  isAuthenticated: boolean,
+  authLoading: boolean,
+): FriendsSessionValue {
   const [snapshot, setSnapshot] = useState<FriendsSnapshot | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
@@ -179,6 +182,13 @@ function useProvideFriends(isAuthenticated: boolean): FriendsSessionValue {
   useEffect(() => {
     let cancelled = false;
 
+    // While auth is unresolved, keep any RSC seed — do not clear or fetch.
+    if (authLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     if (!isAuthenticated) {
       seededRef.current = false;
       void (async () => {
@@ -197,9 +207,12 @@ function useProvideFriends(isAuthenticated: boolean): FriendsSessionValue {
     // home RSC snapshot skips the client GET. Other routes still fetch once.
     if (seededRef.current || snapshot !== null) return;
 
-    setStatus("loading");
+    void (async () => {
+      await Promise.resolve();
+      if (cancelled || seededRef.current) return;
+      setStatus("loading");
 
-    void listFriendsResult().then((result) => {
+      const result = await listFriendsResult();
       if (cancelled || seededRef.current) return;
       if (result.ok) {
         setSnapshot(result.snapshot);
@@ -210,12 +223,12 @@ function useProvideFriends(isAuthenticated: boolean): FriendsSessionValue {
       // Leave snapshot null — do not treat failure as an empty graph.
       setStatus("error");
       setError(result.error);
-    });
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, snapshot]);
+  }, [authLoading, isAuthenticated, snapshot]);
 
   useEffect(() => {
     function onFriendsChanged(event: Event) {
@@ -239,7 +252,7 @@ function useProvideFriends(isAuthenticated: boolean): FriendsSessionValue {
 
 export function AppSessionProvider({ children }: { children: ReactNode }) {
   const auth = useProvideAuth();
-  const friends = useProvideFriends(auth.isAuthenticated);
+  const friends = useProvideFriends(auth.isAuthenticated, auth.isLoading);
 
   const authValue = useMemo(() => auth, [auth]);
   const friendsValue = useMemo(() => friends, [friends]);
