@@ -1,6 +1,5 @@
 import { HomeAthleteCta } from "@/components/home/HomeAthleteCta";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
-import { HomeDirectories } from "@/components/home/HomeDirectories";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { HomeUpcomingEvents } from "@/components/home/HomeUpcomingEvents";
 import { HomeValueSections } from "@/components/home/HomeValueSections";
@@ -123,8 +122,6 @@ async function MarketingHome() {
       <HomeDiscovery />
 
       <HomeValueSections />
-
-      <HomeDirectories />
 
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
