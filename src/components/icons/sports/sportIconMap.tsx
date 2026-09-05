@@ -35,6 +35,8 @@ const SPORT_ICON_BY_SLUG: Record<string, SportIconComponent> = {
     rugby: RugbyIcon as SportIconComponent,
     golf: GolfIcon as SportIconComponent,
     motorsport: MotorsportIcon as SportIconComponent,
+    karting: MotorsportIcon as SportIconComponent,
+    "go-karting": MotorsportIcon as SportIconComponent,
     padel: PadelIcon as SportIconComponent,
     cricket: CricketIcon as SportIconComponent,
 };

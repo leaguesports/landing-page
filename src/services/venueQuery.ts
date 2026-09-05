@@ -183,6 +183,9 @@ export function sportSlugVariants(slug: string | null | undefined): string[] {
   if (!slug) return [];
   if (slug === "soccer" || slug === "football") return ["soccer", "football"];
   if (slug === "padel" || slug === "paddle") return ["padel", "paddle"];
+  if (slug === "karting" || slug === "go-karting" || slug === "gokart") {
+    return ["karting", "go-karting"];
+  }
   return [slug];
 }
 

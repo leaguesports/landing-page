@@ -28,6 +28,12 @@ const SPORT_ALIASES: Record<string, string> = {
   cricket: "cricket",
   tennis: "tennis",
   squash: "squash",
+  karting: "karting",
+  kart: "karting",
+  "go-karting": "karting",
+  "go karting": "karting",
+  gokart: "karting",
+  "go-kart": "karting",
 };
 
 type Place = {
