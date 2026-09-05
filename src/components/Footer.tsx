@@ -86,14 +86,6 @@ export default function Footer() {
                     For athletes
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/padel/new"
-                    className="text-sm text-zinc-300 transition-colors hover:text-white"
-                  >
-                    Padel scorecard
-                  </Link>
-                </li>
               </ul>
             </div>
 

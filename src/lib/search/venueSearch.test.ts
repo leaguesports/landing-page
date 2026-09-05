@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildVenueDirectoryPath,
   parseVenueSearch,
+  parseVenueSearchParams,
   venueDirectoryHref,
   venueDirectoryHrefFromQuery,
   venueResultCountLabel,
@@ -146,6 +147,29 @@ describe("venueSearchQueryText", () => {
       }),
       "",
     );
+  });
+});
+
+describe("parseVenueSearchParams", () => {
+  it("maps free-text q into sport and location filters", () => {
+    const parsed = parseVenueSearchParams({
+      intent: "play",
+      q: "padel in Cape Town",
+    });
+    assert.equal(parsed.intent, "play");
+    assert.equal(parsed.sportSlug, "padel");
+    assert.equal(parsed.locationSlug, "cape-town");
+  });
+
+  it("lets explicit sport and location win over q", () => {
+    const parsed = parseVenueSearchParams({
+      intent: "play",
+      sport: "golf",
+      location: "johannesburg",
+      q: "padel in Cape Town",
+    });
+    assert.equal(parsed.sportSlug, "golf");
+    assert.equal(parsed.locationSlug, "johannesburg");
   });
 });
 

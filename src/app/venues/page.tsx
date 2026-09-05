@@ -19,6 +19,7 @@ export async function generateMetadata({
     intent?: string | string[];
     sport?: string | string[];
     location?: string | string[];
+    q?: string | string[];
   }>;
 }): Promise<Metadata> {
   const filters = parseVenueSearchParams(await searchParams);
@@ -37,6 +38,7 @@ export default async function VenuesPage({
     intent?: string | string[];
     sport?: string | string[];
     location?: string | string[];
+    q?: string | string[];
   }>;
 }) {
   const params = await searchParams;

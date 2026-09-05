@@ -1,4 +1,5 @@
 import { HomeScorecardPreview } from "@/components/home/HomeScorecardPreview";
+import { venueDirectoryHref } from "@/lib/search/venueSearch";
 import { MapPin, Trophy, Tv } from "lucide-react";
 import Link from "next/link";
 
@@ -165,11 +166,19 @@ export function HomeValueSections() {
                 {[
                   {
                     label: "Padel in Cape Town",
-                    href: "/venues?intent=play&q=padel+cape+town",
+                    href: venueDirectoryHref({
+                      intent: "play",
+                      sport: "padel",
+                      location: "cape-town",
+                    }),
                   },
                   {
                     label: "Golf in Johannesburg",
-                    href: "/venues?intent=play&q=golf+johannesburg",
+                    href: venueDirectoryHref({
+                      intent: "play",
+                      sport: "golf",
+                      location: "johannesburg",
+                    }),
                   },
                   { label: "Play venues near me", href: "/play" },
                 ].map((item) => (

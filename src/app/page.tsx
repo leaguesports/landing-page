@@ -8,7 +8,6 @@ import { buildHomeJsonLd } from "@/lib/home/homeJsonLd";
 import { formatStat } from "@/lib/format-stat";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
-import { getSiteBaseUrl } from "@/lib/site-url";
 import { selectFeaturedFixture } from "@/lib/sports/events-feed";
 import { getUpcomingFixtures } from "@/services/events";
 import { getHomepageStats } from "@/services/homepageStats";
@@ -19,7 +18,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
 
-const SITE_URL = getSiteBaseUrl();
+/** Same production fallback as root metadataBase — never VERCEL_URL. */
+const CANONICAL_SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://leaguesports.co.za";
 
 export const metadata: Metadata = {
   title: {
@@ -28,13 +30,13 @@ export const metadata: Metadata = {
   description:
     "Find where to watch fixtures, book courts to play, and lock live scorecards — across soccer, rugby, padel, golf, and more in South Africa.",
   alternates: {
-    canonical: SITE_URL,
+    canonical: "/",
   },
   openGraph: {
     title: "LeagueSports | Watch, play & track sport in South Africa",
     description:
       "Watch venues, play courts, and live scorecards across South Africa.",
-    url: SITE_URL,
+    url: "/",
     siteName: "LeagueSports",
     locale: "en_ZA",
     type: "website",
@@ -109,7 +111,7 @@ async function MarketingHome() {
     { value: formatStat(stats.guides), label: "Guides", tone: "text-zinc-300" },
   ];
 
-  const jsonLd = buildHomeJsonLd(SITE_URL);
+  const jsonLd = buildHomeJsonLd(CANONICAL_SITE_URL);
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
