@@ -18,7 +18,7 @@ export function buildHomeJsonLd(siteUrl = DEFAULT_SITE_URL): HomeJsonLdGraph {
         name: "LeagueSports",
         url: origin,
         description:
-          "South Africa's local sports platform for live scorecards, play venues, and places to watch fixtures.",
+          "South Africa's local sports platform to watch fixtures, find play venues, and lock live scorecards.",
         areaServed: {
           "@type": "Country",
           name: "South Africa",
@@ -30,7 +30,7 @@ export function buildHomeJsonLd(siteUrl = DEFAULT_SITE_URL): HomeJsonLdGraph {
         url: origin,
         name: "LeagueSports",
         description:
-          "Find padel and golf scorecards, play courts, and watch venues across South Africa.",
+          "Watch venues, play courts, and live scorecards across South Africa.",
         publisher: { "@id": `${origin}/#organization` },
         inLanguage: "en-ZA",
         potentialAction: {
@@ -46,11 +46,11 @@ export function buildHomeJsonLd(siteUrl = DEFAULT_SITE_URL): HomeJsonLdGraph {
         "@type": "WebPage",
         "@id": `${origin}/#webpage`,
         url: origin,
-        name: "LeagueSports | Live scorecards & sports venues in South Africa",
+        name: "LeagueSports | Watch, play & track sport in South Africa",
         isPartOf: { "@id": `${origin}/#website` },
         about: { "@id": `${origin}/#organization` },
         description:
-          "Play padel on a live scorecard, lock results to your history, and find courts or watch venues near you.",
+          "Find screens for the big game, book a court, and lock padel or golf scores to your hub.",
         inLanguage: "en-ZA",
       },
     ],

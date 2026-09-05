@@ -8,21 +8,20 @@ function HeroActions({ className = "" }: { className?: string }) {
     <div className={className}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Link
-          href="/padel/new"
-          className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
-        >
-          Play now
-        </Link>
-        <Link
           href="/venues"
-          className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
+          className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
         >
           Find a venue
         </Link>
+        <Link
+          href="/athletes"
+          className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
+        >
+          Athlete tools
+        </Link>
       </div>
       <p className="mt-4 text-sm text-zinc-500">
-        Scorecards are live for padel and golf. Sign in to keep locked results
-        on your hub.
+        Watch fixtures, find courts, and lock padel or golf scores to your hub.
       </p>
     </div>
   );
@@ -50,12 +49,12 @@ export function HomeDiscovery() {
                 <span className="text-[var(--color-brand)]">SPORTS</span>
               </span>
               <span className="mt-3 block text-xl font-semibold leading-snug tracking-tight text-white sm:mt-5 sm:text-4xl sm:leading-tight">
-                Live padel scorecards and sports venues
+                Watch, play, and track sport in one place
               </span>
             </h1>
             <p className="animate-rise-delay mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-5 sm:text-lg sm:leading-8">
-              Lock matches to your history, find a court to play, or pick a
-              venue screening the fixture — all in one place.
+              Find screens for the big game, book a court, or lock a live
+              scorecard — across soccer, rugby, padel, golf, and more.
             </p>
 
             <HeroActions className="animate-rise-delay-2 mt-7 hidden lg:block" />

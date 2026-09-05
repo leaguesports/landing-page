@@ -22,17 +22,17 @@ const SITE_URL = getSiteBaseUrl();
 
 export const metadata: Metadata = {
   title: {
-    absolute: "LeagueSports | Live scorecards & sports venues in South Africa",
+    absolute: "LeagueSports | Watch, play & track sport in South Africa",
   },
   description:
-    "Play padel on a live scorecard, lock results to your history, and find courts or watch venues across Cape Town, Johannesburg, Durban, and Pretoria.",
+    "Find where to watch fixtures, book courts to play, and lock live scorecards — across soccer, rugby, padel, golf, and more in South Africa.",
   alternates: {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: "LeagueSports | Live scorecards & sports venues in South Africa",
+    title: "LeagueSports | Watch, play & track sport in South Africa",
     description:
-      "Live padel scorecards, play courts, and watch venues across South Africa.",
+      "Watch venues, play courts, and live scorecards across South Africa.",
     url: SITE_URL,
     siteName: "LeagueSports",
     locale: "en_ZA",
@@ -40,16 +40,17 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeagueSports | Live scorecards & sports venues in South Africa",
+    title: "LeagueSports | Watch, play & track sport in South Africa",
     description:
-      "Live padel scorecards, play courts, and watch venues across South Africa.",
+      "Watch venues, play courts, and live scorecards across South Africa.",
   },
   keywords: [
-    "padel scorecard",
     "sports venues South Africa",
     "where to watch soccer",
-    "padel courts Cape Town",
+    "padel scorecard",
     "golf scorecard",
+    "padel courts Cape Town",
+    "sports bars Johannesburg",
     "LeagueSports",
   ],
 };
@@ -194,26 +195,26 @@ async function MarketingHome() {
                 LeagueSports
               </p>
               <h2 className="font-display text-5xl tracking-wide text-white sm:text-6xl">
-                Find your game
+                Your local sports hub
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Browse Watch and Play directories, start a live scorecard, or
-                open the athlete hub to track locked results.
+                Browse Watch and Play directories, follow fixtures, or open
+                athlete tools to lock live scorecards.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href="/venues"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
               >
                 Find a venue
               </Link>
               <Link
-                href="/padel/new"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                href="/athletes"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
               >
-                Play now
+                Athlete tools
               </Link>
             </div>
           </div>

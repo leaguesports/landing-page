@@ -32,11 +32,11 @@ export const metadata: Metadata = {
       "https://leaguesports.co.za",
   ),
   title: {
-    default: "LeagueSports | Live scorecards & sports venues in South Africa",
+    default: "LeagueSports | Watch, play & track sport in South Africa",
     template: "%s | LeagueSports",
   },
   description:
-    "Play padel on a live scorecard, lock results to your history, and find courts or watch venues across South Africa.",
+    "Find where to watch fixtures, book courts to play, and lock live scorecards across South Africa.",
   openGraph: {
     siteName: "LeagueSports",
     locale: "en_ZA",

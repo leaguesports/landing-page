@@ -24,61 +24,6 @@ export function HomeValueSections() {
     <>
       <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute right-1/4 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-        </div>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
-                <Trophy className="h-4 w-4 text-emerald-400" aria-hidden />
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                  Digital scorecards
-                </span>
-              </div>
-              <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                Never lose a padel score again
-              </h2>
-              <p className="max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                Run a live padel scorecard on your phone, lock the result when
-                the match ends, and keep it on your history and the court. Golf
-                rounds lock the same way.
-              </p>
-              <ul className="space-y-3 text-zinc-300">
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>Real-time scoring with set and game tracking</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>Locked results sync to your athlete hub</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>Share the scorecard with your pairing</span>
-                </li>
-              </ul>
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                <Link
-                  href="/padel/new"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
-                >
-                  Start a padel match
-                </Link>
-                <Link
-                  href="/athletes"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  See athlete tools
-                </Link>
-              </div>
-            </div>
-            <HomeScorecardPreview className="animate-rise mx-auto w-full max-w-md lg:mx-0" />
-          </div>
-        </div>
-      </section>
-
-      <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute left-1/4 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-sky-500/10 blur-3xl" />
         </div>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -95,9 +40,21 @@ export function HomeValueSections() {
                 </div>
                 <ul className="divide-y divide-white/8">
                   {[
-                    { sport: "Soccer", title: "Kaizer Chiefs vs Orlando Pirates", where: "12 venues" },
-                    { sport: "Rugby", title: "Stormers vs Bulls", where: "8 venues" },
-                    { sport: "F1", title: "Race weekend screenings", where: "6 venues" },
+                    {
+                      sport: "Soccer",
+                      title: "Kaizer Chiefs vs Orlando Pirates",
+                      where: "12 venues",
+                    },
+                    {
+                      sport: "Rugby",
+                      title: "Stormers vs Bulls",
+                      where: "8 venues",
+                    },
+                    {
+                      sport: "F1",
+                      title: "Race weekend screenings",
+                      where: "6 venues",
+                    },
                   ].map((row) => (
                     <li
                       key={row.title}
@@ -123,7 +80,7 @@ export function HomeValueSections() {
               <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
                 <Tv className="h-4 w-4 text-sky-400" aria-hidden />
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
-                  Watch venues
+                  Watch
                 </span>
               </div>
               <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
@@ -145,7 +102,9 @@ export function HomeValueSections() {
                 </li>
                 <li className="flex items-start gap-3">
                   {CHECK}
-                  <span>Follow venues so upcoming games surface on your hub</span>
+                  <span>
+                    Follow venues so upcoming games surface on your hub
+                  </span>
                 </li>
               </ul>
               <Link
@@ -166,21 +125,21 @@ export function HomeValueSections() {
               <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
                 <MapPin className="h-4 w-4 text-emerald-400" aria-hidden />
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                  Play courts
+                  Play
                 </span>
               </div>
               <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                Book the court, then keep the score
+                Find a court, then keep the score
               </h2>
               <p className="max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                Search play venues by suburb, city, or sport. Start a scorecard
-                when you arrive so the result lands where it belongs — on your
-                history and the venue.
+                Search play venues by suburb, city, or sport — padel, golf, and
+                more. Start a scorecard when you arrive so the result lands on
+                your history and the venue.
               </p>
               <ul className="space-y-3 text-zinc-300">
                 <li className="flex items-start gap-3">
                   {CHECK}
-                  <span>Play directories for padel, golf, and more</span>
+                  <span>Play directories across South Africa&apos;s metros</span>
                 </li>
                 <li className="flex items-start gap-3">
                   {CHECK}
@@ -188,7 +147,7 @@ export function HomeValueSections() {
                 </li>
                 <li className="flex items-start gap-3">
                   {CHECK}
-                  <span>Quick-start matches from a venue page</span>
+                  <span>Quick-start scorecards from a venue page</span>
                 </li>
               </ul>
               <Link
@@ -204,8 +163,14 @@ export function HomeValueSections() {
               </p>
               <ul className="mt-5 space-y-3">
                 {[
-                  { label: "Padel in Cape Town", href: "/venues?intent=play&q=padel+cape+town" },
-                  { label: "Golf in Johannesburg", href: "/venues?intent=play&q=golf+johannesburg" },
+                  {
+                    label: "Padel in Cape Town",
+                    href: "/venues?intent=play&q=padel+cape+town",
+                  },
+                  {
+                    label: "Golf in Johannesburg",
+                    href: "/venues?intent=play&q=golf+johannesburg",
+                  },
                   { label: "Play venues near me", href: "/play" },
                 ].map((item) => (
                   <li key={item.href}>
@@ -222,6 +187,61 @@ export function HomeValueSections() {
                 ))}
               </ul>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute right-1/4 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+        </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
+                <Trophy className="h-4 w-4 text-emerald-400" aria-hidden />
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  Scorecards
+                </span>
+              </div>
+              <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+                Lock every match to your history
+              </h2>
+              <p className="max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+                Live scorecards for padel and golf — track the match on your
+                phone, lock the result, and keep it on your athlete hub and the
+                court.
+              </p>
+              <ul className="space-y-3 text-zinc-300">
+                <li className="flex items-start gap-3">
+                  {CHECK}
+                  <span>Real-time scoring for padel and golf rounds</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  {CHECK}
+                  <span>Locked results sync to your athlete hub</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  {CHECK}
+                  <span>Share the scorecard with your pairing</span>
+                </li>
+              </ul>
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                <Link
+                  href="/padel/new"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
+                >
+                  Start a scorecard
+                </Link>
+                <Link
+                  href="/athletes"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  See athlete tools
+                </Link>
+              </div>
+            </div>
+            <HomeScorecardPreview className="animate-rise mx-auto w-full max-w-md lg:mx-0" />
           </div>
         </div>
       </section>
