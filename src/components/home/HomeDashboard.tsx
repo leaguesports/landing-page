@@ -1,5 +1,6 @@
 import { SportsHub } from "@/components/home/SportsHub";
 import type { AuthUser } from "@/lib/api-client";
+import { listBadges } from "@/lib/badges/api";
 import { listFriends } from "@/lib/friends/friends";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
@@ -19,13 +20,14 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     venues.map((venue) => venue.slug),
   );
 
-  const [history, golfHistory, hub, followedVenues, friends] =
+  const [history, golfHistory, hub, followedVenues, friends, badges] =
     await Promise.all([
       lookupPlayerHistory(user.id, { cookie }),
       lookupPlayerGolfHistory(user.id, { cookie }),
       getDashboardHub({ followedVenueSlugs: followedSlugsPromise }),
       followedVenuesPromise,
       listFriends({ cookie }),
+      listBadges({ cookie }),
     ]);
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
   const padelCount = history.error ? 0 : history.items.length;
@@ -45,6 +47,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       }}
       followedVenues={followedVenues}
       friends={friends}
+      badges={badges}
       sports={hub.sports}
       feed={hub.feed}
       nowIso={new Date().toISOString()}
