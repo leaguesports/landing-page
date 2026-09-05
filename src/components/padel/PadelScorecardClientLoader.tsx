@@ -55,7 +55,7 @@ export function PadelScorecardClientLoader({
 
   if (load.status === "loading") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#050705] px-6 text-center text-sm text-zinc-400">
+      <div className="flex min-h-dvh items-center justify-center bg-[#0c0f0c] px-6 text-center text-sm text-zinc-400">
         Loading match…
       </div>
     );
@@ -63,7 +63,7 @@ export function PadelScorecardClientLoader({
 
   if (load.status === "missing") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#050705] px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#0c0f0c] px-6 text-center">
         <p className="max-w-sm text-sm text-zinc-400">
           This match was not found. It may not have been created on the match
           API, or the share link is stale.

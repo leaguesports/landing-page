@@ -32,16 +32,60 @@ type PadelScorecardProps = {
   initialMatch: PadelMatch;
 };
 
-function ConnectionBadge({
-  state,
+/** Rough ladder rank for the progress bar (mirrors tennis/padel point steps). */
+function pointRank(match: PadelMatch, team: PadelTeamId): number {
+  const { game, ruleset } = match;
+  if (game.isTieBreak) {
+    return team === "A" ? game.tieBreakPointsA : game.tieBreakPointsB;
+  }
+  const pts = team === "A" ? game.pointsA : game.pointsB;
+  const other = team === "A" ? game.pointsB : game.pointsA;
+  const base = pts === 0 ? 0 : pts === 15 ? 1 : pts === 30 ? 2 : 3;
+  if (pts === 40 && other === 40) {
+    if (ruleset === "golden_point") return 3.5;
+    if (game.advantage === team) return 4;
+    return 3;
+  }
+  return base;
+}
+
+/** Team A share of current-game progress (0–100). */
+function pointProgressPercent(match: PadelMatch): number {
+  const a = pointRank(match, "A");
+  const b = pointRank(match, "B");
+  if (a === 0 && b === 0) return 50;
+  return Math.round((a / (a + b)) * 100);
+}
+
+function StatusPill({
+  locked,
+  connectionState,
 }: {
-  state: ReturnType<typeof useMatchChannel>["connectionState"];
+  locked: boolean;
+  connectionState: ReturnType<typeof useMatchChannel>["connectionState"];
 }) {
-  const live = state === "connected";
+  if (locked) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+        Saved
+      </span>
+    );
+  }
+
+  const live = connectionState === "connected";
+  const label =
+    connectionState === "connected"
+      ? "Live"
+      : connectionState === "connecting"
+        ? "Connecting…"
+        : connectionState === "offline" || connectionState === "disconnected"
+          ? "Offline"
+          : "Unavailable";
+
   return (
     <span
       className={[
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
         live
           ? "bg-emerald-400/15 text-emerald-300"
           : "bg-zinc-700/80 text-zinc-300",
@@ -52,18 +96,12 @@ function ConnectionBadge({
       ) : (
         <WifiOff className="h-3 w-3" aria-hidden />
       )}
-      {state === "connected"
-        ? "Live"
-        : state === "connecting"
-          ? "Connecting…"
-          : state === "offline" || state === "disconnected"
-            ? "Offline · local"
-            : "Realtime unavailable"}
+      {label}
     </span>
   );
 }
 
-function ScoreColumn({
+function TeamPanel({
   team,
   match,
   onScore,
@@ -76,45 +114,45 @@ function ScoreColumn({
 }) {
   const set = getActiveSet(match);
   const games = team === "A" ? set.gamesA : set.gamesB;
-  const point = formatGamePoint(match, team);
   const serving = match.servingTeam === team;
   const label = getTeamLabel(match, team);
+  const leading =
+    team === "A" ? set.gamesA >= set.gamesB : set.gamesB > set.gamesA;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-3">
-      <div className="flex items-center gap-2">
-        <p className="max-w-[9rem] truncate text-center text-sm font-medium text-zinc-300 sm:max-w-[12rem]">
-          {label}
-        </p>
+    <div className="flex min-w-0 flex-col px-4 py-5 sm:px-5 sm:py-6">
+      <div className="flex min-h-6 items-center gap-2">
+        <p className="truncate text-xs text-zinc-500">{label}</p>
         {serving ? (
-          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-950">
+          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-950">
             Serve
           </span>
         ) : null}
       </div>
 
-      <p className="font-display text-7xl leading-none tracking-wide text-white tabular-nums sm:text-8xl">
-        {point}
+      <p
+        className={[
+          "mt-2 font-display text-5xl tracking-wide tabular-nums sm:text-6xl",
+          leading ? "text-white" : "text-zinc-400",
+        ].join(" ")}
+      >
+        {games}
       </p>
-
-      <p className="text-sm text-zinc-500">
-        Games · <span className="tabular-nums text-zinc-200">{games}</span>
-      </p>
+      <p className="mt-1 text-xs text-zinc-500">Games</p>
 
       <button
         type="button"
         disabled={disabled}
         onClick={onScore}
         className={[
-          "mt-auto flex min-h-28 w-full max-w-[11rem] touch-manipulation flex-col items-center justify-center rounded-3xl text-lg font-bold transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-32 sm:max-w-[14rem] sm:text-xl",
+          "mt-5 flex min-h-14 w-full touch-manipulation items-center justify-center gap-1.5 rounded-2xl text-sm font-semibold transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-16 sm:text-base",
           team === "A"
             ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
             : "bg-sky-400 text-zinc-950 hover:bg-sky-300",
         ].join(" ")}
       >
-        <span className="text-3xl leading-none sm:text-4xl">+</span>
-        <span className="mt-1">Point</span>
-        <span className="text-sm font-semibold opacity-80">Team {team}</span>
+        <span className="text-xl leading-none">+</span>
+        Point
       </button>
     </div>
   );
@@ -167,9 +205,9 @@ function LiveShareNudgeBar({
     <div
       role="region"
       aria-label="Share this live match"
-      className="sticky bottom-0 z-20 border-t border-emerald-400/25 bg-[#0a120c]/95 px-4 py-3 backdrop-blur-md"
+      className="border-t border-emerald-400/25 bg-[#0a120c]/95 px-4 py-3 backdrop-blur-md"
     >
-      <div className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-lg items-center gap-3">
         <p className="min-w-0 flex-1 text-sm font-medium text-emerald-100">
           WhatsApp the other pair
         </p>
@@ -263,163 +301,186 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
   };
   const showShareNudge = !locked && !shareNudgeDismissed;
 
+  const setBadge = locked
+    ? "Saved"
+    : finalized
+      ? "Final"
+      : match.game.isTieBreak
+        ? `Tie-break · Set ${match.currentSetIndex + 1}`
+        : `Set ${match.currentSetIndex + 1}`;
+
+  const pointA = formatGamePoint(match, "A");
+  const pointB = formatGamePoint(match, "B");
+  const progress = pointProgressPercent(match);
+
   function handleDismissShareNudge() {
     dismissPadelShareNudge(match.id);
     setShareNudgeDismissed(true);
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#050705] text-white">
-      <header className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
+    <div className="flex min-h-dvh flex-col bg-[#0c0f0c] text-white">
+      <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link
           href="/padel/new"
-          className="text-sm text-zinc-400 hover:text-white"
+          className="text-sm text-zinc-400 transition-colors hover:text-white"
         >
           ← New
         </Link>
-        <div className="flex flex-col items-center gap-1">
-          <span className="font-display text-lg tracking-wide">
-            PADEL
-          </span>
-          {locked ? (
-            <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
-              Saved
-            </span>
-          ) : (
-            <ConnectionBadge state={connectionState} />
-          )}
-        </div>
+        <StatusPill locked={locked} connectionState={connectionState} />
         {locked ? (
-          // Keep header balance; Share lives on the locked-result footer.
           <span className="inline-block min-h-9 min-w-[5.5rem]" aria-hidden />
         ) : (
           <WhatsAppShareControl match={liveShareMatch} />
         )}
       </header>
 
-      <div className="px-4 pt-4 text-center">
-        {match.venue?.name ? (
-          <p className="truncate text-xs text-zinc-500">{match.venue.name}</p>
-        ) : null}
-        <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-          {locked
-            ? "Result locked"
-            : finalized
-              ? "Match complete"
-              : match.game.isTieBreak
-                ? `Tie-break · Set ${match.currentSetIndex + 1}`
-                : `Set ${match.currentSetIndex + 1}`}
-        </p>
-        <p className="mt-1 text-[11px] text-zinc-600">{rulesLabel}</p>
-        {setHistory ? (
-          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-            {setHistory}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex flex-1 items-stretch gap-3 px-3 py-6 sm:gap-6 sm:px-6">
-        <ScoreColumn
-          team="A"
-          match={match}
-          disabled={scoringDisabled}
-          onScore={() => void scorePoint("A")}
-        />
-        <div className="flex w-px shrink-0 flex-col items-center justify-center self-stretch py-8">
-          <div className="h-full w-px bg-white/10" />
-        </div>
-        <ScoreColumn
-          team="B"
-          match={match}
-          disabled={scoringDisabled}
-          onScore={() => void scorePoint("B")}
-        />
-      </div>
-
-      {showShareNudge ? (
-        <LiveShareNudgeBar
-          match={liveShareMatch}
-          onDismiss={handleDismissShareNudge}
-        />
-      ) : null}
-
-      <div className="safe-area-pb border-t border-white/8 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {locked ? (
-          <div className="space-y-3">
-            <p className="text-center text-sm text-emerald-300">
-              Final — {winnerLabel ?? "a team"} win
-            </p>
-            <LockedResultShareButton
-              match={{
-                id: match.id,
-                pairings: match.pairings,
-                venue: match.venue,
-                sets: match.sets,
-                startsAt: match.startsAt,
-                lockedAt: match.lockedAt,
-                createdAt: match.createdAt,
-              }}
-            />
-            <Link
-              href="/padel/new"
-              className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10"
-            >
-              Challenge a friend
-            </Link>
-            <Link
-              href={PADEL_HISTORY_PATH}
-              className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
-            >
-              Match history
-            </Link>
-            <Link
-              href="/padel/new"
-              className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-400 text-base font-semibold text-zinc-950 hover:bg-emerald-300"
-            >
-              Play again
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {lockError ? (
-              <p className="text-center text-sm text-red-400">{lockError}</p>
-            ) : finalized ? (
-              <p className="text-center text-sm text-emerald-300">
-                Final — {winnerLabel ?? "a team"} win. End to save the result.
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-4 sm:px-6">
+        <div className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#101410]/90 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-md">
+          <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                {locked ? "Locked · Padel" : "Live · Padel"}
               </p>
-            ) : (
-              <p className="text-center text-xs text-zinc-500">
-                WhatsApp this scorecard so the other pair can follow live. End
-                writes the result to history.
+              <p className="mt-0.5 truncate text-sm font-medium text-white">
+                {match.venue?.name?.trim() || "Padel match"}
               </p>
-            )}
-            <button
-              type="button"
-              disabled={!canUndo || scoringDisabled}
-              onClick={() => void undoPoint()}
-              className="inline-flex min-h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Undo2 className="h-5 w-5" aria-hidden />
-              Undo Point
-            </button>
-            <button
-              type="button"
-              disabled={!canLock || locking}
-              onClick={() => void lockMatch()}
-              className={[
-                "inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl text-base font-semibold transition-colors disabled:cursor-not-allowed",
-                canLock
-                  ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
-                  : "border border-white/15 bg-white/5 text-zinc-400 opacity-50",
-              ].join(" ")}
-            >
-              {locking ? (
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+              {!locked && !finalized ? (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               ) : null}
-              {locking ? "Ending…" : "End match"}
-            </button>
+              {setBadge}
+            </span>
           </div>
-        )}
+
+          <div className="grid grid-cols-2 divide-x divide-white/8">
+            <TeamPanel
+              team="A"
+              match={match}
+              disabled={scoringDisabled}
+              onScore={() => void scorePoint("A")}
+            />
+            <TeamPanel
+              team="B"
+              match={match}
+              disabled={scoringDisabled}
+              onScore={() => void scorePoint("B")}
+            />
+          </div>
+
+          <div className="border-t border-white/8 px-4 py-3 sm:px-5">
+            <div className="flex items-center justify-between text-xs text-zinc-400">
+              <span>{match.game.isTieBreak ? "Tie-break" : "Point"}</span>
+              <span className="font-display text-lg tracking-wide text-emerald-300 tabular-nums">
+                {pointA} — {pointB}
+              </span>
+            </div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/8">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-[width] duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-600">
+              <span>{rulesLabel}</span>
+              {setHistory ? (
+                <span className="truncate text-zinc-500">{setHistory}</span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-6">
+          {showShareNudge ? (
+            <div className="mb-4 overflow-hidden rounded-2xl border border-emerald-400/25">
+              <LiveShareNudgeBar
+                match={liveShareMatch}
+                onDismiss={handleDismissShareNudge}
+              />
+            </div>
+          ) : null}
+
+          <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {locked ? (
+              <div className="space-y-3">
+                <p className="text-center text-sm text-emerald-300">
+                  Final — {winnerLabel ?? "a team"} win
+                </p>
+                <LockedResultShareButton
+                  match={{
+                    id: match.id,
+                    pairings: match.pairings,
+                    venue: match.venue,
+                    sets: match.sets,
+                    startsAt: match.startsAt,
+                    lockedAt: match.lockedAt,
+                    createdAt: match.createdAt,
+                  }}
+                />
+                <Link
+                  href="/padel/new"
+                  className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Challenge a friend
+                </Link>
+                <Link
+                  href={PADEL_HISTORY_PATH}
+                  className="flex min-h-10 w-full items-center justify-center text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Match history
+                </Link>
+                <Link
+                  href="/padel/new"
+                  className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-400 text-base font-semibold text-zinc-950 hover:bg-emerald-300"
+                >
+                  Play again
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lockError ? (
+                  <p className="text-center text-sm text-red-400">{lockError}</p>
+                ) : finalized ? (
+                  <p className="text-center text-sm text-emerald-300">
+                    Final — {winnerLabel ?? "a team"} win. End to save the
+                    result.
+                  </p>
+                ) : (
+                  <p className="text-center text-xs text-zinc-500">
+                    WhatsApp this scorecard so the other pair can follow live.
+                    End writes the result to history.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={!canUndo || scoringDisabled}
+                  onClick={() => void undoPoint()}
+                  className="inline-flex min-h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 text-base font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Undo2 className="h-5 w-5" aria-hidden />
+                  Undo Point
+                </button>
+                <button
+                  type="button"
+                  disabled={!canLock || locking}
+                  onClick={() => void lockMatch()}
+                  className={[
+                    "inline-flex min-h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-2xl text-base font-semibold transition-colors disabled:cursor-not-allowed",
+                    canLock
+                      ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
+                      : "border border-white/15 bg-white/5 text-zinc-400 opacity-50",
+                  ].join(" ")}
+                >
+                  {locking ? (
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                  ) : null}
+                  {locking ? "Ending…" : "End match"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
