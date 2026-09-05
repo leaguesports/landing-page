@@ -7,9 +7,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-/** Indoor court — matches the live scorecard story on the homepage. */
+/** Racket-sport court atmosphere for the live scorecard story. */
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1554068865-24cecd4e79b7?auto=format&fit=crop&w=2400&q=80";
+  "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=2400&q=80";
 
 export function HomeDiscovery() {
   const [intent, setIntent] = useState<IntentMode>("play");

@@ -13,9 +13,19 @@ export type Guide = {
   content?: TypedObject[] | null;
 };
 
-export async function getTopGuides(limit: number = 4) {
-  return sanityClient.fetch<Guide[]>(
-    `*[_type == "guide"] | order(_createdAt desc) [0...$limit] {
+function isSanityConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID &&
+      process.env.NEXT_PUBLIC_SANITY_DATASET,
+  );
+}
+
+export async function getTopGuides(limit: number = 4): Promise<Guide[]> {
+  if (!isSanityConfigured()) return [];
+
+  try {
+    const rows = await sanityClient.fetch<Guide[]>(
+      `*[_type == "guide"] | order(_createdAt desc) [0...$limit] {
       _id,
       _createdAt,
       title,
@@ -24,8 +34,13 @@ export async function getTopGuides(limit: number = 4) {
       "slug": slug.current,
       keywords,
     }`,
-    { limit },
-  );
+      { limit },
+    );
+    return Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    console.error("[guides] getTopGuides failed", error);
+    return [];
+  }
 }
 
 export async function listGuides() {
