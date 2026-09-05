@@ -41,23 +41,17 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
   const holes = round.course.holes;
   const locked = Boolean(round.lockedAt) || round.status === "locked";
 
-  const [currentHoleIndex, setCurrentHoleIndex] = useState(() => {
-    const local = readGolfRoundLocal(initialRound.id);
-    if (local && local.currentHoleIndex < holes.length) {
-      return local.currentHoleIndex;
-    }
-    return 0;
-  });
+  const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
 
   const [strokes, setStrokes] = useState<GolfLiveStrokes>(() => {
     if (initialRound.score) return strokesFromScore(initialRound.score);
-    const local = readGolfRoundLocal(initialRound.id);
-    return local?.strokes ?? {};
+    return {};
   });
 
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
   const [tab, setTab] = useState<PlayTab>("score");
+  const [hydratedLocal, setHydratedLocal] = useState(false);
 
   const hole = holes[currentHoleIndex] ?? null;
   const canLock = !locked && allHolesScored(round.players, strokes, holes);
@@ -67,14 +61,32 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
   );
 
   useEffect(() => {
-    if (locked) return;
+    if (hydratedLocal) return;
+    setHydratedLocal(true);
+    const local = readGolfRoundLocal(initialRound.id);
+    if (!local) return;
+    if (local.currentHoleIndex < holes.length) {
+      setCurrentHoleIndex(local.currentHoleIndex);
+    }
+    if (!initialRound.score && local.strokes) {
+      setStrokes(local.strokes);
+    }
+  }, [
+    hydratedLocal,
+    initialRound.id,
+    initialRound.score,
+    holes.length,
+  ]);
+
+  useEffect(() => {
+    if (locked || !hydratedLocal) return;
     writeGolfRoundLocal({
       roundId: round.id,
       currentHoleIndex,
       strokes,
       updatedAt: new Date().toISOString(),
     });
-  }, [round.id, currentHoleIndex, strokes, locked]);
+  }, [round.id, currentHoleIndex, strokes, locked, hydratedLocal]);
 
   const ensureHoleDefault = useCallback(
     (holeNumber: number, par: number) => {

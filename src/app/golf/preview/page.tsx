@@ -13,7 +13,7 @@ const previewRound: GolfRound = {
   sport: "golf",
   status: "live",
   venueCmsId: "preview",
-  startsAt: new Date().toISOString(),
+  startsAt: "2026-01-01T08:00:00.000Z",
   holesPlayed: 9,
   startingHole: 1,
   teeName: "White",
