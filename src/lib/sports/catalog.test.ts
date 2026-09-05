@@ -39,9 +39,9 @@ describe("eventHref", () => {
     assert.equal(eventHref("motogp", "qatar"), "/motorsport");
   });
 
-  it("sends unknown series to Watch", () => {
-    assert.equal(eventHref(null, null), "/watch");
-    assert.equal(eventHref("rugby", "test"), "/watch/rugby");
+  it("sends unknown series to the Watch venues directory", () => {
+    assert.equal(eventHref(null, null), "/venues?intent=watch");
+    assert.equal(eventHref("rugby", "test"), "/venues?intent=watch&sport=rugby");
   });
 });
 
@@ -66,7 +66,7 @@ describe("utilities", () => {
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/padel/history"));
     assert.ok(hrefs.includes("/venues?intent=play&sport=padel"));
-    assert.ok(hrefs.includes("/watch/padel"));
+    assert.ok(hrefs.includes("/venues?intent=watch&sport=padel"));
   });
 
   it("gives golf a round start and history, not padel paths", () => {
@@ -124,7 +124,7 @@ describe("utilities", () => {
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/golf/new"));
     assert.ok(hrefs.includes("/venues?intent=play"));
-    assert.ok(hrefs.includes("/watch"));
+    assert.ok(hrefs.includes("/venues?intent=watch"));
   });
 });
 

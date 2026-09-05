@@ -57,7 +57,7 @@ export default async function EventsPage({
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/watch"
+              href="/venues?intent=watch"
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
             >
               Browse Watch
@@ -114,7 +114,7 @@ export default async function EventsPage({
                 </Link>
               ) : (
                 <Link
-                  href="/watch/rugby"
+                  href="/venues?intent=watch&sport=rugby"
                   className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
                 >
                   Watch rugby

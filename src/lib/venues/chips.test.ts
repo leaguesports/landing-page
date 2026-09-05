@@ -18,27 +18,27 @@ describe("venueChipLocationSlug", () => {
 });
 
 describe("venueIntentChipHref", () => {
-  it("builds Watch chips as /watch/{sport}/{location}", () => {
+  it("builds Watch chips as /venues?intent=watch&sport=&location=", () => {
     assert.equal(
       venueIntentChipHref("watch", "soccer", claremont),
-      "/watch/soccer/claremont",
+      "/venues?intent=watch&sport=soccer&location=claremont",
     );
   });
 
-  it("builds Play chips as /play/{sport}/{location}", () => {
+  it("builds Play chips as /venues?intent=play&sport=&location=", () => {
     assert.equal(
       venueIntentChipHref("play", "padel", {
         suburb: "Sandton",
         city: "Johannesburg",
       }),
-      "/play/padel/sandton",
+      "/venues?intent=play&sport=padel&location=sandton",
     );
   });
 
-  it("falls back to the sport hub when there is no location", () => {
+  it("falls back to the sport filter when there is no location", () => {
     assert.equal(
       venueIntentChipHref("watch", "soccer", { suburb: "", city: "" }),
-      "/watch/soccer",
+      "/venues?intent=watch&sport=soccer",
     );
   });
 

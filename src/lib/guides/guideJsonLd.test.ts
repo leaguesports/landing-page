@@ -173,7 +173,7 @@ describe("buildGuideJsonLd", () => {
       faqs: [
         {
           question: "What is <em>padel</em>?",
-          answer: "A racket sport. <a href='/play'>Book a court</a>.",
+          answer: "A racket sport. <a href='/venues?intent=play'>Book a court</a>.",
         },
       ],
     });
