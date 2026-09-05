@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { syncBadgesBrowser } from "@/lib/badges/api";
+import {
+  listBadgesBrowser,
+  recomputeBadgesBrowser,
+  type PersistedBadge,
+} from "@/lib/badges/api";
 import { BADGE_CATALOG, type BadgeId } from "@/lib/badges/catalog";
 import { evaluateBadges } from "@/lib/badges/evaluate";
 import { hasScorecardShareSignal } from "@/lib/badges/share-signal";
@@ -20,31 +24,54 @@ export function BadgesPanel({
   friendCount,
 }: BadgesPanelProps) {
   const [shared, setShared] = useState(false);
+  const [serverBadges, setServerBadges] = useState<PersistedBadge[] | null>(
+    null,
+  );
 
   useEffect(() => {
     setShared(hasScorecardShareSignal());
   }, []);
 
-  const evaluated = useMemo(
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      const listed = await listBadgesBrowser(controller.signal);
+      if (controller.signal.aborted) return;
+      if (!listed.fromApi) {
+        setServerBadges(null);
+        return;
+      }
+
+      // Optional empty-body recompute — server evaluates from session evidence.
+      const recomputed = await recomputeBadgesBrowser(controller.signal);
+      if (controller.signal.aborted) return;
+      setServerBadges(
+        recomputed.fromApi ? recomputed.badges : listed.badges,
+      );
+    })();
+    return () => controller.abort();
+  }, []);
+
+  const localEarned = useMemo(
     () =>
       evaluateBadges({
         padelStats,
         golfLocked,
         friendCount,
         hasSharedScorecard: shared,
-      }),
+      })
+        .filter((badge) => badge.earned)
+        .map((badge) => badge.id),
     [friendCount, golfLocked, padelStats, shared],
   );
 
-  const earnedIds = useMemo(
-    () => evaluated.filter((badge) => badge.earned).map((badge) => badge.id),
-    [evaluated],
-  );
-
-  useEffect(() => {
-    if (earnedIds.length === 0) return;
-    void syncBadgesBrowser(earnedIds);
-  }, [earnedIds]);
+  const earnedIds = useMemo(() => {
+    if (serverBadges === null) return localEarned;
+    const ids = new Set<BadgeId>(serverBadges.map((badge) => badge.id));
+    // Share stays device-local until the API records share *actions*.
+    if (shared) ids.add("whatsapp_share");
+    return BADGE_CATALOG.map((badge) => badge.id).filter((id) => ids.has(id));
+  }, [localEarned, serverBadges, shared]);
 
   const earnedCount = earnedIds.length;
 

@@ -1,5 +1,5 @@
-import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
-import { invokeFetch } from "@/lib/invoke-fetch";
+import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 import { badgeById, type BadgeId } from "./catalog.ts";
 
 export type PersistedBadge = {
@@ -77,22 +77,20 @@ export async function listBadgesWith(
   }
 }
 
-/** Idempotent upsert of earned badge ids. No-op when API is unavailable. */
-export async function syncBadgesWith(
-  earnedIds: BadgeId[],
+/**
+ * Ask the API to re-evaluate unlocks from session-owned evidence.
+ * Empty body only — never send client-computed badge ids (self-grant risk).
+ */
+export async function recomputeBadgesWith(
   deps: BadgesDeps,
 ): Promise<BadgesSnapshot> {
-  if (earnedIds.length === 0) {
-    return { badges: [], fromApi: false };
-  }
-
   try {
     const res = await invokeFetch(deps.fetch, badgesUrl(deps.baseUrl), {
       method: "POST",
       credentials: "include",
       cache: "no-store",
       headers: requestHeaders(deps.cookie, true),
-      body: JSON.stringify({ earnedIds }),
+      body: "{}",
       signal: deps.signal,
     });
     if (!res.ok) return { badges: [], fromApi: false };
@@ -116,11 +114,23 @@ export async function listBadges(options: {
 }
 
 /** Browser helper — same-origin `/api` proxy. */
-export async function syncBadgesBrowser(
-  earnedIds: BadgeId[],
+export async function listBadgesBrowser(
+  signal?: AbortSignal,
 ): Promise<BadgesSnapshot> {
-  return syncBadgesWith(earnedIds, {
+  return listBadgesWith({
     fetch,
     baseUrl: "",
+    signal,
+  });
+}
+
+/** Browser helper — empty-body recompute after a successful GET. */
+export async function recomputeBadgesBrowser(
+  signal?: AbortSignal,
+): Promise<BadgesSnapshot> {
+  return recomputeBadgesWith({
+    fetch,
+    baseUrl: "",
+    signal,
   });
 }
