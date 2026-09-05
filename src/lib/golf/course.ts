@@ -45,6 +45,20 @@ function holeSequence(
   });
 }
 
+function metersForTee(
+  hole: GolfCourseCmsHole,
+  teeName: string | null | undefined,
+): number | null {
+  const key = teeName?.trim().toLowerCase();
+  if (!key || !hole.distances?.length) return null;
+  const match = hole.distances.find(
+    (d) => d.teeName?.trim().toLowerCase() === key && typeof d.meters === "number",
+  );
+  return match && Number.isFinite(match.meters) && match.meters > 0
+    ? match.meters
+    : null;
+}
+
 /**
  * Pick consecutive holes for 9/18 from a CMS course.
  * Returns [] when any expected hole is missing or not playable.
@@ -53,6 +67,7 @@ export function selectHoles(
   course: GolfCourseCms | null | undefined,
   holesPlayed: GolfHolesPlayed,
   startingHole = 1,
+  teeName?: string | null,
 ): GolfCourseHole[] {
   if (!course?.holes?.length) return [];
   if (holesPlayed !== 9 && holesPlayed !== 18) return [];
@@ -63,10 +78,12 @@ export function selectHoles(
   const byNumber = new Map<number, GolfCourseHole>();
   for (const hole of course.holes) {
     if (!isPlayableHole(hole)) continue;
+    const meters = metersForTee(hole, teeName);
     byNumber.set(hole.number, {
       number: hole.number,
       par: hole.par,
       strokeIndex: hole.strokeIndex,
+      ...(meters != null ? { meters } : {}),
     });
   }
 
@@ -88,8 +105,9 @@ export function toCourseSnapshot(
   course: GolfCourseCms | null | undefined,
   holesPlayed: GolfHolesPlayed,
   startingHole = 1,
+  teeName?: string | null,
 ): GolfCourseSnapshot | null {
-  const holes = selectHoles(course, holesPlayed, startingHole);
+  const holes = selectHoles(course, holesPlayed, startingHole, teeName);
   if (holes.length !== holesPlayed) return null;
   const name = course?.courseName?.trim() || null;
   return { name, holes };

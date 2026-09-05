@@ -139,6 +139,7 @@ export function GolfQuickStart({
       venue.golfCourse,
       holesPlayed,
       startingHole,
+      teeName.trim() || null,
     );
     if (!course) {
       setError(

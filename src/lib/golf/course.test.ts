@@ -106,4 +106,21 @@ describe("toCourseSnapshot / courseParTotal", () => {
       null,
     );
   });
+
+  it("attaches tee meters when distances match the selected tee", () => {
+    const course = sampleCourse({
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        number: i + 1,
+        par: 4,
+        strokeIndex: i + 1,
+        distances: [
+          { teeName: "Club", meters: 350 + i },
+          { teeName: "Champ", meters: 390 + i },
+        ],
+      })),
+    });
+    const snapshot = toCourseSnapshot(course, 9, 1, "Champ");
+    assert.equal(snapshot?.holes[0]?.meters, 390);
+    assert.equal(snapshot?.holes[8]?.meters, 398);
+  });
 });

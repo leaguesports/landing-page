@@ -194,6 +194,7 @@ function parseCourse(value: unknown): GolfCourseSnapshot | null {
       number?: unknown;
       par?: unknown;
       strokeIndex?: unknown;
+      meters?: unknown;
     };
     if (
       typeof hole.number !== "number" ||
@@ -202,10 +203,17 @@ function parseCourse(value: unknown): GolfCourseSnapshot | null {
     ) {
       return null;
     }
+    const meters =
+      typeof hole.meters === "number" &&
+      Number.isFinite(hole.meters) &&
+      hole.meters > 0
+        ? hole.meters
+        : null;
     holes.push({
       number: hole.number,
       par: hole.par,
       strokeIndex: hole.strokeIndex,
+      ...(meters != null ? { meters } : {}),
     });
   }
   return {

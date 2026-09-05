@@ -9,6 +9,7 @@ import {
   readGolfRoundLocal,
   writeGolfRoundLocal,
 } from "@/lib/golf/round-store";
+import { GolfHoleLayout } from "@/components/golf/GolfHoleLayout";
 import {
   allHolesScored,
   buildLockPayload,
@@ -184,14 +185,12 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
             <div className="text-center">
-              <p className="font-display text-5xl tracking-wide text-white tabular-nums">
-                {hole.number}
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                Hole {currentHoleIndex + 1} of {holes.length}
               </p>
               <p className="mt-1 text-sm text-zinc-400">
                 Par {hole.par} · SI {hole.strokeIndex}
-              </p>
-              <p className="mt-0.5 text-[11px] text-zinc-600">
-                Hole {currentHoleIndex + 1} of {holes.length}
+                {typeof hole.meters === "number" ? ` · ${Math.round(hole.meters)} m` : ""}
               </p>
             </div>
             <button
@@ -207,7 +206,15 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
             </button>
           </div>
 
-          <ul className="mt-8 space-y-3">
+          <GolfHoleLayout
+            holeNumber={hole.number}
+            par={hole.par}
+            strokeIndex={hole.strokeIndex}
+            meters={hole.meters}
+            className="mt-5"
+          />
+
+          <ul className="mt-6 space-y-3">
             {round.players.map((player) => {
               const key = String(player.slot);
               const value =

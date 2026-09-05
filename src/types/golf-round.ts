@@ -17,6 +17,8 @@ export type GolfCourseHole = {
   number: number;
   par: number;
   strokeIndex: number;
+  /** Distance for the selected tee, when known from CMS. */
+  meters?: number | null;
 };
 
 export type GolfCourseSnapshot = {

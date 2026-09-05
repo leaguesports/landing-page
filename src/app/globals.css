@@ -297,3 +297,68 @@ button {
   mix-blend-mode: overlay;
   opacity: 0.35;
 }
+
+/* Stylized golf hole schematic on the live scorecard */
+@keyframes golf-hole-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes golf-fairway-draw {
+  from {
+    stroke-dashoffset: 720;
+    opacity: 0.35;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes golf-flag-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+.golf-hole-layout {
+  animation: golf-hole-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 18%, rgba(61, 255, 138, 0.08), transparent 60%),
+    #07110b;
+}
+
+.golf-hole-layout__fairway {
+  stroke-dasharray: 720;
+  stroke-dashoffset: 720;
+  animation: golf-fairway-draw 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.golf-hole-layout__flag {
+  transform-origin: bottom center;
+  transform-box: fill-box;
+  animation: golf-flag-sway 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .golf-hole-layout,
+  .golf-hole-layout__fairway,
+  .golf-hole-layout__flag {
+    animation: none !important;
+  }
+
+  .golf-hole-layout__fairway {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+}
