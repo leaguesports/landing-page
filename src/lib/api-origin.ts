@@ -144,6 +144,7 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/golf-rounds/:id/lock",
   "/api/golf-rounds/:id",
   "/api/me/followed-venues",
+  "/api/me/followed-fixtures",
   "/api/me/friends",
   "/api/me/friends/:userId/accept",
   "/api/me/friends/:userId",
@@ -151,6 +152,7 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/venues/:cmsId/matches",
   "/api/venues/:cmsId/golf-rounds",
   "/api/venues/:cmsId/follow",
+  "/api/fixtures/:slug/follow",
   "/api/venues/:cmsId",
 ] as const;
 
