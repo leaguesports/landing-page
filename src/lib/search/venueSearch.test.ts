@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import {
   buildVenueDirectoryPath,
   parseVenueSearch,
+  venueDirectoryHref,
+  venueDirectoryHrefFromQuery,
+  venueResultCountLabel,
   venueSearchSummary,
 } from "./venueSearch.ts";
 import { filterSuggestions } from "../../data/cities.ts";
@@ -53,6 +56,63 @@ describe("parseVenueSearch", () => {
       "/venues?intent=watch&sport=soccer&location=claremont",
     );
     assert.equal(venueSearchSummary(parsed), "Watch Soccer in Claremont");
+  });
+
+  it("omits a trailing question mark when there are no filters", () => {
+    assert.equal(
+      buildVenueDirectoryPath({
+        intent: null,
+        sportSlug: null,
+        sportName: null,
+        locationSlug: null,
+        locationLabel: null,
+        locationKind: null,
+        citySlug: null,
+      }),
+      "/venues",
+    );
+  });
+});
+
+describe("venueDirectoryHref", () => {
+  it("builds filter URLs and drops empty params", () => {
+    assert.equal(
+      venueDirectoryHref({ intent: "play", sport: "padel" }),
+      "/venues?intent=play&sport=padel",
+    );
+    assert.equal(venueDirectoryHref({ intent: "all" }), "/venues");
+    assert.equal(venueDirectoryHref({}), "/venues");
+  });
+});
+
+describe("venueDirectoryHrefFromQuery", () => {
+  it("parses a full Watch query", () => {
+    assert.equal(
+      venueDirectoryHrefFromQuery("Watch soccer in Claremont", null),
+      "/venues?intent=watch&sport=soccer&location=claremont",
+    );
+  });
+
+  it("keeps All when the query has no Watch/Play verb", () => {
+    assert.equal(
+      venueDirectoryHrefFromQuery("padel in Sandton", null),
+      "/venues?sport=padel&location=sandton",
+    );
+  });
+
+  it("keeps the current intent when the query has no verb", () => {
+    assert.equal(
+      venueDirectoryHrefFromQuery("Claremont", "play"),
+      "/venues?intent=play&location=claremont",
+    );
+  });
+});
+
+describe("venueResultCountLabel", () => {
+  it("pluralizes venue counts", () => {
+    assert.equal(venueResultCountLabel(0), "0 venues");
+    assert.equal(venueResultCountLabel(1), "1 venue");
+    assert.equal(venueResultCountLabel(12), "12 venues");
   });
 });
 
