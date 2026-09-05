@@ -87,6 +87,11 @@ export const SEARCH_SPORTS = [
   { name: "Tennis", slug: "tennis" },
   { name: "Squash", slug: "squash" },
   { name: "Karting", slug: "karting" },
+  { name: "Darts", slug: "darts" },
+  { name: "Pool", slug: "pool" },
+  { name: "Bowling", slug: "bowling" },
+  { name: "Indoor Golf", slug: "indoor-golf" },
+  { name: "Sim Racing", slug: "sim-racing" },
 ] as const;
 
 function buildSuggestions(): SearchSuggestion[] {
