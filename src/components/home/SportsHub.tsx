@@ -11,6 +11,7 @@ import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
+import { updatePreferences } from "@/lib/preferences/preferences";
 import { summarisePlayerHistory } from "@/lib/padel/history";
 import { PadelProgressSummary } from "@/components/padel/PadelProgressSummary";
 import {
@@ -142,21 +143,32 @@ type SportsHubProps = {
   sports: SportDefinition[];
   feed: HubFeedItem[];
   nowIso: string;
+  /** Server-backed sport follows from `/api/me/preferences`. */
+  initialFollowedSports?: string[];
+  initialActiveSport?: string | null;
 };
 
 function useHubPreferences(
   userId: string,
   knownSlugs: string[],
   seedFollowed: string[],
+  initialActiveSport: string | null = null,
 ) {
   const key = hubStorageKey(userId);
-  const fallbackJson = useMemo(
-    () =>
-      serializeHubPreferences(
-        defaultHubPreferences(seedFollowed, knownSlugs),
-      ),
-    [knownSlugs, seedFollowed],
-  );
+  const fallbackJson = useMemo(() => {
+    const base = defaultHubPreferences(seedFollowed, knownSlugs);
+    if (
+      initialActiveSport &&
+      (initialActiveSport === ALL_SPORTS_SLUG ||
+        knownSlugs.includes(initialActiveSport))
+    ) {
+      return serializeHubPreferences({
+        ...base,
+        active: initialActiveSport,
+      });
+    }
+    return serializeHubPreferences(base);
+  }, [initialActiveSport, knownSlugs, seedFollowed]);
 
   const subscribe = useCallback((onChange: () => void) => {
     const handler = () => onChange();
@@ -187,6 +199,10 @@ function useHubPreferences(
       // Private mode / quota — hub still works for this session.
     }
     window.dispatchEvent(new Event(HUB_PREFS_EVENT));
+    void updatePreferences({
+      sports: next.followed,
+      activeSport: next.active === ALL_SPORTS_SLUG ? null : next.active,
+    });
   }
 
   return [prefs, setPrefs] as const;
@@ -234,6 +250,8 @@ export function SportsHub({
   sports,
   feed,
   nowIso,
+  initialFollowedSports = [],
+  initialActiveSport = null,
 }: SportsHubProps) {
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
   const padelLocked = lockedActivity?.padel ?? historyItems.length;
@@ -242,15 +260,16 @@ export function SportsHub({
   const gamesKnown = !activityError;
   const gamesPlayed = padelLocked + golfLocked;
   const seedFollowed = useMemo(() => {
-    const seeds: string[] = [];
+    const seeds: string[] = [...initialFollowedSports];
     if (padelLocked > 0) seeds.push("padel");
     if (golfLocked > 0) seeds.push("golf");
     return seeds;
-  }, [golfLocked, padelLocked]);
+  }, [golfLocked, initialFollowedSports, padelLocked]);
   const [prefs, setPrefs] = useHubPreferences(
     user.id,
     knownSlugs,
     seedFollowed,
+    initialActiveSport,
   );
   const tablistId = useId();
   const sectionTablistId = useId();

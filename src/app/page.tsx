@@ -1,3 +1,4 @@
+import { HomeAthleteCta } from "@/components/home/HomeAthleteCta";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDirectories } from "@/components/home/HomeDirectories";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
@@ -153,6 +154,8 @@ async function MarketingHome() {
           </div>
         </div>
       </section>
+
+      <HomeAthleteCta />
 
       <HomeUpcomingEvents fixtures={upcomingList} featured={featuredFixture} />
 

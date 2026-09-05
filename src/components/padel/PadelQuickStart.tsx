@@ -202,7 +202,7 @@ export function PadelQuickStart({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto w-full min-w-0 max-w-2xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
           New padel match
@@ -245,12 +245,12 @@ export function PadelQuickStart({
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="min-w-0 space-y-3">
         <h2 className="text-sm font-semibold text-zinc-200">Start time</h2>
-        <label className="relative block">
+        <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
           <span className="sr-only">Match start time</span>
           <Clock
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-500"
             aria-hidden
           />
           <input
@@ -258,7 +258,7 @@ export function PadelQuickStart({
             value={startsAtLocal}
             onChange={(e) => setStartsAtLocal(e.target.value)}
             required
-            className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40"
+            className="box-border min-h-12 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
           />
         </label>
       </section>

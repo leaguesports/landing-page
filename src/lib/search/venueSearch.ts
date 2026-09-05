@@ -234,6 +234,16 @@ export function venueSearchSummary(parsed: ParsedVenueSearch): string {
   return "All venues";
 }
 
+/** Prefill the directory search box from active filters (intent lives on the tabs). */
+export function venueSearchQueryText(parsed: ParsedVenueSearch): string {
+  const sport = parsed.sportName;
+  const place = parsed.locationLabel;
+  if (sport && place) return `${sport} in ${place}`;
+  if (sport) return sport;
+  if (place) return place;
+  return "";
+}
+
 export function parseVenueSearchParams(input: {
   intent?: string | string[] | undefined;
   sport?: string | string[] | undefined;

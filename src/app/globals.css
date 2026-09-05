@@ -49,6 +49,25 @@ body {
   font-family: var(--font-outfit), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/*
+  Native datetime-local controls keep a large intrinsic min-width based on
+  the locale-formatted value. Without an explicit max, they widen the page
+  on mobile (padel/golf start forms).
+*/
+input[type="datetime-local"] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+input[type="datetime-local"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .font-display {

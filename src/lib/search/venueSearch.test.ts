@@ -6,6 +6,7 @@ import {
   venueDirectoryHref,
   venueDirectoryHrefFromQuery,
   venueResultCountLabel,
+  venueSearchQueryText,
   venueSearchSummary,
 } from "./venueSearch.ts";
 import { filterSuggestions } from "../../data/cities.ts";
@@ -113,6 +114,38 @@ describe("venueResultCountLabel", () => {
     assert.equal(venueResultCountLabel(0), "0 venues");
     assert.equal(venueResultCountLabel(1), "1 venue");
     assert.equal(venueResultCountLabel(12), "12 venues");
+  });
+});
+
+describe("venueSearchQueryText", () => {
+  it("prefills sport and place without a Watch/Play verb", () => {
+    assert.equal(
+      venueSearchQueryText({
+        intent: "watch",
+        sportSlug: "soccer",
+        sportName: "Soccer",
+        locationSlug: "claremont",
+        locationLabel: "Claremont",
+        locationKind: "suburb",
+        citySlug: "cape-town",
+      }),
+      "Soccer in Claremont",
+    );
+  });
+
+  it("returns an empty string when nothing is selected", () => {
+    assert.equal(
+      venueSearchQueryText({
+        intent: "play",
+        sportSlug: null,
+        sportName: null,
+        locationSlug: null,
+        locationLabel: null,
+        locationKind: null,
+        citySlug: null,
+      }),
+      "",
+    );
   });
 });
 

@@ -65,10 +65,14 @@ export default function RootLayout({
       lang="en"
       className={`${permanentMarker.variable} ${bebas.variable} ${outfit.variable}`}
     >
-      <body className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)] antialiased">
+      <body className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[var(--background)] text-[var(--foreground)] antialiased">
         <AppSessionProvider>
           <Navigation />
-          <main className="flex-1">{children}</main>
+          {/*
+            Flex items default to min-width:auto, so a wide intrinsic child
+            (iOS datetime-local on padel/golf start) can expand the whole page.
+          */}
+          <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>
           <Footer />
         </AppSessionProvider>
       </body>

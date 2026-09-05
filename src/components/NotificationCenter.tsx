@@ -223,7 +223,7 @@ export default function NotificationCenter() {
           id={panelId}
           role="dialog"
           aria-label="Notification center"
-          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/10 bg-[#141814] shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/10 bg-[#141814] shadow-[0_18px_40px_rgba(0,0,0,0.45)] max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:top-16 max-sm:mt-2 max-sm:w-auto"
         >
           <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
             <div>
