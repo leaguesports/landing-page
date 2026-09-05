@@ -53,6 +53,11 @@ export const metadata: Metadata = {
     "golf scorecard",
     "padel courts Cape Town",
     "sports bars Johannesburg",
+    "darts bar Cape Town",
+    "pool table near me",
+    "bowling Johannesburg",
+    "indoor golf Cape Town",
+    "sim racing South Africa",
     "LeagueSports",
   ],
 };
