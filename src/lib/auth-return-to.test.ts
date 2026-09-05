@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { relativeAuthReturnTo } from "./auth-return-to.ts";
+import {
+  getLoginPageHref,
+  relativeAuthReturnTo,
+} from "./auth-return-to.ts";
 
 /**
  * Mirror of the same-origin check in auth-return-to.ts for Node tests
@@ -33,6 +36,29 @@ describe("relativeAuthReturnTo", () => {
       relativeAuthReturnTo({ pathname: "/venues/x", search: "" }),
       "/venues/x",
     );
+  });
+});
+
+describe("getLoginPageHref", () => {
+  it("returns /login when returnTo is empty", () => {
+    assert.equal(getLoginPageHref(), "/login");
+    assert.equal(getLoginPageHref("  "), "/login");
+  });
+
+  it("encodes a relative returnTo on the login page", () => {
+    assert.equal(
+      getLoginPageHref("/venues/the-grid"),
+      "/login?returnTo=%2Fvenues%2Fthe-grid",
+    );
+    assert.equal(
+      getLoginPageHref("/padel/new?venue=the-grid"),
+      "/login?returnTo=%2Fpadel%2Fnew%3Fvenue%3Dthe-grid",
+    );
+  });
+
+  it("avoids nesting /login as returnTo", () => {
+    assert.equal(getLoginPageHref("/login"), "/login");
+    assert.equal(getLoginPageHref("/login?returnTo=%2F"), "/login");
   });
 });
 
