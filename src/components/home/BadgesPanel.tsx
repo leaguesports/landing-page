@@ -2,55 +2,35 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import {
-  listBadgesBrowser,
-  recomputeBadgesBrowser,
-  type PersistedBadge,
-} from "@/lib/badges/api";
+import type { BadgesSnapshot, PersistedBadge } from "@/lib/badges/api";
 import { BADGE_CATALOG, type BadgeId } from "@/lib/badges/catalog";
 import { evaluateBadges } from "@/lib/badges/evaluate";
 import { hasScorecardShareSignal } from "@/lib/badges/share-signal";
 import type { PlayerHistoryStats } from "@/lib/padel/history";
 
 type BadgesPanelProps = {
+  /** Server GET snapshot — never POST on view. */
+  initial: BadgesSnapshot;
   padelStats: PlayerHistoryStats;
   golfLocked: number;
   friendCount: number;
 };
 
 export function BadgesPanel({
+  initial,
   padelStats,
   golfLocked,
   friendCount,
 }: BadgesPanelProps) {
   const [shared, setShared] = useState(false);
-  const [serverBadges, setServerBadges] = useState<PersistedBadge[] | null>(
-    null,
-  );
 
   useEffect(() => {
     setShared(hasScorecardShareSignal());
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void (async () => {
-      const listed = await listBadgesBrowser(controller.signal);
-      if (controller.signal.aborted) return;
-      if (!listed.fromApi) {
-        setServerBadges(null);
-        return;
-      }
-
-      // Optional empty-body recompute — server evaluates from session evidence.
-      const recomputed = await recomputeBadgesBrowser(controller.signal);
-      if (controller.signal.aborted) return;
-      setServerBadges(
-        recomputed.fromApi ? recomputed.badges : listed.badges,
-      );
-    })();
-    return () => controller.abort();
-  }, []);
+  const serverBadges: PersistedBadge[] | null = initial.fromApi
+    ? initial.badges
+    : null;
 
   const localEarned = useMemo(
     () =>

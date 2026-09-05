@@ -80,6 +80,8 @@ export async function listBadgesWith(
 /**
  * Ask the API to re-evaluate unlocks from session-owned evidence.
  * Empty body only — never send client-computed badge ids (self-grant risk).
+ * Call only after evidence changes (lock / friend accept / server-recorded share),
+ * never on hub view / mount.
  */
 export async function recomputeBadgesWith(
   deps: BadgesDeps,
@@ -124,7 +126,10 @@ export async function listBadgesBrowser(
   });
 }
 
-/** Browser helper — empty-body recompute after a successful GET. */
+/**
+ * Browser helper — empty-body recompute after evidence changes.
+ * Do not call on dashboard mount; GET (or RSC `listBadges`) is the display path.
+ */
 export async function recomputeBadgesBrowser(
   signal?: AbortSignal,
 ): Promise<BadgesSnapshot> {

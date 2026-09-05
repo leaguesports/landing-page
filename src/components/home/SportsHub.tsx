@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgesPanel } from "@/components/home/BadgesPanel";
+import type { BadgesSnapshot } from "@/lib/badges/api";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
@@ -77,6 +78,7 @@ type SportsHubProps = {
   lockedActivity?: LockedActivityCounts;
   followedVenues?: FollowedVenue[];
   friends?: FriendsSnapshot;
+  badges?: BadgesSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
   nowIso: string;
@@ -178,6 +180,7 @@ export function SportsHub({
   lockedActivity,
   followedVenues = [],
   friends = emptyFriendsSnapshot(),
+  badges = { badges: [], fromApi: false },
   sports,
   feed,
   nowIso,
@@ -538,6 +541,7 @@ export function SportsHub({
             ) : null}
 
             <BadgesPanel
+              initial={badges}
               padelStats={stats}
               golfLocked={golfLocked}
               friendCount={friends.friends.length}
