@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { PadelHistoryClient } from "@/components/padel/PadelHistoryClient";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
+import { PadelProgressSummary } from "@/components/padel/PadelProgressSummary";
+import { summarisePlayerHistory } from "@/lib/padel/history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 
 export const metadata: Metadata = {
@@ -58,13 +60,21 @@ export default async function PadelHistoryPage({ searchParams }: PageProps) {
             <p className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
               {shared.error}
             </p>
-          ) : shared.items.length === 0 ? (
-            <p className="text-sm text-zinc-500">
-              No locked matches yet for this player. End a live scorecard to
-              write the first result.
-            </p>
           ) : (
-            <PadelHistoryList items={shared.items} playerUserId={sharedId} />
+            <div className="space-y-4">
+              <PadelProgressSummary
+                stats={summarisePlayerHistory(shared.items, sharedId)}
+                variant="strip"
+              />
+              {shared.items.length === 0 ? (
+                <p className="text-sm text-zinc-500">
+                  No locked matches yet for this player. End a live scorecard to
+                  write the first result.
+                </p>
+              ) : (
+                <PadelHistoryList items={shared.items} playerUserId={sharedId} />
+              )}
+            </div>
           )
         ) : (
           <Suspense

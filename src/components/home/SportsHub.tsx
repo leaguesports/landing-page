@@ -1,5 +1,6 @@
 "use client";
 
+import { BadgesPanel } from "@/components/home/BadgesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
@@ -10,6 +11,7 @@ import {
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
 import { summarisePlayerHistory } from "@/lib/padel/history";
+import { PadelProgressSummary } from "@/components/padel/PadelProgressSummary";
 import {
   ALL_SPORTS_SLUG,
   defaultHubPreferences,
@@ -532,30 +534,14 @@ export function SportsHub({
             <FriendsPanel initial={friends} />
 
             {showPadel ? (
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: "Locked", value: String(stats.locked) },
-                  { label: "Wins", value: String(stats.wins) },
-                  { label: "Losses", value: String(stats.losses) },
-                  {
-                    label: "Win rate",
-                    value: stats.locked ? `${stats.winRate}%` : "—",
-                  },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-3xl border border-white/8 bg-[#141814] px-4 py-5"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                      {stat.label}
-                    </p>
-                    <p className="mt-2 font-display text-3xl tracking-wide text-white">
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <PadelProgressSummary stats={stats} variant="hub" />
             ) : null}
+
+            <BadgesPanel
+              padelStats={stats}
+              golfLocked={golfLocked}
+              friendCount={friends.friends.length}
+            />
           </div>
 
           <div className="lg:col-span-7">

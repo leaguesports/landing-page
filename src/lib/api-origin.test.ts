@@ -77,6 +77,7 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
+    assert.equal(shouldProxyApiPath("/api/me/badges"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1/accept"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);

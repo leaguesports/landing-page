@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
+import { PadelProgressSummary } from "@/components/padel/PadelProgressSummary";
 import { useAuth } from "@/hooks/useAuth";
 import { listPlayerHistory } from "@/lib/match-api";
 import { MATCH_API_UNAVAILABLE, MatchApiError } from "@/lib/padel/api-match";
-import { playerHistoryPath } from "@/lib/padel/history";
+import { playerHistoryPath, summarisePlayerHistory } from "@/lib/padel/history";
 import type { PadelHistoryItem } from "@/types/padel-match";
 
 function historyErrorMessage(error: unknown): string {
@@ -94,12 +95,24 @@ export function PadelHistoryClient() {
           {error}
         </p>
       ) : items && items.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No locked matches yet. End a live scorecard to write the first
-          result.
-        </p>
+        viewingOwn ? (
+          <PadelProgressSummary
+            stats={summarisePlayerHistory([], playerUserId)}
+            variant="strip"
+          />
+        ) : (
+          <p className="text-sm text-zinc-500">
+            No locked matches yet for this player.
+          </p>
+        )
       ) : items ? (
-        <PadelHistoryList items={items} playerUserId={playerUserId} />
+        <div className="space-y-4">
+          <PadelProgressSummary
+            stats={summarisePlayerHistory(items, playerUserId)}
+            variant="strip"
+          />
+          <PadelHistoryList items={items} playerUserId={playerUserId} />
+        </div>
       ) : null}
 
       {viewingOwn && playerUserId && !error ? (
