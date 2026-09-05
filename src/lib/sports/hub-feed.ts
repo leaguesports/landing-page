@@ -5,6 +5,7 @@ import {
   SPORT_CATALOG,
   type SportDefinition,
 } from "./catalog.ts";
+import type { UpcomingFixture } from "./events-feed.ts";
 
 export type HubFeedKind = "event" | "screening" | "guide";
 
@@ -19,6 +20,8 @@ export type HubFeedItem = {
   startsAt: string | null;
   /** Present on screening items — used to surface followed venues on the hub. */
   venueSlug?: string | null;
+  /** True when this row came from the user's followed-fixture calendar (#106). */
+  followedFixture?: boolean;
 };
 
 export const HUB_EVENTS_QUERY = `*[_type == "event"] | order(coalesce(f1Details.dateTime, _createdAt) asc) [0...12] {
@@ -39,6 +42,9 @@ export const HUB_SCREENINGS_QUERY = `*[_type == "venue" && count(upcoming_screen
 
 /** Cap followed-venue GROQ params — keeps CDN query strings bounded. */
 export const MAX_FOLLOWED_VENUE_SLUGS = 24;
+
+/** Cap followed-fixture resolution — hub calendar strip stays bounded. */
+export const MAX_FOLLOWED_FIXTURE_SLUGS = 24;
 
 /** Screenings for specific followed venue slugs (hub return-visit payoff). */
 export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current in $slugs && count(upcoming_screenings) > 0] | order(_updatedAt desc) [0...24] {
@@ -176,6 +182,65 @@ export function uniqueFollowedVenueSlugs(
     out.push(slug);
   }
   return out;
+}
+
+/** Dedupe + lowercase + cap fixture follow slugs for calendar resolution. */
+export function uniqueFollowedFixtureSlugs(
+  slugs: Iterable<string> | null | undefined,
+  max = MAX_FOLLOWED_FIXTURE_SLUGS,
+): string[] {
+  if (!slugs) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of slugs) {
+    if (out.length >= max) break;
+    const slug =
+      typeof raw === "string" ? raw.trim().toLowerCase() : "";
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(slug);
+  }
+  return out;
+}
+
+/**
+ * Map a public UpcomingFixture onto a hub feed row for the personal calendar.
+ * Always links to `/events/[slug]` so follow/unfollow stays one hop away.
+ */
+export function fixtureToFeedItem(
+  fixture: UpcomingFixture,
+): HubFeedItem | null {
+  const slug = fixture.slug.trim();
+  const title = fixture.title.trim();
+  if (!slug || !title) return null;
+
+  const venueCount = fixture.venues.length;
+  const subtitle =
+    venueCount > 0
+      ? `${venueCount} venue${venueCount === 1 ? "" : "s"} screening`
+      : fixture.series?.trim() || "Fixture you're following";
+
+  return {
+    id: `followed-fixture-${slug}`,
+    kind: "event",
+    sportSlug: fixture.sportSlug,
+    title,
+    subtitle,
+    href: `/events/${encodeURIComponent(slug)}`,
+    startsAt: fixture.startsAt,
+    followedFixture: true,
+  };
+}
+
+export function fixturesToFollowedFeedItems(
+  fixtures: UpcomingFixture[],
+  options: { now?: Date; limit?: number } = {},
+): HubFeedItem[] {
+  const limit = options.limit ?? MAX_FOLLOWED_FIXTURE_SLUGS;
+  const items = fixtures
+    .map((fixture) => fixtureToFeedItem(fixture))
+    .filter((item): item is HubFeedItem => item !== null);
+  return sortHubFeed(items, options.now).slice(0, limit);
 }
 
 /** Screenings (and any items tagged with venueSlug) for venues the user follows. */
