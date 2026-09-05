@@ -1,4 +1,5 @@
 import { toSlug } from "../../data/suburbs.ts";
+import { venueDirectoryHref } from "../search/venueSearch.ts";
 
 export type VenueChipAddress = {
   suburb?: string | null;
@@ -13,8 +14,8 @@ export function venueChipLocationSlug(address: VenueChipAddress): string {
 }
 
 /**
- * Watch → `/watch/{sport}/{location}`, Play → `/play/{sport}/{location}`.
- * Falls back to the sport hub when the venue has no suburb or city.
+ * Watch/Play chips → `/venues?intent=…&sport=…&location=…`.
+ * Falls back to the sport filter when the venue has no suburb or city.
  */
 export function venueIntentChipHref(
   intent: "watch" | "play",
@@ -24,6 +25,9 @@ export function venueIntentChipHref(
   const sport = sportSlug?.trim();
   if (!sport) return null;
   const location = venueChipLocationSlug(address);
-  if (location) return `/${intent}/${sport}/${location}`;
-  return `/${intent}/${sport}`;
+  return venueDirectoryHref({
+    intent,
+    sport,
+    location: location || null,
+  });
 }

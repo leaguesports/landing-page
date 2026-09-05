@@ -71,7 +71,11 @@ export function FixtureVenueList({ fixture }: { fixture: UpcomingFixture }) {
           and fan zones for {sportLabel(fixture.sportSlug) ?? "this sport"}.
         </p>
         <Link
-          href={fixture.sportSlug ? `/watch/${fixture.sportSlug}` : "/watch"}
+          href={
+            fixture.sportSlug
+              ? `/venues?intent=watch&sport=${encodeURIComponent(fixture.sportSlug)}`
+              : "/venues?intent=watch"
+          }
           className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
         >
           Browse Watch

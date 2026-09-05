@@ -109,7 +109,7 @@ export function HomeValueSections() {
                 </li>
               </ul>
               <Link
-                href="/watch"
+                href={venueDirectoryHref({ intent: "watch" })}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
               >
                 Browse watch venues
@@ -152,7 +152,7 @@ export function HomeValueSections() {
                 </li>
               </ul>
               <Link
-                href="/play"
+                href={venueDirectoryHref({ intent: "play" })}
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
               >
                 Find a court
@@ -180,7 +180,10 @@ export function HomeValueSections() {
                       location: "johannesburg",
                     }),
                   },
-                  { label: "Play venues near me", href: "/play" },
+                  {
+                    label: "Play venues near me",
+                    href: venueDirectoryHref({ intent: "play" }),
+                  },
                 ].map((item) => (
                   <li key={item.href}>
                     <Link

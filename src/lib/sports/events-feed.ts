@@ -581,6 +581,8 @@ export function findFixtureBySlug(
 export function fixtureWatchHref(fixture: UpcomingFixture): string {
   if (fixture.venues.length > 0) return `/events/${fixture.slug}`;
   if (fixture.eventPageHref) return fixture.eventPageHref;
-  if (fixture.sportSlug) return `/watch/${fixture.sportSlug}`;
-  return "/watch";
+  if (fixture.sportSlug) {
+    return `/venues?intent=watch&sport=${encodeURIComponent(fixture.sportSlug)}`;
+  }
+  return "/venues?intent=watch";
 }

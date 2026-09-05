@@ -84,7 +84,7 @@ export default async function EventFixturePage({ params }: PageProps) {
             <FixtureFollowButton slug={fixture.slug} />
             {fixture.sportSlug ? (
               <Link
-                href={`/watch/${fixture.sportSlug}`}
+                href={`/venues?intent=watch&sport=${encodeURIComponent(fixture.sportSlug)}`}
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
               >
                 Watch {sport}

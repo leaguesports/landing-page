@@ -72,7 +72,11 @@ export default async function NewPadelMatchPage({
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
           <Link
-            href={initialVenue ? `/venues/${initialVenue.slug}` : "/play/padel"}
+            href={
+              initialVenue
+                ? `/venues/${initialVenue.slug}`
+                : "/venues?intent=play&sport=padel"
+            }
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
             {initialVenue ? "← Venue" : "← Play padel"}

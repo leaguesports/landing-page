@@ -236,15 +236,19 @@ export function eventHref(
   if (seriesSlug === "f2") return "/motorsport/f2";
   if (SERIES_TO_SPORT[seriesSlug] === "motorsport") return "/motorsport";
   const sport = resolveSportSlug(series);
-  if (sport) return `/watch/${sport}`;
-  return "/watch";
+  if (sport) {
+    return `/venues?intent=watch&sport=${encodeURIComponent(sport)}`;
+  }
+  return "/venues?intent=watch";
 }
 
 export function utilitiesForSport(sport: SportDefinition): HubUtility[] {
   const list: HubUtility[] = [];
   const playHref = `/venues?intent=play&sport=${encodeURIComponent(sport.slug)}`;
   const watchHref =
-    sport.slug === "motorsport" ? "/watch" : `/watch/${sport.slug}`;
+    sport.slug === "motorsport"
+      ? "/venues?intent=watch"
+      : `/venues?intent=watch&sport=${encodeURIComponent(sport.slug)}`;
 
   if (sport.capabilities.includes("scorecard")) {
     const isGolf = sport.slug === "golf";
@@ -369,7 +373,7 @@ export function utilitiesForAll(): HubUtility[] {
       kind: "watch",
       title: "Watch live",
       description: "Find a bar or fan zone screening sport.",
-      href: "/watch",
+      href: "/venues?intent=watch",
       emphasis: "secondary",
     },
     {

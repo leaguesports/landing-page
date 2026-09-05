@@ -63,28 +63,28 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/watch`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
       url: `${baseUrl}/events`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
     },
     {
-      url: `${baseUrl}/play`,
+      url: `${baseUrl}/venues`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 1,
     },
     {
-      url: `${baseUrl}/venues`,
+      url: `${baseUrl}/venues?intent=watch`,
       lastModified: now,
       changeFrequency: "daily",
-      priority: 0.9,
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/venues?intent=play`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.95,
     },
     {
       url: `${baseUrl}/athletes`,
@@ -103,13 +103,13 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
   const cityHubRoutes: MetadataRoute.Sitemap = CITY_DIRECTORY.flatMap(
     (city) => [
       {
-        url: `${baseUrl}/watch/${city.slug}`,
+        url: `${baseUrl}/venues?intent=watch&location=${city.slug}`,
         lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.95,
       },
       {
-        url: `${baseUrl}/play/${city.slug}`,
+        url: `${baseUrl}/venues?intent=play&location=${city.slug}`,
         lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.95,
@@ -125,7 +125,7 @@ async function getVenues(): Promise<SitemapVenue[]> {
 
   try {
     const { sanityClient } = await import("@/sanity/client");
-    // Watch directory URLs are built from venue `broadcasts` (not `sports`).
+    // Venue directory deep links are built from watch broadcasts by location.
     const venues = await sanityClient.fetch<SitemapVenue[]>(`
       *[_type == "venue"] {
         "id": _id,
@@ -205,7 +205,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const uniqueSports = [...new Set(sports)];
       for (const sport of uniqueSports) {
         locationRoutes.push({
-          url: `${baseUrl}/watch/${sport}/${location}`,
+          url: `${baseUrl}/venues?intent=watch&sport=${sport}&location=${location}`,
           lastModified: now,
           changeFrequency: "daily",
           priority: 1,
