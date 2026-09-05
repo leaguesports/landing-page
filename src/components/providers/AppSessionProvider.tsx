@@ -2,13 +2,13 @@
 
 import {
   getAuthState,
-  getGoogleSignInUrl,
   logout as apiLogout,
   type AuthState,
   type AuthUser,
 } from "@/lib/api-client";
 import {
   consumeAuthReturnTo,
+  getLoginPageHref,
   stashAuthReturnTo,
 } from "@/lib/auth-return-to";
 import {
@@ -126,10 +126,7 @@ function useProvideAuth(): AuthContextValue {
 
   const signIn = useCallback((returnTo?: string) => {
     stashAuthReturnTo(returnTo);
-    const url = getGoogleSignInUrl(returnTo);
-    if (url) {
-      window.location.href = url;
-    }
+    window.location.href = getLoginPageHref(returnTo);
   }, []);
 
   const signOut = useCallback(async () => {

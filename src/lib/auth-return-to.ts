@@ -13,6 +13,38 @@ export function relativeAuthReturnTo(
   return `${path}${location.search || ""}`;
 }
 
+/**
+ * Login page href. Optionally carries a same-origin `returnTo` query so the
+ * user lands back where they started after Google OAuth.
+ */
+export function getLoginPageHref(returnTo?: string): string {
+  const raw = returnTo?.trim();
+  if (!raw) return "/login";
+
+  try {
+    const absolute = new URL(
+      raw.startsWith("http") ? raw : raw.startsWith("/") ? raw : `/${raw}`,
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://leaguesports.co.za",
+    );
+    if (absolute.username || absolute.password) return "/login";
+    // Reject cross-origin when we know the browser origin.
+    if (
+      typeof window !== "undefined" &&
+      absolute.origin !== window.location.origin
+    ) {
+      return "/login";
+    }
+    const relative = `${absolute.pathname}${absolute.search}${absolute.hash}`;
+    if (!relative.startsWith("/") || relative.startsWith("//")) return "/login";
+    if (relative === "/login" || relative.startsWith("/login?")) return "/login";
+    return `/login?returnTo=${encodeURIComponent(relative)}`;
+  } catch {
+    return "/login";
+  }
+}
+
 function isSafeSameOriginReturnTo(value: string): boolean {
   try {
     const target = new URL(value, window.location.origin);
