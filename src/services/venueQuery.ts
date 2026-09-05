@@ -186,6 +186,18 @@ export function sportSlugVariants(slug: string | null | undefined): string[] {
   if (slug === "karting" || slug === "go-karting" || slug === "gokart") {
     return ["karting", "go-karting"];
   }
+  // Series aliases → parent broadcast sports used on venue documents.
+  if (slug === "f1" || slug === "formula-1" || slug === "formula 1") {
+    return ["motorsport", "f1", "formula-1"];
+  }
+  if (slug === "f2" || slug === "formula-2" || slug === "formula 2") {
+    return ["motorsport", "f2", "formula-2"];
+  }
+  if (slug === "motogp" || slug === "moto-gp") {
+    return ["motorsport", "motogp", "moto-gp"];
+  }
+  if (slug === "premier-league") return ["soccer", "premier-league"];
+  if (slug === "six-nations") return ["rugby", "six-nations"];
   return [slug];
 }
 

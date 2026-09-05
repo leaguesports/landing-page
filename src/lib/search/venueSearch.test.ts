@@ -55,7 +55,7 @@ describe("parseVenueSearch", () => {
     const parsed = parseVenueSearch("Watch soccer in Claremont", "watch");
     assert.equal(
       buildVenueDirectoryPath(parsed),
-      "/venues?intent=watch&sport=soccer&location=claremont",
+      "/watch/soccer/claremont",
     );
     assert.equal(venueSearchSummary(parsed), "Watch Soccer in Claremont");
   });
@@ -77,10 +77,10 @@ describe("parseVenueSearch", () => {
 });
 
 describe("venueDirectoryHref", () => {
-  it("builds filter URLs and drops empty params", () => {
+  it("builds SEO landings when intent + sport are known", () => {
     assert.equal(
       venueDirectoryHref({ intent: "play", sport: "padel" }),
-      "/venues?intent=play&sport=padel",
+      "/play/padel",
     );
     assert.equal(venueDirectoryHref({ intent: "all" }), "/venues");
     assert.equal(venueDirectoryHref({}), "/venues");
@@ -91,7 +91,7 @@ describe("venueDirectoryHrefFromQuery", () => {
   it("parses a full Watch query", () => {
     assert.equal(
       venueDirectoryHrefFromQuery("Watch soccer in Claremont", null),
-      "/venues?intent=watch&sport=soccer&location=claremont",
+      "/watch/soccer/claremont",
     );
   });
 

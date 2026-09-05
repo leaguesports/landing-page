@@ -1,4 +1,5 @@
 import { CITY_DIRECTORY } from "@/data/cities";
+import { intentPath } from "@/lib/intent/paths";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import type { MetadataRoute } from "next";
 
@@ -9,14 +10,6 @@ type SitemapVenue = {
   id: string;
   slug: string;
   updatedAt: string | null;
-  location: {
-    slug: string | null;
-  } | null;
-  broadcasts:
-    | {
-        slug: string | null;
-      }[]
-    | null;
 };
 
 function isSanityConfigured(): boolean {
@@ -75,13 +68,13 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
       priority: 1,
     },
     {
-      url: `${baseUrl}/venues?intent=watch`,
+      url: `${baseUrl}/watch`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
     },
     {
-      url: `${baseUrl}/venues?intent=play`,
+      url: `${baseUrl}/play`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
@@ -106,13 +99,13 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
         url: `${baseUrl}/venues?intent=watch&location=${city.slug}`,
         lastModified: now,
         changeFrequency: "daily" as const,
-        priority: 0.95,
+        priority: 0.85,
       },
       {
         url: `${baseUrl}/venues?intent=play&location=${city.slug}`,
         lastModified: now,
         changeFrequency: "daily" as const,
-        priority: 0.95,
+        priority: 0.85,
       },
     ],
   );
@@ -125,21 +118,11 @@ async function getVenues(): Promise<SitemapVenue[]> {
 
   try {
     const { sanityClient } = await import("@/sanity/client");
-    // Venue directory deep links are built from watch broadcasts by location.
     const venues = await sanityClient.fetch<SitemapVenue[]>(`
       *[_type == "venue"] {
         "id": _id,
         "slug": slug.current,
-        "updatedAt": _updatedAt,
-        "location": {
-          "slug": location->slug.current,
-        },
-        "broadcasts": coalesce(
-          broadcasts[]-> {
-            "slug": slug.current,
-          },
-          []
-        )
+        "updatedAt": _updatedAt
       }
     `);
 
@@ -163,55 +146,68 @@ async function getGuides(): Promise<{ slug: string }[]> {
   }
 }
 
+async function getIntentRoutes(
+  baseUrl: string,
+  now: Date,
+): Promise<MetadataRoute.Sitemap> {
+  if (!isSanityConfigured()) return [];
+
+  try {
+    const { listIndexedIntentPairs } = await import("@/lib/intent/data");
+    const [watchPairs, playPairs] = await Promise.all([
+      listIndexedIntentPairs("watch"),
+      listIndexedIntentPairs("play"),
+    ]);
+
+    const routes: MetadataRoute.Sitemap = [];
+
+    for (const pair of watchPairs) {
+      if (!isSlug(pair.activitySlug) || !isSlug(pair.locationSlug)) continue;
+      routes.push({
+        url: `${baseUrl}${intentPath("watch", pair.activitySlug, pair.locationSlug)}`,
+        lastModified: toLastModified(pair.updatedAt) || now,
+        changeFrequency: "daily",
+        priority: 1,
+      });
+    }
+
+    for (const pair of playPairs) {
+      if (!isSlug(pair.activitySlug) || !isSlug(pair.locationSlug)) continue;
+      routes.push({
+        url: `${baseUrl}${intentPath("play", pair.activitySlug, pair.locationSlug)}`,
+        lastModified: toLastModified(pair.updatedAt) || now,
+        changeFrequency: "daily",
+        priority: 1,
+      });
+    }
+
+    return routes;
+  } catch (error) {
+    console.error("[sitemap] intent route fetch failed", error);
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteBaseUrl();
   const now = new Date();
   const fallback = staticAndCityRoutes(baseUrl, now);
 
   try {
-    const [venues, guides] = await Promise.all([getVenues(), getGuides()]);
+    const [venues, guides, intentRoutes] = await Promise.all([
+      getVenues(),
+      getGuides(),
+      getIntentRoutes(baseUrl, now),
+    ]);
 
-    const venueRoutes: MetadataRoute.Sitemap = [];
-    const locationSports = new Map<string, string[]>();
-
-    for (const venue of venues) {
-      if (!isSlug(venue.slug)) continue;
-
-      venueRoutes.push({
+    const venueRoutes: MetadataRoute.Sitemap = venues
+      .filter((venue) => isSlug(venue.slug))
+      .map((venue) => ({
         url: `${baseUrl}/venues/${venue.slug}`,
         lastModified: toLastModified(venue.updatedAt),
-        changeFrequency: "daily",
+        changeFrequency: "daily" as const,
         priority: 0.9,
-      });
-
-      const locationSlug = venue.location?.slug;
-      if (!isSlug(locationSlug)) continue;
-
-      const broadcasts = Array.isArray(venue.broadcasts) ? venue.broadcasts : [];
-      for (const broadcast of broadcasts) {
-        const sportSlug = broadcast?.slug;
-        if (!isSlug(sportSlug)) continue;
-
-        if (!locationSports.has(locationSlug)) {
-          locationSports.set(locationSlug, []);
-        }
-        locationSports.get(locationSlug)?.push(sportSlug);
-      }
-    }
-
-    const locationRoutes: MetadataRoute.Sitemap = [];
-
-    for (const [location, sports] of locationSports.entries()) {
-      const uniqueSports = [...new Set(sports)];
-      for (const sport of uniqueSports) {
-        locationRoutes.push({
-          url: `${baseUrl}/venues?intent=watch&sport=${sport}&location=${location}`,
-          lastModified: now,
-          changeFrequency: "daily",
-          priority: 1,
-        });
-      }
-    }
+      }));
 
     const guideRoutes: MetadataRoute.Sitemap = guides
       .filter((guide) => isSlug(guide.slug))
@@ -222,7 +218,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
-    return [...fallback, ...locationRoutes, ...guideRoutes, ...venueRoutes];
+    return [...fallback, ...intentRoutes, ...guideRoutes, ...venueRoutes];
   } catch (error) {
     console.error("[sitemap] generation failed", error);
     return fallback;

@@ -51,41 +51,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async redirects() {
-    // Legacy Watch/Play directories → unified venues directory.
-    return [
-      {
-        source: "/watch",
-        destination: "/venues?intent=watch",
-        permanent: true,
-      },
-      {
-        source: "/play",
-        destination: "/venues?intent=play",
-        permanent: true,
-      },
-      {
-        source: "/watch/:sport/:location",
-        destination: "/venues?intent=watch&sport=:sport&location=:location",
-        permanent: true,
-      },
-      {
-        source: "/play/:sport/:location",
-        destination: "/venues?intent=play&sport=:sport&location=:location",
-        permanent: true,
-      },
-      {
-        source: "/watch/:sport",
-        destination: "/venues?intent=watch&sport=:sport",
-        permanent: true,
-      },
-      {
-        source: "/play/:sport",
-        destination: "/venues?intent=play&sport=:sport",
-        permanent: true,
-      },
-    ];
-  },
   async rewrites() {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes

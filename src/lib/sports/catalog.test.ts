@@ -39,9 +39,9 @@ describe("eventHref", () => {
     assert.equal(eventHref("motogp", "qatar"), "/motorsport");
   });
 
-  it("sends unknown series to the Watch venues directory", () => {
-    assert.equal(eventHref(null, null), "/venues?intent=watch");
-    assert.equal(eventHref("rugby", "test"), "/venues?intent=watch&sport=rugby");
+  it("sends unknown series to Watch SEO landings", () => {
+    assert.equal(eventHref(null, null), "/watch");
+    assert.equal(eventHref("rugby", "test"), "/watch/rugby");
   });
 });
 
@@ -65,8 +65,8 @@ describe("utilities", () => {
     const hrefs = utilitiesForSport(padel).map((item) => item.href);
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/padel/history"));
-    assert.ok(hrefs.includes("/venues?intent=play&sport=padel"));
-    assert.ok(hrefs.includes("/venues?intent=watch&sport=padel"));
+    assert.ok(hrefs.includes("/play/padel"));
+    assert.ok(hrefs.includes("/watch/padel"));
   });
 
   it("gives golf a round start and history, not padel paths", () => {
@@ -77,7 +77,7 @@ describe("utilities", () => {
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/golf/new"));
     assert.ok(hrefs.includes("/golf/history"));
-    assert.ok(hrefs.includes("/venues?intent=play&sport=golf"));
+    assert.ok(hrefs.includes("/play/golf"));
     assert.equal(
       utilities.some((item) => item.href === "/padel/new"),
       false,
@@ -93,7 +93,7 @@ describe("utilities", () => {
     assert.ok(karting);
     const utilities = utilitiesForSport(karting);
     const hrefs = utilities.map((item) => item.href);
-    assert.ok(hrefs.includes("/venues?intent=play&sport=karting"));
+    assert.ok(hrefs.includes("/play/karting"));
     assert.equal(
       utilities.find((item) => item.kind === "play")?.title,
       "Find a track",
@@ -123,8 +123,8 @@ describe("utilities", () => {
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/golf/new"));
-    assert.ok(hrefs.includes("/venues?intent=play"));
-    assert.ok(hrefs.includes("/venues?intent=watch"));
+    assert.ok(hrefs.includes("/play"));
+    assert.ok(hrefs.includes("/watch"));
   });
 });
 

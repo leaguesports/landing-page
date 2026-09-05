@@ -54,7 +54,7 @@ export default async function NewGolfRoundPage({
             href={
               initialVenue
                 ? `/venues/${initialVenue.slug}`
-                : "/venues?intent=play&sport=golf"
+                : "/play/golf"
             }
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >

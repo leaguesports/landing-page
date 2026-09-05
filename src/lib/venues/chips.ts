@@ -14,8 +14,8 @@ export function venueChipLocationSlug(address: VenueChipAddress): string {
 }
 
 /**
- * Watch/Play chips → `/venues?intent=…&sport=…&location=…`.
- * Falls back to the sport filter when the venue has no suburb or city.
+ * Watch/Play chips → `/watch|play/{sport}/{location}` SEO landings.
+ * Falls back to the sport browse page when the venue has no suburb or city.
  */
 export function venueIntentChipHref(
   intent: "watch" | "play",
