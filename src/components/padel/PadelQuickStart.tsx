@@ -245,9 +245,9 @@ export function PadelQuickStart({
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="min-w-0 space-y-3">
         <h2 className="text-sm font-semibold text-zinc-200">Start time</h2>
-        <label className="relative block w-full min-w-0 max-w-full">
+        <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
           <span className="sr-only">Match start time</span>
           <Clock
             className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-500"
