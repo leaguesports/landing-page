@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { syncBadgesBrowser } from "@/lib/badges/api";
+import type { BadgesSnapshot, PersistedBadge } from "@/lib/badges/api";
 import { BADGE_CATALOG, type BadgeId } from "@/lib/badges/catalog";
 import { evaluateBadges } from "@/lib/badges/evaluate";
 import { hasScorecardShareSignal } from "@/lib/badges/share-signal";
 import type { PlayerHistoryStats } from "@/lib/padel/history";
 
 type BadgesPanelProps = {
+  /** Server GET snapshot — never POST on view. */
+  initial: BadgesSnapshot;
   padelStats: PlayerHistoryStats;
   golfLocked: number;
   friendCount: number;
 };
 
 export function BadgesPanel({
+  initial,
   padelStats,
   golfLocked,
   friendCount,
@@ -25,26 +28,30 @@ export function BadgesPanel({
     setShared(hasScorecardShareSignal());
   }, []);
 
-  const evaluated = useMemo(
+  const serverBadges: PersistedBadge[] | null = initial.fromApi
+    ? initial.badges
+    : null;
+
+  const localEarned = useMemo(
     () =>
       evaluateBadges({
         padelStats,
         golfLocked,
         friendCount,
         hasSharedScorecard: shared,
-      }),
+      })
+        .filter((badge) => badge.earned)
+        .map((badge) => badge.id),
     [friendCount, golfLocked, padelStats, shared],
   );
 
-  const earnedIds = useMemo(
-    () => evaluated.filter((badge) => badge.earned).map((badge) => badge.id),
-    [evaluated],
-  );
-
-  useEffect(() => {
-    if (earnedIds.length === 0) return;
-    void syncBadgesBrowser(earnedIds);
-  }, [earnedIds]);
+  const earnedIds = useMemo(() => {
+    if (serverBadges === null) return localEarned;
+    const ids = new Set<BadgeId>(serverBadges.map((badge) => badge.id));
+    // Share stays device-local until the API records share *actions*.
+    if (shared) ids.add("whatsapp_share");
+    return BADGE_CATALOG.map((badge) => badge.id).filter((id) => ids.has(id));
+  }, [localEarned, serverBadges, shared]);
 
   const earnedCount = earnedIds.length;
 
