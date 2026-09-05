@@ -10,7 +10,7 @@ import {
 } from "@/lib/friends/friends";
 import { UserPlus, Users, X } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 type FriendsPanelProps = {
   initial: FriendsSnapshot;
@@ -18,6 +18,8 @@ type FriendsPanelProps = {
   className?: string;
   /** When false, skip the panel eyebrow (parent already titled the section). */
   showHeading?: boolean;
+  /** Live incoming-request count for hub tab badges while this panel stays mounted. */
+  onIncomingCountChange?: (count: number) => void;
 };
 
 function FriendAvatar({
@@ -50,6 +52,7 @@ export function FriendsPanel({
   initial,
   className = "mt-8",
   showHeading = true,
+  onIncomingCountChange,
 }: FriendsPanelProps) {
   const [friends, setFriends] = useState<Friend[]>(initial.friends);
   const [incoming, setIncoming] = useState<FriendRequest[]>(initial.incoming);
@@ -58,6 +61,10 @@ export function FriendsPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onIncomingCountChange?.(incoming.length);
+  }, [incoming.length, onIncomingCountChange]);
 
   function clearFeedback() {
     setMessage(null);
