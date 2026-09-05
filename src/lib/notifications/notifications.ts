@@ -2,6 +2,10 @@ import type { FriendRequest, FriendsSnapshot } from "../friends/friends.ts";
 
 export const FRIENDS_CHANGED_EVENT = "leaguesports-friends-changed";
 
+export type FriendsChangedDetail = {
+  snapshot: FriendsSnapshot;
+};
+
 export type FriendRequestNotification = {
   id: string;
   kind: "friend_request";
@@ -35,7 +39,30 @@ export function unreadNotificationCount(
   return notifications.length;
 }
 
-export function dispatchFriendsChanged(): void {
+/** Broadcast an authoritative post-mutation friends snapshot (no refetch required). */
+export function dispatchFriendsChanged(snapshot: FriendsSnapshot): void {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event(FRIENDS_CHANGED_EVENT));
+  window.dispatchEvent(
+    new CustomEvent<FriendsChangedDetail>(FRIENDS_CHANGED_EVENT, {
+      detail: { snapshot },
+    }),
+  );
+}
+
+/** Read the snapshot from a friends-changed event, if present and well-formed. */
+export function readFriendsChangedSnapshot(
+  event: Event,
+): FriendsSnapshot | null {
+  if (!(event instanceof CustomEvent)) return null;
+  const detail = event.detail as FriendsChangedDetail | null | undefined;
+  const snapshot = detail?.snapshot;
+  if (!snapshot || typeof snapshot !== "object") return null;
+  if (
+    !Array.isArray(snapshot.friends) ||
+    !Array.isArray(snapshot.incoming) ||
+    !Array.isArray(snapshot.outgoing)
+  ) {
+    return null;
+  }
+  return snapshot;
 }

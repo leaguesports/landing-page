@@ -1,15 +1,18 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import {
+  friendsSnapshotOrEmpty,
+  useAuth,
+  useFriendsSession,
+} from "@/components/providers/AppSessionProvider";
 import {
   acceptFriend,
-  listFriends,
   removeFriend,
   type FriendRequest,
+  type FriendsSnapshot,
 } from "@/lib/friends/friends";
 import {
   dispatchFriendsChanged,
-  FRIENDS_CHANGED_EVENT,
   notificationsFromFriends,
   type AppNotification,
 } from "@/lib/notifications/notifications";
@@ -17,7 +20,6 @@ import { Bell, Check, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  useCallback,
   useEffect,
   useId,
   useRef,
@@ -70,11 +72,15 @@ function formatRelativeTime(iso: string, nowMs: number): string {
 export default function NotificationCenter() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
+  const {
+    snapshot,
+    status,
+    error: loadError,
+    applySnapshot,
+  } = useFriendsSession();
   const [open, setOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
-  const [items, setItems] = useState<AppNotification[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const panelId = useId();
@@ -84,65 +90,6 @@ export default function NotificationCenter() {
     setMenuPathname(pathname);
     setOpen(false);
   }
-
-  const applySnapshot = useCallback((snapshot: Awaited<ReturnType<typeof listFriends>>) => {
-    setItems(notificationsFromFriends(snapshot));
-    setError(null);
-    setLoaded(true);
-  }, []);
-
-  const refresh = useCallback(async () => {
-    if (!isAuthenticated) {
-      setItems([]);
-      setLoaded(true);
-      return;
-    }
-    try {
-      applySnapshot(await listFriends());
-    } catch {
-      setError("Could not load notifications");
-      setLoaded(true);
-    }
-  }, [applySnapshot, isAuthenticated]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      if (!isAuthenticated) {
-        // Yield so signed-out clears are not synchronous setState-in-effect.
-        await Promise.resolve();
-        if (cancelled) return;
-        setItems([]);
-        setLoaded(true);
-        return;
-      }
-
-      try {
-        const snapshot = await listFriends();
-        if (cancelled) return;
-        applySnapshot(snapshot);
-      } catch {
-        if (cancelled) return;
-        setError("Could not load notifications");
-        setLoaded(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [applySnapshot, isAuthenticated]);
-
-  useEffect(() => {
-    function onFriendsChanged() {
-      void refresh();
-    }
-    window.addEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
-    return () => {
-      window.removeEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
-    };
-  }, [refresh]);
 
   useEffect(() => {
     if (!open) return;
@@ -167,34 +114,56 @@ export default function NotificationCenter() {
     };
   }, [open]);
 
+  const items: AppNotification[] = snapshot
+    ? notificationsFromFriends(snapshot)
+    : [];
+  const loaded = !isAuthenticated || status === "ready" || status === "error";
+  const error =
+    actionError ?? (status === "error" ? loadError : null);
+
+  function publishSnapshot(next: FriendsSnapshot) {
+    applySnapshot(next);
+    dispatchFriendsChanged(next);
+  }
+
   function onAccept(request: FriendRequest) {
-    setError(null);
+    setActionError(null);
+    const current = friendsSnapshotOrEmpty(snapshot);
     startTransition(() => {
       void acceptFriend(request.user.id).then((result) => {
         if (!result.ok) {
-          setError(result.error);
+          setActionError(result.error);
           return;
         }
-        setItems((prev) =>
-          prev.filter((item) => item.request.id !== request.id),
-        );
-        dispatchFriendsChanged();
+        publishSnapshot({
+          friends: current.friends.some((f) => f.id === result.friend.id)
+            ? current.friends
+            : [result.friend, ...current.friends],
+          incoming: current.incoming.filter((item) => item.id !== request.id),
+          outgoing: current.outgoing.filter(
+            (item) => item.user.id !== result.friend.id,
+          ),
+        });
       });
     });
   }
 
   function onDecline(request: FriendRequest) {
-    setError(null);
+    setActionError(null);
+    const current = friendsSnapshotOrEmpty(snapshot);
     startTransition(() => {
       void removeFriend(request.user.id).then((result) => {
         if (!result.ok) {
-          setError(result.error);
+          setActionError(result.error);
           return;
         }
-        setItems((prev) =>
-          prev.filter((item) => item.request.id !== request.id),
-        );
-        dispatchFriendsChanged();
+        publishSnapshot({
+          friends: current.friends.filter((f) => f.id !== request.user.id),
+          incoming: current.incoming.filter((item) => item.id !== request.id),
+          outgoing: current.outgoing.filter(
+            (item) => item.user.id !== request.user.id,
+          ),
+        });
       });
     });
   }
@@ -213,8 +182,7 @@ export default function NotificationCenter() {
   }
 
   const count = items.length;
-  const badgeLabel =
-    count > 9 ? "9+" : count > 0 ? String(count) : null;
+  const badgeLabel = count > 9 ? "9+" : count > 0 ? String(count) : null;
 
   return (
     <div ref={rootRef} className="relative">
@@ -264,7 +232,10 @@ export default function NotificationCenter() {
           </div>
 
           {error ? (
-            <p className="border-b border-white/8 px-4 py-2 text-sm text-red-300" role="alert">
+            <p
+              className="border-b border-white/8 px-4 py-2 text-sm text-red-300"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}

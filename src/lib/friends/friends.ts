@@ -133,21 +133,38 @@ export function emptyFriendsSnapshot(): FriendsSnapshot {
   return { friends: [], incoming: [], outgoing: [] };
 }
 
+export type ListFriendsResult =
+  | { ok: true; snapshot: FriendsSnapshot }
+  | { ok: false; error: string; status: number };
+
 export async function listFriendsWith(
   deps: FriendsDeps,
-): Promise<FriendsSnapshot> {
-  if (!deps.baseUrl) return emptyFriendsSnapshot();
+): Promise<ListFriendsResult> {
+  if (!deps.baseUrl) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
 
-  const res = await invokeFetch(deps.fetch, friendsUrl(deps.baseUrl), {
-    method: "GET",
-    credentials: "include",
-    cache: "no-store",
-    headers: requestHeaders(deps.cookie),
-    signal: deps.signal,
-  });
+  try {
+    const res = await invokeFetch(deps.fetch, friendsUrl(deps.baseUrl), {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: requestHeaders(deps.cookie),
+      signal: deps.signal,
+    });
 
-  if (!res.ok) return emptyFriendsSnapshot();
-  return parseSnapshot(await readJson(res));
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `Could not load friends (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    return { ok: true, snapshot: parseSnapshot(await readJson(res)) };
+  } catch {
+    return { ok: false, error: "Could not reach friends API", status: 0 };
+  }
 }
 
 export type RequestFriendResult =
@@ -270,24 +287,34 @@ function browserBaseUrl(): string {
   return getRailwayApiOrigin();
 }
 
+/** Distinguishes load failures from a real empty graph. Prefer this in clients. */
+export async function listFriendsResult(options: {
+  cookie?: string;
+} = {}): Promise<ListFriendsResult> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : getRailwayApiOrigin();
+  return listFriendsWith({
+    fetch,
+    baseUrl,
+    cookie: options.cookie,
+    signal: AbortSignal.timeout(8000),
+  });
+}
+
+/**
+ * RSC-friendly helper: returns a snapshot, using empty on failure.
+ * Client refresh paths should use `listFriendsResult` instead.
+ */
 export async function listFriends(options: {
   cookie?: string;
 } = {}): Promise<FriendsSnapshot> {
-  if (!isApiConfigured()) return emptyFriendsSnapshot();
-  try {
-    const baseUrl =
-      typeof window !== "undefined"
-        ? window.location.origin
-        : getRailwayApiOrigin();
-    return await listFriendsWith({
-      fetch,
-      baseUrl,
-      cookie: options.cookie,
-      signal: AbortSignal.timeout(8000),
-    });
-  } catch {
-    return emptyFriendsSnapshot();
-  }
+  const result = await listFriendsResult(options);
+  return result.ok ? result.snapshot : emptyFriendsSnapshot();
 }
 
 export async function requestFriend(
