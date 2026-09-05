@@ -1,3 +1,4 @@
+import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
 import { FixtureVenueList } from "@/components/events/FixtureList";
 import { formatFixtureWhen } from "@/lib/sports/events-feed";
 import { getFixtureBySlug, getUpcomingFixtures } from "@/services/events";
@@ -79,7 +80,8 @@ export default async function EventFixturePage({ params }: PageProps) {
               : "This fixture is on the calendar. Browse Watch for bars and fan zones screening the sport."}
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap items-start gap-3">
+            <FixtureFollowButton slug={fixture.slug} />
             {fixture.sportSlug ? (
               <Link
                 href={`/watch/${fixture.sportSlug}`}

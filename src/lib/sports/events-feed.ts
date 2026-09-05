@@ -12,9 +12,18 @@ export const FIXTURE_TIMEZONE = "Africa/Johannesburg";
 /** Keep fixtures visible for a short window after kickoff. */
 export const UPCOMING_GRACE_MS = 6 * 60 * 60 * 1000;
 
+/** Event-level kickoff, falling back to legacy F1 `f1Details.dateTime`. */
+export const EVENT_KICKOFF_GROQ = "coalesce(startsAt, f1Details.dateTime)";
+
+/** Metro title/slug for city filter — city ref, else location parent, else location. */
+export const EVENTS_VENUE_CITY_PROJECTION = `"city": coalesce(address.city->title, location->parent->title, location->title),
+  "citySlug": coalesce(address.city->slug.current, location->parent->slug.current, location->slug.current)`;
+
 export type FixtureVenue = {
   name: string;
   slug: string;
+  city?: string | null;
+  citySlug?: string | null;
 };
 
 export type UpcomingFixture = {
@@ -28,11 +37,15 @@ export type UpcomingFixture = {
   series?: string | null;
   eventPageHref?: string | null;
   kind: "screening" | "event" | "both";
+  /** Editorial flag from CMS. Absent/null is not featured. */
+  featured?: boolean;
 };
 
 export type EventsScreeningVenueRow = {
   name?: unknown;
   slug?: unknown;
+  city?: unknown;
+  citySlug?: unknown;
   broadcasts?: Array<{ name?: unknown; slug?: unknown }> | null;
   upcoming_screenings?: Array<{ title?: unknown; startsAt?: unknown }> | null;
 };
@@ -43,6 +56,8 @@ export type EventsCmsEventRow = {
   slug?: unknown;
   series?: unknown;
   dateTime?: unknown;
+  startsAt?: unknown;
+  featured?: unknown;
   track?: unknown;
 };
 
@@ -56,6 +71,7 @@ export const EVENTS_SCREENINGS_QUERY = `*[
 ] {
   name,
   "slug": slug.current,
+  ${EVENTS_VENUE_CITY_PROJECTION},
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
   "nextKickoff": min(upcoming_screenings[
     defined(startsAt) && startsAt >= $notBefore
@@ -67,18 +83,20 @@ export const EVENTS_SCREENINGS_QUERY = `*[
 
 /**
  * Upcoming CMS events only (not the oldest historical slice).
+ * Kickoff is event-level `startsAt` or legacy F1 `f1Details.dateTime`.
  * `$notBefore` is an ISO timestamp (now minus grace).
  */
 export const EVENTS_CMS_QUERY = `*[
   _type == "event" &&
-  defined(f1Details.dateTime) &&
-  f1Details.dateTime >= $notBefore
-] | order(f1Details.dateTime asc) [0...24] {
+  defined(${EVENT_KICKOFF_GROQ}) &&
+  ${EVENT_KICKOFF_GROQ} >= $notBefore
+] | order(${EVENT_KICKOFF_GROQ} asc) [0...24] {
   "id": _id,
   title,
   "slug": slug.current,
   series,
-  "dateTime": f1Details.dateTime,
+  featured,
+  "dateTime": ${EVENT_KICKOFF_GROQ},
   "track": f1Details.track
 }`;
 
@@ -91,6 +109,7 @@ export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
 ] {
   name,
   "slug": slug.current,
+  ${EVENTS_VENUE_CITY_PROJECTION},
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
   "nextKickoff": min(upcoming_screenings[
     defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
@@ -103,15 +122,16 @@ export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
 /** Day-scoped CMS events for /events/[slug] lookups. */
 export const EVENTS_CMS_ON_DAY_QUERY = `*[
   _type == "event" &&
-  defined(f1Details.dateTime) &&
-  f1Details.dateTime >= $dayStart &&
-  f1Details.dateTime < $dayEnd
-] | order(f1Details.dateTime asc) [0...24] {
+  defined(${EVENT_KICKOFF_GROQ}) &&
+  ${EVENT_KICKOFF_GROQ} >= $dayStart &&
+  ${EVENT_KICKOFF_GROQ} < $dayEnd
+] | order(${EVENT_KICKOFF_GROQ} asc) [0...24] {
   "id": _id,
   title,
   "slug": slug.current,
   series,
-  "dateTime": f1Details.dateTime,
+  featured,
+  "dateTime": ${EVENT_KICKOFF_GROQ},
   "track": f1Details.track
 }`;
 
@@ -160,6 +180,10 @@ function asIso(value: unknown): string | null {
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString();
+}
+
+function asFeatured(value: unknown): boolean {
+  return value === true;
 }
 
 /**
@@ -257,6 +281,7 @@ type MutableFixture = {
   eventPageHref: string | null;
   hasScreening: boolean;
   hasEvent: boolean;
+  featured: boolean;
 };
 
 function toUpcoming(row: MutableFixture): UpcomingFixture {
@@ -279,7 +304,18 @@ function toUpcoming(row: MutableFixture): UpcomingFixture {
     series: row.series,
     eventPageHref: row.eventPageHref,
     kind,
+    featured: row.featured,
   };
+}
+
+function venueFromRow(
+  venueName: string,
+  venueSlug: string,
+  row: EventsScreeningVenueRow,
+): FixtureVenue {
+  const city = asString(row.city) || null;
+  const citySlug = asString(row.citySlug) || null;
+  return { name: venueName, slug: venueSlug, city, citySlug };
 }
 
 /**
@@ -320,7 +356,10 @@ export function groupScreeningsIntoFixtures(
       const sportSlug = inferSportSlug(title, sports) ?? broadcastSport;
       const existing = byKey.get(key);
       if (existing) {
-        existing.venues.set(venueSlug, { name: venueName, slug: venueSlug });
+        existing.venues.set(
+          venueSlug,
+          venueFromRow(venueName, venueSlug, venue),
+        );
         existing.hasScreening = true;
         if (!existing.sportSlug && sportSlug) existing.sportSlug = sportSlug;
         // Same calendar-day key — keep the shared kickoff (prefer earlier).
@@ -338,11 +377,14 @@ export function groupScreeningsIntoFixtures(
         title,
         sportSlug,
         startsAt,
-        venues: new Map([[venueSlug, { name: venueName, slug: venueSlug }]]),
+        venues: new Map([
+          [venueSlug, venueFromRow(venueName, venueSlug, venue)],
+        ]),
         series: null,
         eventPageHref: null,
         hasScreening: true,
         hasEvent: false,
+        featured: false,
       });
     }
   }
@@ -364,7 +406,7 @@ export function cmsEventsToFixtures(
     const eventSlug = asString(row.slug);
     if (!title) continue;
     const series = asString(row.series);
-    const startsAt = asIso(row.dateTime);
+    const startsAt = asIso(row.dateTime) ?? asIso(row.startsAt);
     if (
       !options.includePast &&
       startsAt &&
@@ -388,6 +430,7 @@ export function cmsEventsToFixtures(
       series: series || null,
       eventPageHref: eventHref(series, eventSlug || slugifyTitle(title)),
       kind: "event",
+      featured: asFeatured(row.featured),
     });
   }
 
@@ -418,6 +461,7 @@ export function mergeUpcomingFixtures(
         eventPageHref: item.eventPageHref ?? null,
         hasScreening: from === "screening" || item.kind === "both",
         hasEvent: from === "event" || item.kind === "both",
+        featured: Boolean(item.featured),
       });
       return;
     }
@@ -440,6 +484,7 @@ export function mergeUpcomingFixtures(
     }
     if (item.series) existing.series = item.series;
     if (item.eventPageHref) existing.eventPageHref = item.eventPageHref;
+    if (item.featured) existing.featured = true;
     if (
       from === "screening" ||
       item.kind === "screening" ||
@@ -501,6 +546,27 @@ export function buildUpcomingFixtures(
   const sorted = sortUpcomingFixtures(merged, now);
   const limit = options.limit ?? 24;
   return sorted.slice(0, limit);
+}
+
+/**
+ * Editorial featured fixture for homepage / events hero.
+ * Only a CMS `featured === true` row with a future (or grace) kickoff.
+ * Does not invent a featured moment from the soonest upcoming list.
+ */
+export function selectFeaturedFixture(
+  fixtures: UpcomingFixture[],
+  now: Date = new Date(),
+): UpcomingFixture | null {
+  const nowMs = now.getTime();
+  const flagged = fixtures.filter((item) => {
+    if (!item.featured) return false;
+    if (!item.startsAt) return false;
+    const time = new Date(item.startsAt).getTime();
+    if (Number.isNaN(time)) return false;
+    return time >= nowMs - UPCOMING_GRACE_MS;
+  });
+  if (flagged.length === 0) return null;
+  return sortUpcomingFixtures(flagged, now)[0] ?? null;
 }
 
 export function findFixtureBySlug(

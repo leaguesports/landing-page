@@ -1,4 +1,12 @@
+import { EventsCityFilter } from "@/components/events/EventsCityFilter";
+import { FeaturedFixtureHero } from "@/components/events/FeaturedFixtureHero";
 import { FixtureRow } from "@/components/events/FixtureList";
+import {
+  eventsCityLabel,
+  filterFixturesByCity,
+  parseEventsCityParam,
+} from "@/lib/sports/events-city";
+import { selectFeaturedFixture } from "@/lib/sports/events-feed";
 import { getUpcomingFixtures } from "@/services/events";
 import { Tv } from "lucide-react";
 import type { Metadata } from "next";
@@ -12,8 +20,20 @@ export const metadata: Metadata = {
 
 export const revalidate = 300;
 
-export default async function EventsPage() {
-  const fixtures = await getUpcomingFixtures({ limit: 24 });
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ city?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const city = parseEventsCityParam(params.city);
+  const cityName = eventsCityLabel(city);
+  const allFixtures = await getUpcomingFixtures({ limit: 24 });
+  const fixtures = filterFixturesByCity(allFixtures, city);
+  const featured = selectFeaturedFixture(fixtures);
+  const list = featured
+    ? fixtures.filter((item) => item.slug !== featured.slug)
+    : fixtures;
   const now = new Date();
 
   return (
@@ -62,27 +82,48 @@ export default async function EventsPage() {
               Fixtures
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-              Grouped from venue screenings and the event calendar — one
-              fixture, every place showing it.
+              {cityName
+                ? `Screenings in ${cityName}, plus national fixtures on the calendar.`
+                : "Grouped from venue screenings and the event calendar — one fixture, every place showing it."}
             </p>
           </div>
+
+          <div className="mb-8">
+            <EventsCityFilter city={city} />
+          </div>
+
+          {featured ? (
+            <div className="mb-8">
+              <FeaturedFixtureHero fixture={featured} now={now} />
+            </div>
+          ) : null}
 
           {fixtures.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/12 bg-[#141814] px-5 py-12 text-center">
               <p className="text-sm leading-relaxed text-zinc-400">
-                No upcoming fixtures listed yet. Browse Watch for venues that
-                screen live sport, or check back when the next big game lands.
+                {cityName
+                  ? `No upcoming fixtures listed for ${cityName} yet. Try another city, or browse Watch for venues that screen live sport.`
+                  : "No upcoming fixtures listed yet. Browse Watch for venues that screen live sport, or check back when the next big game lands."}
               </p>
-              <Link
-                href="/watch/rugby"
-                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
-              >
-                Watch rugby
-              </Link>
+              {city ? (
+                <Link
+                  href="/events"
+                  className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
+                >
+                  All cities
+                </Link>
+              ) : (
+                <Link
+                  href="/watch/rugby"
+                  className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
+                >
+                  Watch rugby
+                </Link>
+              )}
             </div>
-          ) : (
+          ) : list.length === 0 ? null : (
             <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-2 sm:px-8">
-              {fixtures.map((fixture) => (
+              {list.map((fixture) => (
                 <FixtureRow key={fixture.slug} fixture={fixture} now={now} />
               ))}
             </div>

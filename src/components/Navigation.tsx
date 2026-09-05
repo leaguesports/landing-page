@@ -1,5 +1,5 @@
 import Link from "next/link";
-import UserMenu from "@/components/UserMenu";
+import HeaderSessionControls from "@/components/HeaderSessionControls";
 
 export default function Navigation() {
   return (
@@ -16,7 +16,7 @@ export default function Navigation() {
             LEAGUE
             <span className="text-[var(--color-brand)]">SPORTS</span>
           </Link>
-          <UserMenu />
+          <HeaderSessionControls />
         </nav>
       </div>
     </header>

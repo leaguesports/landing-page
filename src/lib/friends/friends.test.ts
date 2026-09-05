@@ -10,7 +10,7 @@ import {
 
 describe("friends client", () => {
   it("lists friends, incoming, and outgoing requests", async () => {
-    const snapshot = await listFriendsWith({
+    const result = await listFriendsWith({
       fetch: async () =>
         new Response(
           JSON.stringify({
@@ -43,10 +43,22 @@ describe("friends client", () => {
       baseUrl: "https://api.example.test",
     });
 
-    assert.equal(snapshot.friends.length, 1);
-    assert.equal(snapshot.friends[0]?.handle, "blake");
-    assert.equal(snapshot.incoming[0]?.user.handle, "casey");
-    assert.deepEqual(snapshot.outgoing, []);
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.snapshot.friends.length, 1);
+    assert.equal(result.snapshot.friends[0]?.handle, "blake");
+    assert.equal(result.snapshot.incoming[0]?.user.handle, "casey");
+    assert.deepEqual(result.snapshot.outgoing, []);
+  });
+
+  it("returns ok:false on non-OK list responses instead of an empty snapshot", async () => {
+    const result = await listFriendsWith({
+      fetch: async () => new Response("nope", { status: 503 }),
+      baseUrl: "https://api.example.test",
+    });
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.status, 503);
   });
 
   it("POSTs a friend request by handle", async () => {
