@@ -1,7 +1,10 @@
 import { HomeAthleteCta } from "@/components/home/HomeAthleteCta";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { HomeDirectories } from "@/components/home/HomeDirectories";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { HomeUpcomingEvents } from "@/components/home/HomeUpcomingEvents";
+import { HomeValueSections } from "@/components/home/HomeValueSections";
+import { buildHomeJsonLd } from "@/lib/home/homeJsonLd";
 import { formatStat } from "@/lib/format-stat";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
@@ -9,10 +12,51 @@ import { selectFeaturedFixture } from "@/lib/sports/events-feed";
 import { getUpcomingFixtures } from "@/services/events";
 import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
+
+/** Same production fallback as root metadataBase — never VERCEL_URL. */
+const CANONICAL_SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://leaguesports.co.za";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "LeagueSports | Watch, play & track sport in South Africa",
+  },
+  description:
+    "Find where to watch fixtures, book courts to play, and lock live scorecards — across soccer, rugby, padel, golf, and more in South Africa.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "LeagueSports | Watch, play & track sport in South Africa",
+    description:
+      "Watch venues, play courts, and live scorecards across South Africa.",
+    url: "/",
+    siteName: "LeagueSports",
+    locale: "en_ZA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeagueSports | Watch, play & track sport in South Africa",
+    description:
+      "Watch venues, play courts, and live scorecards across South Africa.",
+  },
+  keywords: [
+    "sports venues South Africa",
+    "where to watch soccer",
+    "padel scorecard",
+    "golf scorecard",
+    "padel courts Cape Town",
+    "sports bars Johannesburg",
+    "LeagueSports",
+  ],
+};
 
 function GuideCard({ guide }: { guide: Guide }) {
   const imageUrl = safeSanityImageUrl(guide.mainImage);
@@ -67,18 +111,38 @@ async function MarketingHome() {
     { value: formatStat(stats.guides), label: "Guides", tone: "text-zinc-300" },
   ];
 
+  const jsonLd = buildHomeJsonLd(CANONICAL_SITE_URL);
+
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <HomeDiscovery />
+
+      <HomeValueSections />
+
+      <HomeDirectories />
 
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="mb-8 max-w-xl sm:mb-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+              Across South Africa
+            </p>
+            <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+              Live inventory
+            </h2>
+            <p className="mt-3 text-sm text-zinc-400 sm:text-base">
+              Exact counts from the directories — venues, events, and guides on
+              LeagueSports today.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-6">
             {homepageStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-3xl border border-white/8 bg-[#141814] px-4 py-6 text-center sm:px-5 sm:py-8"
-              >
+              <div key={stat.label} className="text-center sm:text-left">
                 <p
                   className={`font-display text-4xl tracking-wide sm:text-5xl ${stat.tone}`}
                 >
@@ -108,7 +172,7 @@ async function MarketingHome() {
                 Top guides
               </h2>
               <p className="mt-3 text-sm text-zinc-400 sm:text-base">
-                Local tips for fans and players.
+                Local tips for fans and players across South Africa.
               </p>
             </div>
             <Link
@@ -136,25 +200,26 @@ async function MarketingHome() {
                 LeagueSports
               </p>
               <h2 className="font-display text-5xl tracking-wide text-white sm:text-6xl">
-                Find your game
+                Your local sports hub
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Browse Watch and Play directories for venues in your area.
+                Browse Watch and Play directories, follow fixtures, or open
+                athlete tools to lock live scorecards.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href="/venues"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
               >
                 Find a venue
               </Link>
               <Link
-                href="/padel/new"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                href="/athletes"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
               >
-                Play now
+                Athlete tools
               </Link>
             </div>
           </div>

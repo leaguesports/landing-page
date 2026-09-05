@@ -27,12 +27,24 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      "https://leaguesports.co.za",
+  ),
   title: {
-    default: "LeagueSports | Find Venues & Events",
+    default: "LeagueSports | Watch, play & track sport in South Africa",
     template: "%s | LeagueSports",
   },
   description:
-    "Find venues and events to participate in. Connect with players and venues in your area.",
+    "Find where to watch fixtures, book courts to play, and lock live scorecards across South Africa.",
+  openGraph: {
+    siteName: "LeagueSports",
+    locale: "en_ZA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export const viewport: Viewport = {

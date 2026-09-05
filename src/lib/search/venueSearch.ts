@@ -248,12 +248,29 @@ export function parseVenueSearchParams(input: {
   intent?: string | string[] | undefined;
   sport?: string | string[] | undefined;
   location?: string | string[] | undefined;
+  q?: string | string[] | undefined;
 }): ParsedVenueSearch {
   const intentRaw = firstParam(input.intent);
-  const intent: VenueSearchIntent | null =
-    intentRaw === "play" || intentRaw === "watch" ? intentRaw : null;
   const sportSlug = firstParam(input.sport);
   const locationSlug = firstParam(input.location);
+  const q = firstParam(input.q);
+
+  // Free-text `q` (SearchAction / legacy chips) → structured filters.
+  // Explicit sport/location params still win when present.
+  if (q && !sportSlug && !locationSlug) {
+    const fallback: VenueSearchIntent =
+      intentRaw === "play" ? "play" : "watch";
+    const parsed = parseVenueSearch(q, fallback);
+    const hasVerb = /\b(watch|play)\b/i.test(q);
+    if (!hasVerb) {
+      parsed.intent =
+        intentRaw === "play" || intentRaw === "watch" ? intentRaw : null;
+    }
+    return parsed;
+  }
+
+  const intent: VenueSearchIntent | null =
+    intentRaw === "play" || intentRaw === "watch" ? intentRaw : null;
   const sport = sportSlug
     ? SEARCH_SPORTS.find((item) => item.slug === sportSlug)
     : undefined;

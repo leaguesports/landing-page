@@ -1,51 +1,70 @@
-import Image from "next/image";
+"use client";
+
+import { HomePhoneMockup } from "@/components/home/HomePhoneMockup";
 import Link from "next/link";
 
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=2400&q=80";
+function HeroActions({ className = "" }: { className?: string }) {
+  return (
+    <div className={className}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Link
+          href="/venues"
+          className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
+        >
+          Find a venue
+        </Link>
+        <Link
+          href="/athletes"
+          className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
+        >
+          Athlete tools
+        </Link>
+      </div>
+      <p className="mt-4 text-sm text-zinc-500">
+        Watch fixtures, find courts, and lock padel or golf scores to your hub.
+      </p>
+    </div>
+  );
+}
 
 export function HomeDiscovery() {
   return (
-    <section className="relative flex min-h-[calc(100svh-4rem)] items-start overflow-hidden sm:min-h-[88vh] sm:items-end">
-      <div className="absolute inset-0 overflow-hidden">
-        <Image
-          src={HERO_IMAGE}
-          alt=""
-          fill
-          priority
-          className="object-cover object-center animate-mesh"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-[#0c0f0c]/55" />
-        <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/70 to-[#0c0f0c]/25" />
-        <div className="absolute inset-0 bg-linear-to-r from-[#0c0f0c]/80 via-transparent to-transparent" />
-        <div className="pointer-events-none absolute -right-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
+    <section className="relative overflow-hidden border-b border-white/10">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-[10%] top-16 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl animate-pulse-glow" />
+        <div className="absolute bottom-10 right-[8%] h-96 w-96 rounded-full bg-sky-500/15 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-size-[4rem_4rem]" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#0c0f0c]/40 via-transparent to-[#0c0f0c]" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-14 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8">
-        <h1 className="font-display animate-rise text-[clamp(3.25rem,12vw,9.5rem)] leading-[0.88] tracking-wide text-white">
-          LEAGUE
-          <span className="text-[var(--color-brand)]">SPORTS</span>
-        </h1>
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10">
+          <div className="max-w-xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
+              South Africa
+            </p>
+            <h1 className="animate-rise">
+              <span className="font-display block text-[clamp(2.75rem,11vw,5.5rem)] leading-[0.9] tracking-wide text-white">
+                LEAGUE
+                <span className="text-[var(--color-brand)]">SPORTS</span>
+              </span>
+              <span className="mt-3 block text-xl font-semibold leading-snug tracking-tight text-white sm:mt-5 sm:text-4xl sm:leading-tight">
+                Watch, play, and track sport in one place
+              </span>
+            </h1>
+            <p className="animate-rise-delay mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-5 sm:text-lg sm:leading-8">
+              Find screens for the big game, book a court, or lock a live
+              scorecard — across soccer, rugby, padel, golf, and more.
+            </p>
 
-        <p className="animate-rise-delay mt-4 max-w-xl text-base leading-relaxed text-zinc-300 sm:mt-5 sm:text-lg">
-          Play a padel match on a live scorecard. Lock the result so it lands
-          on your history and the court.
-        </p>
+            <HeroActions className="animate-rise-delay-2 mt-7 hidden lg:block" />
+          </div>
 
-        <div className="animate-rise-delay-2 mt-7 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap">
-          <Link
-            href="/venues"
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-          >
-            Find a venue
-          </Link>
-          <Link
-            href="/padel/new"
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-          >
-            Play now
-          </Link>
+          <div className="animate-rise-delay flex justify-center lg:justify-end">
+            <HomePhoneMockup />
+          </div>
+
+          <HeroActions className="animate-rise-delay-2 lg:hidden" />
         </div>
       </div>
     </section>
