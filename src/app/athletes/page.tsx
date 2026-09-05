@@ -145,7 +145,7 @@ export default function FeaturesPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/padel/new"
-                  className="group relative inline-block overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                  className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
                 >
                   <span className="relative z-10">Play now</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
@@ -1195,14 +1195,14 @@ export default function FeaturesPage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <Link
               href="/padel/new"
-              className="group relative overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
             >
               <span className="relative z-10">Play now</span>
               <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
             </Link>
             <Link
               href="/login"
-              className="group rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+              className="group inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
             >
               Log in
               <span className="ml-2 inline-block transition-transform group-hover:translate-x-1">
