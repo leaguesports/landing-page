@@ -149,6 +149,8 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/me/friends/:userId/accept",
   "/api/me/friends/:userId",
   "/api/me/badges",
+  "/api/me/preferences",
+  "/api/users/search",
   "/api/venues/:cmsId/matches",
   "/api/venues/:cmsId/golf-rounds",
   "/api/venues/:cmsId/follow",

@@ -78,6 +78,8 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/badges"), true);
+    assert.equal(shouldProxyApiPath("/api/me/preferences"), true);
+    assert.equal(shouldProxyApiPath("/api/users/search"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1/accept"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
@@ -372,6 +374,22 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/friends`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/preferences`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/users/search`,
         ),
         true,
       );
