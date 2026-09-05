@@ -47,20 +47,23 @@ export type EventsCmsEventRow = {
 };
 
 /**
- * Venues with upcoming screenings, ordered by kickoff — not document order.
+ * Venues with upcoming screenings, ordered by next kickoff — not document age.
  * `$notBefore` is an ISO timestamp (now minus grace).
  */
 export const EVENTS_SCREENINGS_QUERY = `*[
   _type == "venue" &&
   count(upcoming_screenings[defined(startsAt) && startsAt >= $notBefore]) > 0
-] | order(_updatedAt desc) [0...40] {
+] {
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
+  "nextKickoff": min(upcoming_screenings[
+    defined(startsAt) && startsAt >= $notBefore
+  ].startsAt),
   "upcoming_screenings": upcoming_screenings[
     defined(startsAt) && startsAt >= $notBefore
   ] | order(startsAt asc) [0...16]{ title, startsAt }
-}`;
+} | order(nextKickoff asc) [0...40]`;
 
 /**
  * Upcoming CMS events only (not the oldest historical slice).
@@ -85,14 +88,17 @@ export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
   count(upcoming_screenings[
     defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
   ]) > 0
-] | order(_updatedAt desc) [0...40] {
+] {
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
+  "nextKickoff": min(upcoming_screenings[
+    defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
+  ].startsAt),
   "upcoming_screenings": upcoming_screenings[
     defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
   ] | order(startsAt asc) [0...16]{ title, startsAt }
-}`;
+} | order(nextKickoff asc) [0...40]`;
 
 /** Day-scoped CMS events for /events/[slug] lookups. */
 export const EVENTS_CMS_ON_DAY_QUERY = `*[

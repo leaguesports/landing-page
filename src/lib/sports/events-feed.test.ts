@@ -26,10 +26,14 @@ describe("events feed queries", () => {
     assert.match(EVENTS_SCREENINGS_QUERY, /_type == "venue"/);
     assert.match(EVENTS_SCREENINGS_QUERY, /startsAt >= \$notBefore/);
     assert.match(EVENTS_SCREENINGS_QUERY, /order\(startsAt asc\)/);
+    assert.match(EVENTS_SCREENINGS_QUERY, /order\(nextKickoff asc\)/);
+    assert.doesNotMatch(EVENTS_SCREENINGS_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_QUERY, /_type == "event"/);
     assert.match(EVENTS_CMS_QUERY, /f1Details\.dateTime >= \$notBefore/);
     assert.match(EVENTS_CMS_QUERY, /order\(f1Details\.dateTime asc\)/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /\$dayStart/);
+    assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(nextKickoff asc\)/);
+    assert.doesNotMatch(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
   });
 });
