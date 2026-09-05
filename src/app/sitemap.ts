@@ -69,6 +69,12 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
       priority: 1,
     },
     {
+      url: `${baseUrl}/events`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.95,
+    },
+    {
       url: `${baseUrl}/play`,
       lastModified: now,
       changeFrequency: "daily",
