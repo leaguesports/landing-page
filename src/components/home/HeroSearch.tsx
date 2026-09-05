@@ -23,17 +23,19 @@ import {
 type HeroSearchProps = {
   onIntentChange?: (intent: IntentMode) => void;
   initialIntent?: IntentMode;
+  initialQuery?: string;
 };
 
 export function HeroSearch({
   onIntentChange,
   initialIntent = "watch",
+  initialQuery = "",
 }: HeroSearchProps) {
   const router = useRouter();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [intent, setIntent] = useState<IntentMode>(initialIntent);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [selected, setSelected] = useState<SearchSuggestion | null>(null);
   const [open, setOpen] = useState(false);
   const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "error">(
@@ -165,7 +167,7 @@ export function HeroSearch({
 
       <form onSubmit={handleSubmit} className="relative space-y-3 overflow-visible">
         <div
-          className={`relative flex flex-col gap-2 rounded-2xl border border-white/12 bg-black/55 p-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl ring-2 ring-transparent transition sm:flex-row ${
+          className={`relative flex flex-col gap-2 overflow-visible rounded-2xl border border-white/12 bg-black/55 p-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl ring-2 ring-transparent transition sm:flex-row ${
             isWatch
               ? "focus-within:ring-sky-400/30"
               : "focus-within:ring-emerald-400/30"
@@ -233,7 +235,7 @@ export function HeroSearch({
             <ul
               id={listId}
               role="listbox"
-              className="absolute left-0 right-0 bottom-[calc(100%+0.5rem)] z-[60] max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
+              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[60] max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
             >
               {suggestions.map((s) => (
                 <li
