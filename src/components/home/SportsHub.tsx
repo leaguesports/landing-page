@@ -5,7 +5,6 @@ import type { BadgesSnapshot } from "@/lib/badges/api";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
-import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/lib/api-client";
 import {
   emptyFriendsSnapshot,
@@ -281,7 +280,6 @@ export function SportsHub({
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
   );
-  const { signOut } = useAuth();
   const nowMs = new Date(nowIso).getTime();
 
   const active = prefs.active;
@@ -359,22 +357,9 @@ export function SportsHub({
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-              Your hub
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void signOut().then(() => {
-                  window.location.assign("/");
-                });
-              }}
-              className="text-sm text-zinc-500 transition-colors hover:text-white"
-            >
-              Sign out
-            </button>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+            Your hub
+          </p>
 
           <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
