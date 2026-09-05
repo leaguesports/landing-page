@@ -113,7 +113,24 @@ describe("buildDemoGuestSlots", () => {
 });
 
 describe("seatSelfInA1IfNeeded", () => {
-  it("puts self in A1 when not already seated", () => {
+  it("puts self in A1 only when that slot is empty", () => {
+    const self = makeUserPlayer({
+      id: "u1",
+      displayName: "Pat",
+      userId: "u1",
+    });
+    const emptyA1 = {
+      a1: null,
+      a2: makeGuestPlayer("Sam"),
+      b1: makeGuestPlayer("Jordan"),
+      b2: makeGuestPlayer("Riley"),
+    };
+    const next = seatSelfInA1IfNeeded(emptyA1, self);
+    assert.equal(next.a1?.userId, "u1");
+    assert.equal(next.a2?.displayName, emptyA1.a2.displayName);
+  });
+
+  it("does not overwrite an occupied A1 when self is absent", () => {
     const self = makeUserPlayer({
       id: "u1",
       displayName: "Pat",
@@ -125,9 +142,7 @@ describe("seatSelfInA1IfNeeded", () => {
       b1: makeGuestPlayer("Jordan"),
       b2: makeGuestPlayer("Riley"),
     };
-    const next = seatSelfInA1IfNeeded(slots, self);
-    assert.equal(next.a1?.userId, "u1");
-    assert.equal(next.a2?.displayName, slots.a2.displayName);
+    assert.equal(seatSelfInA1IfNeeded(slots, self), slots);
   });
 
   it("does not move self when already seated in another slot", () => {

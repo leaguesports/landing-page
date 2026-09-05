@@ -25,7 +25,6 @@ import {
   playerFromInitialSelf,
   readLastPadelVenueSlug,
   resolveInitialQuickStartSlots,
-  seatSelfInA1IfNeeded,
   selectDefaultPadelVenue,
   writeLastPadelVenueSlug,
   type QuickStartInitialSelf,
@@ -62,7 +61,7 @@ export function PadelQuickStart({
     toDatetimeLocalValue(new Date()),
   );
   // Seed from server auth when present; otherwise four guests for one-tap.
-  // Client useAuth still re-seats when auth resolves later / changes.
+  // Empty-A1 fill for a late-arriving self is handled by resolvedSlots only.
   const [slots, setSlots] = useState<Record<SlotKey, PadelPlayer | null>>(() =>
     resolveInitialQuickStartSlots(initialSelf),
   );
@@ -112,12 +111,9 @@ export function PadelQuickStart({
     });
   }, [venues, lockVenue, initialVenueSlug]);
 
-  useEffect(() => {
-    if (!selfPlayer) return;
-    setSlots((prev) => seatSelfInA1IfNeeded(prev, selfPlayer));
-  }, [selfPlayer]);
-
   // Keep signed-in user in A1 when that slot is empty so history binds.
+  // Do not sync via useEffect + seatSelfInA1IfNeeded — that force-wrote A1 on
+  // every auth refresh (including tab focus) and undid intentional opt-outs.
   const resolvedSlots = useMemo(() => {
     if (!knownSelf) return slots;
     const alreadySeated = Object.values(slots).some(

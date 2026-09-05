@@ -102,8 +102,8 @@ export function resolveInitialQuickStartSlots(
 }
 
 /**
- * Seat the signed-in user in A1 without wiping the other auto-filled guests,
- * unless they are already seated elsewhere.
+ * Seat the signed-in user in A1 only when that slot is empty and they are not
+ * already elsewhere. Never overwrite an intentional A1 pick.
  */
 export function seatSelfInA1IfNeeded(
   slots: Record<QuickStartSlotKey, PadelPlayer | null>,
@@ -112,6 +112,6 @@ export function seatSelfInA1IfNeeded(
   const alreadySeated = Object.values(slots).some(
     (player) => player?.userId === selfPlayer.userId,
   );
-  if (alreadySeated) return slots;
+  if (alreadySeated || slots.a1) return slots;
   return { ...slots, a1: selfPlayer };
 }
