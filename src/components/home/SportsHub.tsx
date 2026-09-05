@@ -202,16 +202,6 @@ function useHubPreferences(
   return [prefs, setPrefs] as const;
 }
 
-function displayName(user: AuthUser): string {
-  return (
-    user.displayName?.trim() ||
-    user.name?.trim() ||
-    user.handle?.trim() ||
-    user.email?.trim() ||
-    "Player"
-  );
-}
-
 function utilityIcon(kind: HubUtility["kind"]) {
   switch (kind) {
     case "scorecard":
@@ -255,8 +245,6 @@ export function SportsHub({
   feed,
   nowIso,
 }: SportsHubProps) {
-  const name = displayName(user);
-  const handle = user.handle?.trim();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
   const padelLocked = lockedActivity?.padel ?? historyItems.length;
   const golfLocked = lockedActivity?.golf ?? 0;
@@ -357,41 +345,16 @@ export function SportsHub({
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
             Your hub
+          </h1>
+          <p className="mt-1.5 text-sm text-zinc-400">
+            Watch, play, and keep your results in one place.
           </p>
 
-          <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-4">
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatarUrl}
-                    alt=""
-                    className="h-14 w-14 rounded-full border border-white/10 object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#141814] font-display text-2xl text-emerald-300">
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                    {name}
-                  </h1>
-                  {handle ? (
-                    <p className="mt-1 text-sm text-zinc-400">@{handle}</p>
-                  ) : (
-                    <p className="mt-1 text-sm text-zinc-400">
-                      Watch, play, and keep your results in one place.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-5 flex flex-wrap items-end gap-4">
+              <div className="flex flex-wrap items-end gap-4">
                 <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
                   <p className="font-display text-2xl tracking-wide text-white tabular-nums">
                     {gamesKnown ? gamesPlayed : "—"}
