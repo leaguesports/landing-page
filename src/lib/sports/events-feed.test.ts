@@ -4,6 +4,7 @@ import { SPORT_CATALOG } from "./catalog.ts";
 import {
   buildUpcomingFixtures,
   cmsEventsToFixtures,
+  EVENT_KICKOFF_GROQ,
   EVENTS_CMS_ON_DAY_QUERY,
   EVENTS_CMS_QUERY,
   EVENTS_SCREENINGS_ON_DAY_QUERY,
@@ -18,6 +19,7 @@ import {
   normalizeFixtureKey,
   parseFixtureSlug,
   saDayBounds,
+  selectFeaturedFixture,
   upcomingNotBeforeIso,
 } from "./events-feed.ts";
 
@@ -28,13 +30,35 @@ describe("events feed queries", () => {
     assert.match(EVENTS_SCREENINGS_QUERY, /order\(startsAt asc\)/);
     assert.match(EVENTS_SCREENINGS_QUERY, /order\(nextKickoff asc\)/);
     assert.doesNotMatch(EVENTS_SCREENINGS_QUERY, /order\(_updatedAt/);
+    assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->title/);
+    assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->slug\.current/);
     assert.match(EVENTS_CMS_QUERY, /_type == "event"/);
-    assert.match(EVENTS_CMS_QUERY, /f1Details\.dateTime >= \$notBefore/);
-    assert.match(EVENTS_CMS_QUERY, /order\(f1Details\.dateTime asc\)/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /\$dayStart/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(nextKickoff asc\)/);
+    assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /address\.city->title/);
     assert.doesNotMatch(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
+  });
+
+  it("uses coalesce(startsAt, f1Details.dateTime) and does not require F1-only kickoff", () => {
+    assert.equal(EVENT_KICKOFF_GROQ, "coalesce(startsAt, f1Details.dateTime)");
+    assert.match(EVENTS_CMS_QUERY, /coalesce\(startsAt,\s*f1Details\.dateTime\)/);
+    assert.match(
+      EVENTS_CMS_QUERY,
+      /coalesce\(startsAt,\s*f1Details\.dateTime\) >= \$notBefore/,
+    );
+    assert.match(
+      EVENTS_CMS_QUERY,
+      /order\(coalesce\(startsAt,\s*f1Details\.dateTime\) asc\)/,
+    );
+    assert.doesNotMatch(EVENTS_CMS_QUERY, /defined\(f1Details\.dateTime\)/);
+    assert.match(EVENTS_CMS_QUERY, /\bfeatured\b/);
+    assert.match(
+      EVENTS_CMS_ON_DAY_QUERY,
+      /coalesce\(startsAt,\s*f1Details\.dateTime\)/,
+    );
+    assert.doesNotMatch(EVENTS_CMS_ON_DAY_QUERY, /defined\(f1Details\.dateTime\)/);
+    assert.match(EVENTS_CMS_ON_DAY_QUERY, /\bfeatured\b/);
   });
 });
 
@@ -137,6 +161,8 @@ describe("groupScreeningsIntoFixtures", () => {
         {
           name: "The Local",
           slug: "the-local",
+          city: "Cape Town",
+          citySlug: "cape-town",
           broadcasts: [{ name: "Rugby", slug: "rugby" }],
           upcoming_screenings: [
             {
@@ -148,6 +174,8 @@ describe("groupScreeningsIntoFixtures", () => {
         {
           name: "Fan Zone CPT",
           slug: "fan-zone-cpt",
+          city: "Cape Town",
+          citySlug: "cape-town",
           broadcasts: [{ name: "Rugby", slug: "rugby" }],
           upcoming_screenings: [
             {
@@ -166,6 +194,7 @@ describe("groupScreeningsIntoFixtures", () => {
     assert.equal(fixtures[0]?.sportSlug, "rugby");
     assert.equal(fixtures[0]?.venues.length, 2);
     assert.equal(fixtures[0]?.kind, "screening");
+    assert.equal(fixtures[0]?.venues[0]?.city, "Cape Town");
   });
 
   it("keeps two Springboks Tests on different days as separate fixtures", () => {
@@ -281,6 +310,28 @@ describe("cmsEventsToFixtures", () => {
       "/motorsport/f1/italian-grand-prix",
     );
     assert.equal(fixtures[0]?.venues.length, 0);
+    assert.equal(fixtures[0]?.featured, false);
+  });
+
+  it("maps rugby/soccer events from event-level startsAt and featured", () => {
+    const fixtures = cmsEventsToFixtures(
+      [
+        {
+          title: "Springboks vs All Blacks",
+          slug: "springboks-vs-all-blacks",
+          series: "rugby",
+          startsAt: "2026-09-06T16:00:00.000Z",
+          featured: true,
+        },
+      ],
+      SPORT_CATALOG,
+      { now: new Date("2026-09-05T10:00:00.000Z") },
+    );
+
+    assert.equal(fixtures.length, 1);
+    assert.equal(fixtures[0]?.sportSlug, "rugby");
+    assert.equal(fixtures[0]?.featured, true);
+    assert.equal(fixtures[0]?.startsAt, "2026-09-06T16:00:00.000Z");
   });
 });
 
@@ -312,6 +363,7 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
           slug: "italian-grand-prix",
           series: "f1",
           dateTime: "2026-09-07T13:00:00.000Z",
+          featured: true,
         },
       ],
       SPORT_CATALOG,
@@ -324,6 +376,7 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
     assert.equal(merged[0]?.slug, "italian-grand-prix-2026-09-07");
     assert.equal(merged[0]?.venues.length, 1);
     assert.ok(merged[0]?.eventPageHref);
+    assert.equal(merged[0]?.featured, true);
   });
 
   it("orders soonest fixtures with venues first on equal kickoff", () => {
@@ -355,6 +408,85 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
 
     assert.equal(fixtures[0]?.title, "Boks vs All Blacks");
     assert.ok(fixtures[0]!.venues.length > 0);
+  });
+});
+
+describe("selectFeaturedFixture", () => {
+  const now = new Date("2026-09-05T10:00:00.000Z");
+
+  it("prefers a flagged fixture over the soonest upcoming row", () => {
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Soonest derby",
+              startsAt: "2026-09-06T12:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      [
+        {
+          title: "Springboks vs All Blacks",
+          slug: "springboks-vs-all-blacks",
+          series: "rugby",
+          dateTime: "2026-09-13T16:00:00.000Z",
+          featured: true,
+        },
+      ],
+      SPORT_CATALOG,
+      { now, limit: 10 },
+    );
+
+    const featured = selectFeaturedFixture(fixtures, now);
+    assert.equal(featured?.title, "Springboks vs All Blacks");
+    assert.equal(featured?.featured, true);
+    assert.equal(fixtures[0]?.title, "Soonest derby");
+  });
+
+  it("does not invent a featured fixture when none are flagged", () => {
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Soonest derby",
+              startsAt: "2026-09-06T12:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      [],
+      SPORT_CATALOG,
+      { now },
+    );
+
+    assert.equal(selectFeaturedFixture(fixtures, now), null);
+  });
+
+  it("ignores a featured flag that is already past the grace window", () => {
+    const featured = selectFeaturedFixture(
+      [
+        {
+          slug: "old-test",
+          title: "Old Test",
+          sportSlug: "rugby",
+          startsAt: "2026-09-04T12:00:00.000Z",
+          venues: [],
+          kind: "event",
+          featured: true,
+        },
+      ],
+      now,
+    );
+    assert.equal(featured, null);
   });
 });
 
