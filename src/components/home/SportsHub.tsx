@@ -97,27 +97,22 @@ const HUB_SECTIONS: {
 ];
 
 function SectionHeading({
-  eyebrow,
   title,
   description,
   action,
 }: {
-  eyebrow: string;
   title: string;
   description?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-          {eyebrow}
-        </p>
-        <h2 className="mt-1 font-display text-3xl tracking-wide text-white">
+        <h2 className="font-display text-2xl tracking-wide text-white">
           {title}
         </h2>
         {description ? (
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-400">
             {description}
           </p>
         ) : null}
@@ -126,12 +121,6 @@ function SectionHeading({
     </div>
   );
 }
-
-type ActivitySport = {
-  slug: string;
-  name: string;
-  count: number;
-};
 
 /** Locked-activity counts derived on the server — not full history rows. */
 export type LockedActivityCounts = {
@@ -305,29 +294,10 @@ export function SportsHub({
   const showPadel =
     active === ALL_SPORTS_SLUG || active === "padel";
   const stats = summarisePlayerHistory(historyItems, user.id);
-  const activitySports = useMemo((): ActivitySport[] => {
-    const chips: ActivitySport[] = [];
-    if (padelLocked > 0) {
-      chips.push({
-        slug: "padel",
-        name: sports.find((sport) => sport.slug === "padel")?.name ?? "Padel",
-        count: padelLocked,
-      });
-    }
-    if (golfLocked > 0) {
-      chips.push({
-        slug: "golf",
-        name: sports.find((sport) => sport.slug === "golf")?.name ?? "Golf",
-        count: golfLocked,
-      });
-    }
-    return chips;
-  }, [golfLocked, padelLocked, sports]);
   const activeSport =
     active === ALL_SPORTS_SLUG
       ? null
       : sports.find((sport) => sport.slug === active) ?? null;
-  const primary = utilities.filter((item) => item.emphasis === "primary");
   const recent = historyItems.slice(0, 8);
   const followedSet = new Set(prefs.followed);
   const activeSectionMeta =
@@ -344,6 +314,7 @@ export function SportsHub({
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
       <FriendsSnapshotSeed snapshot={friends} />
+      <h1 className="sr-only">Your hub</h1>
 
       <nav
         className="sticky top-16 z-40 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl"
@@ -354,7 +325,7 @@ export function SportsHub({
             id={sectionTablistId}
             role="tablist"
             aria-label="Hub sections"
-            className="-mx-4 flex gap-1 overflow-x-auto px-4 py-3 sm:mx-0 sm:gap-2 sm:overflow-visible sm:px-0"
+            className="-mx-4 flex gap-1 overflow-x-auto px-4 py-2.5 sm:mx-0 sm:gap-2 sm:overflow-visible sm:px-0"
           >
             {HUB_SECTIONS.map((item) => {
               const Icon = item.icon;
@@ -392,20 +363,15 @@ export function SportsHub({
           </div>
 
           {section !== "friends" ? (
-            <div className="border-t border-white/5 py-3">
-              <div className="mb-2 flex items-end justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                  Focus sport
-                </p>
-                <p className="hidden max-w-xs text-right text-xs leading-relaxed text-zinc-500 sm:block">
-                  Filters this section. Followed sports stay on this device.
-                </p>
-              </div>
+            <div className="border-t border-white/5 py-2.5">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                Focus sport
+              </p>
               <div
                 id={tablistId}
                 role="tablist"
                 aria-label="Filter hub by sport"
-                className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+                className="-mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
               >
                 <SportChip
                   label="All"
@@ -441,87 +407,7 @@ export function SportsHub({
         </div>
       </nav>
 
-      <section className="relative overflow-hidden border-b border-white/5">
-        <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-            Your hub
-          </h1>
-          <p className="mt-1.5 text-sm text-zinc-400">
-            Watch, play, and keep your results in one place.
-          </p>
-
-          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
-                  <p className="font-display text-2xl tracking-wide text-white tabular-nums">
-                    {gamesKnown ? gamesPlayed : "—"}
-                  </p>
-                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                    Games
-                  </p>
-                  {activityError ? (
-                    <p className="mt-1 max-w-[11rem] text-[11px] leading-snug text-amber-300/90">
-                      Couldn’t load all activity
-                    </p>
-                  ) : null}
-                </div>
-                {activitySports.length > 0 ? (
-                  <div className="flex min-w-0 flex-col gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                      Sports
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {activitySports.map((sport) => (
-                        <button
-                          key={sport.slug}
-                          type="button"
-                          onClick={() => {
-                            focusSport(sport.slug);
-                            setSection(
-                              sport.slug === "padel" ? "progress" : "tools",
-                            );
-                          }}
-                          className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
-                        >
-                          <SportIcon
-                            sportSlug={sport.slug}
-                            size={14}
-                            color="currentColor"
-                          />
-                          {sport.name}
-                          <span className="tabular-nums text-emerald-300/80">
-                            {sport.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {primary.slice(0, 2).map((action) => (
-                <Link
-                  key={action.id}
-                  href={action.href}
-                  className={
-                    action.emphasis === "primary" && action === primary[0]
-                      ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-                      : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                  }
-                >
-                  {action.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div
           role="tabpanel"
           id={`hub-panel-${section}`}
@@ -530,7 +416,6 @@ export function SportsHub({
           {section === "for-you" ? (
             <div className="mx-auto max-w-3xl">
               <SectionHeading
-                eyebrow="For you"
                 title={activeSport ? `${activeSport.name} feed` : "Up next"}
                 description={activeSectionMeta.description}
               />
@@ -667,7 +552,6 @@ export function SportsHub({
           {section === "tools" ? (
             <div>
               <SectionHeading
-                eyebrow="Tools"
                 title={
                   activeSport
                     ? `${activeSport.name} tools`
@@ -768,7 +652,6 @@ export function SportsHub({
             aria-hidden={section !== "friends"}
           >
             <SectionHeading
-              eyebrow="Friends"
               title="Your circle"
               description={
                 HUB_SECTIONS.find((item) => item.id === "friends")
@@ -786,7 +669,6 @@ export function SportsHub({
           {section === "progress" ? (
             <div>
               <SectionHeading
-                eyebrow="Progress"
                 title={
                   showPadel ? "Form and milestones" : "Badges and activity"
                 }
@@ -796,14 +678,29 @@ export function SportsHub({
                     : "Milestones you’ve unlocked across the sports you play."
                 }
                 action={
-                  showPadel && historyItems.length > 0 ? (
-                    <Link
-                      href="/padel/history"
-                      className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                    >
-                      View all history
-                    </Link>
-                  ) : null
+                  <div className="flex flex-col items-start gap-2 sm:items-end">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-2xl tracking-wide text-white tabular-nums">
+                        {gamesKnown ? gamesPlayed : "—"}
+                      </span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                        Games
+                      </span>
+                    </div>
+                    {activityError ? (
+                      <p className="max-w-[14rem] text-[11px] leading-snug text-amber-300/90 sm:text-right">
+                        Couldn’t load all activity
+                      </p>
+                    ) : null}
+                    {showPadel && historyItems.length > 0 ? (
+                      <Link
+                        href="/padel/history"
+                        className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                      >
+                        View all history
+                      </Link>
+                    ) : null}
+                  </div>
                 }
               />
 
@@ -846,7 +743,7 @@ export function SportsHub({
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
                           Padel
                         </p>
-                        <h3 className="mt-1 font-display text-3xl tracking-wide text-white">
+                        <h3 className="mt-1 font-display text-2xl tracking-wide text-white">
                           Locked matches
                         </h3>
                       </div>
