@@ -85,6 +85,36 @@ export const SPORT_CATALOG: SportDefinition[] = [
     noun: "track",
     capabilities: ["play"],
   },
+  {
+    slug: "darts",
+    name: "Darts",
+    noun: "board",
+    capabilities: ["play"],
+  },
+  {
+    slug: "pool",
+    name: "Pool",
+    noun: "table",
+    capabilities: ["play"],
+  },
+  {
+    slug: "bowling",
+    name: "Bowling",
+    noun: "lane",
+    capabilities: ["play"],
+  },
+  {
+    slug: "indoor-golf",
+    name: "Indoor Golf",
+    noun: "bay",
+    capabilities: ["play"],
+  },
+  {
+    slug: "sim-racing",
+    name: "Sim Racing",
+    noun: "sim",
+    capabilities: ["play"],
+  },
 ];
 
 /** CMS series slugs (and common labels) → hub sport slug. */
@@ -105,6 +135,28 @@ export const SERIES_TO_SPORT: Record<string, string> = {
   gokart: "karting",
   "go-kart": "karting",
   kart: "karting",
+  dart: "darts",
+  autodarts: "darts",
+  "ar darts": "darts",
+  "ar-darts": "darts",
+  billiards: "pool",
+  snooker: "pool",
+  "pool table": "pool",
+  "pool tables": "pool",
+  "ten-pin": "bowling",
+  "ten pin": "bowling",
+  tenpin: "bowling",
+  "hyper bowling": "bowling",
+  "hyper-bowling": "bowling",
+  "golf simulator": "indoor-golf",
+  "golf sim": "indoor-golf",
+  "golf-sim": "indoor-golf",
+  "simulator golf": "indoor-golf",
+  "indoor golf": "indoor-golf",
+  "sim racing": "sim-racing",
+  "racing sim": "sim-racing",
+  "racing simulator": "sim-racing",
+  simracing: "sim-racing",
 };
 
 export function normalizeSportSlug(slug: string | null | undefined): string {

@@ -198,6 +198,36 @@ export function sportSlugVariants(slug: string | null | undefined): string[] {
   }
   if (slug === "premier-league") return ["soccer", "premier-league"];
   if (slug === "six-nations") return ["rugby", "six-nations"];
+  // Social play sports (directory SEO hubs).
+  if (slug === "pool" || slug === "billiards" || slug === "snooker") {
+    return ["pool", "billiards", "snooker"];
+  }
+  if (
+    slug === "bowling" ||
+    slug === "ten-pin" ||
+    slug === "tenpin" ||
+    slug === "hyper-bowling"
+  ) {
+    return ["bowling", "ten-pin", "hyper-bowling"];
+  }
+  if (
+    slug === "indoor-golf" ||
+    slug === "golf-sim" ||
+    slug === "golf-simulator"
+  ) {
+    return ["indoor-golf", "golf-sim", "golf-simulator"];
+  }
+  if (slug === "sim-racing" || slug === "simracing" || slug === "racing-sim") {
+    return ["sim-racing", "simracing", "racing-sim"];
+  }
+  if (
+    slug === "darts" ||
+    slug === "dart" ||
+    slug === "autodarts" ||
+    slug === "ar-darts"
+  ) {
+    return ["darts", "autodarts", "ar-darts"];
+  }
   return [slug];
 }
 

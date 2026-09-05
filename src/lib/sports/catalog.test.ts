@@ -24,6 +24,11 @@ describe("inferSportSlug", () => {
     assert.equal(inferSportSlug("Springbok rugby at the pub"), "rugby");
     assert.equal(inferSportSlug("Go karting in Rosebank"), "karting");
     assert.equal(inferSportSlug("Indoor go-karting tracks"), "karting");
+    assert.equal(inferSportSlug("AR darts night in Sandton"), "darts");
+    assert.equal(inferSportSlug("Snooker and pool tables"), "pool");
+    assert.equal(inferSportSlug("Hyper bowling in Fourways"), "bowling");
+    assert.equal(inferSportSlug("Golf simulator bays in Joburg"), "indoor-golf");
+    assert.equal(inferSportSlug("Sim racing in Cape Town"), "sim-racing");
   });
 
   it("returns null when no sport is mentioned", () => {
@@ -106,6 +111,29 @@ describe("utilities", () => {
       utilities.some((item) => item.href === "/motorsport/f1/calendar"),
       false,
     );
+  });
+
+  it("focuses social play sports on finding a venue, not scorecards", () => {
+    const cases = [
+      { slug: "darts", title: "Find a board" },
+      { slug: "pool", title: "Find a table" },
+      { slug: "bowling", title: "Find a lane" },
+      { slug: "indoor-golf", title: "Find a bay" },
+      { slug: "sim-racing", title: "Find a sim" },
+    ] as const;
+
+    for (const expected of cases) {
+      const sport = SPORT_CATALOG.find((item) => item.slug === expected.slug);
+      assert.ok(sport, expected.slug);
+      const utilities = utilitiesForSport(sport);
+      const play = utilities.find((item) => item.kind === "play");
+      assert.equal(play?.title, expected.title);
+      assert.equal(play?.href, `/play/${expected.slug}`);
+      assert.equal(
+        utilities.some((item) => item.kind === "scorecard"),
+        false,
+      );
+    }
   });
 
   it("focuses motorsport on calendar and watch, not a padel scorecard", () => {

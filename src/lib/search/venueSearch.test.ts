@@ -51,6 +51,55 @@ describe("parseVenueSearch", () => {
     assert.equal(parsed.citySlug, "johannesburg");
   });
 
+  it("maps social play aliases onto directory sports", () => {
+    const cases = [
+      {
+        query: "Play AR darts in Sandton",
+        sportSlug: "darts",
+        sportName: "Darts",
+        locationSlug: "sandton",
+        citySlug: "johannesburg",
+      },
+      {
+        query: "Play snooker in Claremont",
+        sportSlug: "pool",
+        sportName: "Pool",
+        locationSlug: "claremont",
+        citySlug: "cape-town",
+      },
+      {
+        query: "Play hyper bowling in Rosebank",
+        sportSlug: "bowling",
+        sportName: "Bowling",
+        locationSlug: "rosebank",
+        citySlug: "johannesburg",
+      },
+      {
+        query: "Play golf simulator in Sandton",
+        sportSlug: "indoor-golf",
+        sportName: "Indoor Golf",
+        locationSlug: "sandton",
+        citySlug: "johannesburg",
+      },
+      {
+        query: "Play sim racing in Claremont",
+        sportSlug: "sim-racing",
+        sportName: "Sim Racing",
+        locationSlug: "claremont",
+        citySlug: "cape-town",
+      },
+    ] as const;
+
+    for (const expected of cases) {
+      const parsed = parseVenueSearch(expected.query, "watch");
+      assert.equal(parsed.intent, "play", expected.query);
+      assert.equal(parsed.sportSlug, expected.sportSlug, expected.query);
+      assert.equal(parsed.sportName, expected.sportName, expected.query);
+      assert.equal(parsed.locationSlug, expected.locationSlug, expected.query);
+      assert.equal(parsed.citySlug, expected.citySlug, expected.query);
+    }
+  });
+
   it("builds a Sanity directory URL", () => {
     const parsed = parseVenueSearch("Watch soccer in Claremont", "watch");
     assert.equal(

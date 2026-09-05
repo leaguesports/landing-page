@@ -109,6 +109,28 @@ describe("sportSlugVariants", () => {
     assert.deepEqual(sportSlugVariants("padel"), ["padel", "paddle"]);
     assert.deepEqual(sportSlugVariants("karting"), ["karting", "go-karting"]);
     assert.deepEqual(sportSlugVariants("go-karting"), ["karting", "go-karting"]);
+    assert.deepEqual(sportSlugVariants("pool"), ["pool", "billiards", "snooker"]);
+    assert.deepEqual(sportSlugVariants("snooker"), ["pool", "billiards", "snooker"]);
+    assert.deepEqual(sportSlugVariants("bowling"), [
+      "bowling",
+      "ten-pin",
+      "hyper-bowling",
+    ]);
+    assert.deepEqual(sportSlugVariants("indoor-golf"), [
+      "indoor-golf",
+      "golf-sim",
+      "golf-simulator",
+    ]);
+    assert.deepEqual(sportSlugVariants("sim-racing"), [
+      "sim-racing",
+      "simracing",
+      "racing-sim",
+    ]);
+    assert.deepEqual(sportSlugVariants("darts"), [
+      "darts",
+      "autodarts",
+      "ar-darts",
+    ]);
     assert.deepEqual(sportSlugVariants("rugby"), ["rugby"]);
   });
 });
