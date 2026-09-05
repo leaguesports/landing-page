@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { venueChipLocationSlug, venueIntentChipHref } from "./chips";
+import { venueChipLocationSlug, venueIntentChipHref } from "./chips.ts";
 
 const claremont = { suburb: "Claremont", city: "Cape Town" };
 

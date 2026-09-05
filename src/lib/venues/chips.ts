@@ -1,4 +1,4 @@
-import { toSlug } from "@/data/suburbs";
+import { toSlug } from "../../data/suburbs.ts";
 
 export type VenueChipAddress = {
   suburb?: string | null;
