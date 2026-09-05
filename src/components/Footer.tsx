@@ -40,6 +40,14 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
+                    href="/events"
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    Events
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/play"
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >

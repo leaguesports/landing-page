@@ -4,8 +4,8 @@ import {
   buildVenueDirectoryPath,
   parseVenueSearch,
   venueSearchSummary,
-} from "./venueSearch";
-import { filterSuggestions } from "@/data/cities";
+} from "./venueSearch.ts";
+import { filterSuggestions } from "../../data/cities.ts";
 
 describe("parseVenueSearch", () => {
   it("parses Watch soccer in Claremont", () => {

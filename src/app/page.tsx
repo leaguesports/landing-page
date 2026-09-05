@@ -1,8 +1,10 @@
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
+import { HomeUpcomingEvents } from "@/components/home/HomeUpcomingEvents";
 import { formatStat } from "@/lib/format-stat";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
+import { getUpcomingFixtures } from "@/services/events";
 import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
 import { cookies } from "next/headers";
@@ -43,9 +45,10 @@ function GuideCard({ guide }: { guide: Guide }) {
 }
 
 async function MarketingHome() {
-  const [topGuides, stats] = await Promise.all([
+  const [topGuides, stats, upcomingFixtures] = await Promise.all([
     getTopGuides(),
     getHomepageStats(),
+    getUpcomingFixtures({ limit: 5 }),
   ]);
 
   const homepageStats = [
@@ -80,6 +83,8 @@ async function MarketingHome() {
           </div>
         </div>
       </section>
+
+      <HomeUpcomingEvents fixtures={upcomingFixtures} />
 
       <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">

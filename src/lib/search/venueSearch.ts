@@ -2,8 +2,8 @@ import {
   CITY_DIRECTORY,
   SEARCH_SPORTS,
   type IntentMode,
-} from "@/data/cities";
-import { toSlug } from "@/data/suburbs";
+} from "../../data/cities.ts";
+import { toSlug } from "../../data/suburbs.ts";
 
 export type VenueSearchIntent = IntentMode;
 

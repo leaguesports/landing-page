@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NotificationCenter from "@/components/NotificationCenter";
+import UserMenu from "@/components/UserMenu";
 
 export default function Navigation() {
   return (
@@ -18,6 +19,7 @@ export default function Navigation() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <NotificationCenter />
+            <UserMenu />
           </div>
         </nav>
       </div>

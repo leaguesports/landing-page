@@ -19,6 +19,12 @@ import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 type FriendsPanelProps = {
   initial: FriendsSnapshot;
+  /** Override outer spacing — use when the panel sits in its own hub tab. */
+  className?: string;
+  /** When false, skip the panel eyebrow (parent already titled the section). */
+  showHeading?: boolean;
+  /** Live incoming-request count for hub tab badges while this panel stays mounted. */
+  onIncomingCountChange?: (count: number) => void;
 };
 
 function FriendAvatar({
@@ -47,7 +53,12 @@ function FriendAvatar({
   );
 }
 
-export function FriendsPanel({ initial }: FriendsPanelProps) {
+export function FriendsPanel({
+  initial,
+  className = "mt-8",
+  showHeading = true,
+  onIncomingCountChange,
+}: FriendsPanelProps) {
   const [friends, setFriends] = useState<Friend[]>(initial.friends);
   const [incoming, setIncoming] = useState<FriendRequest[]>(initial.incoming);
   const [outgoing, setOutgoing] = useState<FriendRequest[]>(initial.outgoing);
@@ -69,6 +80,10 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
       window.removeEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
     };
   }, []);
+
+  useEffect(() => {
+    onIncomingCountChange?.(incoming.length);
+  }, [incoming.length, onIncomingCountChange]);
 
   function clearFeedback() {
     setMessage(null);
@@ -159,13 +174,15 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
     friends.length === 0 && incoming.length === 0 && outgoing.length === 0;
 
   return (
-    <div className="mt-8">
-      <div className="mb-3 flex items-center gap-2">
-        <Users className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-          Friends
-        </p>
-      </div>
+    <div className={className}>
+      {showHeading ? (
+        <div className="mb-3 flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Friends
+          </p>
+        </div>
+      ) : null}
 
       <form
         onSubmit={onAdd}
