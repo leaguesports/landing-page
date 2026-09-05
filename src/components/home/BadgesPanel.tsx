@@ -14,6 +14,8 @@ type BadgesPanelProps = {
   padelStats: PlayerHistoryStats;
   golfLocked: number;
   friendCount: number;
+  /** Override outer spacing — use when the panel sits in its own hub tab. */
+  className?: string;
 };
 
 export function BadgesPanel({
@@ -21,6 +23,7 @@ export function BadgesPanel({
   padelStats,
   golfLocked,
   friendCount,
+  className = "mt-6",
 }: BadgesPanelProps) {
   const [shared, setShared] = useState(false);
 
@@ -56,7 +59,7 @@ export function BadgesPanel({
   const earnedCount = earnedIds.length;
 
   return (
-    <div className="mt-6">
+    <div className={className}>
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">

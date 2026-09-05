@@ -5,6 +5,8 @@ type PadelProgressSummaryProps = {
   stats: PlayerHistoryStats;
   /** Compact strip for history page; full block for hub. */
   variant?: "hub" | "strip";
+  /** Drop the default hub top margin when the parent already spaces the block. */
+  flush?: boolean;
 };
 
 function FormPills({ recentForm }: { recentForm: PlayerHistoryStats["recentForm"] }) {
@@ -40,15 +42,18 @@ function FormPills({ recentForm }: { recentForm: PlayerHistoryStats["recentForm"
 export function PadelProgressSummary({
   stats,
   variant = "hub",
+  flush = false,
 }: PadelProgressSummaryProps) {
   if (stats.locked === 0) {
     return (
       <div
-        className={
-          variant === "hub"
-            ? "mt-6 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6"
-            : "rounded-3xl border border-white/8 bg-[#141814] px-5 py-5"
-        }
+        className={[
+          !flush && variant === "hub" ? "mt-6" : "",
+          "rounded-3xl border border-white/8 bg-[#141814]",
+          variant === "hub" ? "px-5 py-6" : "px-5 py-5",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
           Progress
@@ -78,7 +83,14 @@ export function PadelProgressSummary({
   ];
 
   return (
-    <div className={variant === "hub" ? "mt-6 space-y-4" : "space-y-4"}>
+    <div
+      className={[
+        !flush && variant === "hub" ? "mt-6" : "",
+        "space-y-4",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
