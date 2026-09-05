@@ -2,15 +2,20 @@
 
 import {
   acceptFriend,
+  listFriends,
   removeFriend,
   requestFriend,
   type Friend,
   type FriendRequest,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
+import {
+  dispatchFriendsChanged,
+  FRIENDS_CHANGED_EVENT,
+} from "@/lib/notifications/notifications";
 import { UserPlus, Users, X } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 type FriendsPanelProps = {
   initial: FriendsSnapshot;
@@ -51,6 +56,20 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  useEffect(() => {
+    function onFriendsChanged() {
+      void listFriends().then((snapshot) => {
+        setFriends(snapshot.friends);
+        setIncoming(snapshot.incoming);
+        setOutgoing(snapshot.outgoing);
+      });
+    }
+    window.addEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
+    return () => {
+      window.removeEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
+    };
+  }, []);
+
   function clearFeedback() {
     setMessage(null);
     setError(null);
@@ -85,6 +104,7 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
             prev.filter((item) => item.user.id !== result.friend.id),
           );
           setMessage(`You’re now friends with @${result.friend.handle}`);
+          dispatchFriendsChanged();
           return;
         }
         setOutgoing((prev) =>
@@ -93,6 +113,7 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
             : [result.request, ...prev],
         );
         setMessage(`Request sent to @${result.request.user.handle}`);
+        dispatchFriendsChanged();
       });
     });
   }
@@ -112,6 +133,7 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
             : [result.friend, ...prev],
         );
         setMessage(`You’re now friends with @${result.friend.handle}`);
+        dispatchFriendsChanged();
       });
     });
   }
@@ -128,6 +150,7 @@ export function FriendsPanel({ initial }: FriendsPanelProps) {
         setIncoming((prev) => prev.filter((item) => item.user.id !== userId));
         setOutgoing((prev) => prev.filter((item) => item.user.id !== userId));
         setMessage(label);
+        dispatchFriendsChanged();
       });
     });
   }
