@@ -17,6 +17,8 @@ export type GolfCourseHole = {
   number: number;
   par: number;
   strokeIndex: number;
+  /** Tee distance in meters when known from CMS (used by shot planner). */
+  meters?: number | null;
 };
 
 export type GolfCourseSnapshot = {

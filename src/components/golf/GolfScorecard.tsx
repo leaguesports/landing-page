@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ShotSimulator } from "@/components/golf/ShotSimulator";
 import { lockGolfRound } from "@/lib/golf/api-round";
 import {
   clearGolfRoundLocal,
@@ -26,6 +27,8 @@ import type {
 type GolfScorecardProps = {
   initialRound: GolfRound;
 };
+
+type PlayTab = "score" | "shot";
 
 function layoutLabel(round: GolfRound): string {
   if (round.holesPlayed === 18) return "18 holes";
@@ -54,6 +57,7 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
 
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
+  const [tab, setTab] = useState<PlayTab>("score");
 
   const hole = holes[currentHoleIndex] ?? null;
   const canLock = !locked && allHolesScored(round.players, strokes, holes);
@@ -169,9 +173,71 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
         <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
           {locked ? "Result locked" : layoutLabel(round)}
         </p>
+        <div
+          className="mx-auto mt-4 flex w-full max-w-sm rounded-full border border-white/10 bg-white/5 p-1"
+          role="tablist"
+          aria-label="Golf play views"
+        >
+          {(
+            [
+              { id: "score", label: "Score" },
+              { id: "shot", label: "Shot plan" },
+            ] as const
+          ).map((item) => {
+            const active = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item.id)}
+                className={[
+                  "flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-emerald-400 text-zinc-950"
+                    : "text-zinc-400 hover:text-white",
+                ].join(" ")}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {hole ? (
+      {hole && tab === "shot" ? (
+        <div className="flex flex-1 flex-col px-4 py-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              disabled={currentHoleIndex <= 0}
+              onClick={() => setCurrentHoleIndex((i) => Math.max(0, i - 1))}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
+              aria-label="Previous hole"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden />
+            </button>
+            <p className="text-center text-xs uppercase tracking-[0.14em] text-zinc-500">
+              Hole {currentHoleIndex + 1} of {holes.length}
+            </p>
+            <button
+              type="button"
+              disabled={currentHoleIndex >= holes.length - 1}
+              onClick={() =>
+                setCurrentHoleIndex((i) => Math.min(holes.length - 1, i + 1))
+              }
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
+              aria-label="Next hole"
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+          <ShotSimulator key={hole.number} hole={hole} />
+        </div>
+      ) : null}
+
+      {hole && tab === "score" ? (
         <div className="flex flex-1 flex-col px-4 py-6">
           <div className="flex items-center justify-between gap-3">
             <button
@@ -189,6 +255,7 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
               </p>
               <p className="mt-1 text-sm text-zinc-400">
                 Par {hole.par} · SI {hole.strokeIndex}
+                {typeof hole.meters === "number" ? ` · ${hole.meters}m` : ""}
               </p>
               <p className="mt-0.5 text-[11px] text-zinc-600">
                 Hole {currentHoleIndex + 1} of {holes.length}

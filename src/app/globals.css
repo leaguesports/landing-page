@@ -297,3 +297,43 @@ button {
   mix-blend-mode: overlay;
   opacity: 0.35;
 }
+
+@keyframes shot-target-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes shot-path-draw {
+  from {
+    stroke-dashoffset: 48;
+    opacity: 0.35;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0.85;
+  }
+}
+
+.shot-target-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: shot-target-pulse 2.4s ease-in-out infinite;
+}
+
+.shot-path-draw {
+  animation: shot-path-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot-target-pulse,
+  .shot-path-draw {
+    animation: none !important;
+  }
+}

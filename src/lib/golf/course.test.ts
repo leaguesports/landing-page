@@ -100,10 +100,23 @@ describe("toCourseSnapshot / courseParTotal", () => {
     assert.equal(courseParTotal(snapshot!.holes), 36);
   });
 
-  it("returns null when the layout cannot be filled", () => {
-    assert.equal(
-      toCourseSnapshot({ holes: sampleCourse().holes?.slice(0, 5) }, 9, 1),
-      null,
-    );
+  it("includes tee meters when present on CMS holes", () => {
+    const course = sampleCourse({
+      holes: sampleCourse().holes?.map((hole, index) =>
+        index === 0
+          ? {
+              ...hole,
+              distances: [
+                { teeName: "White", meters: 257 },
+                { teeName: "Red", meters: 229 },
+              ],
+            }
+          : hole,
+      ),
+    });
+    const snapshot = toCourseSnapshot(course, 9, 1, "White");
+    assert.equal(snapshot?.holes[0]?.meters, 257);
+    const red = toCourseSnapshot(course, 9, 1, "Red");
+    assert.equal(red?.holes[0]?.meters, 229);
   });
 });

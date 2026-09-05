@@ -63,10 +63,12 @@ export function selectHoles(
   const byNumber = new Map<number, GolfCourseHole>();
   for (const hole of course.holes) {
     if (!isPlayableHole(hole)) continue;
+    const meters = pickHoleMeters(hole, undefined);
     byNumber.set(hole.number, {
       number: hole.number,
       par: hole.par,
       strokeIndex: hole.strokeIndex,
+      ...(meters != null ? { meters } : {}),
     });
   }
 
@@ -83,13 +85,43 @@ export function courseParTotal(holes: GolfCourseHole[]): number {
   return holes.reduce((sum, hole) => sum + hole.par, 0);
 }
 
+/**
+ * Prefer the named tee distance, else the first positive meters entry.
+ */
+export function pickHoleMeters(
+  hole: Pick<GolfCourseCmsHole, "distances"> | null | undefined,
+  teeName?: string | null,
+): number | null {
+  const distances = hole?.distances;
+  if (!distances?.length) return null;
+  const wanted = teeName?.trim().toLowerCase();
+  if (wanted) {
+    const match = distances.find(
+      (d) =>
+        d.teeName?.trim().toLowerCase() === wanted &&
+        typeof d.meters === "number" &&
+        d.meters > 0,
+    );
+    if (match) return match.meters;
+  }
+  const first = distances.find(
+    (d) => typeof d.meters === "number" && d.meters > 0,
+  );
+  return first?.meters ?? null;
+}
+
 /** Snapshot sent to POST /api/golf-rounds. */
 export function toCourseSnapshot(
   course: GolfCourseCms | null | undefined,
   holesPlayed: GolfHolesPlayed,
   startingHole = 1,
+  teeName?: string | null,
 ): GolfCourseSnapshot | null {
-  const holes = selectHoles(course, holesPlayed, startingHole);
+  const holes = selectHoles(course, holesPlayed, startingHole).map((hole) => {
+    const cms = course?.holes?.find((h) => h.number === hole.number);
+    const meters = pickHoleMeters(cms, teeName) ?? hole.meters ?? null;
+    return meters != null ? { ...hole, meters } : hole;
+  });
   if (holes.length !== holesPlayed) return null;
   const name = course?.courseName?.trim() || null;
   return { name, holes };
