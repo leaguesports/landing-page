@@ -93,6 +93,22 @@ describe("fixtureSlugFromTitle + normalizeFixtureKey", () => {
       ),
     );
   });
+
+  it("aligns key and slug so punctuation variants merge onto one URL", () => {
+    const startsAt = "2026-09-06T16:00:00.000Z";
+    assert.equal(
+      normalizeFixtureKey("Springboks vs All Blacks", startsAt),
+      normalizeFixtureKey("Springboks vs All-Blacks", startsAt),
+    );
+    assert.equal(
+      fixtureSlugFromTitle("Springboks vs All Blacks", startsAt),
+      fixtureSlugFromTitle("Springboks vs All-Blacks", startsAt),
+    );
+    assert.equal(
+      fixtureSlugFromTitle("Springboks vs All-Blacks", startsAt),
+      "springboks-vs-all-blacks-2026-09-06",
+    );
+  });
 });
 
 describe("parseFixtureSlug", () => {
@@ -177,6 +193,41 @@ describe("groupScreeningsIntoFixtures", () => {
       "springboks-vs-all-blacks-2026-09-06",
       "springboks-vs-all-blacks-2026-09-13",
     ]);
+  });
+
+  it("merges punctuation variants of the same kickoff onto one slug", () => {
+    const fixtures = groupScreeningsIntoFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All Blacks",
+              startsAt: "2026-09-06T16:00:00.000Z",
+            },
+          ],
+        },
+        {
+          name: "Fan Zone CPT",
+          slug: "fan-zone-cpt",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All-Blacks",
+              startsAt: "2026-09-06T16:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+      { now },
+    );
+
+    assert.equal(fixtures.length, 1);
+    assert.equal(fixtures[0]?.slug, "springboks-vs-all-blacks-2026-09-06");
+    assert.equal(fixtures[0]?.venues.length, 2);
   });
 
   it("drops screenings that already kicked off", () => {

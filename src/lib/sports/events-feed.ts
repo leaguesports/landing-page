@@ -156,20 +156,30 @@ function asIso(value: unknown): string | null {
   return parsed.toISOString();
 }
 
-function slugifyTitle(title: string): string {
-  const slug = title
+/**
+ * Shared title canonicalization for merge keys and URL slugs.
+ * Punctuation variants ("All Blacks" vs "All-Blacks") collapse to one token
+ * so they cannot fork into two feed rows that share one /events/[slug].
+ */
+export function canonicalizeFixtureTitle(title: string): string {
+  return title
     .trim()
     .toLowerCase()
     .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function slugifyTitle(title: string): string {
+  const slug = canonicalizeFixtureTitle(title).replace(/\s+/g, "-").slice(0, 64);
   return slug || "fixture";
 }
 
 /**
  * URL slug from title + SA calendar day when kickoff is known.
- * Same inputs → same slug for screenings and CMS rows that merge.
+ * Same canonical title (+ day) as normalizeFixtureKey — key and slug stay aligned.
  */
 export function fixtureSlugFromTitle(
   title: string,
@@ -180,16 +190,12 @@ export function fixtureSlugFromTitle(
   return day ? `${base}-${day}` : base;
 }
 
-/** Grouping key: normalized title + SA calendar day (when known). */
+/** Grouping key: same canonical title as the slug + SA calendar day (when known). */
 export function normalizeFixtureKey(
   title: string,
   startsAt: string | null = null,
 ): string {
-  const titleKey = title
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[’']/g, "'");
+  const titleKey = canonicalizeFixtureTitle(title);
   const day = fixtureCalendarDay(startsAt);
   return day ? `${titleKey}|${day}` : titleKey;
 }
