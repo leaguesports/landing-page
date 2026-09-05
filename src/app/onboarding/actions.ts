@@ -1,14 +1,20 @@
 "use server";
 
-import { searchVenues, type VenueDetail } from "@/services/venues";
+import {
+  ONBOARDING_VENUE_RESULT_LIMIT,
+  onboardingVenueMatchTerm,
+  rankOnboardingVenues,
+  type OnboardingVenueOption,
+} from "@/lib/onboarding/venue-search";
+import { sanityClient } from "@/sanity/client";
+import {
+  mapVenueRow,
+  VENUE_PROJECTION,
+  type VenueDetail,
+  type VenueRow,
+} from "@/services/venueQuery";
 
-export type OnboardingVenueOption = {
-  cmsId: string;
-  name: string;
-  slug: string;
-  city: string | null;
-  sports: string[];
-};
+export type { OnboardingVenueOption };
 
 function toOption(venue: VenueDetail): OnboardingVenueOption | null {
   const cmsId = venue._id?.trim();
@@ -19,10 +25,10 @@ function toOption(venue: VenueDetail): OnboardingVenueOption | null {
   const sports = [
     ...(venue.sports ?? [])
       .map((sport) => sport.slug)
-      .filter((slug): slug is string => !!slug),
+      .filter((value): value is string => !!value),
     ...(venue.broadcasts ?? [])
       .map((sport) => sport.slug)
-      .filter((slug): slug is string => !!slug),
+      .filter((value): value is string => !!value),
   ];
 
   return {
@@ -34,37 +40,40 @@ function toOption(venue: VenueDetail): OnboardingVenueOption | null {
   };
 }
 
-export async function lookupOnboardingVenues(
-  sportSlugs: string[],
+/**
+ * Free-text venue lookup for onboarding. Matches name, city, suburb, or slug.
+ * When `sportSlugs` are provided, matching venues are ranked first.
+ */
+export async function searchOnboardingVenues(
+  query: string,
+  sportSlugs: string[] = [],
 ): Promise<OnboardingVenueOption[]> {
-  const slugs = [
-    ...new Set(
-      sportSlugs
-        .map((slug) => slug.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  ].slice(0, 8);
+  const matchTerm = onboardingVenueMatchTerm(query);
+  if (!matchTerm) return [];
 
-  if (slugs.length === 0) {
-    const venues = await searchVenues({});
-    return venues
-      .map(toOption)
-      .filter((item): item is OnboardingVenueOption => !!item)
-      .slice(0, 24);
-  }
-
-  const batches = await Promise.all(
-    slugs.map((sportSlug) => searchVenues({ sportSlug })),
+  const rows = await sanityClient.fetch<VenueRow[]>(
+    `*[
+      _type == "venue"
+      && (
+        name match $term
+        || address.city->title match $term
+        || address.suburb->title match $term
+        || slug.current match $term
+      )
+    ] | order(name asc) [0...36] {
+      ${VENUE_PROJECTION}
+    }`,
+    { term: matchTerm },
   );
 
-  const byCmsId = new Map<string, OnboardingVenueOption>();
-  for (const venues of batches) {
-    for (const venue of venues) {
-      const option = toOption(venue);
-      if (!option || byCmsId.has(option.cmsId)) continue;
-      byCmsId.set(option.cmsId, option);
-    }
-  }
+  const options = rows
+    .map(mapVenueRow)
+    .filter((venue): venue is VenueDetail => venue !== null)
+    .map(toOption)
+    .filter((item): item is OnboardingVenueOption => !!item);
 
-  return [...byCmsId.values()].slice(0, 36);
+  return rankOnboardingVenues(options, sportSlugs).slice(
+    0,
+    ONBOARDING_VENUE_RESULT_LIMIT,
+  );
 }

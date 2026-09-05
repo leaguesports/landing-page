@@ -32,16 +32,13 @@ export default async function PadelHistoryPage({ searchParams }: PageProps) {
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 px-4 py-3 sm:px-6">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+        <div className="mx-auto flex max-w-2xl items-center">
           <Link
             href="/padel/new"
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
             ← New match
           </Link>
-          <span className="font-display text-lg tracking-wide text-white">
-            LEAGUE<span className="text-[var(--color-brand)]">SPORTS</span>
-          </span>
         </div>
       </div>
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-10 sm:px-6">

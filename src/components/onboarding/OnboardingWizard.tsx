@@ -1,10 +1,7 @@
 "use client";
 
 import { SportIcon } from "@/components/icons/sports";
-import {
-  lookupOnboardingVenues,
-  type OnboardingVenueOption,
-} from "@/app/onboarding/actions";
+import { searchOnboardingVenues } from "@/app/onboarding/actions";
 import {
   requestFriend,
   type FriendUser,
@@ -13,6 +10,10 @@ import {
   searchUsers,
   type UserSearchResult,
 } from "@/lib/friends/search";
+import {
+  ONBOARDING_VENUE_QUERY_MIN,
+  type OnboardingVenueOption,
+} from "@/lib/onboarding/venue-search";
 import { updatePreferences } from "@/lib/preferences/preferences";
 import { SPORT_CATALOG, type SportDefinition } from "@/lib/sports/catalog";
 import { followVenue } from "@/lib/venues/follow";
@@ -25,6 +26,7 @@ import {
   SkipForward,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -46,7 +48,7 @@ const STEPS: { id: Step; title: string; blurb: string }[] = [
   {
     id: "venues",
     title: "Favourite venues",
-    blurb: "Follow courts, clubs, and watch spots so they surface first.",
+    blurb: "Search for courts, clubs, and watch spots so they surface first.",
   },
   {
     id: "friends",
@@ -70,10 +72,12 @@ export function OnboardingWizard({
   const [selectedVenues, setSelectedVenues] = useState<OnboardingVenueOption[]>(
     [],
   );
-  const [venues, setVenues] = useState<OnboardingVenueOption[]>([]);
-  const [venuesLoading, setVenuesLoading] = useState(false);
+  const [venueQuery, setVenueQuery] = useState("");
+  const deferredVenueQuery = useDeferredValue(venueQuery.trim());
+  const [venueResults, setVenueResults] = useState<OnboardingVenueOption[]>([]);
+  const [venueSearchPending, setVenueSearchPending] = useState(false);
   const [friendQuery, setFriendQuery] = useState("");
-  const deferredQuery = useDeferredValue(friendQuery.trim());
+  const deferredFriendQuery = useDeferredValue(friendQuery.trim());
   const [friendResults, setFriendResults] = useState<UserSearchResult[]>([]);
   const [friendSearchPending, setFriendSearchPending] = useState(false);
   const [requestedIds, setRequestedIds] = useState<string[]>([]);
@@ -86,26 +90,40 @@ export function OnboardingWizard({
 
   useEffect(() => {
     if (step !== "venues") return;
+    if (deferredVenueQuery.length < ONBOARDING_VENUE_QUERY_MIN) {
+      setVenueResults([]);
+      setVenueSearchPending(false);
+      return;
+    }
+
     let cancelled = false;
-    setVenuesLoading(true);
-    void lookupOnboardingVenues(selectedSports)
-      .then((next) => {
-        if (!cancelled) setVenues(next);
-      })
-      .catch(() => {
-        if (!cancelled) setVenues([]);
-      })
-      .finally(() => {
-        if (!cancelled) setVenuesLoading(false);
-      });
+    setVenueSearchPending(true);
+    const handle = window.setTimeout(() => {
+      void searchOnboardingVenues(deferredVenueQuery, selectedSports)
+        .then((next) => {
+          if (cancelled) return;
+          setVenueResults(next);
+          setError(null);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setVenueResults([]);
+          setError("Couldn’t search venues right now. Try again.");
+        })
+        .finally(() => {
+          if (!cancelled) setVenueSearchPending(false);
+        });
+    }, 250);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(handle);
     };
-  }, [selectedSports, step]);
+  }, [deferredVenueQuery, selectedSports, step]);
 
   useEffect(() => {
     if (step !== "friends") return;
-    if (deferredQuery.length < 2) {
+    if (deferredFriendQuery.length < 2) {
       setFriendResults([]);
       setFriendSearchPending(false);
       return;
@@ -114,7 +132,7 @@ export function OnboardingWizard({
     let cancelled = false;
     setFriendSearchPending(true);
     const handle = window.setTimeout(() => {
-      void searchUsers(deferredQuery, 8).then((result) => {
+      void searchUsers(deferredFriendQuery, 8).then((result) => {
         if (cancelled) return;
         setFriendSearchPending(false);
         if (result.ok) {
@@ -131,7 +149,7 @@ export function OnboardingWizard({
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [deferredQuery, step]);
+  }, [deferredFriendQuery, step]);
 
   function toggleSport(slug: string) {
     setSelectedSports((current) =>
@@ -216,7 +234,7 @@ export function OnboardingWizard({
     });
   }
 
-  function onFriendSearchSubmit(event: FormEvent) {
+  function onSearchSubmit(event: FormEvent) {
     event.preventDefault();
   }
 
@@ -299,56 +317,102 @@ export function OnboardingWizard({
         ) : null}
 
         {step === "venues" ? (
-          <div className="mt-6 space-y-3">
-            {venuesLoading ? (
-              <p className="flex items-center gap-2 text-sm text-zinc-400">
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                Finding venues for your sports…
-              </p>
-            ) : venues.length === 0 ? (
-              <p className="text-sm text-zinc-400">
-                No venues matched yet — you can follow venues later from the
-                directory.
-              </p>
-            ) : (
-              venues.map((venue) => {
-                const selected = selectedVenues.some(
-                  (item) => item.cmsId === venue.cmsId,
-                );
-                return (
+          <div className="mt-6 space-y-4">
+            <form onSubmit={onSearchSubmit} className="relative">
+              <label className="sr-only" htmlFor="onboarding-venue-search">
+                Search venues
+              </label>
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                id="onboarding-venue-search"
+                value={venueQuery}
+                onChange={(event) => setVenueQuery(event.target.value)}
+                placeholder="Search by venue name or suburb"
+                autoComplete="off"
+                className="min-h-12 w-full rounded-full border border-white/10 bg-black/20 py-3 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--color-brand)]/50 focus:outline-none"
+              />
+            </form>
+
+            {selectedVenues.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {selectedVenues.map((venue) => (
                   <button
                     key={venue.cmsId}
                     type="button"
                     onClick={() => toggleVenue(venue)}
-                    className={[
-                      "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
-                      selected
-                        ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/10"
-                        : "border-white/8 bg-white/3 hover:border-white/16",
-                    ].join(" ")}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--color-brand)]/40 bg-[var(--color-brand)]/10 px-3 text-xs font-medium text-emerald-100 transition-colors hover:border-[var(--color-brand)]/60"
                   >
-                    <span>
-                      <span className="block text-sm font-medium text-white">
-                        {venue.name}
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
-                        <MapPin className="h-3 w-3" />
-                        {venue.city ?? "South Africa"}
-                      </span>
-                    </span>
-                    {selected ? (
-                      <Check className="h-4 w-4 text-[var(--color-brand)]" />
-                    ) : null}
+                    {venue.name}
+                    <X className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                    <span className="sr-only">Remove {venue.name}</span>
                   </button>
+                ))}
+              </div>
+            ) : null}
+
+            {venueSearchPending ? (
+              <p className="flex items-center gap-2 text-sm text-zinc-400">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Searching venues…
+              </p>
+            ) : null}
+
+            {!venueSearchPending &&
+            deferredVenueQuery.length < ONBOARDING_VENUE_QUERY_MIN ? (
+              <p className="text-sm text-zinc-400">
+                Type at least {ONBOARDING_VENUE_QUERY_MIN} characters to find a
+                venue — you can always follow more later from the directory.
+              </p>
+            ) : null}
+
+            {!venueSearchPending &&
+            deferredVenueQuery.length >= ONBOARDING_VENUE_QUERY_MIN &&
+            venueResults.length === 0 ? (
+              <p className="text-sm text-zinc-400">
+                No venues matched. Try another name or suburb.
+              </p>
+            ) : null}
+
+            <ul className="space-y-2">
+              {venueResults.map((venue) => {
+                const selected = selectedVenues.some(
+                  (item) => item.cmsId === venue.cmsId,
                 );
-              })
-            )}
+                return (
+                  <li key={venue.cmsId}>
+                    <button
+                      type="button"
+                      onClick={() => toggleVenue(venue)}
+                      className={[
+                        "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
+                        selected
+                          ? "border-[var(--color-brand)]/50 bg-[var(--color-brand)]/10"
+                          : "border-white/8 bg-white/3 hover:border-white/16",
+                      ].join(" ")}
+                    >
+                      <span>
+                        <span className="block text-sm font-medium text-white">
+                          {venue.name}
+                        </span>
+                        <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
+                          <MapPin className="h-3 w-3" />
+                          {venue.city ?? "South Africa"}
+                        </span>
+                      </span>
+                      {selected ? (
+                        <Check className="h-4 w-4 text-[var(--color-brand)]" />
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         ) : null}
 
         {step === "friends" ? (
           <div className="mt-6 space-y-4">
-            <form onSubmit={onFriendSearchSubmit} className="relative">
+            <form onSubmit={onSearchSubmit} className="relative">
               <label className="sr-only" htmlFor="onboarding-friend-search">
                 Search friends
               </label>
@@ -370,7 +434,7 @@ export function OnboardingWizard({
             ) : null}
 
             {!friendSearchPending &&
-            deferredQuery.length >= 2 &&
+            deferredFriendQuery.length >= 2 &&
             friendResults.length === 0 ? (
               <p className="text-sm text-zinc-400">
                 No players matched. Try another handle — friends can always be
