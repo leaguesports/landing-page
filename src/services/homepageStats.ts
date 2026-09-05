@@ -1,5 +1,3 @@
-import { sanityClient } from "@/sanity/client";
-
 export type HomepageStats = {
   watchVenues: number;
   playVenues: number;
@@ -66,6 +64,7 @@ export async function getHomepageStats(): Promise<HomepageStats> {
   if (!isSanityConfigured()) return { ...EMPTY_HOMEPAGE_STATS };
 
   try {
+    const { sanityClient } = await import("@/sanity/client");
     const row = await sanityClient.fetch<HomepageStatsRow>(HOMEPAGE_STATS_QUERY);
     return normalizeHomepageStats(row);
   } catch (error) {
