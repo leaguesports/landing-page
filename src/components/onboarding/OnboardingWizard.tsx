@@ -366,6 +366,7 @@ export function OnboardingWizard({
             ) : null}
 
             {!venueSearchPending &&
+            !error &&
             deferredVenueQuery.length >= ONBOARDING_VENUE_QUERY_MIN &&
             venueResults.length === 0 ? (
               <p className="text-sm text-zinc-400">
