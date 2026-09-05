@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { AppSessionProvider } from "@/components/providers/AppSessionProvider";
 import { Bebas_Neue, Outfit, Permanent_Marker } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
@@ -53,9 +54,11 @@ export default function RootLayout({
       className={`${permanentMarker.variable} ${bebas.variable} ${outfit.variable}`}
     >
       <body className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)] antialiased">
-        <Navigation />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AppSessionProvider>
+          <Navigation />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </AppSessionProvider>
       </body>
       {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>

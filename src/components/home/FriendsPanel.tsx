@@ -8,6 +8,11 @@ import {
   type FriendRequest,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
+import {
+  dispatchFriendsChanged,
+  FRIENDS_CHANGED_EVENT,
+  readFriendsChangedSnapshot,
+} from "@/lib/notifications/notifications";
 import { UserPlus, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition, type FormEvent } from "react";
@@ -63,12 +68,33 @@ export function FriendsPanel({
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    function onFriendsChanged(event: Event) {
+      const next = readFriendsChangedSnapshot(event);
+      if (!next) return;
+      setFriends(next.friends);
+      setIncoming(next.incoming);
+      setOutgoing(next.outgoing);
+    }
+    window.addEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
+    return () => {
+      window.removeEventListener(FRIENDS_CHANGED_EVENT, onFriendsChanged);
+    };
+  }, []);
+
+  useEffect(() => {
     onIncomingCountChange?.(incoming.length);
   }, [incoming.length, onIncomingCountChange]);
 
   function clearFeedback() {
     setMessage(null);
     setError(null);
+  }
+
+  function publish(next: FriendsSnapshot) {
+    setFriends(next.friends);
+    setIncoming(next.incoming);
+    setOutgoing(next.outgoing);
+    dispatchFriendsChanged(next);
   }
 
   function onAdd(event: FormEvent) {
@@ -88,25 +114,27 @@ export function FriendsPanel({
         }
         setHandle("");
         if (result.status === "accepted") {
-          setFriends((prev) =>
-            prev.some((f) => f.id === result.friend.id)
-              ? prev
-              : [result.friend, ...prev],
-          );
-          setIncoming((prev) =>
-            prev.filter((item) => item.user.id !== result.friend.id),
-          );
-          setOutgoing((prev) =>
-            prev.filter((item) => item.user.id !== result.friend.id),
-          );
+          publish({
+            friends: friends.some((f) => f.id === result.friend.id)
+              ? friends
+              : [result.friend, ...friends],
+            incoming: incoming.filter(
+              (item) => item.user.id !== result.friend.id,
+            ),
+            outgoing: outgoing.filter(
+              (item) => item.user.id !== result.friend.id,
+            ),
+          });
           setMessage(`You’re now friends with @${result.friend.handle}`);
           return;
         }
-        setOutgoing((prev) =>
-          prev.some((item) => item.id === result.request.id)
-            ? prev
-            : [result.request, ...prev],
-        );
+        publish({
+          friends,
+          incoming,
+          outgoing: outgoing.some((item) => item.id === result.request.id)
+            ? outgoing
+            : [result.request, ...outgoing],
+        });
         setMessage(`Request sent to @${result.request.user.handle}`);
       });
     });
@@ -120,12 +148,15 @@ export function FriendsPanel({
           setError(result.error);
           return;
         }
-        setIncoming((prev) => prev.filter((item) => item.id !== request.id));
-        setFriends((prev) =>
-          prev.some((f) => f.id === result.friend.id)
-            ? prev
-            : [result.friend, ...prev],
-        );
+        publish({
+          friends: friends.some((f) => f.id === result.friend.id)
+            ? friends
+            : [result.friend, ...friends],
+          incoming: incoming.filter((item) => item.id !== request.id),
+          outgoing: outgoing.filter(
+            (item) => item.user.id !== result.friend.id,
+          ),
+        });
         setMessage(`You’re now friends with @${result.friend.handle}`);
       });
     });
@@ -139,9 +170,11 @@ export function FriendsPanel({
           setError(result.error);
           return;
         }
-        setFriends((prev) => prev.filter((f) => f.id !== userId));
-        setIncoming((prev) => prev.filter((item) => item.user.id !== userId));
-        setOutgoing((prev) => prev.filter((item) => item.user.id !== userId));
+        publish({
+          friends: friends.filter((f) => f.id !== userId),
+          incoming: incoming.filter((item) => item.user.id !== userId),
+          outgoing: outgoing.filter((item) => item.user.id !== userId),
+        });
         setMessage(label);
       });
     });

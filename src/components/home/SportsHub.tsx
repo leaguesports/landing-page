@@ -3,6 +3,7 @@
 import { BadgesPanel } from "@/components/home/BadgesPanel";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
+import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import type { AuthUser } from "@/lib/api-client";
@@ -342,6 +343,7 @@ export function SportsHub({
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <FriendsSnapshotSeed snapshot={friends} />
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
