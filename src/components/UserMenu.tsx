@@ -93,7 +93,13 @@ export default function UserMenu() {
     return (
       <button
         type="button"
-        onClick={() => signIn(pathname || "/")}
+        onClick={() => {
+          // Capture path + search at click time so query-driven screens
+          // (e.g. /padel/new?venue=…) resume after OAuth. Avoid
+          // useSearchParams() here — UserMenu lives in the root layout.
+          const returnTo = `${window.location.pathname}${window.location.search}` || "/";
+          signIn(returnTo);
+        }}
         className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/12 bg-white/5 px-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-white hover:text-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
       >
         Sign in
