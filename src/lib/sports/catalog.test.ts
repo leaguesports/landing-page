@@ -22,6 +22,8 @@ describe("inferSportSlug", () => {
     assert.equal(inferSportSlug("Watch football tonight"), "soccer");
     assert.equal(inferSportSlug("Padel courts in Sandton"), "padel");
     assert.equal(inferSportSlug("Springbok rugby at the pub"), "rugby");
+    assert.equal(inferSportSlug("Go karting in Rosebank"), "karting");
+    assert.equal(inferSportSlug("Indoor go-karting tracks"), "karting");
   });
 
   it("returns null when no sport is mentioned", () => {
@@ -83,6 +85,26 @@ describe("utilities", () => {
     assert.equal(
       utilities.find((item) => item.kind === "scorecard")?.title,
       "Start a round",
+    );
+  });
+
+  it("focuses karting on finding a track, not motorsport calendar or padel", () => {
+    const karting = SPORT_CATALOG.find((sport) => sport.slug === "karting");
+    assert.ok(karting);
+    const utilities = utilitiesForSport(karting);
+    const hrefs = utilities.map((item) => item.href);
+    assert.ok(hrefs.includes("/venues?intent=play&sport=karting"));
+    assert.equal(
+      utilities.find((item) => item.kind === "play")?.title,
+      "Find a track",
+    );
+    assert.equal(
+      utilities.some((item) => item.href === "/padel/new"),
+      false,
+    );
+    assert.equal(
+      utilities.some((item) => item.href === "/motorsport/f1/calendar"),
+      false,
     );
   });
 

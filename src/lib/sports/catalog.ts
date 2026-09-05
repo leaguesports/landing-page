@@ -79,6 +79,12 @@ export const SPORT_CATALOG: SportDefinition[] = [
     noun: "court",
     capabilities: ["play"],
   },
+  {
+    slug: "karting",
+    name: "Karting",
+    noun: "track",
+    capabilities: ["play"],
+  },
 ];
 
 /** CMS series slugs (and common labels) → hub sport slug. */
@@ -94,6 +100,11 @@ export const SERIES_TO_SPORT: Record<string, string> = {
   "formula 2": "motorsport",
   football: "soccer",
   paddle: "padel",
+  "go-karting": "karting",
+  "go karting": "karting",
+  gokart: "karting",
+  "go-kart": "karting",
+  kart: "karting",
 };
 
 export function normalizeSportSlug(slug: string | null | undefined): string {

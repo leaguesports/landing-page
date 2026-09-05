@@ -37,6 +37,15 @@ describe("parseVenueSearch", () => {
     assert.equal(parsed.sportSlug, "soccer");
   });
 
+  it("maps go-karting aliases onto karting play search", () => {
+    const parsed = parseVenueSearch("Play go karting in Rosebank", "watch");
+    assert.equal(parsed.intent, "play");
+    assert.equal(parsed.sportSlug, "karting");
+    assert.equal(parsed.sportName, "Karting");
+    assert.equal(parsed.locationSlug, "rosebank");
+    assert.equal(parsed.citySlug, "johannesburg");
+  });
+
   it("builds a Sanity directory URL", () => {
     const parsed = parseVenueSearch("Watch soccer in Claremont", "watch");
     assert.equal(

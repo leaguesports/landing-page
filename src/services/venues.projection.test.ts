@@ -107,6 +107,8 @@ describe("sportSlugVariants", () => {
     assert.deepEqual(sportSlugVariants("soccer"), ["soccer", "football"]);
     assert.deepEqual(sportSlugVariants("football"), ["soccer", "football"]);
     assert.deepEqual(sportSlugVariants("padel"), ["padel", "paddle"]);
+    assert.deepEqual(sportSlugVariants("karting"), ["karting", "go-karting"]);
+    assert.deepEqual(sportSlugVariants("go-karting"), ["karting", "go-karting"]);
     assert.deepEqual(sportSlugVariants("rugby"), ["rugby"]);
   });
 });

@@ -16,6 +16,9 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Camps Bay", slug: "camps-bay" },
       { name: "Rondebosch", slug: "rondebosch" },
       { name: "Woodstock", slug: "woodstock" },
+      { name: "Century City", slug: "century-city" },
+      { name: "Table View", slug: "table-view" },
+      { name: "Bellville", slug: "bellville" },
     ],
   },
   {
@@ -29,6 +32,10 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Fourways", slug: "fourways" },
       { name: "Randburg", slug: "randburg" },
       { name: "Greenside", slug: "greenside" },
+      { name: "Cresta", slug: "cresta" },
+      { name: "Midrand", slug: "midrand" },
+      { name: "Edenvale", slug: "edenvale" },
+      { name: "Bedfordview", slug: "bedfordview" },
     ],
   },
   {
@@ -49,7 +56,13 @@ export const CITY_DIRECTORY: CityDirectory[] = [
       { name: "Hazelwood", slug: "hazelwood" },
       { name: "Brooklyn", slug: "brooklyn" },
       { name: "Centurion", slug: "centurion" },
+      { name: "Moreleta Park", slug: "moreleta-park" },
     ],
+  },
+  {
+    name: "Stellenbosch",
+    slug: "stellenbosch",
+    suburbs: [],
   },
 ];
 
@@ -73,6 +86,7 @@ export const SEARCH_SPORTS = [
   { name: "Cricket", slug: "cricket" },
   { name: "Tennis", slug: "tennis" },
   { name: "Squash", slug: "squash" },
+  { name: "Karting", slug: "karting" },
 ] as const;
 
 function buildSuggestions(): SearchSuggestion[] {
