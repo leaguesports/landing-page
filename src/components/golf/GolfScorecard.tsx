@@ -207,8 +207,8 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
       </div>
 
       {hole && tab === "shot" ? (
-        <div className="flex flex-1 flex-col px-4 py-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
             <button
               type="button"
               disabled={currentHoleIndex <= 0}
@@ -348,7 +348,11 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
       ) : null}
 
       <div className="safe-area-pb border-t border-white/8 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {locked ? (
+        {tab === "shot" ? (
+          <p className="text-center text-xs text-zinc-500">
+            Plan the hole, then switch back to Score to enter strokes.
+          </p>
+        ) : locked ? (
           <div className="space-y-3">
             <p className="text-center text-sm text-emerald-300">
               Round locked to history

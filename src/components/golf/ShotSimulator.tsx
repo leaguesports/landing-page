@@ -48,7 +48,7 @@ export function ShotSimulator({ hole }: ShotSimulatorProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-2xl border border-white/8 bg-[#0a120c]">
+      <div className="relative min-h-[min(62vh,560px)] flex-1 overflow-hidden rounded-2xl border border-white/8 bg-[#0a120c]">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{

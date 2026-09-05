@@ -213,6 +213,17 @@ export function HoleMap({
         strokeWidth={2}
       />
       <circle cx={layout.tee.x} cy={layout.tee.y} r={2.5} fill="#3dff8a" />
+      <text
+        x={layout.tee.x}
+        y={layout.tee.y - 12}
+        textAnchor="middle"
+        fill="#9ca89c"
+        fontSize={8}
+        fontFamily="var(--font-outfit), system-ui, sans-serif"
+        letterSpacing="0.08em"
+      >
+        TEE
+      </text>
 
       <g className="shot-target-pulse">
         <circle
@@ -274,11 +285,12 @@ export function HoleMap({
           rx={8}
           fill="#050705"
           fillOpacity={0.7}
+          stroke="rgba(61,255,138,0.25)"
         />
         <text
           textAnchor="middle"
           y={2.5}
-          fill="#9ca89c"
+          fill="#3dff8a"
           fontSize={9}
           fontFamily="var(--font-outfit), system-ui, sans-serif"
         >
