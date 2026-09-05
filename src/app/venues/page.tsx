@@ -8,6 +8,7 @@ import {
 import {
   hasActiveVenueFilters,
   parseVenueSearchParams,
+  venueDirectoryHref,
   venueResultCountLabel,
   venueSearchSummary,
 } from "@/lib/search/venueSearch";
@@ -55,22 +56,13 @@ export default async function VenuesPage({
   const filtered = hasActiveVenueFilters(filters);
   const heading = filtered ? venueSearchSummary(filters) : "Venues";
   const countLabel = venueResultCountLabel(venues.length);
-  const subtitle = filtered
-    ? countLabel
-    : "Filter by watch, play, sport, or area";
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
-      <header className="mx-auto max-w-7xl px-4 pt-8 pb-5 sm:px-6 sm:pt-10 lg:px-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-          Directory
-        </p>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-            {heading}
-          </h1>
-          <p className="text-sm text-zinc-500 sm:text-base">{subtitle}</p>
-        </div>
+      <header className="mx-auto max-w-7xl px-4 pt-5 pb-3 sm:px-6 sm:pt-6 lg:px-8">
+        <h1 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
+          {heading}
+        </h1>
       </header>
 
       <VenueDirectoryFilters
@@ -85,7 +77,7 @@ export default async function VenuesPage({
         locationLabel={filters.locationLabel}
       />
 
-      <section id="venues" className="scroll-mt-40 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <section id="venues" className="scroll-mt-40 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {venues.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
@@ -106,12 +98,38 @@ export default async function VenuesPage({
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
                 Try another sport or area, or browse the full directory.
               </p>
-              <Link
-                href="/venues"
-                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
-              >
-                Clear filters
-              </Link>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                {filters.intent === "play" ? (
+                  <Link
+                    href={venueDirectoryHref({
+                      intent: "watch",
+                      sport: filters.sportSlug,
+                      location: filters.locationSlug,
+                    })}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  >
+                    Try Watch instead
+                  </Link>
+                ) : null}
+                {filters.intent === "watch" ? (
+                  <Link
+                    href={venueDirectoryHref({
+                      intent: "play",
+                      sport: filters.sportSlug,
+                      location: filters.locationSlug,
+                    })}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  >
+                    Try Play instead
+                  </Link>
+                ) : null}
+                <Link
+                  href="/venues"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
+                >
+                  Clear filters
+                </Link>
+              </div>
             </div>
           )}
         </div>

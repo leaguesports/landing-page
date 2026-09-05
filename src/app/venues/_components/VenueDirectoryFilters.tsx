@@ -157,8 +157,8 @@ export function VenueDirectoryFilters({
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_14rem_14rem]">
-          <form onSubmit={onSearchSubmit} className="relative sm:col-span-2 lg:col-span-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_14rem]">
+          <form onSubmit={onSearchSubmit} className="relative col-span-2 lg:col-span-1">
             <Search
               className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
               aria-hidden
