@@ -6,13 +6,19 @@ import {
   type SportDefinition,
 } from "./catalog.ts";
 
+/** Kickoff calendar day for grouping/slugs — SA local date. */
+export const FIXTURE_TIMEZONE = "Africa/Johannesburg";
+
+/** Keep fixtures visible for a short window after kickoff. */
+export const UPCOMING_GRACE_MS = 6 * 60 * 60 * 1000;
+
 export type FixtureVenue = {
   name: string;
   slug: string;
 };
 
 export type UpcomingFixture = {
-  /** Stable slug for /events/[slug] */
+  /** Stable slug for /events/[slug] — title slug + SA calendar day when known. */
   slug: string;
   title: string;
   sportSlug: string | null;
@@ -40,16 +46,31 @@ export type EventsCmsEventRow = {
   track?: unknown;
 };
 
-/** Pull upcoming screenings across venues for the public events hub. */
-export const EVENTS_SCREENINGS_QUERY = `*[_type == "venue" && count(upcoming_screenings) > 0] | order(_updatedAt desc) [0...40] {
+/**
+ * Venues with upcoming screenings, ordered by kickoff — not document order.
+ * `$notBefore` is an ISO timestamp (now minus grace).
+ */
+export const EVENTS_SCREENINGS_QUERY = `*[
+  _type == "venue" &&
+  count(upcoming_screenings[defined(startsAt) && startsAt >= $notBefore]) > 0
+] | order(_updatedAt desc) [0...40] {
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  upcoming_screenings[0...16]{ title, startsAt }
+  "upcoming_screenings": upcoming_screenings[
+    defined(startsAt) && startsAt >= $notBefore
+  ] | order(startsAt asc) [0...16]{ title, startsAt }
 }`;
 
-/** CMS calendar events (F1 today; other series when editors add them). */
-export const EVENTS_CMS_QUERY = `*[_type == "event"] | order(coalesce(f1Details.dateTime, _createdAt) asc) [0...24] {
+/**
+ * Upcoming CMS events only (not the oldest historical slice).
+ * `$notBefore` is an ISO timestamp (now minus grace).
+ */
+export const EVENTS_CMS_QUERY = `*[
+  _type == "event" &&
+  defined(f1Details.dateTime) &&
+  f1Details.dateTime >= $notBefore
+] | order(f1Details.dateTime asc) [0...24] {
   "id": _id,
   title,
   "slug": slug.current,
@@ -57,6 +78,71 @@ export const EVENTS_CMS_QUERY = `*[_type == "event"] | order(coalesce(f1Details.
   "dateTime": f1Details.dateTime,
   "track": f1Details.track
 }`;
+
+/** Day-scoped venue screenings for /events/[slug] lookups. */
+export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
+  _type == "venue" &&
+  count(upcoming_screenings[
+    defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
+  ]) > 0
+] | order(_updatedAt desc) [0...40] {
+  name,
+  "slug": slug.current,
+  "broadcasts": broadcasts[]->{ name, "slug": slug.current },
+  "upcoming_screenings": upcoming_screenings[
+    defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
+  ] | order(startsAt asc) [0...16]{ title, startsAt }
+}`;
+
+/** Day-scoped CMS events for /events/[slug] lookups. */
+export const EVENTS_CMS_ON_DAY_QUERY = `*[
+  _type == "event" &&
+  defined(f1Details.dateTime) &&
+  f1Details.dateTime >= $dayStart &&
+  f1Details.dateTime < $dayEnd
+] | order(f1Details.dateTime asc) [0...24] {
+  "id": _id,
+  title,
+  "slug": slug.current,
+  series,
+  "dateTime": f1Details.dateTime,
+  "track": f1Details.track
+}`;
+
+export function upcomingNotBeforeIso(now: Date = new Date()): string {
+  return new Date(now.getTime() - UPCOMING_GRACE_MS).toISOString();
+}
+
+/**
+ * SA local calendar day (YYYY-MM-DD) for a kickoff instant.
+ * SAST is UTC+2 year-round.
+ */
+export function fixtureCalendarDay(
+  iso: string | null | undefined,
+): string | null {
+  if (!iso) return null;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: FIXTURE_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsed);
+}
+
+/** UTC bounds for a YYYY-MM-DD calendar day in Africa/Johannesburg. */
+export function saDayBounds(day: string): {
+  dayStart: string;
+  dayEnd: string;
+} {
+  const start = new Date(`${day}T00:00:00+02:00`);
+  if (Number.isNaN(start.getTime())) {
+    throw new Error(`Invalid SA calendar day: ${day}`);
+  }
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { dayStart: start.toISOString(), dayEnd: end.toISOString() };
+}
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -70,25 +156,55 @@ function asIso(value: unknown): string | null {
   return parsed.toISOString();
 }
 
-/** URL-safe slug from a fixture title (e.g. Springboks vs All Blacks). */
-export function fixtureSlugFromTitle(title: string): string {
+function slugifyTitle(title: string): string {
   const slug = title
     .trim()
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, 64);
   return slug || "fixture";
 }
 
-/** Collapse titles so venues listing the same kickoff merge. */
-export function normalizeFixtureKey(title: string): string {
-  return title
+/**
+ * URL slug from title + SA calendar day when kickoff is known.
+ * Same inputs → same slug for screenings and CMS rows that merge.
+ */
+export function fixtureSlugFromTitle(
+  title: string,
+  startsAt: string | null = null,
+): string {
+  const base = slugifyTitle(title);
+  const day = fixtureCalendarDay(startsAt);
+  return day ? `${base}-${day}` : base;
+}
+
+/** Grouping key: normalized title + SA calendar day (when known). */
+export function normalizeFixtureKey(
+  title: string,
+  startsAt: string | null = null,
+): string {
+  const titleKey = title
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/[’']/g, "'");
+  const day = fixtureCalendarDay(startsAt);
+  return day ? `${titleKey}|${day}` : titleKey;
+}
+
+/** Split `/events/[slug]` into title slug + optional YYYY-MM-DD suffix. */
+export function parseFixtureSlug(slug: string): {
+  baseSlug: string;
+  day: string | null;
+} {
+  const trimmed = slug.trim().toLowerCase();
+  const match = trimmed.match(/^(.*)-(\d{4}-\d{2}-\d{2})$/);
+  if (match?.[1] && match[2]) {
+    return { baseSlug: match[1], day: match[2] };
+  }
+  return { baseSlug: trimmed, day: null };
 }
 
 export function formatFixtureWhen(
@@ -105,11 +221,13 @@ export function formatFixtureWhen(
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: FIXTURE_TIMEZONE,
   });
   const date = parsed.toLocaleDateString("en-ZA", {
     weekday: "short",
     day: "numeric",
     month: "short",
+    timeZone: FIXTURE_TIMEZONE,
   });
 
   if (diffMs >= 0 && diffMs < dayMs) return `Today · ${time}`;
@@ -152,15 +270,9 @@ function toUpcoming(row: MutableFixture): UpcomingFixture {
   };
 }
 
-function pickEarlier(a: string | null, b: string | null): string | null {
-  if (!a) return b;
-  if (!b) return a;
-  return a <= b ? a : b;
-}
-
 /**
- * Group venue screenings by fixture title so “SA vs All Blacks” surfaces once
- * with every bar/fan zone screening it.
+ * Group venue screenings by title + SA calendar day so the same kickoff
+ * merges across bars, while recurring fixtures stay distinct.
  */
 export function groupScreeningsIntoFixtures(
   venues: EventsScreeningVenueRow[],
@@ -187,24 +299,30 @@ export function groupScreeningsIntoFixtures(
       if (
         !options.includePast &&
         startsAt &&
-        new Date(startsAt).getTime() < nowMs - 3 * 60 * 60 * 1000
+        new Date(startsAt).getTime() < nowMs - UPCOMING_GRACE_MS
       ) {
         continue;
       }
 
-      const key = normalizeFixtureKey(title);
+      const key = normalizeFixtureKey(title, startsAt);
       const sportSlug = inferSportSlug(title, sports) ?? broadcastSport;
       const existing = byKey.get(key);
       if (existing) {
         existing.venues.set(venueSlug, { name: venueName, slug: venueSlug });
-        existing.startsAt = pickEarlier(existing.startsAt, startsAt);
         existing.hasScreening = true;
         if (!existing.sportSlug && sportSlug) existing.sportSlug = sportSlug;
+        // Same calendar-day key — keep the shared kickoff (prefer earlier).
+        if (startsAt) {
+          if (!existing.startsAt || startsAt < existing.startsAt) {
+            existing.startsAt = startsAt;
+            existing.slug = fixtureSlugFromTitle(title, startsAt);
+          }
+        }
         continue;
       }
 
       byKey.set(key, {
-        slug: fixtureSlugFromTitle(title),
+        slug: fixtureSlugFromTitle(title, startsAt),
         title,
         sportSlug,
         startsAt,
@@ -238,7 +356,7 @@ export function cmsEventsToFixtures(
     if (
       !options.includePast &&
       startsAt &&
-      new Date(startsAt).getTime() < nowMs - 6 * 60 * 60 * 1000
+      new Date(startsAt).getTime() < nowMs - UPCOMING_GRACE_MS
     ) {
       continue;
     }
@@ -246,7 +364,8 @@ export function cmsEventsToFixtures(
     const sportSlug =
       resolveSportSlug(series, sports) ??
       inferSportSlug(`${series} ${title}`, sports);
-    const slug = eventSlug || fixtureSlugFromTitle(title);
+    // Slug from title+day so screenings of the same fixture merge on the same URL.
+    const slug = fixtureSlugFromTitle(title, startsAt);
 
     out.push({
       slug,
@@ -255,7 +374,7 @@ export function cmsEventsToFixtures(
       startsAt,
       venues: [],
       series: series || null,
-      eventPageHref: eventHref(series, eventSlug || slug),
+      eventPageHref: eventHref(series, eventSlug || slugifyTitle(title)),
       kind: "event",
     });
   }
@@ -265,8 +384,7 @@ export function cmsEventsToFixtures(
 
 /**
  * Merge screening-backed fixtures with CMS events.
- * Same normalized title → one row (venues + optional event page).
- * Prefer screening slug when both exist so /events/[slug] stays stable.
+ * Same title + SA calendar day → one row (venues + optional event page).
  */
 export function mergeUpcomingFixtures(
   screenings: UpcomingFixture[],
@@ -275,7 +393,7 @@ export function mergeUpcomingFixtures(
   const byKey = new Map<string, MutableFixture>();
 
   function upsert(item: UpcomingFixture, from: "screening" | "event") {
-    const key = normalizeFixtureKey(item.title);
+    const key = normalizeFixtureKey(item.title, item.startsAt);
     const existing = byKey.get(key);
     if (!existing) {
       byKey.set(key, {
@@ -295,7 +413,16 @@ export function mergeUpcomingFixtures(
     for (const venue of item.venues) {
       existing.venues.set(venue.slug, venue);
     }
-    existing.startsAt = pickEarlier(existing.startsAt, item.startsAt);
+    if (item.startsAt) {
+      if (!existing.startsAt || item.startsAt < existing.startsAt) {
+        existing.startsAt = item.startsAt;
+      }
+    }
+    // Keep title+day slug (both sides should already match).
+    existing.slug = fixtureSlugFromTitle(
+      existing.title || item.title,
+      existing.startsAt,
+    );
     if (!existing.sportSlug && item.sportSlug) {
       existing.sportSlug = item.sportSlug;
     }
@@ -307,8 +434,7 @@ export function mergeUpcomingFixtures(
       item.kind === "both"
     ) {
       existing.hasScreening = true;
-      existing.slug = item.slug || existing.slug;
-      existing.title = item.title || existing.title;
+      if (item.title) existing.title = item.title;
     }
     if (from === "event" || item.kind === "event" || item.kind === "both") {
       existing.hasEvent = true;
@@ -348,13 +474,17 @@ export function buildUpcomingFixtures(
   screeningVenues: EventsScreeningVenueRow[],
   cmsEvents: EventsCmsEventRow[],
   sports: SportDefinition[] = SPORT_CATALOG,
-  options: { now?: Date; limit?: number } = {},
+  options: { now?: Date; limit?: number; includePast?: boolean } = {},
 ): UpcomingFixture[] {
   const now = options.now ?? new Date();
   const screenings = groupScreeningsIntoFixtures(screeningVenues, sports, {
     now,
+    includePast: options.includePast,
   });
-  const events = cmsEventsToFixtures(cmsEvents, sports, { now });
+  const events = cmsEventsToFixtures(cmsEvents, sports, {
+    now,
+    includePast: options.includePast,
+  });
   const merged = mergeUpcomingFixtures(screenings, events);
   const sorted = sortUpcomingFixtures(merged, now);
   const limit = options.limit ?? 24;
