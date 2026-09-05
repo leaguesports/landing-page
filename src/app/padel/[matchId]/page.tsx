@@ -23,7 +23,7 @@ export default async function LivePadelMatchPage({ params }: PageProps) {
   const match = await lookupPadelMatch(matchId, { cookie });
 
   return (
-    <div className="min-h-dvh bg-[#050705]">
+    <div className="min-h-dvh bg-[#0c0f0c]">
       <PadelScorecardClientLoader matchId={matchId} initialMatch={match} />
     </div>
   );
