@@ -88,6 +88,10 @@ export async function generateIntentMetadata(
   const resolved = resolveIntentRoute(route);
   const siteUrl = getSiteBaseUrl();
 
+  if (resolved.kind === "not-found") {
+    return { title: "Not found", robots: { index: false, follow: false } };
+  }
+
   if (resolved.kind === "landing") {
     const title = intentLandingTitle(intent);
     const description = intentLandingDescription(intent);
@@ -108,7 +112,7 @@ export async function generateIntentMetadata(
     };
   }
 
-  const activity = await resolveActivityFromCms(resolved.activitySlug);
+  const activity = await resolveActivityFromCms(resolved.activitySlug, intent);
   if (!activity) {
     return { title: "Not found", robots: { index: false, follow: false } };
   }
@@ -224,6 +228,8 @@ export async function IntentSeoPage({
   const resolved = resolveIntentRoute(route);
   const siteUrl = getSiteBaseUrl();
 
+  if (resolved.kind === "not-found") notFound();
+
   if (resolved.kind === "landing") {
     const choices =
       intent === "watch"
@@ -284,7 +290,7 @@ export async function IntentSeoPage({
     );
   }
 
-  const activity = await resolveActivityFromCms(resolved.activitySlug);
+  const activity = await resolveActivityFromCms(resolved.activitySlug, intent);
   if (!activity) notFound();
 
   if (resolved.kind === "browse") {

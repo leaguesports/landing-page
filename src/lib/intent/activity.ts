@@ -3,6 +3,7 @@ import {
   SPORT_CATALOG,
   normalizeSportSlug,
 } from "../sports/catalog.ts";
+import type { IntentKind } from "./paths.ts";
 
 /** Local copy of sportSlugVariants so unit tests stay free of path aliases. */
 function sportSlugVariants(slug: string | null | undefined): string[] {
@@ -142,4 +143,26 @@ export function buildIntentActivity(input: {
     sportSlug: normalizeSportSlug(mappedSport) || slug,
     querySlugs: activityQuerySlugs(slug),
   };
+}
+
+/** True when slug is a catalog sport, series alias, or known series display key. */
+export function isAllowlistedActivitySlug(slug: string | null | undefined): boolean {
+  const normalized = normalizeSportSlug(slug);
+  if (!normalized) return false;
+  if (SPORT_CATALOG.some((sport) => sport.slug === normalized)) return true;
+  if (SERIES_TO_SPORT[normalized] || SERIES_TO_SPORT[slug ?? ""]) return true;
+  if (SERIES_DISPLAY[normalized]) return true;
+  return false;
+}
+
+/** Enforce catalog capabilities so play-only sports are not indexed under /watch. */
+export function activitySupportsIntent(
+  activity: IntentActivity,
+  intent: IntentKind,
+): boolean {
+  const catalog =
+    SPORT_CATALOG.find((sport) => sport.slug === activity.sportSlug) ??
+    SPORT_CATALOG.find((sport) => sport.slug === activity.slug);
+  if (!catalog) return true; // CMS-only sport/series not in the hub catalog yet.
+  return catalog.capabilities.includes(intent);
 }

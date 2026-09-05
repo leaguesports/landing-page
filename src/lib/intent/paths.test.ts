@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 import {
   activityDisplayName,
   activityQuerySlugs,
+  activitySupportsIntent,
   buildIntentActivity,
+  isAllowlistedActivitySlug,
 } from "./activity.ts";
 import {
   intentBrowseTitle,
@@ -68,6 +70,15 @@ describe("resolveIntentRoute", () => {
       locationSlug: "midrand",
     });
   });
+
+  it("rejects extra path segments", () => {
+    assert.deepEqual(resolveIntentRoute(["f1", "midrand", "extra"]), {
+      kind: "not-found",
+    });
+    assert.deepEqual(resolveIntentRoute(["padel", "fourways", "a", "b"]), {
+      kind: "not-found",
+    });
+  });
 });
 
 describe("activityQuerySlugs", () => {
@@ -76,6 +87,27 @@ describe("activityQuerySlugs", () => {
     assert.ok(activityQuerySlugs("premier-league").includes("soccer"));
     assert.ok(activityQuerySlugs("six-nations").includes("rugby"));
     assert.deepEqual(activityQuerySlugs("padel"), ["padel", "paddle"]);
+  });
+});
+
+
+describe("activity allowlist", () => {
+  it("allowlists catalog sports and series aliases only", () => {
+    assert.equal(isAllowlistedActivitySlug("padel"), true);
+    assert.equal(isAllowlistedActivitySlug("f1"), true);
+    assert.equal(isAllowlistedActivitySlug("premier-league"), true);
+    assert.equal(isAllowlistedActivitySlug("golf"), true);
+    assert.equal(isAllowlistedActivitySlug("casino"), false);
+    assert.equal(isAllowlistedActivitySlug("anything"), false);
+  });
+
+  it("rejects play-only sports for watch intent", () => {
+    const golf = buildIntentActivity({ slug: "golf" });
+    const f1 = buildIntentActivity({ slug: "f1" });
+    assert.equal(activitySupportsIntent(golf, "play"), true);
+    assert.equal(activitySupportsIntent(golf, "watch"), false);
+    assert.equal(activitySupportsIntent(f1, "watch"), true);
+    assert.equal(activitySupportsIntent(f1, "play"), false);
   });
 });
 

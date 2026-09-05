@@ -8,8 +8,9 @@ import {
 } from "@/services/venueQuery";
 import {
   activityDisplayName,
-  activityQuerySlugs,
+  activitySupportsIntent,
   buildIntentActivity,
+  isAllowlistedActivitySlug,
   type IntentActivity,
 } from "./activity.ts";
 import type { IntentKind } from "./paths.ts";
@@ -87,6 +88,7 @@ export async function getLocationBySlug(
 
 export async function resolveActivityFromCms(
   slug: string,
+  intent?: IntentKind,
 ): Promise<IntentActivity | null> {
   if (!slug) return null;
 
@@ -112,32 +114,30 @@ export async function resolveActivityFromCms(
     ),
   ]);
 
+  let activity: IntentActivity | null = null;
+
   if (series?.slug) {
-    return buildIntentActivity({
+    activity = buildIntentActivity({
       slug: series.slug,
       name: series.name,
       kind: "series",
       sportSlug: series.sportSlug,
     });
-  }
-
-  if (sport?.slug) {
-    return buildIntentActivity({
+  } else if (sport?.slug) {
+    activity = buildIntentActivity({
       slug: sport.slug,
       name: sport.name,
       kind: "sport",
       sportSlug: sport.slug,
     });
+  } else if (isAllowlistedActivitySlug(slug)) {
+    // Catalog sport or SERIES_TO_SPORT alias without a CMS document yet.
+    activity = buildIntentActivity({ slug, name: activityDisplayName(slug) });
   }
 
-  // Known catalog / series alias without a CMS document yet.
-  const querySlugs = activityQuerySlugs(slug);
-  if (querySlugs.length === 0) return null;
-  if (querySlugs.length === 1 && querySlugs[0] === slug) {
-    // Unknown bare slug with no CMS match — still allow soft pages.
-    return buildIntentActivity({ slug, name: activityDisplayName(slug) });
-  }
-  return buildIntentActivity({ slug, name: activityDisplayName(slug) });
+  if (!activity) return null;
+  if (intent && !activitySupportsIntent(activity, intent)) return null;
+  return activity;
 }
 
 export async function getVenuesByLocationAndActivityWithFallback(

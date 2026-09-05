@@ -129,6 +129,8 @@ export const SERIES_TO_SPORT: Record<string, string> = {
   "formula 1": "motorsport",
   "formula 2": "motorsport",
   football: "soccer",
+  "premier-league": "soccer",
+  "six-nations": "rugby",
   paddle: "padel",
   "go-karting": "karting",
   "go karting": "karting",
