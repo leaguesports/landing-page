@@ -1,17 +1,57 @@
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
 import { HomeUpcomingEvents } from "@/components/home/HomeUpcomingEvents";
+import { HomeValueSections } from "@/components/home/HomeValueSections";
+import { buildHomeJsonLd } from "@/lib/home/homeJsonLd";
 import { formatStat } from "@/lib/format-stat";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
+import { getSiteBaseUrl } from "@/lib/site-url";
 import { selectFeaturedFixture } from "@/lib/sports/events-feed";
 import { getUpcomingFixtures } from "@/services/events";
 import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
+
+const SITE_URL = getSiteBaseUrl();
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "LeagueSports | Live scorecards & sports venues in South Africa",
+  },
+  description:
+    "Play padel on a live scorecard, lock results to your history, and find courts or watch venues across Cape Town, Johannesburg, Durban, and Pretoria.",
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: "LeagueSports | Live scorecards & sports venues in South Africa",
+    description:
+      "Live padel scorecards, play courts, and watch venues across South Africa.",
+    url: SITE_URL,
+    siteName: "LeagueSports",
+    locale: "en_ZA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeagueSports | Live scorecards & sports venues in South Africa",
+    description:
+      "Live padel scorecards, play courts, and watch venues across South Africa.",
+  },
+  keywords: [
+    "padel scorecard",
+    "sports venues South Africa",
+    "where to watch soccer",
+    "padel courts Cape Town",
+    "golf scorecard",
+    "LeagueSports",
+  ],
+};
 
 function GuideCard({ guide }: { guide: Guide }) {
   const imageUrl = safeSanityImageUrl(guide.mainImage);
@@ -66,18 +106,36 @@ async function MarketingHome() {
     { value: formatStat(stats.guides), label: "Guides", tone: "text-zinc-300" },
   ];
 
+  const jsonLd = buildHomeJsonLd(SITE_URL);
+
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <HomeDiscovery />
+
+      <HomeValueSections />
 
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="mb-8 max-w-xl sm:mb-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+              Across South Africa
+            </p>
+            <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+              Live inventory
+            </h2>
+            <p className="mt-3 text-sm text-zinc-400 sm:text-base">
+              Exact counts from the directories — venues, events, and guides on
+              LeagueSports today.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-6">
             {homepageStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-3xl border border-white/8 bg-[#141814] px-4 py-6 text-center sm:px-5 sm:py-8"
-              >
+              <div key={stat.label} className="text-center sm:text-left">
                 <p
                   className={`font-display text-4xl tracking-wide sm:text-5xl ${stat.tone}`}
                 >
@@ -105,7 +163,7 @@ async function MarketingHome() {
                 Top guides
               </h2>
               <p className="mt-3 text-sm text-zinc-400 sm:text-base">
-                Local tips for fans and players.
+                Local tips for fans and players across South Africa.
               </p>
             </div>
             <Link
@@ -136,7 +194,8 @@ async function MarketingHome() {
                 Find your game
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Browse Watch and Play directories for venues in your area.
+                Browse Watch and Play directories, start a live scorecard, or
+                open the athlete hub to track locked results.
               </p>
             </div>
 

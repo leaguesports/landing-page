@@ -86,6 +86,18 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/athletes`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/guides`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
   const cityHubRoutes: MetadataRoute.Sitemap = CITY_DIRECTORY.flatMap(
