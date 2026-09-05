@@ -25,6 +25,7 @@ import {
   playerFromInitialSelf,
   readLastPadelVenueSlug,
   resolveInitialQuickStartSlots,
+  seatSelfInA1IfNeeded,
   selectDefaultPadelVenue,
   writeLastPadelVenueSlug,
   type QuickStartInitialSelf,
@@ -112,16 +113,11 @@ export function PadelQuickStart({
   }, [venues, lockVenue, initialVenueSlug]);
 
   // Keep signed-in user in A1 when that slot is empty so history binds.
-  // Do not sync via useEffect + seatSelfInA1IfNeeded — that force-wrote A1 on
-  // every auth refresh (including tab focus) and undid intentional opt-outs.
-  const resolvedSlots = useMemo(() => {
-    if (!knownSelf) return slots;
-    const alreadySeated = Object.values(slots).some(
-      (player) => player?.userId === knownSelf.userId,
-    );
-    if (alreadySeated || slots.a1) return slots;
-    return { ...slots, a1: knownSelf };
-  }, [slots, knownSelf]);
+  // Overlay only — never write back into `slots` on auth refresh / tab focus.
+  const resolvedSlots = useMemo(
+    () => (knownSelf ? seatSelfInA1IfNeeded(slots, knownSelf) : slots),
+    [slots, knownSelf],
+  );
 
   const startsAtIso = datetimeLocalToIso(startsAtLocal);
   const ready =
