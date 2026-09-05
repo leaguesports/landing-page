@@ -215,20 +215,20 @@ export function buildHoleLayout(
     bunkers.push({
       cx: along.x + offset,
       cy: along.y + (rand() - 0.5) * 12,
-      rx: 7 + rand() * 6,
-      ry: 4 + rand() * 4,
+      rx: 9 + rand() * 7,
+      ry: 5.5 + rand() * 4.5,
       rotation: (rand() - 0.5) * 50,
     });
   }
 
   let waterPath: string | null = null;
-  if (safePar >= 4 && (strokeIndex <= 8 || rand() > 0.62)) {
+  if (safePar >= 4 && (strokeIndex <= 8 || rand() > 0.55)) {
     const side = rand() > 0.5 ? 1 : -1;
     const along = pointAlongPar(spine, 0.42 + rand() * 0.2, safePar);
     const cx = along.x + side * (fairwayWidth * 0.95 + 18);
     const cy = along.y;
-    const rx = 16 + rand() * 14;
-    const ry = 10 + rand() * 10;
+    const rx = 20 + rand() * 16;
+    const ry = 12 + rand() * 12;
     waterPath = `M ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} Q ${cx.toFixed(1)} ${(cy - ry).toFixed(1)} ${(cx + rx).toFixed(1)} ${cy.toFixed(1)} Q ${cx.toFixed(1)} ${(cy + ry).toFixed(1)} ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} Z`;
   } else if (safePar === 3 && rand() > 0.55) {
     const side = rand() > 0.5 ? 1 : -1;

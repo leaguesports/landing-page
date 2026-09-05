@@ -11,6 +11,22 @@ type GolfHoleLayoutProps = {
   className?: string;
 };
 
+/** Blueprint line colors — stroke only, no fills. */
+const INK = {
+  grid: "#1a3a5c",
+  fairway: "#5eead4",
+  aim: "#94a3b8",
+  green: "#4ade80",
+  bunker: "#fbbf24",
+  water: "#38bdf8",
+  tee: "#e2e8f0",
+  tree: "#64748b",
+  flag: "#f8fafc",
+  flagFill: "none",
+  label: "#7dd3fc",
+  muted: "#64748b",
+} as const;
+
 export function GolfHoleLayout({
   holeNumber,
   par,
@@ -26,119 +42,122 @@ export function GolfHoleLayout({
       ? `${Math.round(meters)} m`
       : null;
 
+  const w = layout.viewBoxWidth;
+  const h = layout.viewBoxHeight;
+  const gridStep = 20;
+
   return (
     <figure
       key={`${holeNumber}-${par}-${strokeIndex}`}
       className={[
-        "golf-hole-layout relative overflow-hidden rounded-3xl border border-emerald-400/15",
+        "golf-hole-layout relative overflow-hidden rounded-3xl border border-sky-400/20",
         className ?? "",
       ]
         .join(" ")
         .trim()}
-      aria-label={`Hole ${holeNumber} layout: ${layout.shapeLabel}`}
+      aria-label={`Hole ${holeNumber} blueprint: ${layout.shapeLabel}`}
     >
       <svg
-        viewBox={`0 0 ${layout.viewBoxWidth} ${layout.viewBoxHeight}`}
+        viewBox={`0 0 ${w} ${h}`}
         className="h-auto w-full"
         role="img"
         aria-hidden={false}
       >
         <defs>
-          <linearGradient id={`${uid}-sky`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0a1a12" />
-            <stop offset="45%" stopColor="#0d2418" />
-            <stop offset="100%" stopColor="#08140e" />
-          </linearGradient>
-          <linearGradient id={`${uid}-fairway`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#2f9e57" />
-            <stop offset="55%" stopColor="#248a48" />
-            <stop offset="100%" stopColor="#1c6f3a" />
-          </linearGradient>
-          <radialGradient id={`${uid}-green`} cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#5ee08a" />
-            <stop offset="55%" stopColor="#2fbf5f" />
-            <stop offset="100%" stopColor="#1a8f42" />
-          </radialGradient>
-          <linearGradient id={`${uid}-sand`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#e8d2a0" />
-            <stop offset="100%" stopColor="#c4a574" />
-          </linearGradient>
-          <linearGradient id={`${uid}-water`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3d9eb0" />
-            <stop offset="100%" stopColor="#1a5f6e" />
-          </linearGradient>
-          <filter
-            id={`${uid}-soft`}
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
+          <pattern
+            id={`${uid}-grid`}
+            width={gridStep}
+            height={gridStep}
+            patternUnits="userSpaceOnUse"
           >
-            <feGaussianBlur stdDeviation="1.2" />
-          </filter>
+            <path
+              d={`M ${gridStep} 0 L 0 0 0 ${gridStep}`}
+              fill="none"
+              stroke={INK.grid}
+              strokeWidth={0.6}
+            />
+          </pattern>
         </defs>
 
+        {/* Blueprint sheet */}
+        <rect width={w} height={h} fill="#071525" />
+        <rect width={w} height={h} fill={`url(#${uid}-grid)`} opacity={0.9} />
+
+        {/* Border frame */}
         <rect
-          width={layout.viewBoxWidth}
-          height={layout.viewBoxHeight}
-          fill={`url(#${uid}-sky)`}
+          x={6}
+          y={6}
+          width={w - 12}
+          height={h - 12}
+          fill="none"
+          stroke="#1e4a6e"
+          strokeWidth={1}
         />
 
-        {layout.roughBlobs.map((blob, index) => (
-          <ellipse
-            key={`rough-${index}`}
-            cx={blob.cx}
-            cy={blob.cy}
-            rx={blob.rx}
-            ry={blob.ry}
-            fill="#143d24"
-            opacity={0.55}
-            filter={`url(#${uid}-soft)`}
-          />
-        ))}
-
+        {/* Trees — outline ticks only */}
         {layout.trees.map((tree, index) => (
-          <g key={`tree-${index}`} opacity={0.85}>
-            <circle cx={tree.x} cy={tree.y} r={tree.r} fill="#0f3d22" />
+          <g key={`tree-${index}`} opacity={0.7}>
             <circle
-              cx={tree.x - tree.r * 0.25}
-              cy={tree.y - tree.r * 0.2}
-              r={tree.r * 0.55}
-              fill="#1a5c34"
+              cx={tree.x}
+              cy={tree.y}
+              r={tree.r}
+              fill="none"
+              stroke={INK.tree}
+              strokeWidth={1}
+            />
+            <line
+              x1={tree.x}
+              y1={tree.y - tree.r}
+              x2={tree.x}
+              y2={tree.y + tree.r}
+              stroke={INK.tree}
+              strokeWidth={0.75}
+            />
+            <line
+              x1={tree.x - tree.r}
+              y1={tree.y}
+              x2={tree.x + tree.r}
+              y2={tree.y}
+              stroke={INK.tree}
+              strokeWidth={0.75}
             />
           </g>
         ))}
 
+        {/* Water — outline only */}
         {layout.waterPath ? (
           <path
             d={layout.waterPath}
-            fill={`url(#${uid}-water)`}
-            opacity={0.92}
+            fill="none"
+            stroke={INK.water}
+            strokeWidth={1.5}
+            strokeLinejoin="round"
             className="golf-hole-layout__water"
           />
         ) : null}
 
+        {/* Fairway — thin colored line only (no fill) */}
         <path
           d={layout.centerline}
           fill="none"
-          stroke={`url(#${uid}-fairway)`}
-          strokeWidth={layout.fairwayWidth}
+          stroke={INK.fairway}
+          strokeWidth={1.75}
           strokeLinecap="round"
           strokeLinejoin="round"
           className="golf-hole-layout__fairway"
         />
-
         <path
           d={layout.centerline}
           fill="none"
-          stroke="#9dffb8"
-          strokeWidth={1.25}
+          stroke={INK.aim}
+          strokeWidth={1}
           strokeLinecap="round"
-          strokeDasharray="3 7"
-          opacity={0.35}
+          strokeDasharray="4 6"
+          opacity={0.45}
           className="golf-hole-layout__aim"
         />
 
+        {/* Bunkers — outline ellipses */}
         {layout.bunkers.map((bunker, index) => (
           <ellipse
             key={`bunker-${index}`}
@@ -146,70 +165,130 @@ export function GolfHoleLayout({
             cy={bunker.cy}
             rx={bunker.rx}
             ry={bunker.ry}
-            fill={`url(#${uid}-sand)`}
+            fill="none"
+            stroke={INK.bunker}
+            strokeWidth={1.35}
             transform={`rotate(${bunker.rotation} ${bunker.cx} ${bunker.cy})`}
             className="golf-hole-layout__bunker"
           />
         ))}
 
+        {/* Green — outline only */}
         <ellipse
           cx={layout.green.cx}
           cy={layout.green.cy}
           rx={layout.green.rx}
           ry={layout.green.ry}
-          fill={`url(#${uid}-green)`}
+          fill="none"
+          stroke={INK.green}
+          strokeWidth={1.75}
           className="golf-hole-layout__green"
         />
+        {/* Green inner ring */}
+        <ellipse
+          cx={layout.green.cx}
+          cy={layout.green.cy}
+          rx={layout.green.rx * 0.55}
+          ry={layout.green.ry * 0.55}
+          fill="none"
+          stroke={INK.green}
+          strokeWidth={0.9}
+          opacity={0.45}
+          strokeDasharray="3 3"
+        />
 
+        {/* Flag — line drawing */}
         <g className="golf-hole-layout__flag">
           <line
             x1={layout.flag.x}
             y1={layout.flag.y}
             x2={layout.flag.x}
-            y2={layout.flag.y - 28}
-            stroke="#f4f7f4"
-            strokeWidth={1.5}
+            y2={layout.flag.y - 26}
+            stroke={INK.flag}
+            strokeWidth={1.25}
             strokeLinecap="round"
           />
           <path
-            d={`M ${layout.flag.x} ${layout.flag.y - 28} L ${layout.flag.x + 14} ${layout.flag.y - 22} L ${layout.flag.x} ${layout.flag.y - 16} Z`}
-            fill="#3dff8a"
+            d={`M ${layout.flag.x} ${layout.flag.y - 26} L ${layout.flag.x + 12} ${layout.flag.y - 21} L ${layout.flag.x} ${layout.flag.y - 16} Z`}
+            fill="none"
+            stroke={INK.green}
+            strokeWidth={1.25}
+            strokeLinejoin="round"
           />
           <circle
             cx={layout.flag.x}
             cy={layout.flag.y}
-            r={2.2}
-            fill="#f4f7f4"
+            r={2}
+            fill="none"
+            stroke={INK.flag}
+            strokeWidth={1.1}
           />
         </g>
 
+        {/* Tee box — outline */}
         <rect
           x={layout.tee.x}
           y={layout.tee.y}
           width={layout.tee.width}
           height={layout.tee.height}
-          rx={2}
-          fill="#d8e6d8"
-          opacity={0.9}
+          rx={1.5}
+          fill="none"
+          stroke={INK.tee}
+          strokeWidth={1.35}
         />
         <text
           x={layout.tee.x + layout.tee.width / 2}
           y={layout.tee.y + layout.tee.height + 11}
           textAnchor="middle"
-          fill="#9ca89c"
+          fill={INK.label}
           fontSize="8"
-          fontFamily="var(--font-outfit), system-ui, sans-serif"
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+          letterSpacing="0.12em"
         >
           TEE
         </text>
+
+        {/* Corner registration marks */}
+        <g stroke="#2a5a82" strokeWidth={1} fill="none">
+          <path d="M 10 18 L 10 10 L 18 10" />
+          <path d={`M ${w - 18} 10 L ${w - 10} 10 L ${w - 10} 18`} />
+          <path d={`M 10 ${h - 18} L 10 ${h - 10} L 18 ${h - 10}`} />
+          <path
+            d={`M ${w - 18} ${h - 10} L ${w - 10} ${h - 10} L ${w - 10} ${h - 18}`}
+          />
+        </g>
+
+        {/* Line key */}
+        <g
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+          fontSize="7"
+          fill={INK.muted}
+        >
+          <line x1={14} y1={20} x2={28} y2={20} stroke={INK.fairway} strokeWidth={1.5} />
+          <text x={32} y={22} fill={INK.label}>
+            fairway
+          </text>
+          <line x1={78} y1={20} x2={92} y2={20} stroke={INK.green} strokeWidth={1.5} />
+          <text x={96} y={22} fill={INK.label}>
+            green
+          </text>
+          <line x1={130} y1={20} x2={144} y2={20} stroke={INK.bunker} strokeWidth={1.5} />
+          <text x={148} y={22} fill={INK.label}>
+            bunker
+          </text>
+          <line x1={14} y1={32} x2={28} y2={32} stroke={INK.water} strokeWidth={1.5} />
+          <text x={32} y={34} fill={INK.label}>
+            water
+          </text>
+        </g>
       </svg>
 
-      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-linear-to-t from-[#050705]/95 via-[#050705]/55 to-transparent px-4 pb-3 pt-10">
+      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-linear-to-t from-[#071525]/95 via-[#071525]/50 to-transparent px-4 pb-3 pt-10">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/90">
-            Hole map
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300/90">
+            Hole blueprint
           </p>
-          <p className="mt-0.5 truncate text-sm font-medium text-white">
+          <p className="mt-0.5 truncate font-mono text-sm text-sky-100">
             {layout.shapeLabel}
           </p>
         </div>
@@ -217,7 +296,7 @@ export function GolfHoleLayout({
           <p className="font-display text-2xl tabular-nums leading-none text-white">
             {holeNumber}
           </p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">
+          <p className="mt-0.5 font-mono text-[11px] text-slate-400">
             Par {par}
             {metersLabel ? ` · ${metersLabel}` : ` · SI ${strokeIndex}`}
           </p>
