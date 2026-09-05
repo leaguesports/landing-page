@@ -344,87 +344,11 @@ export function SportsHub({
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
       <FriendsSnapshotSeed snapshot={friends} />
-      <section className="relative overflow-hidden border-b border-white/5">
-        <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-            Your hub
-          </h1>
-          <p className="mt-1.5 text-sm text-zinc-400">
-            Watch, play, and keep your results in one place.
-          </p>
 
-          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
-                  <p className="font-display text-2xl tracking-wide text-white tabular-nums">
-                    {gamesKnown ? gamesPlayed : "—"}
-                  </p>
-                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                    Games
-                  </p>
-                  {activityError ? (
-                    <p className="mt-1 max-w-[11rem] text-[11px] leading-snug text-amber-300/90">
-                      Couldn’t load all activity
-                    </p>
-                  ) : null}
-                </div>
-                {activitySports.length > 0 ? (
-                  <div className="flex min-w-0 flex-col gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                      Sports
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {activitySports.map((sport) => (
-                        <button
-                          key={sport.slug}
-                          type="button"
-                          onClick={() => {
-                            focusSport(sport.slug);
-                            setSection(
-                              sport.slug === "padel" ? "progress" : "tools",
-                            );
-                          }}
-                          className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
-                        >
-                          <SportIcon
-                            sportSlug={sport.slug}
-                            size={14}
-                            color="currentColor"
-                          />
-                          {sport.name}
-                          <span className="tabular-nums text-emerald-300/80">
-                            {sport.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {primary.slice(0, 2).map((action) => (
-                <Link
-                  key={action.id}
-                  href={action.href}
-                  className={
-                    action.emphasis === "primary" && action === primary[0]
-                      ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-                      : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                  }
-                >
-                  {action.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="sticky top-16 z-40 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
+      <nav
+        className="sticky top-16 z-40 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl"
+        aria-label="Hub"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div
             id={sectionTablistId}
@@ -515,7 +439,87 @@ export function SportsHub({
             </div>
           ) : null}
         </div>
-      </div>
+      </nav>
+
+      <section className="relative overflow-hidden border-b border-white/5">
+        <div className="pointer-events-none absolute -right-24 top-0 h-[22rem] w-[22rem] rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+            Your hub
+          </h1>
+          <p className="mt-1.5 text-sm text-zinc-400">
+            Watch, play, and keep your results in one place.
+          </p>
+
+          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="min-w-[5.5rem] rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
+                  <p className="font-display text-2xl tracking-wide text-white tabular-nums">
+                    {gamesKnown ? gamesPlayed : "—"}
+                  </p>
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Games
+                  </p>
+                  {activityError ? (
+                    <p className="mt-1 max-w-[11rem] text-[11px] leading-snug text-amber-300/90">
+                      Couldn’t load all activity
+                    </p>
+                  ) : null}
+                </div>
+                {activitySports.length > 0 ? (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                      Sports
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {activitySports.map((sport) => (
+                        <button
+                          key={sport.slug}
+                          type="button"
+                          onClick={() => {
+                            focusSport(sport.slug);
+                            setSection(
+                              sport.slug === "padel" ? "progress" : "tools",
+                            );
+                          }}
+                          className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
+                        >
+                          <SportIcon
+                            sportSlug={sport.slug}
+                            size={14}
+                            color="currentColor"
+                          />
+                          {sport.name}
+                          <span className="tabular-nums text-emerald-300/80">
+                            {sport.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {primary.slice(0, 2).map((action) => (
+                <Link
+                  key={action.id}
+                  href={action.href}
+                  className={
+                    action.emphasis === "primary" && action === primary[0]
+                      ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                      : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  }
+                >
+                  {action.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div
