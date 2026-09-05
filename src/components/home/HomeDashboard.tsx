@@ -1,6 +1,7 @@
 import { SportsHub } from "@/components/home/SportsHub";
 import type { AuthUser } from "@/lib/api-client";
 import { listBadges } from "@/lib/badges/api";
+import { listFollowedFixtures } from "@/lib/events/follow";
 import { listFriends } from "@/lib/friends/friends";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
@@ -10,7 +11,12 @@ import {
   needsOnboarding,
 } from "@/lib/preferences/preferences";
 import { getDashboardHub } from "@/lib/sports/dashboard-feed";
+import {
+  fixturesToFollowedFeedItems,
+  uniqueFollowedFixtureSlugs,
+} from "@/lib/sports/hub-feed";
 import { listFollowedVenues } from "@/lib/venues/follow";
+import { resolveFollowedFixtures } from "@/services/events";
 import type { PadelHistoryItem } from "@/types/padel-match";
 import { redirect } from "next/navigation";
 
@@ -27,6 +33,13 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
   const followedSlugsPromise = followedVenuesPromise.then((venues) =>
     venues.map((venue) => venue.slug),
   );
+  const followedFixtureRowsPromise = listFollowedFixtures({ cookie });
+  const followedFixtureSlugsPromise = followedFixtureRowsPromise.then((rows) =>
+    uniqueFollowedFixtureSlugs(rows.map((row) => row.slug)),
+  );
+  const followedFixturesPromise = followedFixtureSlugsPromise.then((slugs) =>
+    resolveFollowedFixtures(slugs),
+  );
 
   const [
     preferencesResult,
@@ -34,6 +47,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     golfHistory,
     hub,
     followedVenues,
+    followedFixtureRows,
+    followedFixturesResolved,
     friends,
     badges,
   ] = await Promise.all([
@@ -42,6 +57,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     lookupPlayerGolfHistory(user.id, { cookie }),
     getDashboardHub({ followedVenueSlugs: followedSlugsPromise }),
     followedVenuesPromise,
+    followedFixtureRowsPromise,
+    followedFixturesPromise,
     listFriends({ cookie }),
     listBadges({ cookie }),
   ]);
@@ -61,6 +78,10 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
   const activityError =
     [history.error, golfHistory.error].filter(Boolean).join(" · ") || null;
 
+  const followedFixtures = fixturesToFollowedFeedItems(
+    followedFixturesResolved,
+  );
+
   return (
     <SportsHub
       user={user}
@@ -72,6 +93,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
         error: activityError,
       }}
       followedVenues={followedVenues}
+      followedFixtures={followedFixtures}
+      followedFixtureCount={followedFixtureRows.length}
       friends={friends}
       badges={badges}
       sports={hub.sports}

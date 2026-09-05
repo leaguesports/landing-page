@@ -3,20 +3,25 @@ import { describe, it } from "node:test";
 import {
   eventToFeedItem,
   filterFeedByVenueSlugs,
+  fixtureToFeedItem,
+  fixturesToFollowedFeedItems,
   formatHubWhen,
   guidesToFeedItems,
   HUB_EVENTS_QUERY,
   HUB_FOLLOWED_SCREENINGS_QUERY,
   HUB_GUIDES_QUERY,
   HUB_SCREENINGS_QUERY,
+  MAX_FOLLOWED_FIXTURE_SLUGS,
   MAX_FOLLOWED_VENUE_SLUGS,
   mergeHubFeedItems,
   screeningsToFeedItems,
   sortHubFeed,
+  uniqueFollowedFixtureSlugs,
   uniqueFollowedVenueSlugs,
   type HubFeedItem,
 } from "./hub-feed.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
+import type { UpcomingFixture } from "./events-feed.ts";
 
 describe("hub feed queries", () => {
   it("reads CMS events, screenings, and guides — not hardcoded races", () => {
@@ -40,6 +45,80 @@ describe("uniqueFollowedVenueSlugs", () => {
       `v${i}`,
     );
     assert.equal(uniqueFollowedVenueSlugs(many).length, MAX_FOLLOWED_VENUE_SLUGS);
+  });
+});
+
+describe("uniqueFollowedFixtureSlugs", () => {
+  it("lowercases, dedupes, and caps", () => {
+    assert.deepEqual(
+      uniqueFollowedFixtureSlugs([" Springboks-vs-All-Blacks-2026-09-06 ", "springboks-vs-all-blacks-2026-09-06", ""]),
+      ["springboks-vs-all-blacks-2026-09-06"],
+    );
+    const many = Array.from(
+      { length: MAX_FOLLOWED_FIXTURE_SLUGS + 3 },
+      (_, i) => `fix-${i}`,
+    );
+    assert.equal(
+      uniqueFollowedFixtureSlugs(many).length,
+      MAX_FOLLOWED_FIXTURE_SLUGS,
+    );
+  });
+});
+
+describe("fixtureToFeedItem + fixturesToFollowedFeedItems", () => {
+  const base: UpcomingFixture = {
+    slug: "springboks-vs-all-blacks-2026-09-06",
+    title: "Springboks vs All Blacks",
+    sportSlug: "rugby",
+    startsAt: "2026-09-06T15:00:00.000Z",
+    venues: [
+      { name: "The Local", slug: "the-local" },
+      { name: "Obs Bar", slug: "obs-bar" },
+    ],
+    series: "rugby",
+    kind: "both",
+  };
+
+  it("maps a followed fixture onto /events with venue count", () => {
+    const item = fixtureToFeedItem(base);
+    assert.ok(item);
+    assert.equal(item.id, "followed-fixture-springboks-vs-all-blacks-2026-09-06");
+    assert.equal(item.kind, "event");
+    assert.equal(item.sportSlug, "rugby");
+    assert.equal(item.href, "/events/springboks-vs-all-blacks-2026-09-06");
+    assert.equal(item.subtitle, "2 venues screening");
+    assert.equal(item.followedFixture, true);
+  });
+
+  it("falls back to series when no venues are listed", () => {
+    const item = fixtureToFeedItem({ ...base, venues: [], series: "f1" });
+    assert.ok(item);
+    assert.equal(item.subtitle, "f1");
+  });
+
+  it("orders soonest first when building the calendar strip", () => {
+    const now = new Date("2026-09-04T12:00:00.000Z");
+    const items = fixturesToFollowedFeedItems(
+      [
+        {
+          ...base,
+          slug: "later-test",
+          title: "Later",
+          startsAt: "2026-10-01T15:00:00.000Z",
+          venues: [],
+        },
+        {
+          ...base,
+          slug: "sooner-test",
+          title: "Sooner",
+          startsAt: "2026-09-05T15:00:00.000Z",
+          venues: [],
+        },
+      ],
+      { now, limit: 1 },
+    );
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.title, "Sooner");
   });
 });
 

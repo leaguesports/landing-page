@@ -8,14 +8,19 @@ import {
   findFixtureBySlug,
   parseFixtureSlug,
   saDayBounds,
+  sortUpcomingFixtures,
   upcomingNotBeforeIso,
   type EventsCmsEventRow,
   type EventsScreeningVenueRow,
   type UpcomingFixture,
 } from "@/lib/sports/events-feed";
+import { uniqueFollowedFixtureSlugs } from "@/lib/sports/hub-feed";
 import { sanityClient } from "@/sanity/client";
 
 export type { UpcomingFixture } from "@/lib/sports/events-feed";
+
+/** Cap day-detail lookups when a follow slug is outside the upcoming list. */
+const MAX_FOLLOWED_FIXTURE_DETAIL_LOOKUPS = 8;
 
 function isSanityConfigured(): boolean {
   return Boolean(
@@ -101,5 +106,49 @@ export async function getFixtureBySlug(
   } catch (error) {
     console.error("[events] fixture-by-slug fetch failed", error);
     return null;
+  }
+}
+
+/**
+ * Resolve followed fixture slugs into UpcomingFixture rows for the hub calendar.
+ * Soft-fails missing CMS/screening data — unknown slugs are skipped.
+ * Batches via the upcoming list first; day-scoped detail only for leftovers.
+ */
+export async function resolveFollowedFixtures(
+  slugs: Iterable<string> | null | undefined,
+  options: { now?: Date } = {},
+): Promise<UpcomingFixture[]> {
+  const unique = uniqueFollowedFixtureSlugs(slugs);
+  if (unique.length === 0 || !isSanityConfigured()) return [];
+
+  const now = options.now ?? new Date();
+
+  try {
+    const upcoming = await getUpcomingFixtures({ limit: 48, now });
+    const bySlug = new Map(upcoming.map((item) => [item.slug, item]));
+    const resolved: UpcomingFixture[] = [];
+    const missing: string[] = [];
+
+    for (const slug of unique) {
+      const hit = bySlug.get(slug);
+      if (hit) resolved.push(hit);
+      else missing.push(slug);
+    }
+
+    if (missing.length > 0) {
+      const detailHits = await Promise.all(
+        missing
+          .slice(0, MAX_FOLLOWED_FIXTURE_DETAIL_LOOKUPS)
+          .map((slug) => getFixtureBySlug(slug)),
+      );
+      for (const fixture of detailHits) {
+        if (fixture) resolved.push(fixture);
+      }
+    }
+
+    return sortUpcomingFixtures(resolved, now);
+  } catch (error) {
+    console.error("[events] followed-fixtures resolve failed", error);
+    return [];
   }
 }
