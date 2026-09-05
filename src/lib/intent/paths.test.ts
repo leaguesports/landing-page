@@ -9,8 +9,14 @@ import {
   intentBrowseTitle,
   intentDetailDescription,
   intentDetailFaqs,
+  intentDetailHeading,
   intentDetailTitle,
 } from "./copy.ts";
+import {
+  buildIntentEnrichment,
+  buildIntentIntroParagraphs,
+  resolveIntentIndexPolicy,
+} from "./enrichment.ts";
 import { buildIntentJsonLd } from "./jsonLd.ts";
 import { intentOrDirectoryHref, intentPath } from "./paths.ts";
 import { resolveIntentRoute } from "./routes.ts";
@@ -90,12 +96,22 @@ describe("intent copy", () => {
       "Watch Formula 1 in Midrand",
     );
     assert.equal(
+      intentDetailHeading("watch", "Formula 1", "Midrand"),
+      "Watch Formula 1 in Midrand",
+    );
+    assert.equal(
       intentDetailTitle("play", "Padel", "Fourways"),
       "Play Padel in Fourways",
     );
     assert.match(
       intentDetailDescription("watch", "Formula 1", "Midrand", 3),
       /3 venues/,
+    );
+    assert.match(
+      intentDetailDescription("watch", "Formula 1", "Midrand", 3, {
+        amenityHint: "2 with big screens.",
+      }),
+      /big screens/,
     );
     assert.equal(
       intentBrowseTitle("play", "Padel"),
@@ -112,6 +128,94 @@ describe("intent copy", () => {
     });
     assert.equal(faqs.length, 3);
     assert.match(faqs[0]?.answer ?? "", /2 venues/);
+  });
+});
+
+describe("intent enrichment", () => {
+  const sampleVenues = [
+    {
+      name: "Alpha Bar",
+      has_big_screens: true,
+      has_live_audio: true,
+      has_parking: true,
+      is_verified: true,
+      rating: 4.5,
+      hero_image: { asset: { _ref: "image-abc" } },
+      upcoming_screenings: [
+        {
+          title: "F1 Qualifying",
+          startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+        },
+      ],
+    },
+    {
+      name: "Beta Club",
+      has_big_screens: true,
+      has_parking: false,
+      is_verified: false,
+      upcoming_screenings: [],
+    },
+  ];
+
+  it("aggregates amenity and screening signals", () => {
+    const enrichment = buildIntentEnrichment("watch", sampleVenues);
+    assert.ok(enrichment.amenityStats.some((stat) => /big screens/.test(stat.label)));
+    assert.equal(enrichment.verifiedCount, 1);
+    assert.equal(enrichment.screeningHighlights.length, 1);
+    assert.equal(enrichment.screeningHighlights[0]?.title, "F1 Qualifying");
+  });
+
+  it("noindexes empty and city-fallback pages", () => {
+    assert.deepEqual(
+      resolveIntentIndexPolicy({
+        locationSlug: "midrand",
+        parentSlug: "johannesburg",
+        venueCount: 0,
+        usedCityFallback: false,
+      }),
+      {
+        indexable: false,
+        canonicalLocationSlug: "midrand",
+        reason: "empty",
+      },
+    );
+    assert.deepEqual(
+      resolveIntentIndexPolicy({
+        locationSlug: "midrand",
+        parentSlug: "johannesburg",
+        venueCount: 3,
+        usedCityFallback: true,
+      }),
+      {
+        indexable: false,
+        canonicalLocationSlug: "johannesburg",
+        reason: "city-fallback",
+      },
+    );
+    assert.equal(
+      resolveIntentIndexPolicy({
+        locationSlug: "midrand",
+        parentSlug: "johannesburg",
+        venueCount: 2,
+        usedCityFallback: false,
+      }).indexable,
+      true,
+    );
+  });
+
+  it("builds unique intro paragraphs from CMS signals", () => {
+    const enrichment = buildIntentEnrichment("watch", sampleVenues);
+    const paragraphs = buildIntentIntroParagraphs({
+      intent: "watch",
+      activity: buildIntentActivity({ slug: "f1", name: "Formula 1" }),
+      locationTitle: "Midrand",
+      venueCount: 2,
+      usedCityFallback: false,
+      enrichment,
+    });
+    assert.equal(paragraphs.length, 2);
+    assert.match(paragraphs[0] ?? "", /watch Formula 1 in Midrand/i);
+    assert.match(paragraphs[1] ?? "", /verified|big screens|screening/i);
   });
 });
 

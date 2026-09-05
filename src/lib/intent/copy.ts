@@ -17,20 +17,43 @@ export function intentDetailTitle(
   return `Play ${activityName} in ${locationTitle}`;
 }
 
+/** Visible H1 — keep aligned with the title/search phrase. */
+export function intentDetailHeading(
+  intent: IntentKind,
+  activityName: string,
+  locationTitle: string,
+): string {
+  return intentDetailTitle(intent, activityName, locationTitle);
+}
+
 export function intentDetailDescription(
   intent: IntentKind,
   activityName: string,
   locationTitle: string,
   venueCount: number,
+  extras?: { amenityHint?: string | null; screeningHint?: string | null },
 ): string {
+  const amenityHint = extras?.amenityHint?.trim();
+  const screeningHint = extras?.screeningHint?.trim();
+
   if (intent === "watch") {
-    return venueCount > 0
-      ? `Find ${venueCount} ${venueCount === 1 ? "venue" : "venues"} screening ${activityName} in ${locationTitle}. Compare bars and fan zones, then open a venue page to go.`
-      : `Looking for somewhere to watch ${activityName} in ${locationTitle}? Browse nearby sports bars and fan zones on LeagueSports.`;
+    if (venueCount <= 0) {
+      return `Looking for somewhere to watch ${activityName} in ${locationTitle}? Browse nearby sports bars and fan zones on LeagueSports, or try a neighbouring suburb.`;
+    }
+    const base = `Find ${venueCount} ${venueCount === 1 ? "venue" : "venues"} screening ${activityName} in ${locationTitle}. Compare bars and fan zones, then open a venue page to go.`;
+    const bits = [amenityHint, screeningHint].filter(Boolean);
+    if (bits.length === 0) return base;
+    const enriched = `${base} ${bits.join(" ")}`;
+    return enriched.length <= 160 ? enriched : base;
   }
-  return venueCount > 0
-    ? `Find ${venueCount} ${venueCount === 1 ? "venue" : "venues"} to play ${activityName} in ${locationTitle}. Compare courts and clubs, then start a session.`
-    : `Looking for somewhere to play ${activityName} in ${locationTitle}? Browse nearby courts and clubs on LeagueSports.`;
+
+  if (venueCount <= 0) {
+    return `Looking for somewhere to play ${activityName} in ${locationTitle}? Browse nearby courts and clubs on LeagueSports, or try a neighbouring suburb.`;
+  }
+  const base = `Find ${venueCount} ${venueCount === 1 ? "venue" : "venues"} to play ${activityName} in ${locationTitle}. Compare courts and clubs, then start a session.`;
+  if (!amenityHint) return base;
+  const enriched = `${base} ${amenityHint}`;
+  return enriched.length <= 160 ? enriched : base;
 }
 
 export function intentBrowseTitle(

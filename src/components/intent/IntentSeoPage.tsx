@@ -1,6 +1,7 @@
 import { IntentBrowseGrid } from "@/components/intent/IntentBrowseGrid";
 import { IntentFaqSection } from "@/components/intent/IntentFaqSection";
 import { IntentHero } from "@/components/intent/IntentHero";
+import { IntentHighlights } from "@/components/intent/IntentHighlights";
 import { IntentHub } from "@/components/intent/IntentHub";
 import { IntentNav } from "@/components/intent/IntentNav";
 import { IntentVenuesSection } from "@/components/intent/IntentVenuesSection";
@@ -9,6 +10,7 @@ import {
   intentBrowseTitle,
   intentDetailDescription,
   intentDetailFaqs,
+  intentDetailHeading,
   intentDetailTitle,
   intentLandingDescription,
   intentLandingTitle,
@@ -21,13 +23,32 @@ import {
   listWatchActivities,
   resolveActivityFromCms,
 } from "@/lib/intent/data";
+import {
+  buildIntentEnrichment,
+  buildIntentIntroParagraphs,
+  resolveIntentIndexPolicy,
+} from "@/lib/intent/enrichment";
 import { buildIntentJsonLd } from "@/lib/intent/jsonLd";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
 import { resolveIntentRoute } from "@/lib/intent/routes";
 import { getSiteBaseUrl } from "@/lib/site-url";
+import { sanityImageUrl } from "@/lib/venues/photo";
+import { resolveVenueImage, type VenueDetail } from "@/services/venues";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+function intentOgImageUrl(
+  venue: {
+    hero_image?: VenueDetail["hero_image"];
+    sports?: VenueDetail["sports"];
+  } | null,
+): string | null {
+  if (!venue) return null;
+  const source = resolveVenueImage(venue);
+  if (!source) return null;
+  return sanityImageUrl(source, { width: 1200, height: 630 }) ?? null;
+}
 
 function primaryCta(intent: IntentKind, activitySlug: string) {
   if (intent === "play") {
@@ -40,6 +61,24 @@ function primaryCta(intent: IntentKind, activitySlug: string) {
     return { href: "#venues", label: "See venues" };
   }
   return { href: "/events", label: "See fixtures" };
+}
+
+function metaDescriptionExtras(
+  enrichment: ReturnType<typeof buildIntentEnrichment>,
+  intent: IntentKind,
+) {
+  const amenityHint =
+    enrichment.amenityStats.length > 0
+      ? enrichment.amenityStats
+          .slice(0, 2)
+          .map((stat) => stat.label)
+          .join("; ") + "."
+      : null;
+  const screeningHint =
+    intent === "watch" && enrichment.screeningHighlights.length > 0
+      ? `${enrichment.screeningHighlights.length} upcoming ${enrichment.screeningHighlights.length === 1 ? "screening" : "screenings"} listed.`
+      : null;
+  return { amenityHint, screeningHint };
 }
 
 export async function generateIntentMetadata(
@@ -106,14 +145,30 @@ export async function generateIntentMetadata(
     activity,
     location,
   );
+  const enrichment = buildIntentEnrichment(intent, results.venues);
+  const indexPolicy = resolveIntentIndexPolicy({
+    locationSlug: location.slug,
+    parentSlug: location.parentSlug,
+    venueCount: results.venues.length,
+    usedCityFallback: results.usedCityFallback,
+  });
   const title = intentDetailTitle(intent, activity.name, location.title);
   const description = intentDetailDescription(
     intent,
     activity.name,
     location.title,
     results.venues.length,
+    metaDescriptionExtras(enrichment, intent),
   );
-  const canonical = intentPath(intent, activity.slug, location.slug);
+  const canonical = intentPath(
+    intent,
+    activity.slug,
+    indexPolicy.canonicalLocationSlug,
+  );
+  const ogImage = intentOgImageUrl(
+    enrichment.ogImageVenue as VenueDetail | null,
+  );
+  const pageUrl = `${siteUrl}${canonical}`;
 
   return {
     title,
@@ -122,12 +177,32 @@ export async function generateIntentMetadata(
     openGraph: {
       title,
       description,
-      url: `${siteUrl}${canonical}`,
+      url: pageUrl,
       type: "website",
       locale: "en_ZA",
+      ...(ogImage
+        ? {
+            images: [
+              {
+                url: ogImage,
+                width: 1200,
+                height: 630,
+                alt: title,
+              },
+            ],
+          }
+        : {}),
     },
-    twitter: { card: "summary_large_image", title, description },
-    robots: { index: true, follow: true },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    robots: {
+      index: indexPolicy.indexable,
+      follow: true,
+    },
     keywords: [
       intent,
       activity.name,
@@ -275,13 +350,25 @@ export async function IntentSeoPage({
     listLocationsForActivity(intent, activity),
   ]);
 
+  const enrichment = buildIntentEnrichment(intent, results.venues);
+  const heading = intentDetailHeading(intent, activity.name, location.title);
   const title = intentDetailTitle(intent, activity.name, location.title);
   const description = intentDetailDescription(
     intent,
     activity.name,
     location.title,
     results.venues.length,
+    metaDescriptionExtras(enrichment, intent),
   );
+  const introParagraphs = buildIntentIntroParagraphs({
+    intent,
+    activity,
+    locationTitle: location.title,
+    venueCount: results.venues.length,
+    usedCityFallback: results.usedCityFallback,
+    cityTitle: results.cityTitle,
+    enrichment,
+  });
   const faqs = intentDetailFaqs({
     intent,
     activity,
@@ -325,11 +412,20 @@ export async function IntentSeoPage({
         intent={intent}
         activity={activity}
         locationTitle={location.title}
+        heading={heading}
+        introParagraphs={introParagraphs}
         venueCount={results.venues.length}
+        amenityStats={enrichment.amenityStats}
         primaryHref={cta.href}
         primaryLabel={cta.label}
         secondaryHref="#venues"
         secondaryLabel="Browse venues"
+      />
+      <IntentHighlights
+        intent={intent}
+        amenityStats={enrichment.amenityStats}
+        screenings={enrichment.screeningHighlights}
+        verifiedCount={enrichment.verifiedCount}
       />
       <IntentVenuesSection
         intent={intent}

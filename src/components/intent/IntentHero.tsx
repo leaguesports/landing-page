@@ -1,11 +1,15 @@
-import type { IntentKind } from "@/lib/intent/paths";
+import type { IntentAmenityStat } from "@/lib/intent/enrichment";
 import type { IntentActivity } from "@/lib/intent/activity";
+import type { IntentKind } from "@/lib/intent/paths";
 
 type IntentHeroProps = {
   intent: IntentKind;
   activity: IntentActivity;
   locationTitle: string;
+  heading: string;
+  introParagraphs: string[];
   venueCount: number;
+  amenityStats?: IntentAmenityStat[];
   primaryHref: string;
   primaryLabel: string;
   secondaryHref: string;
@@ -16,7 +20,10 @@ export function IntentHero({
   intent,
   activity,
   locationTitle,
+  heading,
+  introParagraphs,
   venueCount,
+  amenityStats = [],
   primaryHref,
   primaryLabel,
   secondaryHref,
@@ -27,17 +34,8 @@ export function IntentHero({
     intent === "watch"
       ? "from-sky-950/45 via-[#0c0f0c] to-[#0c0f0c]"
       : "from-emerald-950/45 via-[#0c0f0c] to-[#0c0f0c]";
-  const glow =
-    intent === "watch" ? "bg-sky-500/10" : "bg-emerald-400/10";
+  const glow = intent === "watch" ? "bg-sky-500/10" : "bg-emerald-400/10";
   const verb = intent === "watch" ? "Watch" : "Play";
-  const supporting =
-    intent === "watch"
-      ? venueCount > 0
-        ? `${venueCount} ${venueCount === 1 ? "venue" : "venues"} with live screens for ${activity.name}.`
-        : `Find bars and fan zones screening ${activity.name} near ${locationTitle}.`
-      : venueCount > 0
-        ? `${venueCount} ${venueCount === 1 ? "venue" : "venues"} where you can play ${activity.name}.`
-        : `Find courts and clubs for ${activity.name} near ${locationTitle}.`;
 
   return (
     <section className="relative overflow-hidden border-b border-white/5">
@@ -52,13 +50,38 @@ export function IntentHero({
         >
           {verb} · {locationTitle}
         </p>
-        <h1 className="font-display text-5xl tracking-wide text-white sm:text-6xl lg:text-7xl">
-          {activity.name}
-          <span className={`block ${accent}`}>{locationTitle}</span>
+        <h1 className="font-display max-w-4xl text-4xl tracking-wide text-white sm:text-5xl lg:text-6xl">
+          {heading}
         </h1>
-        <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-400">
-          {supporting}
-        </p>
+
+        <div className="mt-5 max-w-2xl space-y-3 text-base leading-relaxed text-zinc-400">
+          {introParagraphs.map((paragraph) => (
+            <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+          ))}
+        </div>
+
+        {(venueCount > 0 || amenityStats.length > 0) && (
+          <ul className="mt-6 flex flex-wrap gap-2" aria-label="Listing highlights">
+            <li className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200">
+              {venueCount} {venueCount === 1 ? "venue" : "venues"}
+            </li>
+            {amenityStats.slice(0, 4).map((stat) => (
+              <li
+                key={stat.key}
+                className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-medium ${
+                  intent === "watch"
+                    ? "border-sky-400/20 bg-sky-400/10 text-sky-100"
+                    : "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
+                }`}
+              >
+                {stat.label}
+              </li>
+            ))}
+            <li className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-400">
+              {activity.name}
+            </li>
+          </ul>
+        )}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <a
