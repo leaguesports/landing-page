@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { trackActivation } from "@/lib/analytics/activation";
 import { lockPadelMatch } from "@/lib/match-api";
 import { toLockMatchBody } from "@/lib/padel/api-match";
 import { applyLockedPadelResult } from "@/lib/padel/apply-locked-result";
@@ -31,6 +32,7 @@ export function useLockPadelMatch(
       const lockedMatch = await lockPadelMatch(match.id, body, match.venue);
       const next = applyLockedPadelResult(match, lockedMatch);
       await publish("STATE_SYNC", { state: next });
+      trackActivation("padel_match_lock", { match_id: match.id });
       return next;
     } catch (err) {
       const message =

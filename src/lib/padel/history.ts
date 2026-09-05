@@ -89,10 +89,38 @@ export function didPlayerWin(
   return item.winner === side;
 }
 
+export type FormResult = "W" | "L";
+
+export type PlayerHistoryStats = {
+  locked: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  /** Newest-first decided results, capped (default 5). */
+  recentForm: FormResult[];
+};
+
+/** Newest-first W/L from locked matches where the account’s result is known. */
+export function playerRecentForm(
+  items: PadelHistoryItem[],
+  playerUserId: string,
+  limit = 5,
+): FormResult[] {
+  const form: FormResult[] = [];
+  for (const item of items) {
+    if (form.length >= limit) break;
+    const won = didPlayerWin(item, playerUserId);
+    if (won === true) form.push("W");
+    else if (won === false) form.push("L");
+  }
+  return form;
+}
+
 export function summarisePlayerHistory(
   items: PadelHistoryItem[],
   playerUserId: string,
-) {
+  formLimit = 5,
+): PlayerHistoryStats {
   let wins = 0;
   let losses = 0;
   for (const item of items) {
@@ -106,5 +134,6 @@ export function summarisePlayerHistory(
     wins,
     losses,
     winRate: decided === 0 ? 0 : Math.round((wins / decided) * 100),
+    recentForm: playerRecentForm(items, playerUserId, formLimit),
   };
 }

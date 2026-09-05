@@ -22,6 +22,7 @@ import {
   type PadelLockedShareMatch,
   type PadelWhatsAppShareMatch,
 } from "@/lib/padel/whatsapp-share";
+import { markScorecardShared } from "@/lib/badges/share-signal";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import type { PadelMatch, PadelTeamId } from "@/types/padel-match";
 
@@ -140,6 +141,7 @@ function WhatsAppShareControl({ match }: { match: PadelWhatsAppShareMatch }) {
       href={share.href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => markScorecardShared()}
       aria-label="Share match on WhatsApp"
       title="Share this match on WhatsApp"
       className="inline-flex min-h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-400/25 hover:text-emerald-200"
@@ -175,6 +177,7 @@ function LiveShareNudgeBar({
           href={share.href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => markScorecardShared()}
           className="inline-flex min-h-10 shrink-0 touch-manipulation items-center gap-1.5 rounded-full bg-emerald-400 px-3.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
         >
           <MessageCircle className="h-4 w-4" aria-hidden />
@@ -206,6 +209,7 @@ function LockedResultShareButton({ match }: { match: PadelLockedShareMatch }) {
           title: "Padel result",
           text: share.text,
         });
+        markScorecardShared();
         return;
       }
     } catch (error) {
@@ -214,6 +218,7 @@ function LockedResultShareButton({ match }: { match: PadelLockedShareMatch }) {
       }
     }
 
+    markScorecardShared();
     window.open(share.href, "_blank", "noopener,noreferrer");
   }
 

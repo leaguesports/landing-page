@@ -15,6 +15,7 @@ import {
   VenuePicker,
 } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
+import { trackActivation } from "@/lib/analytics/activation";
 import { createPadelMatch, cacheMatchLocally } from "@/lib/match-api";
 import {
   datetimeLocalToIso,
@@ -191,6 +192,10 @@ export function PadelQuickStart({
       );
       writeLastPadelVenueSlug(venue.slug);
       cacheMatchLocally(match);
+      trackActivation("padel_match_create", {
+        match_id: match.id,
+        venue_slug: venue.slug,
+      });
       startTransition(() => {
         router.push(`/padel/${match.id}`);
       });

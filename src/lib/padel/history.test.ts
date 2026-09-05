@@ -7,6 +7,7 @@ import {
   formatHistoryOpponents,
   formatHistoryScore,
   playerHistoryPath,
+  playerRecentForm,
   summarisePlayerHistory,
 } from "./history.ts";
 
@@ -118,6 +119,39 @@ describe("didPlayerWin", () => {
   });
 });
 
+describe("playerRecentForm", () => {
+  it("returns newest-first W/L and skips undecided rows", () => {
+    assert.deepEqual(
+      playerRecentForm(
+        [
+          lockedItem("A", "me", "them"),
+          lockedItem("A", "other", "them"),
+          lockedItem("B", "me", "them"),
+          lockedItem("A", "me", "them"),
+        ],
+        "me",
+        5,
+      ),
+      ["W", "L", "W"],
+    );
+  });
+
+  it("caps at the requested limit", () => {
+    assert.deepEqual(
+      playerRecentForm(
+        [
+          lockedItem("A", "me", "them"),
+          lockedItem("B", "me", "them"),
+          lockedItem("A", "me", "them"),
+        ],
+        "me",
+        2,
+      ),
+      ["W", "L"],
+    );
+  });
+});
+
 describe("summarisePlayerHistory", () => {
   it("counts wins and losses for the named account", () => {
     const stats = summarisePlayerHistory(
@@ -128,6 +162,12 @@ describe("summarisePlayerHistory", () => {
       ],
       "me",
     );
-    assert.deepEqual(stats, { locked: 3, wins: 1, losses: 1, winRate: 50 });
+    assert.deepEqual(stats, {
+      locked: 3,
+      wins: 1,
+      losses: 1,
+      winRate: 50,
+      recentForm: ["W", "L"],
+    });
   });
 });
