@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { relativeAuthReturnTo } from "./auth-return-to.ts";
 
 /**
  * Mirror of the same-origin check in auth-return-to.ts for Node tests
@@ -18,6 +19,22 @@ function isSafeSameOriginReturnTo(
     return false;
   }
 }
+
+describe("relativeAuthReturnTo", () => {
+  it("keeps path and query without becoming absolute", () => {
+    assert.equal(
+      relativeAuthReturnTo({
+        pathname: "/padel/new",
+        search: "?venue=the-grid",
+      }),
+      "/padel/new?venue=the-grid",
+    );
+    assert.equal(
+      relativeAuthReturnTo({ pathname: "/venues/x", search: "" }),
+      "/venues/x",
+    );
+  });
+});
 
 describe("auth returnTo safety", () => {
   const origin = "https://leaguesports.co.za";

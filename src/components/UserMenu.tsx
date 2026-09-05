@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { relativeAuthReturnTo } from "@/lib/auth-return-to";
 import { ChevronDown, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -93,7 +94,7 @@ export default function UserMenu() {
     return (
       <button
         type="button"
-        onClick={() => signIn(pathname || "/")}
+        onClick={() => signIn(relativeAuthReturnTo())}
         className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/12 bg-white/5 px-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-white hover:text-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
       >
         Sign in
