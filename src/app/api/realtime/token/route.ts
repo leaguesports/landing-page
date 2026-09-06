@@ -1,10 +1,15 @@
 import Ably from "ably";
 import { NextResponse } from "next/server";
 import { getRailwayApiOrigin } from "@/lib/api-origin";
+import { parseFixtureChannel } from "@/lib/fixtures/slug";
 
 /**
  * Issues a short-lived Ably TokenRequest for authenticated (or guest) clients.
- * Capability is scoped to sport match channels: `{sport}:*` publish/subscribe.
+ *
+ * - Sport match channels (`{sport}:*`) keep publish/subscribe for padel scoring.
+ * - Fixture social channels (`fixture:<slug>`) are subscribe/history only —
+ *   server `publish.ts` uses the root key for desk writes. Slugs are allowlisted
+ *   so Ably wildcards like `fixture:*` / `fixture:foo*` cannot be minted.
  *
  * Env: ABLY_API_KEY (server-only root/api key)
  */
@@ -20,7 +25,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sport = (searchParams.get("sport") ?? "padel").toLowerCase();
   const matchId = searchParams.get("matchId");
-  // Fixture social feeds subscribe via `channel=fixture:<slug>`.
   const channel = searchParams.get("channel")?.trim() ?? "";
 
   let clientId = `guest_${crypto.randomUUID().slice(0, 10)}`;
@@ -43,13 +47,26 @@ export async function GET(request: Request) {
   }
 
   let channelPattern: string;
+  let capabilities: string[];
+
   if (channel.startsWith("fixture:")) {
-    // Exact fixture channel only — no wildcard publish for social feeds.
-    channelPattern = channel.toLowerCase();
+    const parsed = parseFixtureChannel(channel);
+    if (!parsed) {
+      return NextResponse.json(
+        { error: "Invalid fixture channel" },
+        { status: 400 },
+      );
+    }
+    channelPattern = parsed.channel;
+    // Guests must not publish — clients apply BOARD_UPDATED / FEED_ITEM_ADDED
+    // blindly, including ctaHref into <Link>.
+    capabilities = ["subscribe", "history"];
   } else if (matchId) {
     channelPattern = `${sport}:${matchId}`;
+    capabilities = ["publish", "subscribe", "presence", "history"];
   } else {
     channelPattern = `${sport}:*`;
+    capabilities = ["publish", "subscribe", "presence", "history"];
   }
 
   const rest = new Ably.Rest({ key: apiKey });
@@ -58,7 +75,12 @@ export async function GET(request: Request) {
     const tokenRequest = await rest.auth.createTokenRequest({
       clientId,
       capability: {
-        [channelPattern]: ["publish", "subscribe", "presence", "history"],
+        [channelPattern]: capabilities as (
+          | "publish"
+          | "subscribe"
+          | "presence"
+          | "history"
+        )[],
       },
       ttl: 60 * 60 * 1000,
     });

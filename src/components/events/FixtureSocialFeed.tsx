@@ -12,6 +12,7 @@ import type {
   FixtureFeedSnapshot,
   FixtureLiveBoard,
 } from "@/types/fixture-feed";
+import { isSafeRelativeHref } from "@/lib/fixtures/slug";
 import { fixtureChannelName } from "@/types/fixture-feed";
 import * as Ably from "ably";
 import { Heart, MapPin, Send } from "lucide-react";
@@ -71,7 +72,9 @@ function FeedItemRow({
           <Heart className="h-3.5 w-3.5" aria-hidden />
           {item.reactionCount > 0 ? item.reactionCount : "React"}
         </button>
-        {item.ctaHref && item.ctaLabel ? (
+        {item.ctaHref &&
+        item.ctaLabel &&
+        isSafeRelativeHref(item.ctaHref) ? (
           <Link
             href={item.ctaHref}
             className="inline-flex min-h-9 items-center rounded-full bg-white px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"

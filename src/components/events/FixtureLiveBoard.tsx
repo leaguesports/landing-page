@@ -68,20 +68,28 @@ export function FixtureLiveBoardView({
           : "rounded-2xl border border-white/10 bg-[#141814] px-4 py-4 sm:px-5"
       }
     >
-      <ol className={`flex min-w-0 ${compact ? "flex-wrap gap-x-3 gap-y-1" : "flex-col gap-2 sm:flex-row sm:gap-4"}`}>
-        {board.leaders.slice(0, 3).map((leader) => (
-          <li
-            key={`${leader.pos}-${leader.driver}`}
-            className={`min-w-0 ${compact ? "text-sm" : "flex flex-1 items-baseline gap-2 border-b border-white/6 pb-2 sm:border-b-0 sm:pb-0"}`}
-          >
-            <span className="font-display text-sky-400">P{leader.pos}</span>{" "}
-            <span className="font-semibold text-white">{leader.driver}</span>
-            {!compact && leader.gap ? (
-              <span className="text-xs text-zinc-500">{leader.gap}</span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
+      {board.leaders.length === 0 ? (
+        <p className={`text-zinc-400 ${compact ? "text-sm" : "text-base"}`}>
+          Grid not out yet
+        </p>
+      ) : (
+        <ol
+          className={`flex min-w-0 ${compact ? "flex-wrap gap-x-3 gap-y-1" : "flex-col gap-2 sm:flex-row sm:gap-4"}`}
+        >
+          {board.leaders.slice(0, 3).map((leader) => (
+            <li
+              key={`${leader.pos}-${leader.driver}`}
+              className={`min-w-0 ${compact ? "text-sm" : "flex flex-1 items-baseline gap-2 border-b border-white/6 pb-2 sm:border-b-0 sm:pb-0"}`}
+            >
+              <span className="font-display text-sky-400">P{leader.pos}</span>{" "}
+              <span className="font-semibold text-white">{leader.driver}</span>
+              {!compact && leader.gap ? (
+                <span className="text-xs text-zinc-500">{leader.gap}</span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      )}
       <div className={`flex items-center gap-2 ${compact ? "" : "mt-3 border-t border-white/8 pt-3"}`}>
         <StatusPill live={live} status={board.status} />
         {board.sessionLabel ? (

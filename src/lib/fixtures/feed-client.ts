@@ -32,12 +32,12 @@ export async function fetchFixtureFeed(
 export async function postFanReply(
   slug: string,
   body: string,
-  authorLabel?: string,
 ): Promise<FixtureFeedItem> {
   const res = await fetch(`/api/fixtures/${encodeURIComponent(slug)}/feed`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "reply", body, authorLabel }),
+    // Server ignores client author labels to prevent "Match desk" spoofing.
+    body: JSON.stringify({ action: "reply", body }),
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => null)) as {

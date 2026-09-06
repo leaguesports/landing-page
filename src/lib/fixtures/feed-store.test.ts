@@ -9,6 +9,10 @@ import {
   resetFixtureFeedStore,
   setFixtureBoard,
 } from "./feed-store.ts";
+import {
+  isValidFixtureSlug,
+  parseFixtureChannel,
+} from "./slug.ts";
 
 afterEach(() => {
   resetFixtureFeedStore();
@@ -27,8 +31,22 @@ describe("parseMatchSides", () => {
   });
 });
 
+describe("fixture slug / channel guards", () => {
+  it("accepts concrete slugs and rejects wildcards", () => {
+    assert.equal(isValidFixtureSlug("springboks-vs-all-blacks-2026-09-06"), true);
+    assert.equal(isValidFixtureSlug("fixture:*"), false);
+    assert.equal(isValidFixtureSlug("foo*"), false);
+    assert.deepEqual(parseFixtureChannel("fixture:springboks-vs-all-blacks"), {
+      channel: "fixture:springboks-vs-all-blacks",
+      slug: "springboks-vs-all-blacks",
+    });
+    assert.equal(parseFixtureChannel("fixture:*"), null);
+    assert.equal(parseFixtureChannel("fixture:foo*"), null);
+  });
+});
+
 describe("ensureFixtureFeed", () => {
-  it("seeds a match scoreboard + venue nudge for rugby", () => {
+  it("seeds a scheduled 0–0 board (not invented live scores)", () => {
     const snapshot = ensureFixtureFeed({
       slug: "springboks-vs-all-blacks-2026-09-06",
       title: "Springboks vs All Blacks",
@@ -42,13 +60,18 @@ describe("ensureFixtureFeed", () => {
     if (snapshot.board?.kind === "match_score") {
       assert.equal(snapshot.board.home.name, "Springboks");
       assert.equal(snapshot.board.away.name, "All Blacks");
-      assert.equal(snapshot.board.status, "live");
+      assert.equal(snapshot.board.status, "scheduled");
+      assert.equal(snapshot.board.home.score, 0);
+      assert.equal(snapshot.board.away.score, 0);
     }
     assert.ok(snapshot.items.some((item) => item.kind === "venue_nudge"));
-    assert.ok(snapshot.items.some((item) => item.kind === "score_update"));
+    assert.equal(
+      snapshot.items.some((item) => item.kind === "score_update"),
+      false,
+    );
   });
 
-  it("seeds motorsport top-3 for motorsport fixtures", () => {
+  it("seeds motorsport as scheduled with an empty grid", () => {
     const snapshot = ensureFixtureFeed({
       slug: "monaco-grand-prix-2026-05-24",
       title: "Monaco Grand Prix",
@@ -58,8 +81,8 @@ describe("ensureFixtureFeed", () => {
 
     assert.equal(snapshot.board?.kind, "motorsport_top3");
     if (snapshot.board?.kind === "motorsport_top3") {
-      assert.equal(snapshot.board.leaders.length, 3);
-      assert.equal(snapshot.board.leaders[0]?.pos, 1);
+      assert.equal(snapshot.board.status, "scheduled");
+      assert.equal(snapshot.board.leaders.length, 0);
     }
   });
 
@@ -81,7 +104,7 @@ describe("ensureFixtureFeed", () => {
 });
 
 describe("fan replies and reactions", () => {
-  it("prepends fan replies and increments reactions", () => {
+  it("prepends fan replies as Fan and ignores client labels", () => {
     ensureFixtureFeed({
       slug: "demo-fixture",
       title: "Springboks vs All Blacks",
@@ -89,10 +112,10 @@ describe("fan replies and reactions", () => {
       venueCount: 2,
     });
 
-    const reply = addFanReply("demo-fixture", "What a try!", "Thabo");
+    const reply = addFanReply("demo-fixture", "What a try!", "Match desk");
     assert.equal(reply.kind, "fan_reply");
     assert.equal(reply.authorKind, "fan");
-    assert.equal(reply.authorLabel, "Thabo");
+    assert.equal(reply.authorLabel, "Fan");
 
     const snapshot = getFixtureFeed("demo-fixture");
     assert.equal(snapshot?.items[0]?.id, reply.id);
@@ -101,7 +124,7 @@ describe("fan replies and reactions", () => {
     assert.equal(reacted?.reactionCount, 1);
   });
 
-  it("rejects empty replies", () => {
+  it("rejects empty replies and unknown feeds", () => {
     ensureFixtureFeed({
       slug: "demo-fixture-2",
       title: "A vs B",
@@ -109,6 +132,7 @@ describe("fan replies and reactions", () => {
       venueCount: 0,
     });
     assert.throws(() => addFanReply("demo-fixture-2", "   "), /empty/i);
+    assert.throws(() => addFanReply("missing-fixture", "hello"), /not found/i);
   });
 });
 
@@ -134,6 +158,7 @@ describe("setFixtureBoard", () => {
     assert.equal(snapshot.board?.kind, "match_score");
     if (snapshot.board?.kind === "match_score") {
       assert.equal(snapshot.board.home.score, 24);
+      assert.equal(snapshot.board.status, "live");
     }
     assert.equal(snapshot.items[0]?.kind, "score_update");
     assert.match(snapshot.items[0]?.body ?? "", /24/);

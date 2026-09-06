@@ -1,6 +1,5 @@
 import {
   addFanReply,
-  ensureFixtureFeed,
   getFixtureFeed,
   reactToFeedItem,
 } from "@/lib/fixtures/feed-store";
@@ -8,6 +7,8 @@ import {
   publishFeedItemAdded,
   publishReactionUpdated,
 } from "@/lib/fixtures/publish";
+import { clientIp, consumeRateLimit } from "@/lib/fixtures/rate-limit";
+import { isValidFixtureSlug, normalizeFixtureSlug } from "@/lib/fixtures/slug";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -16,29 +17,47 @@ type RouteContext = {
   params: Promise<{ slug: string }>;
 };
 
-export async function GET(request: Request, context: RouteContext) {
-  const { slug } = await context.params;
-  const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title") ?? slug;
-  const sportSlug = searchParams.get("sport");
-  const venuesRaw = searchParams.get("venues");
-  const venueCount = venuesRaw ? Number.parseInt(venuesRaw, 10) : 0;
+/**
+ * Read-only. Does not create feeds — pages call ensureFixtureFeed during SSR.
+ * Random slug probing must not grow the in-process Map.
+ */
+export async function GET(_request: Request, context: RouteContext) {
+  const { slug: rawSlug } = await context.params;
+  const slug = normalizeFixtureSlug(rawSlug);
+  if (!isValidFixtureSlug(slug)) {
+    return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+  }
 
   const existing = getFixtureFeed(slug);
-  const snapshot =
-    existing ??
-    ensureFixtureFeed({
-      slug,
-      title,
-      sportSlug: sportSlug || null,
-      venueCount: Number.isFinite(venueCount) ? venueCount : 0,
-    });
-
-  return NextResponse.json(snapshot);
+  if (!existing) {
+    return NextResponse.json({ error: "Feed not found" }, { status: 404 });
+  }
+  return NextResponse.json(existing);
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const { slug } = await context.params;
+  const { slug: rawSlug } = await context.params;
+  const slug = normalizeFixtureSlug(rawSlug);
+  if (!isValidFixtureSlug(slug)) {
+    return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+  }
+
+  if (!getFixtureFeed(slug)) {
+    return NextResponse.json({ error: "Feed not found" }, { status: 404 });
+  }
+
+  const ip = clientIp(request);
+  const limit = consumeRateLimit(`fixture-feed:${slug}:${ip}`, 20, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSec) },
+      },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -51,19 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
     body?: string;
     authorLabel?: string;
     itemId?: string;
-    title?: string;
-    sportSlug?: string | null;
-    venueCount?: number;
   };
-
-  if (!getFixtureFeed(slug)) {
-    ensureFixtureFeed({
-      slug,
-      title: payload.title ?? slug,
-      sportSlug: payload.sportSlug ?? null,
-      venueCount: payload.venueCount ?? 0,
-    });
-  }
 
   if (payload.action === "react") {
     const itemId = typeof payload.itemId === "string" ? payload.itemId : "";
@@ -84,7 +91,8 @@ export async function POST(request: Request, context: RouteContext) {
   if (payload.action === "reply" || !payload.action) {
     const text = typeof payload.body === "string" ? payload.body : "";
     try {
-      const item = addFanReply(slug, text, payload.authorLabel);
+      // Ignore client authorLabel — always render as "Fan".
+      const item = addFanReply(slug, text);
       void publishFeedItemAdded(item);
       return NextResponse.json(item, { status: 201 });
     } catch (error) {

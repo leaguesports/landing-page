@@ -3,7 +3,9 @@ import {
   getFixtureFeed,
   setFixtureBoard,
 } from "@/lib/fixtures/feed-store";
+import { isAuthorizedFixtureOps } from "@/lib/fixtures/ops-auth";
 import { publishBoardUpdated } from "@/lib/fixtures/publish";
+import { isValidFixtureSlug, normalizeFixtureSlug } from "@/lib/fixtures/slug";
 import type { FixtureLiveBoard } from "@/types/fixture-feed";
 import { NextResponse } from "next/server";
 
@@ -12,13 +14,6 @@ export const dynamic = "force-dynamic";
 type RouteContext = {
   params: Promise<{ slug: string }>;
 };
-
-function isAuthorizedOps(request: Request): boolean {
-  const expected = process.env.FIXTURE_OPS_KEY?.trim();
-  // Open in local/dev when unset so desk tools can prototype without secrets.
-  if (!expected) return true;
-  return request.headers.get("x-ops-key") === expected;
-}
 
 function isValidBoard(value: unknown): value is FixtureLiveBoard {
   if (!value || typeof value !== "object") return false;
@@ -37,7 +32,6 @@ function isValidBoard(value: unknown): value is FixtureLiveBoard {
   if (board.kind === "motorsport_top3") {
     return (
       Array.isArray(board.leaders) &&
-      board.leaders.length > 0 &&
       (board.status === "scheduled" ||
         board.status === "live" ||
         board.status === "final")
@@ -46,32 +40,35 @@ function isValidBoard(value: unknown): value is FixtureLiveBoard {
   return false;
 }
 
-export async function GET(request: Request, context: RouteContext) {
-  const { slug } = await context.params;
-  const { searchParams } = new URL(request.url);
-  const existing = getFixtureFeed(slug);
-  if (existing) {
-    return NextResponse.json({ fixtureSlug: slug, board: existing.board });
+export async function GET(_request: Request, context: RouteContext) {
+  const { slug: rawSlug } = await context.params;
+  const slug = normalizeFixtureSlug(rawSlug);
+  if (!isValidFixtureSlug(slug)) {
+    return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
   }
-  const snapshot = ensureFixtureFeed({
-    slug,
-    title: searchParams.get("title") ?? slug,
-    sportSlug: searchParams.get("sport"),
-    venueCount: Number.parseInt(searchParams.get("venues") ?? "0", 10) || 0,
-  });
-  return NextResponse.json({ fixtureSlug: slug, board: snapshot.board });
+
+  const existing = getFixtureFeed(slug);
+  if (!existing) {
+    return NextResponse.json({ error: "Feed not found" }, { status: 404 });
+  }
+  return NextResponse.json({ fixtureSlug: slug, board: existing.board });
 }
 
 /**
  * Manual ops (and later sports-data providers) write the live board here.
- * Set FIXTURE_OPS_KEY in production; omit locally for open prototyping.
+ * Requires FIXTURE_OPS_KEY on Vercel preview/production.
  */
 export async function PATCH(request: Request, context: RouteContext) {
-  if (!isAuthorizedOps(request)) {
+  if (!isAuthorizedFixtureOps(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { slug } = await context.params;
+  const { slug: rawSlug } = await context.params;
+  const slug = normalizeFixtureSlug(rawSlug);
+  if (!isValidFixtureSlug(slug)) {
+    return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -85,6 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (!getFixtureFeed(slug)) {
+    // Ops may publish before a page render warmed the in-process store.
     ensureFixtureFeed({
       slug,
       title: slug,
