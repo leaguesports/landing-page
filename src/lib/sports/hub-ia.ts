@@ -1,10 +1,11 @@
 /**
- * Signed-in hub information architecture (#143).
- * Playtomic-style 5-tab bottom nav — one active panel, sport dropdown.
+ * Signed-in hub information architecture (#145).
+ * 4-tab bottom nav — one active panel, sport dropdown, page search.
  */
 
 import { ALL_SPORTS_SLUG } from "./catalog.ts";
 import { intentPath } from "../intent/paths.ts";
+import { parseVenueSearch } from "../search/venueSearch.ts";
 
 export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
@@ -23,14 +24,10 @@ export const HUB_BADGE_STRIP_LIMIT = 3;
 export const HUB_PEOPLE_PREVIEW_LIMIT = 5;
 
 export const HUB_SPORT_CONTROL = "dropdown" as const;
+/** Start match/round live inside Play only — never a sticky bar above the nav. */
+export const HUB_STICKY_START_ACTIONS = false;
 
-export const HUB_TAB_IDS = [
-  "home",
-  "play",
-  "discover",
-  "people",
-  "you",
-] as const;
+export const HUB_TAB_IDS = ["home", "play", "people", "you"] as const;
 
 export type HubTabId = (typeof HUB_TAB_IDS)[number];
 
@@ -39,48 +36,37 @@ export const HUB_DEFAULT_TAB: HubTabId = "home";
 export const HUB_TABS: { id: HubTabId; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "play", label: "Play" },
-  { id: "discover", label: "Discover" },
   { id: "people", label: "People" },
   { id: "you", label: "You" },
 ];
 
-export const HUB_SPORT_SCOPED_TABS: HubTabId[] = [
-  "home",
-  "play",
-  "discover",
-];
+export const HUB_SPORT_SCOPED_TABS: HubTabId[] = ["home", "play"];
 
-export const HUB_START_ACTION_TABS: HubTabId[] = ["home", "play"];
+export const HUB_START_ACTION_TABS: HubTabId[] = ["play"];
 
-export type HubDiscoverSegment = "play" | "watch";
-
-export const HUB_DISCOVER_SEGMENTS: {
-  id: HubDiscoverSegment;
-  label: string;
-}[] = [
-  { id: "play", label: "Play" },
-  { id: "watch", label: "Watch" },
-];
+export const HUB_HISTORY_OWNER_TAB: HubTabId = "you";
 
 export const HUB_FOR_YOU_EMPTY_CTAS = [
   { href: HUB_BROWSE_FIXTURES_HREF, label: "Browse fixtures" },
+  { href: HUB_FIND_VENUES_HREF, label: "Find venues" },
+] as const;
+
+export const HUB_PLAY_INTENT_CTAS = [
   {
-    href: HUB_FIND_VENUES_HREF,
-    label: "Find venues",
-    tab: "discover" as const,
+    href: HUB_START_MATCH_HREF,
+    label: "Start a match",
+    sport: "padel",
+    description: "Lock a padel scorecard.",
+  },
+  {
+    href: HUB_START_GOLF_HREF,
+    label: "Start a round",
+    sport: "golf",
+    description: "Start a golf scorecard.",
   },
 ] as const;
 
-export const HUB_PLAY_EMPTY_CTAS = [
-  { href: HUB_START_MATCH_HREF, label: "Start a match" },
-] as const;
-
-export type HubDiscoverShortcut = {
-  href: string;
-  label: string;
-  description: string;
-  segment: HubDiscoverSegment;
-};
+export type HubPlayIntentCta = (typeof HUB_PLAY_INTENT_CTAS)[number];
 
 export function isHubTabId(value: string): value is HubTabId {
   return (HUB_TAB_IDS as readonly string[]).includes(value);
@@ -92,6 +78,10 @@ export function hubShowsSportControl(tab: HubTabId): boolean {
 
 export function hubShowsStartActions(tab: HubTabId): boolean {
   return HUB_START_ACTION_TABS.includes(tab);
+}
+
+export function hubOwnsRecentLocks(tab: HubTabId): boolean {
+  return tab === HUB_HISTORY_OWNER_TAB;
 }
 
 export function hubPlayShowsPadel(active: string): boolean {
@@ -112,53 +102,40 @@ export function hubWatchHref(active: string): string {
   return intentPath("watch", active);
 }
 
-export function hubDiscoverShortcuts(
-  segment: HubDiscoverSegment,
-  active: string,
-): HubDiscoverShortcut[] {
-  if (segment === "play") {
-    return [
-      {
-        href: HUB_FIND_VENUES_HREF,
-        label: "Venues",
-        description: "Courts, clubs, and courses near you.",
-        segment: "play",
-      },
-      {
-        href: hubPlayHref(active),
-        label: "Play nearby",
-        description: "Sport-scoped places to play — not the full directory.",
-        segment: "play",
-      },
-    ];
-  }
-
-  return [
-    {
-      href: HUB_BROWSE_FIXTURES_HREF,
-      label: "Fixtures",
-      description: "Upcoming games and screenings.",
-      segment: "watch",
-    },
-    {
-      href: hubWatchHref(active),
-      label: "Watch live",
-      description: "Bars and fan zones with screens.",
-      segment: "watch",
-    },
-    {
-      href: HUB_GUIDES_HREF,
-      label: "Guides",
-      description: "Local tips for fans and players.",
-      segment: "watch",
-    },
-  ];
+export function hubPlayIntentCtas(active: string): HubPlayIntentCta[] {
+  if (active === ALL_SPORTS_SLUG) return [...HUB_PLAY_INTENT_CTAS];
+  return HUB_PLAY_INTENT_CTAS.filter((cta) => cta.sport === active);
 }
 
-export function takeHubPreview<T>(
-  items: readonly T[],
-  limit: number,
-): T[] {
+export function hubPlayNearbyHref(active: string): string {
+  return hubPlayHref(active);
+}
+
+/**
+ * Hub search → existing venues / play / watch entry points.
+ * Uses `/venues?q=` (same as site SearchAction); the directory already
+ * parses `q` into sport/place/intent and redirects to SEO landings.
+ */
+export function hubSearchHref(query: string, activeSport: string): string {
+  const trimmed = query.trim().replace(/\s+/g, " ");
+  if (!trimmed) {
+    return activeSport === ALL_SPORTS_SLUG
+      ? HUB_FIND_VENUES_HREF
+      : hubPlayHref(activeSport);
+  }
+
+  let scoped = trimmed;
+  if (activeSport !== ALL_SPORTS_SLUG) {
+    const parsed = parseVenueSearch(trimmed, "play");
+    if (!parsed.sportSlug) {
+      scoped = `${activeSport.replace(/-/g, " ")} ${trimmed}`;
+    }
+  }
+
+  return `${HUB_FIND_VENUES_HREF}?q=${encodeURIComponent(scoped)}`;
+}
+
+export function takeHubPreview<T>(items: readonly T[], limit: number): T[] {
   return items.slice(0, Math.max(0, limit));
 }
 
