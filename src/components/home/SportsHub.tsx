@@ -91,13 +91,13 @@ import {
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
-const TAB_ICONS = {
-  home: Home,
-  play: Trophy,
-  discover: Compass,
-  people: Users,
-  you: User,
-} as const;
+function HubTabIcon({ id }: { id: HubTabId }) {
+  if (id === "home") return <Home className="h-5 w-5" aria-hidden />;
+  if (id === "play") return <Trophy className="h-5 w-5" aria-hidden />;
+  if (id === "discover") return <Compass className="h-5 w-5" aria-hidden />;
+  if (id === "people") return <Users className="h-5 w-5" aria-hidden />;
+  return <User className="h-5 w-5" aria-hidden />;
+}
 
 function SectionHeading({
   id,
@@ -254,20 +254,23 @@ function useHubPreferences(
   return [prefs, setPrefs] as const;
 }
 
-function feedIcon(kind: HubFeedItem["kind"]) {
-  if (kind === "event") return Calendar;
-  if (kind === "screening") return Tv;
-  return BookOpen;
-}
-
 function feedKindLabel(kind: HubFeedItem["kind"]): string {
   if (kind === "event") return "Event";
   if (kind === "screening") return "Screening";
   return "Guide";
 }
 
+function FeedKindIcon({ kind }: { kind: HubFeedItem["kind"] }) {
+  if (kind === "event") {
+    return <Calendar className="h-4 w-4" aria-hidden />;
+  }
+  if (kind === "screening") {
+    return <Tv className="h-4 w-4" aria-hidden />;
+  }
+  return <BookOpen className="h-4 w-4" aria-hidden />;
+}
+
 function FeedRow({ item }: { item: HubFeedItem }) {
-  const Icon = feedIcon(item.kind);
   return (
     <li>
       <Link
@@ -275,7 +278,7 @@ function FeedRow({ item }: { item: HubFeedItem }) {
         className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
       >
         <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
-          <Icon className="h-4 w-4" aria-hidden />
+          <FeedKindIcon kind={item.kind} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
@@ -963,7 +966,6 @@ export function SportsHub({
           className="grid grid-cols-5 pb-[max(0.4rem,env(safe-area-inset-bottom))]"
         >
           {HUB_TABS.map((item) => {
-            const Icon = TAB_ICONS[item.id];
             const selected = tab === item.id;
             const badge =
               item.id === "people" && friendRequestCount > 0
@@ -983,7 +985,7 @@ export function SportsHub({
                   selected ? "text-emerald-200" : "text-zinc-500 hover:text-white",
                 ].join(" ")}
               >
-                <Icon className="h-5 w-5" aria-hidden />
+                <HubTabIcon id={item.id} />
                 {item.label}
                 {badge ? (
                   <span className="absolute top-1.5 right-[calc(50%-1.15rem)] inline-flex min-w-4 items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-semibold text-zinc-950 tabular-nums">
