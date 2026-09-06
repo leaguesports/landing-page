@@ -15,6 +15,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { guideHref, isGuideSlug } from "@/lib/guides/slugs";
 import { getTopGuides, Guide } from "./guides/[[...route]]/actions";
 
 /** Same production fallback as root metadataBase — never VERCEL_URL. */
@@ -63,11 +64,13 @@ export const metadata: Metadata = {
 };
 
 function GuideCard({ guide }: { guide: Guide }) {
+  if (!isGuideSlug(guide.slug)) return null;
+
   const imageUrl = safeSanityImageUrl(guide.mainImage);
 
   return (
     <Link
-      href={`/guides/${guide.slug}`}
+      href={guideHref(guide.slug)}
       className="group block overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-zinc-800">

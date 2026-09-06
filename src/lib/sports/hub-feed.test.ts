@@ -476,6 +476,25 @@ describe("guidesToFeedItems", () => {
     assert.equal(items[0]?.startsAt, null);
   });
 
+  it("drops guides that cannot become a /guides/{slug} href", () => {
+    const items = guidesToFeedItems(
+      [
+        {
+          _id: "ok",
+          title: "The Ultimate Guide to the Best Padel Courts in Johannesburg",
+          slug: "best-padel-courts-joburg",
+        },
+        { _id: "empty", title: "Missing slug", slug: "" },
+        { _id: "bad", title: "Unlistable", slug: "undefined" },
+      ],
+      SPORT_CATALOG,
+    );
+    assert.deepEqual(
+      items.map((item) => item.href),
+      ["/guides/best-padel-courts-joburg"],
+    );
+  });
+
   it("does not force padel when a guide mentions no sport", () => {
     const items = guidesToFeedItems(
       [
