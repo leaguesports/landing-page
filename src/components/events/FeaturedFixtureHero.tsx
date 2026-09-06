@@ -1,3 +1,5 @@
+import { FixtureLiveChip } from "@/components/events/FixtureLiveChip";
+import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import {
   fixtureWatchHref,
   formatFixtureWhen,
@@ -20,8 +22,15 @@ export function FeaturedFixtureHero({
 }) {
   const when = formatFixtureWhen(fixture.startsAt, now);
   const href = fixtureWatchHref(fixture);
+  const feedHref = `/events/${fixture.slug}`;
   const sport = sportLabel(fixture.sportSlug);
   const venueCount = fixture.venues.length;
+  const board = ensureFixtureFeed({
+    slug: fixture.slug,
+    title: fixture.title,
+    sportSlug: fixture.sportSlug,
+    venueCount,
+  }).board;
 
   return (
     <article className="relative overflow-hidden rounded-3xl border border-sky-400/25 bg-linear-to-br from-sky-950/45 via-[#141814] to-[#141814] px-5 py-6 sm:px-8 sm:py-8">
@@ -47,16 +56,25 @@ export function FeaturedFixtureHero({
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
           {venueCount > 0
-            ? `${venueCount} venue${venueCount === 1 ? "" : "s"} screening this one.`
-            : "On the calendar — find a bar or fan zone when listings land."}
+            ? `${venueCount} venue${venueCount === 1 ? "" : "s"} screening this one — open the live feed, then pick a spot.`
+            : "Open the live feed, then find a bar or fan zone when listings land."}
         </p>
-        <Link
-          href={href}
-          className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
-        >
-          {venueCount > 0 ? "Where to watch" : "View event"}
-          <ArrowUpRight className="h-4 w-4" />
-        </Link>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href={`${feedHref}#live-feed`}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
+          >
+            Open live feed
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href={href}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+          >
+            {venueCount > 0 ? "Where to watch" : "View event"}
+          </Link>
+        </div>
+        <FixtureLiveChip href={feedHref} board={board} />
       </div>
     </article>
   );
