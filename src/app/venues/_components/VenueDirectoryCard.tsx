@@ -1,8 +1,6 @@
 import { VenueUtilityBadges } from "@/components/VenueUtilityBadges";
-import {
-  formatFixtureWhen,
-  type VenueScreeningDisplay,
-} from "@/lib/sports/events-feed";
+import { formatFixtureWhen } from "@/lib/sports/events-feed";
+import type { VenueScreeningDisplay } from "@/lib/sports/events-path";
 import { isRemoteVenuePhoto, venuePhotoUrl } from "@/lib/venues/photo";
 import type { Venue } from "@/services/venues";
 import { CalendarDays, MapPin, Star } from "lucide-react";

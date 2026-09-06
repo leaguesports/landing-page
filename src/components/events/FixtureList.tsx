@@ -1,8 +1,8 @@
 import { FixtureLiveChip } from "@/components/events/FixtureLiveChip";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
+import { fixtureWatchHref } from "@/lib/sports/events-path";
 import {
   formatFixtureWhen,
-  fixtureWatchHref,
   type UpcomingFixture,
 } from "@/lib/sports/events-feed";
 import { ArrowUpRight, MapPin, Tv } from "lucide-react";

@@ -1,4 +1,4 @@
-import type { VenueScreeningDisplay } from "@/lib/sports/events-feed";
+import type { VenueScreeningDisplay } from "@/lib/sports/events-path";
 import Link from "next/link";
 
 function formatScreeningWhen(startsAt: string): string {
@@ -25,7 +25,7 @@ export function VenueMatchSchedule({
   return (
     <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
       <h3 className="mb-5 font-display text-2xl tracking-wide text-white sm:text-3xl">
-        🏉 Upcoming Match Screenings
+        🎉 Upcoming Match Screenings
       </h3>
 
       {items.length === 0 ? (

@@ -1,7 +1,7 @@
 import { FeaturedFixtureHero } from "@/components/events/FeaturedFixtureHero";
+import { fixtureWatchHref } from "@/lib/sports/events-path";
 import {
   formatFixtureWhen,
-  fixtureWatchHref,
   type UpcomingFixture,
 } from "@/lib/sports/events-feed";
 import { ArrowUpRight } from "lucide-react";
