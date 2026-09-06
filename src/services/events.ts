@@ -1,13 +1,15 @@
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
 import {
+  EVENTS_CMS_BY_SLUG_QUERY,
+  findFixtureBySlug,
+} from "@/lib/sports/events-path";
+import {
   buildUpcomingFixtures,
   cmsEventsToFixtures,
-  EVENTS_CMS_BY_SLUG_QUERY,
   EVENTS_CMS_ON_DAY_QUERY,
   EVENTS_CMS_QUERY,
   EVENTS_SCREENINGS_ON_DAY_QUERY,
   EVENTS_SCREENINGS_QUERY,
-  findFixtureBySlug,
   parseFixtureSlug,
   saDayBounds,
   sortUpcomingFixtures,
