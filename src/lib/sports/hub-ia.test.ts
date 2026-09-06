@@ -4,27 +4,31 @@ import {
   HUB_BADGE_STRIP_LIMIT,
   HUB_BROWSE_FIXTURES_HREF,
   HUB_DEFAULT_TAB,
-  HUB_DISCOVER_SEGMENTS,
   HUB_FIND_VENUES_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
-  HUB_GUIDES_HREF,
+  HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
-  HUB_PLAY_EMPTY_CTAS,
   HUB_PLAY_HREF,
+  HUB_PLAY_INTENT_CTAS,
   HUB_RECENT_LOCK_LIMIT,
   HUB_SPORT_CONTROL,
+  HUB_START_ACTION_TABS,
   HUB_START_GOLF_HREF,
   HUB_START_MATCH_HREF,
+  HUB_STICKY_START_ACTIONS,
   HUB_TAB_IDS,
   HUB_TABS,
   HUB_TRAINING_HREF,
   HUB_WATCH_HREF,
-  hubDiscoverShortcuts,
+  hubOwnsRecentLocks,
   hubPlayHref,
+  hubPlayIntentCtas,
+  hubPlayNearbyHref,
   hubPlayShowsGolf,
   hubPlayShowsPadel,
+  hubSearchHref,
   hubShowsSportControl,
   hubShowsStartActions,
   hubWatchHref,
@@ -33,65 +37,88 @@ import {
   hubConnectedCount,
 } from "./hub-ia.ts";
 
-describe("signed-in hub IA v2 (#143)", () => {
-  it("exposes exactly five bottom-nav tabs in locked order", () => {
-    assert.deepEqual(HUB_TAB_IDS, [
-      "home",
-      "play",
-      "discover",
-      "people",
-      "you",
-    ]);
+describe("signed-in hub IA (#145)", () => {
+  it("exposes exactly four bottom-nav tabs in locked order", () => {
+    assert.deepEqual(HUB_TAB_IDS, ["home", "play", "people", "you"]);
     assert.deepEqual(
       HUB_TABS.map((tab) => tab.label),
-      ["Home", "Play", "Discover", "People", "You"],
+      ["Home", "Play", "People", "You"],
     );
-    assert.equal(HUB_TABS.length, 5);
+    assert.equal(HUB_TABS.length, 4);
     assert.equal(HUB_DEFAULT_TAB, "home");
-    assert.equal(isHubTabId("discover"), true);
+    assert.equal(isHubTabId("discover"), false);
+    assert.equal(isHubTabId("play"), true);
     assert.equal(isHubTabId("tools"), false);
   });
 
-  it("scopes the sport dropdown to Home, Discover, and Play", () => {
+  it("scopes the sport dropdown to Home and Play — not People or You", () => {
     assert.equal(HUB_SPORT_CONTROL, "dropdown");
     assert.equal(hubShowsSportControl("home"), true);
     assert.equal(hubShowsSportControl("play"), true);
-    assert.equal(hubShowsSportControl("discover"), true);
     assert.equal(hubShowsSportControl("people"), false);
     assert.equal(hubShowsSportControl("you"), false);
   });
 
-  it("keeps Start a match sticky on Home and Play only", () => {
+  it("keeps Start actions inside Play only — never sticky or on Home", () => {
     assert.equal(HUB_START_MATCH_HREF, "/padel/new");
     assert.equal(HUB_START_GOLF_HREF, "/golf/new");
-    assert.equal(hubShowsStartActions("home"), true);
+    assert.equal(HUB_STICKY_START_ACTIONS, false);
+    assert.deepEqual(HUB_START_ACTION_TABS, ["play"]);
     assert.equal(hubShowsStartActions("play"), true);
-    assert.equal(hubShowsStartActions("discover"), false);
+    assert.equal(hubShowsStartActions("home"), false);
     assert.equal(hubShowsStartActions("people"), false);
     assert.equal(hubShowsStartActions("you"), false);
   });
 
-  it("uses browse fixtures and Discover venues — never a tools grid", () => {
+  it("gives You ownership of recent and locked match history", () => {
+    assert.equal(HUB_HISTORY_OWNER_TAB, "you");
+    assert.equal(hubOwnsRecentLocks("you"), true);
+    assert.equal(hubOwnsRecentLocks("play"), false);
+    assert.equal(hubOwnsRecentLocks("home"), false);
+    assert.equal(hubOwnsRecentLocks("people"), false);
+    assert.equal(HUB_PADEL_HISTORY_HREF, "/padel/history");
+    assert.equal(HUB_GOLF_HISTORY_HREF, "/golf/history");
+  });
+
+  it("uses browse fixtures and venues — never a tools grid or Discover tab", () => {
     assert.deepEqual(
       HUB_FOR_YOU_EMPTY_CTAS.map((cta) => cta.href),
       [HUB_BROWSE_FIXTURES_HREF, HUB_FIND_VENUES_HREF],
     );
     assert.equal(HUB_BROWSE_FIXTURES_HREF, "/events");
     assert.equal(HUB_FIND_VENUES_HREF, "/venues");
-    assert.equal(HUB_FOR_YOU_EMPTY_CTAS[1]?.tab, "discover");
+    assert.equal(
+      HUB_FOR_YOU_EMPTY_CTAS.every((cta) => !("tab" in cta)),
+      true,
+    );
     assert.doesNotMatch(
       HUB_FOR_YOU_EMPTY_CTAS.map((cta) => cta.label).join(" "),
-      /tools/i,
+      /tools|discover/i,
     );
   });
 
-  it("uses Start a match as the Play empty CTA", () => {
+  it("treats Play as start-intent CTAs, not match history", () => {
     assert.deepEqual(
-      HUB_PLAY_EMPTY_CTAS.map((cta) => cta.href),
+      HUB_PLAY_INTENT_CTAS.map((cta) => cta.href),
+      [HUB_START_MATCH_HREF, HUB_START_GOLF_HREF],
+    );
+    assert.deepEqual(
+      HUB_PLAY_INTENT_CTAS.map((cta) => cta.label),
+      ["Start a match", "Start a round"],
+    );
+    assert.deepEqual(
+      hubPlayIntentCtas("all").map((cta) => cta.sport),
+      ["padel", "golf"],
+    );
+    assert.deepEqual(
+      hubPlayIntentCtas("padel").map((cta) => cta.href),
       [HUB_START_MATCH_HREF],
     );
-    assert.equal(HUB_PADEL_HISTORY_HREF, "/padel/history");
-    assert.equal(HUB_GOLF_HISTORY_HREF, "/golf/history");
+    assert.deepEqual(
+      hubPlayIntentCtas("golf").map((cta) => cta.href),
+      [HUB_START_GOLF_HREF],
+    );
+    assert.deepEqual(hubPlayIntentCtas("rugby"), []);
     assert.equal(hubPlayShowsPadel("all"), true);
     assert.equal(hubPlayShowsPadel("padel"), true);
     assert.equal(hubPlayShowsPadel("golf"), false);
@@ -99,28 +126,20 @@ describe("signed-in hub IA v2 (#143)", () => {
     assert.equal(hubPlayShowsGolf("padel"), false);
   });
 
-  it("curates Discover shortcuts without rebuilding the finder", () => {
-    assert.deepEqual(
-      HUB_DISCOVER_SEGMENTS.map((segment) => segment.id),
-      ["play", "watch"],
-    );
-    const play = hubDiscoverShortcuts("play", "all");
-    const watch = hubDiscoverShortcuts("watch", "all");
-    const hrefs = [...play, ...watch].map((item) => item.href);
-    assert.deepEqual(hrefs, [
-      HUB_FIND_VENUES_HREF,
-      HUB_PLAY_HREF,
-      HUB_BROWSE_FIXTURES_HREF,
-      HUB_WATCH_HREF,
-      HUB_GUIDES_HREF,
-    ]);
+  it("wires hub search to existing venues / play / watch routes", () => {
+    assert.equal(hubSearchHref("", "all"), HUB_FIND_VENUES_HREF);
+    assert.equal(hubSearchHref("   ", "padel"), "/play/padel");
+    assert.equal(hubSearchHref("sandton", "all"), "/venues?q=sandton");
+    assert.equal(hubSearchHref("sandton", "padel"), "/venues?q=padel%20sandton");
     assert.equal(
-      [...play, ...watch].some((item) => item.href.includes("?")),
-      false,
+      hubSearchHref("watch soccer", "padel"),
+      "/venues?q=watch%20soccer",
     );
     assert.equal(hubPlayHref("padel"), "/play/padel");
     assert.equal(hubWatchHref("rugby"), "/watch/rugby");
-    assert.equal(hubDiscoverShortcuts("play", "padel")[1]?.href, "/play/padel");
+    assert.equal(hubPlayNearbyHref("golf"), "/play/golf");
+    assert.equal(hubPlayHref("all"), HUB_PLAY_HREF);
+    assert.equal(hubWatchHref("all"), HUB_WATCH_HREF);
   });
 
   it("caps recent locks and badge icons on the hub", () => {

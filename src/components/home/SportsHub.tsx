@@ -36,25 +36,19 @@ import {
 } from "@/lib/sports/catalog";
 import {
   HUB_FOR_YOU_EMPTY_CTAS,
-  HUB_DISCOVER_SEGMENTS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
-  HUB_PLAY_EMPTY_CTAS,
   HUB_RECENT_LOCK_LIMIT,
-  HUB_START_GOLF_HREF,
-  HUB_START_MATCH_HREF,
   HUB_TABS,
   HUB_TRAINING_HREF,
   hubConnectedCount,
-  hubDiscoverShortcuts,
-  hubPlayShowsGolf,
-  hubPlayShowsPadel,
+  hubPlayIntentCtas,
+  hubPlayNearbyHref,
+  hubSearchHref,
   hubShowsSportControl,
-  hubShowsStartActions,
   takeHubPreview,
-  type HubDiscoverSegment,
   type HubTabId,
 } from "@/lib/sports/hub-ia";
 import {
@@ -69,10 +63,11 @@ import {
   ArrowUpRight,
   BookOpen,
   Calendar,
-  Compass,
+  ChevronDown,
   Flag,
   Heart,
   Home,
+  Search,
   Sparkles,
   Trophy,
   Tv,
@@ -80,21 +75,25 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useId,
   useMemo,
   useState,
   useSyncExternalStore,
+  type FormEvent,
   type ReactNode,
 } from "react";
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
+const HUB_CONTROL =
+  "min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] text-sm text-white outline-none focus:border-emerald-400/40";
+
 function HubTabIcon({ id }: { id: HubTabId }) {
   if (id === "home") return <Home className="h-5 w-5" aria-hidden />;
   if (id === "play") return <Trophy className="h-5 w-5" aria-hidden />;
-  if (id === "discover") return <Compass className="h-5 w-5" aria-hidden />;
   if (id === "people") return <Users className="h-5 w-5" aria-hidden />;
   return <User className="h-5 w-5" aria-hidden />;
 }
@@ -111,7 +110,7 @@ function SectionHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between lg:mb-6">
       <div className="min-w-0">
         <h2
           id={id}
@@ -120,7 +119,7 @@ function SectionHeading({
           {title}
         </h2>
         {description ? (
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-400">
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-400 lg:max-w-2xl">
             {description}
           </p>
         ) : null}
@@ -294,6 +293,71 @@ function FeedRow({ item }: { item: HubFeedItem }) {
   );
 }
 
+function HubSportControl({
+  active,
+  sports,
+  onChange,
+}: {
+  active: string;
+  sports: SportDefinition[];
+  onChange: (slug: string) => void;
+}) {
+  return (
+    <label className="relative block min-w-0 lg:w-56 lg:shrink-0">
+      <span className="sr-only">Filter hub by sport</span>
+      <select
+        value={active}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label="Filter hub by sport"
+        className={`${HUB_CONTROL} appearance-none px-4 pr-10`}
+      >
+        <option value={ALL_SPORTS_SLUG}>All sports</option>
+        {sports.map((sport) => (
+          <option key={sport.slug} value={sport.slug}>
+            {sport.name}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
+        aria-hidden
+      />
+    </label>
+  );
+}
+
+function HubSearch({
+  query,
+  onQueryChange,
+  onSubmit,
+}: {
+  query: string;
+  onQueryChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const searchId = useId();
+  return (
+    <form onSubmit={onSubmit} className="relative min-w-0 flex-1" role="search">
+      <label className="sr-only" htmlFor={searchId}>
+        Search venues, play, and watch
+      </label>
+      <Search
+        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
+        aria-hidden
+      />
+      <input
+        id={searchId}
+        type="search"
+        value={query}
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder="Search venues, play, watch…"
+        autoComplete="off"
+        className={`${HUB_CONTROL} px-4 pl-10 placeholder:text-zinc-600`}
+      />
+    </form>
+  );
+}
+
 export function SportsHub({
   user,
   historyError,
@@ -314,6 +378,7 @@ export function SportsHub({
   initialFollowedSports = [],
   initialActiveSport = null,
 }: SportsHubProps) {
+  const router = useRouter();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
   const padelLocked = lockedActivity?.padel ?? historyItems.length;
   const golfLocked = lockedActivity?.golf ?? golfHistoryItems.length;
@@ -334,8 +399,7 @@ export function SportsHub({
   );
   const tablistId = useId();
   const [tab, setTab] = useState<HubTabId>("home");
-  const [discoverSegment, setDiscoverSegment] =
-    useState<HubDiscoverSegment>("play");
+  const [searchQuery, setSearchQuery] = useState("");
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
   );
@@ -390,8 +454,6 @@ export function SportsHub({
     (item) => item.id !== nextUp?.id && !followedRestIds.has(item.id),
   );
   const nextUpIsFollowedFixture = Boolean(nextUp?.followedFixture);
-  const showPadelPlay = hubPlayShowsPadel(active);
-  const showGolfPlay = hubPlayShowsGolf(active);
   const stats = summarisePlayerHistory(historyItems, user.id);
   const activeSport =
     active === ALL_SPORTS_SLUG
@@ -403,14 +465,20 @@ export function SportsHub({
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const showStartActions = hubShowsStartActions(tab);
-  const discoverShortcuts = hubDiscoverShortcuts(discoverSegment, active);
-  const playEmpty =
-    (!showPadelPlay || (recentPadel.length === 0 && !historyError)) &&
-    (!showGolfPlay || (recentGolf.length === 0 && !golfHistoryError));
+  const playIntentCtas = hubPlayIntentCtas(active);
+  const youHistoryEmpty =
+    recentPadel.length === 0 &&
+    !historyError &&
+    recentGolf.length === 0 &&
+    !golfHistoryError;
 
   function focusSport(slug: string) {
     setPrefs(selectHubSport(prefs, slug, knownSlugs));
+  }
+
+  function submitHubSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(hubSearchHref(searchQuery, active));
   }
 
   const forYouEmpty =
@@ -420,43 +488,28 @@ export function SportsHub({
     generalRest.length === 0;
 
   return (
-    <div
-      className={[
-        "min-h-screen bg-[#0c0f0c] text-white",
-        showStartActions
-          ? "pb-[calc(9.25rem+env(safe-area-inset-bottom))]"
-          : "pb-[calc(5.75rem+env(safe-area-inset-bottom))]",
-      ].join(" ")}
-    >
+    <div className="min-h-screen bg-[#0c0f0c] pb-[calc(5.75rem+env(safe-area-inset-bottom))] text-white lg:pb-[calc(6.25rem+env(safe-area-inset-bottom))]">
       <FriendsSnapshotSeed snapshot={friends} />
       <h1 className="sr-only">Your hub</h1>
 
-      {showSportControl ? (
-        <div className="sticky top-16 z-30 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
-            <label className="min-w-0 flex-1">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                Sport
-              </span>
-              <select
-                value={active}
-                onChange={(event) => focusSport(event.target.value)}
-                aria-label="Filter hub by sport"
-                className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-3 text-sm text-white outline-none focus:border-emerald-400/40"
-              >
-                <option value={ALL_SPORTS_SLUG}>All sports</option>
-                {sports.map((sport) => (
-                  <option key={sport.slug} value={sport.slug}>
-                    {sport.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+      <div className="sticky top-16 z-30 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 py-3 sm:px-6 lg:max-w-5xl lg:flex-row lg:items-center lg:gap-3 lg:px-8">
+          {showSportControl ? (
+            <HubSportControl
+              active={active}
+              sports={sports}
+              onChange={focusSport}
+            />
+          ) : null}
+          <HubSearch
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onSubmit={submitHubSearch}
+          />
         </div>
-      ) : null}
+      </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8 lg:max-w-5xl lg:px-8 lg:py-10">
         {tab === "home" ? (
           <div
             role="tabpanel"
@@ -479,7 +532,7 @@ export function SportsHub({
               {nextUp ? (
                 <Link
                   href={nextUp.href}
-                  className="group mb-4 block overflow-hidden rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5 transition-colors hover:border-emerald-400/40 sm:p-6"
+                  className="group mb-4 block overflow-hidden rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5 transition-colors hover:border-emerald-400/40 sm:p-6 lg:p-7"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
                     {nextUpIsFollowedFixture
@@ -571,34 +624,19 @@ export function SportsHub({
                       : "Follow sports in onboarding or the sport menu, or follow a fixture on Events — matching games land here."}
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
-                    {HUB_FOR_YOU_EMPTY_CTAS.map((cta, index) =>
-                      "tab" in cta && cta.tab ? (
-                        <button
-                          key={cta.href}
-                          type="button"
-                          onClick={() => setTab(cta.tab)}
-                          className={
-                            index === 0
-                              ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                              : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white hover:bg-white/5"
-                          }
-                        >
-                          {cta.label}
-                        </button>
-                      ) : (
-                        <Link
-                          key={cta.href}
-                          href={cta.href}
-                          className={
-                            index === 0
-                              ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                              : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white hover:bg-white/5"
-                          }
-                        >
-                          {cta.label}
-                        </Link>
-                      ),
-                    )}
+                    {HUB_FOR_YOU_EMPTY_CTAS.map((cta, index) => (
+                      <Link
+                        key={cta.href}
+                        href={cta.href}
+                        className={
+                          index === 0
+                            ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                            : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white hover:bg-white/5"
+                        }
+                      >
+                        {cta.label}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -616,163 +654,68 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description="Start a match, resume a scorecard, and recent locks."
+                description={
+                  activeSport
+                    ? `Decide what ${activeSport.name.toLowerCase()} to play.`
+                    : "Decide what to play — start a match or a round."
+                }
               />
 
-              {showPadelPlay ? (
-                <div className="mb-8">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      Padel
-                    </p>
-                    {historyItems.length > 0 ? (
+              {playIntentCtas.length > 0 ? (
+                <ul
+                  className={
+                    playIntentCtas.length > 1
+                      ? "grid gap-3 lg:grid-cols-2 lg:gap-4"
+                      : "grid gap-3"
+                  }
+                >
+                  {playIntentCtas.map((cta, index) => (
+                    <li key={cta.href}>
                       <Link
-                        href={HUB_PADEL_HISTORY_HREF}
-                        className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                        href={cta.href}
+                        className={[
+                          "group flex h-full flex-col justify-between gap-4 rounded-3xl border px-5 py-6 transition-colors sm:px-6 lg:px-7 lg:py-7",
+                          index === 0
+                            ? "border-emerald-400/25 bg-emerald-400/8 hover:border-emerald-400/45"
+                            : "border-white/8 bg-[#141814] hover:border-white/16",
+                        ].join(" ")}
                       >
-                        View all
+                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
+                          {cta.sport === "golf" ? (
+                            <Flag className="h-4 w-4" aria-hidden />
+                          ) : (
+                            <Trophy className="h-4 w-4" aria-hidden />
+                          )}
+                        </span>
+                        <span>
+                          <span className="block font-display text-3xl tracking-wide text-white">
+                            {cta.label}
+                          </span>
+                          <span className="mt-1.5 block text-sm leading-relaxed text-zinc-400">
+                            {cta.description}
+                          </span>
+                        </span>
                       </Link>
-                    ) : null}
-                  </div>
-                  {historyError ? (
-                    <div className="space-y-5 rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
-                      <p className="text-sm text-red-300">{historyError}</p>
-                      <Link
-                        href={HUB_START_MATCH_HREF}
-                        className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        Start a match anyway
-                      </Link>
-                    </div>
-                  ) : recentPadel.length > 0 ? (
-                    <PadelHistoryList
-                      items={recentPadel}
-                      playerUserId={user.id}
-                    />
-                  ) : showGolfPlay && recentGolf.length > 0 ? (
-                    <p className="text-sm leading-relaxed text-zinc-500">
-                      No locked padel matches yet.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {showGolfPlay ? (
-                <div className="mb-8">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      Golf
-                    </p>
-                    {golfHistoryItems.length > 0 ? (
-                      <Link
-                        href={HUB_GOLF_HISTORY_HREF}
-                        className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                      >
-                        View all
-                      </Link>
-                    ) : null}
-                  </div>
-                  {golfHistoryError ? (
-                    <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
-                      <p className="text-sm text-red-300">{golfHistoryError}</p>
-                    </div>
-                  ) : recentGolf.length > 0 ? (
-                    <GolfHistoryList items={recentGolf} />
-                  ) : showPadelPlay && recentPadel.length > 0 ? (
-                    <p className="text-sm leading-relaxed text-zinc-500">
-                      No locked golf rounds yet.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {playEmpty ? (
+                    </li>
+                  ))}
+                </ul>
+              ) : (
                 <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
                   <p className="max-w-md text-sm leading-relaxed text-zinc-400">
                     {activeSport
-                      ? `No ${activeSport.name.toLowerCase()} scorecards yet. Start a match to lock a result.`
-                      : "No locked scorecards yet. Start a match, play it out, and end the scorecard."}
+                      ? `No scorecard for ${activeSport.name} yet. Find a place to play nearby.`
+                      : "Find a place to play nearby."}
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    {HUB_PLAY_EMPTY_CTAS.map((cta) => (
-                      <Link
-                        key={cta.href}
-                        href={cta.href}
-                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        {cta.label}
-                      </Link>
-                    ))}
+                  <div className="mt-5">
+                    <Link
+                      href={hubPlayNearbyHref(active)}
+                      className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                    >
+                      Find a place to play
+                    </Link>
                   </div>
                 </div>
-              ) : null}
-            </section>
-          </div>
-        ) : null}
-
-        {tab === "discover" ? (
-          <div
-            role="tabpanel"
-            id="hub-panel-discover"
-            aria-labelledby="hub-tab-discover"
-          >
-            <section aria-labelledby="hub-discover">
-              <SectionHeading
-                id="hub-discover"
-                title="Discover"
-                description="Shortcuts to play and watch — open the full pages from here."
-              />
-
-              <div
-                role="radiogroup"
-                aria-label="Discover Play or Watch"
-                className="mb-6 grid grid-cols-2 gap-2 rounded-full border border-white/8 bg-[#141814] p-1"
-              >
-                {HUB_DISCOVER_SEGMENTS.map((segment) => {
-                  const selected = discoverSegment === segment.id;
-                  return (
-                    <button
-                      key={segment.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setDiscoverSegment(segment.id)}
-                      className={[
-                        "inline-flex min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors",
-                        selected
-                          ? "bg-emerald-400 text-zinc-950"
-                          : "text-zinc-400 hover:text-white",
-                      ].join(" ")}
-                    >
-                      {segment.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <ul className="space-y-3">
-                {discoverShortcuts.map((shortcut) => (
-                  <li key={shortcut.href}>
-                    <Link
-                      href={shortcut.href}
-                      className="group flex items-start justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-5 transition-colors hover:border-white/16"
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium text-white group-hover:text-[var(--color-brand)]">
-                          {shortcut.label}
-                        </span>
-                        <span className="mt-1 block text-sm leading-relaxed text-zinc-500">
-                          {shortcut.description}
-                        </span>
-                      </span>
-                      <ArrowUpRight
-                        className="mt-0.5 h-4 w-4 shrink-0 text-zinc-600 group-hover:text-white"
-                        aria-hidden
-                      />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              )}
             </section>
           </div>
         ) : null}
@@ -787,105 +730,195 @@ export function SportsHub({
               <SectionHeading
                 id="hub-you"
                 title="You"
-                description="Identity, form, badges, and connected services."
+                description="Identity, form, badges, and recent locks."
               />
 
-              <div className="mb-8 flex items-center gap-3">
-                <HubAvatar name={displayName} avatarUrl={user.avatarUrl} />
-                <div className="min-w-0">
-                  <p className="truncate font-display text-2xl tracking-wide text-white">
-                    {displayName}
-                  </p>
-                  {handle ? (
-                    <p className="truncate text-sm text-zinc-500">{handle}</p>
-                  ) : (
-                    <p className="text-sm text-zinc-500">Your hub</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mb-8">
-                <div className="mb-3 flex items-baseline gap-2">
-                  <span className="font-display text-2xl tracking-wide text-white tabular-nums">
-                    {gamesKnown ? gamesPlayed : "—"}
-                  </span>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                    Games
-                  </span>
-                </div>
-                {activityError ? (
-                  <p className="mb-3 text-[11px] leading-snug text-amber-300/90">
-                    Couldn’t load all activity
-                  </p>
-                ) : null}
-                {stats.locked > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                      { label: "Locked", value: String(stats.locked) },
-                      { label: "Wins", value: String(stats.wins) },
-                      { label: "Win rate", value: `${stats.winRate}%` },
-                      {
-                        label: "Form",
-                        value:
-                          stats.recentForm.length > 0
-                            ? stats.recentForm.join(" ")
-                            : "—",
-                      },
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-4"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                          {stat.label}
-                        </p>
-                        <p className="mt-1.5 font-display text-xl tracking-wide text-white tabular-nums">
-                          {stat.value}
-                        </p>
-                      </div>
-                    ))}
+              <div className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+                <div>
+                  <div className="mb-8 flex items-center gap-3">
+                    <HubAvatar name={displayName} avatarUrl={user.avatarUrl} />
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-2xl tracking-wide text-white">
+                        {displayName}
+                      </p>
+                      {handle ? (
+                        <p className="truncate text-sm text-zinc-500">{handle}</p>
+                      ) : (
+                        <p className="text-sm text-zinc-500">Your hub</p>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm leading-relaxed text-zinc-500">
-                    Lock a match to see form here.
-                  </p>
-                )}
-              </div>
 
-              <BadgesPanel
-                initial={badges}
-                padelStats={stats}
-                golfLocked={golfLocked}
-                friendCount={friends.friends.length}
-                variant="strip"
-                className="mt-0"
-              />
+                  <div className="mb-8">
+                    <div className="mb-3 flex items-baseline gap-2">
+                      <span className="font-display text-2xl tracking-wide text-white tabular-nums">
+                        {gamesKnown ? gamesPlayed : "—"}
+                      </span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                        Games
+                      </span>
+                    </div>
+                    {activityError ? (
+                      <p className="mb-3 text-[11px] leading-snug text-amber-300/90">
+                        Couldn’t load all activity
+                      </p>
+                    ) : null}
+                    {stats.locked > 0 ? (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+                        {[
+                          { label: "Locked", value: String(stats.locked) },
+                          { label: "Wins", value: String(stats.wins) },
+                          { label: "Win rate", value: `${stats.winRate}%` },
+                          {
+                            label: "Form",
+                            value:
+                              stats.recentForm.length > 0
+                                ? stats.recentForm.join(" ")
+                                : "—",
+                          },
+                        ].map((stat) => (
+                          <div
+                            key={stat.label}
+                            className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-4"
+                          >
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                              {stat.label}
+                            </p>
+                            <p className="mt-1.5 font-display text-xl tracking-wide text-white tabular-nums">
+                              {stat.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-zinc-500">
+                        Lock a match to see form here.
+                      </p>
+                    )}
+                  </div>
 
-              <div className="mt-8 space-y-3">
-                <Link
-                  href={HUB_INTEGRATIONS_HREF}
-                  className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
-                >
-                  <span>
-                    {connectedCount > 0
-                      ? `Connected · ${connectedCount}`
-                      : "Connected services"}
-                  </span>
-                  <ArrowUpRight
-                    className="h-4 w-4 shrink-0 text-zinc-600"
-                    aria-hidden
+                  <BadgesPanel
+                    initial={badges}
+                    padelStats={stats}
+                    golfLocked={golfLocked}
+                    friendCount={friends.friends.length}
+                    variant="strip"
+                    className="mt-0"
                   />
-                </Link>
-                <Link
-                  href={HUB_TRAINING_HREF}
-                  className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
-                >
-                  <span>Training</span>
-                  <ArrowUpRight
-                    className="h-4 w-4 shrink-0 text-zinc-600"
-                    aria-hidden
-                  />
-                </Link>
+
+                  <div className="mt-8 space-y-3">
+                    <Link
+                      href={HUB_INTEGRATIONS_HREF}
+                      className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
+                    >
+                      <span>
+                        {connectedCount > 0
+                          ? `Connected · ${connectedCount}`
+                          : "Connected services"}
+                      </span>
+                      <ArrowUpRight
+                        className="h-4 w-4 shrink-0 text-zinc-600"
+                        aria-hidden
+                      />
+                    </Link>
+                    <Link
+                      href={HUB_TRAINING_HREF}
+                      className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
+                    >
+                      <span>Training</span>
+                      <ArrowUpRight
+                        className="h-4 w-4 shrink-0 text-zinc-600"
+                        aria-hidden
+                      />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="mt-10 lg:mt-0">
+                  <div className="mb-5">
+                    <h3 className="font-display text-xl tracking-wide text-white">
+                      Recent locks
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+                      Locked padel matches and golf rounds.
+                    </p>
+                  </div>
+
+                  <div className="space-y-8 lg:space-y-6">
+                    <div>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                          Padel
+                        </p>
+                        {historyItems.length > 0 ? (
+                          <Link
+                            href={HUB_PADEL_HISTORY_HREF}
+                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                          >
+                            View all
+                          </Link>
+                        ) : null}
+                      </div>
+                      {historyError ? (
+                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
+                          <p className="text-sm text-red-300">{historyError}</p>
+                        </div>
+                      ) : recentPadel.length > 0 ? (
+                        <PadelHistoryList
+                          items={recentPadel}
+                          playerUserId={user.id}
+                        />
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500">
+                          No locked padel matches yet.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                          Golf
+                        </p>
+                        {golfHistoryItems.length > 0 ? (
+                          <Link
+                            href={HUB_GOLF_HISTORY_HREF}
+                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                          >
+                            View all
+                          </Link>
+                        ) : null}
+                      </div>
+                      {golfHistoryError ? (
+                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
+                          <p className="text-sm text-red-300">
+                            {golfHistoryError}
+                          </p>
+                        </div>
+                      ) : recentGolf.length > 0 ? (
+                        <GolfHistoryList items={recentGolf} />
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500">
+                          No locked golf rounds yet.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {youHistoryEmpty ? (
+                    <p className="mt-6 text-sm leading-relaxed text-zinc-500">
+                      Start a match or round from{" "}
+                      <button
+                        type="button"
+                        onClick={() => setTab("play")}
+                        className="font-medium text-emerald-300 hover:text-emerald-200"
+                      >
+                        Play
+                      </button>{" "}
+                      to lock a result here.
+                    </p>
+                  ) : null}
+                </div>
               </div>
             </section>
           </div>
@@ -942,28 +975,11 @@ export function SportsHub({
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/8 bg-[#0c0f0c]/95 backdrop-blur-xl">
-        {showStartActions ? (
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-4 py-2.5 sm:px-6">
-            <Link
-              href={HUB_START_MATCH_HREF}
-              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 sm:flex-none"
-            >
-              Start a match
-            </Link>
-            <Link
-              href={HUB_START_GOLF_HREF}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
-            >
-              Start a round
-            </Link>
-          </div>
-        ) : null}
-
         <nav
           id={tablistId}
           role="tablist"
           aria-label="Hub"
-          className="grid grid-cols-5 pb-[max(0.4rem,env(safe-area-inset-bottom))]"
+          className="mx-auto grid max-w-none grid-cols-4 pb-[max(0.4rem,env(safe-area-inset-bottom))] lg:max-w-xl"
         >
           {HUB_TABS.map((item) => {
             const selected = tab === item.id;
