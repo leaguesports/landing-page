@@ -1,347 +1,385 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
 import { CommunityAvatar } from "@/components/communities/CommunityAvatar";
-import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth/login-href";
-import { useAuth } from "@/lib/auth/use-auth";
+import { useAuth } from "@/hooks/useAuth";
+import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import {
-  getPoolStandings,
+  formatMemberCount,
+  formatPoolWinner,
   isPoolsUnavailable,
   joinPool,
   recordPoolResult,
   submitPoolPick,
-  type PoolStandingRow,
+  type PoolStanding,
   type PredictionPool,
 } from "@/lib/pools/pools";
-import { buildWhatsAppShareHref, poolInviteUrl } from "@/lib/pools/whatsapp-share";
+import { buildPoolWhatsAppShare } from "@/lib/pools/whatsapp-share";
+import { MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 
-type Props = {
-  initialPool: PredictionPool;
+type PoolJoinCardProps = {
+  pool: PredictionPool;
+  fixtureTitle: string;
+  standings: PoolStanding[];
 };
 
-function formatKickoff(iso: string | null): string | null {
-  if (!iso) {
-    return null;
-  }
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return new Intl.DateTimeFormat("en-ZA", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+function sendToLogin(code: string) {
+  const returnTo =
+    (typeof window !== "undefined" && relativeAuthReturnTo()) ||
+    `/pools/${code}`;
+  window.location.href = getLoginPageHref(returnTo);
 }
 
-function winnerLabel(winner: "home" | "away" | "draw" | null): string {
-  if (winner === "home") {
-    return "Home";
-  }
-  if (winner === "away") {
-    return "Away";
-  }
-  if (winner === "draw") {
-    return "Draw";
-  }
-  return "—";
-}
-
-export function PoolJoinCard({ initialPool }: Props) {
-  const { user } = useAuth();
-  const [pool, setPool] = useState(initialPool);
-  const [standings, setStandings] = useState<PoolStandingRow[] | null>(null);
-  const [tip, setTip] = useState(initialPool.myPick?.tip ?? "");
+export function PoolJoinCard({
+  pool,
+  fixtureTitle,
+  standings,
+}: PoolJoinCardProps) {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [current, setCurrent] = useState(pool);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [homeScore, setHomeScore] = useState(
-    initialPool.myPick?.homeScore != null ? String(initialPool.myPick.homeScore) : "",
+    current.myPick?.homeScore?.toString() ?? "",
   );
   const [awayScore, setAwayScore] = useState(
-    initialPool.myPick?.awayScore != null ? String(initialPool.myPick.awayScore) : "",
+    current.myPick?.awayScore?.toString() ?? "",
   );
-  const [winner, setWinner] = useState<"home" | "away" | "draw" | "">(
-    initialPool.myPick?.winner ?? "",
-  );
+  const [tip, setTip] = useState(current.myPick?.tip ?? "");
   const [resultHome, setResultHome] = useState("");
   const [resultAway, setResultAway] = useState("");
-  const [busy, setBusy] = useState<"join" | "pick" | "result" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  const inviteUrl = useMemo(() => poolInviteUrl(pool.inviteCode), [pool.inviteCode]);
-  const whatsappHref = useMemo(
-    () =>
-      buildWhatsAppShareHref({
-        inviteCode: pool.inviteCode,
-        title: pool.title,
-      }),
-    [pool.inviteCode, pool.title],
-  );
-  const loginHref = getLoginPageHref(relativeAuthReturnTo(`/pools/${pool.inviteCode}`));
-  const kickoff = formatKickoff(pool.kicksOffAt);
-
-  async function onJoin() {
-    setBusy("join");
-    setError(null);
-    const result = await joinPool(pool.inviteCode);
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    setPool(result.data);
-  }
-
-  async function onSubmitPick(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy("pick");
-    setError(null);
-    const home = homeScore.trim() === "" ? undefined : Number(homeScore);
-    const away = awayScore.trim() === "" ? undefined : Number(awayScore);
-    const result = await submitPoolPick(pool.inviteCode, {
-      tip: tip.trim() || undefined,
-      homeScore: home,
-      awayScore: away,
-      winner: winner || undefined,
+  const share = useMemo(() => {
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://leaguesports.co.za";
+    return buildPoolWhatsAppShare({
+      inviteCode: current.inviteCode,
+      fixtureTitle,
+      poolTitle: current.title,
+      origin,
     });
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    setPool(result.data);
-  }
+  }, [current.inviteCode, current.title, fixtureTitle]);
 
-  async function onRecordResult(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy("result");
+  function onJoin() {
     setError(null);
-    const result = await recordPoolResult(pool.inviteCode, {
-      homeScore: Number(resultHome),
-      awayScore: Number(resultAway),
-    });
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.message);
+    setMessage(null);
+    if (!isAuthenticated) {
+      sendToLogin(current.inviteCode);
       return;
     }
-    setPool(result.data);
+    startTransition(() => {
+      void joinPool(current.inviteCode).then((result) => {
+        if (!result.ok) {
+          if (result.status === 401) {
+            sendToLogin(current.inviteCode);
+            return;
+          }
+          if (isPoolsUnavailable(result.status)) {
+            setError("Prediction pools aren’t live on this environment yet.");
+            return;
+          }
+          setError(result.error);
+          return;
+        }
+        setCurrent(result.value);
+        setMessage("You’re in. Lock a tip before kickoff.");
+        router.refresh();
+      });
+    });
   }
 
-  async function onLoadStandings() {
-    const result = await getPoolStandings(pool.inviteCode);
-    if (!result.ok) {
-      if (isPoolsUnavailable(result)) {
-        setError(result.message);
-      } else {
-        setError(result.message);
-      }
+  function onPick(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!isAuthenticated) {
+      sendToLogin(current.inviteCode);
       return;
     }
-    setStandings(result.data.standings);
+
+    const home = homeScore.trim() === "" ? null : Number.parseInt(homeScore, 10);
+    const away = awayScore.trim() === "" ? null : Number.parseInt(awayScore, 10);
+    if (
+      (homeScore.trim() && !Number.isInteger(home)) ||
+      (awayScore.trim() && !Number.isInteger(away))
+    ) {
+      setError("Scores must be whole numbers.");
+      return;
+    }
+
+    startTransition(() => {
+      void submitPoolPick(current.inviteCode, {
+        tip: tip.trim() || null,
+        homeScore: home,
+        awayScore: away,
+      }).then((result) => {
+        if (!result.ok) {
+          if (result.status === 401) {
+            sendToLogin(current.inviteCode);
+            return;
+          }
+          setError(result.error);
+          return;
+        }
+        setCurrent(result.value);
+        setMessage("Tip saved.");
+        router.refresh();
+      });
+    });
   }
+
+  function onResult(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    const home = Number.parseInt(resultHome, 10);
+    const away = Number.parseInt(resultAway, 10);
+    if (!Number.isInteger(home) || !Number.isInteger(away)) {
+      setError("Result scores must be whole numbers.");
+      return;
+    }
+    startTransition(() => {
+      void recordPoolResult(current.inviteCode, {
+        homeScore: home,
+        awayScore: away,
+      }).then((result) => {
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setCurrent(result.value);
+        setMessage("Result recorded. Standings are up.");
+        router.refresh();
+      });
+    });
+  }
+
+  const heading = current.title?.trim() || `${fixtureTitle} tips`;
 
   return (
-    <article className="space-y-6 rounded-2xl border border-white/10 bg-[#141814] p-5 sm:p-6">
-      <header className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#3dff87]">
-          Invite-only pool
-        </p>
-        <h1 className="font-display text-2xl text-white sm:text-3xl">{pool.title}</h1>
-        <p className="text-sm text-white/60">
-          Fixture {" "}
-          <Link href={`/events/${pool.fixtureSlug}`} className="text-[#3dff87] underline-offset-2 hover:underline">
-            {pool.fixtureSlug}
-          </Link>
-          {kickoff ? ` · Tips lock at ${kickoff}` : " · Tips stay open until the host records the result"}
-        </p>
-        <p className="text-sm text-white/50">
-          {pool.memberCount} {pool.memberCount === 1 ? "friend" : "friends"} in this pool. No money, no wallets — just
-          tips.
-        </p>
-      </header>
-
-      <div className="flex flex-wrap gap-2">
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#25D366] px-4 text-sm font-semibold text-[#052010]"
+    <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <Link
+          href={`/events/${current.fixtureSlug}`}
+          className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
         >
-          Forward on WhatsApp
-        </a>
-        <a
-          href={inviteUrl}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-4 text-sm font-semibold text-white"
-        >
-          Copy-ready link
-        </a>
-      </div>
-      <p className="break-all font-mono text-xs text-white/45">{inviteUrl}</p>
+          ← {fixtureTitle}
+        </Link>
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+        <header className="mt-6 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+            Prediction pool
+          </p>
+          <h1 className="mt-2 font-display text-4xl tracking-wide text-white sm:text-5xl">
+            {heading}
+          </h1>
+          <p className="mt-3 text-sm text-zinc-400">
+            {fixtureTitle} · {formatMemberCount(current.memberCount)}
+            {current.locked ? " · Tips locked" : " · Tips open until kickoff"}
+          </p>
 
-      {!user ? (
-        <p className="text-sm text-white/70">
-          Guests can view this pool.{" "}
-          <Link href={loginHref} className="text-[#3dff87] underline-offset-2 hover:underline">
-            Sign in to join or lock a tip
-          </Link>
-          .
-        </p>
-      ) : null}
-
-      {user && !pool.joined ? (
-        <button
-          type="button"
-          onClick={() => void onJoin()}
-          disabled={busy !== null}
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#3dff87] px-5 text-sm font-semibold text-[#052010] disabled:opacity-60"
-        >
-          {busy === "join" ? "Joining…" : "Join this pool"}
-        </button>
-      ) : null}
-
-      {pool.joined && !pool.locked ? (
-        <form onSubmit={(event) => void onSubmitPick(event)} className="space-y-3">
-          <p className="text-sm font-medium text-white">Your tip</p>
-          <label className="block text-xs uppercase tracking-wide text-white/45">
-            Note
-            <input
-              value={tip}
-              onChange={(event) => setTip(event.target.value)}
-              maxLength={160}
-              placeholder="Home to nick it"
-              className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-xs uppercase tracking-wide text-white/45">
-              Home
-              <input
-                inputMode="numeric"
-                value={homeScore}
-                onChange={(event) => setHomeScore(event.target.value)}
-                className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-              />
-            </label>
-            <label className="block text-xs uppercase tracking-wide text-white/45">
-              Away
-              <input
-                inputMode="numeric"
-                value={awayScore}
-                onChange={(event) => setAwayScore(event.target.value)}
-                className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-              />
-            </label>
-          </div>
-          <fieldset className="flex flex-wrap gap-2">
-            {(["home", "away", "draw"] as const).map((option) => (
-              <label
-                key={option}
-                className={`inline-flex min-h-11 items-center rounded-full border px-3 text-sm ${
-                  winner === option
-                    ? "border-[#3dff87] bg-[#3dff87]/10 text-[#3dff87]"
-                    : "border-white/15 text-white/70"
-                }`}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!current.joined ? (
+              <button
+                type="button"
+                disabled={pending || authLoading}
+                onClick={onJoin}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 hover:bg-sky-400 hover:text-white disabled:opacity-60"
               >
-                <input
-                  type="radio"
-                  name="winner"
-                  value={option}
-                  checked={winner === option}
-                  onChange={() => setWinner(option)}
-                  className="sr-only"
-                />
-                {winnerLabel(option)}
-              </label>
-            ))}
-          </fieldset>
-          <button
-            type="submit"
-            disabled={busy !== null}
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#3dff87] px-5 text-sm font-semibold text-[#052010] disabled:opacity-60"
-          >
-            {busy === "pick" ? "Saving…" : pool.myPick ? "Update tip" : "Lock in tip"}
-          </button>
-        </form>
-      ) : null}
-
-      {pool.locked ? (
-        <p className="text-sm text-[#3dff87]">
-          Tips are locked{pool.result ? ` · Final ${pool.result.homeScore}–${pool.result.awayScore}` : ""}.
-        </p>
-      ) : null}
-
-      {pool.role === "owner" && !pool.result ? (
-        <form onSubmit={(event) => void onRecordResult(event)} className="space-y-3 border-t border-white/10 pt-4">
-          <p className="text-sm font-medium text-white">Host: record the final score</p>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-xs uppercase tracking-wide text-white/45">
-              Home
-              <input
-                required
-                inputMode="numeric"
-                value={resultHome}
-                onChange={(event) => setResultHome(event.target.value)}
-                className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-              />
-            </label>
-            <label className="block text-xs uppercase tracking-wide text-white/45">
-              Away
-              <input
-                required
-                inputMode="numeric"
-                value={resultAway}
-                onChange={(event) => setResultAway(event.target.value)}
-                className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-              />
-            </label>
+                {isAuthenticated ? "Join pool" : "Sign in to join"}
+              </button>
+            ) : (
+              <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-sky-200">
+                {current.role ?? "member"}
+              </span>
+            )}
+            <a
+              href={share.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-semibold text-zinc-950 hover:bg-[#1ebe5d]"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              WhatsApp
+            </a>
           </div>
-          <button
-            type="submit"
-            disabled={busy !== null}
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-5 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {busy === "result" ? "Recording…" : "Record result"}
-          </button>
-        </form>
-      ) : null}
+          <p className="mt-3 break-all text-xs text-zinc-500">{share.poolUrl}</p>
+        </header>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">Friends in this pool</h2>
-          <button type="button" onClick={() => void onLoadStandings()} className="text-xs text-[#3dff87]">
-            Show standings
-          </button>
-        </div>
-        <ul className="space-y-2">
-          {pool.members.map((member) => (
-            <li key={member.id} className="flex items-center gap-3 rounded-xl bg-black/20 px-3 py-2">
-              <CommunityAvatar name={member.displayName} avatarUrl={member.avatarUrl} size={36} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-white">{member.displayName}</p>
-                <p className="truncate text-xs text-white/45">
-                  {member.role === "owner" ? "Host" : "Friend"}
-                  {member.pick
-                    ? ` · ${member.pick.homeScore ?? "?"}–${member.pick.awayScore ?? "?"} (${winnerLabel(member.pick.winner)})`
-                    : " · no tip yet"}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        {standings ? (
-          <ol className="mt-4 space-y-1 text-sm text-white/70">
-            {standings.map((row) => (
-              <li key={row.userId}>
-                #{row.rank} {row.displayName} · {row.points} pts
-              </li>
-            ))}
-          </ol>
+        {current.joined && !current.locked ? (
+          <form
+            onSubmit={onPick}
+            className="mt-8 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+          >
+            <h2 className="font-display text-2xl tracking-wide text-white">
+              Your tip
+            </h2>
+            <p className="mt-1.5 text-sm text-zinc-400">
+              Score or winner before kickoff. Friends only — no stakes.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                  Home
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={homeScore}
+                  onChange={(event) => setHomeScore(event.target.value)}
+                  className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                  Away
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={awayScore}
+                  onChange={(event) => setAwayScore(event.target.value)}
+                  className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+                />
+              </label>
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                Optional note
+              </span>
+              <input
+                value={tip}
+                onChange={(event) => setTip(event.target.value)}
+                maxLength={140}
+                className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={pending}
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-sky-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-sky-300 disabled:opacity-60"
+            >
+              {pending ? "Saving…" : "Save tip"}
+            </button>
+          </form>
         ) : null}
-      </section>
-    </article>
+
+        {current.role === "owner" && !current.result ? (
+          <form
+            onSubmit={onResult}
+            className="mt-8 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+          >
+            <h2 className="font-display text-2xl tracking-wide text-white">
+              Record result
+            </h2>
+            <p className="mt-1.5 text-sm text-zinc-400">
+              Manual v1 entry. Locks remaining tips and scores the table.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                  Home
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={resultHome}
+                  onChange={(event) => setResultHome(event.target.value)}
+                  className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                  Away
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={resultAway}
+                  onChange={(event) => setResultAway(event.target.value)}
+                  className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+                />
+              </label>
+            </div>
+            <button
+              type="submit"
+              disabled={pending}
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950 disabled:opacity-60"
+            >
+              Lock result
+            </button>
+          </form>
+        ) : null}
+
+        {error ? (
+          <p className="mt-6 text-sm text-red-300" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="mt-6 text-sm text-sky-200" role="status">
+            {message}
+          </p>
+        ) : null}
+
+        <section className="mt-10" aria-labelledby="pool-standings-heading">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Standings
+          </p>
+          <h2
+            id="pool-standings-heading"
+            className="mt-1 font-display text-2xl tracking-wide text-white"
+          >
+            {current.result
+              ? `${current.result.homeScore}–${current.result.awayScore} (${formatPoolWinner(current.result.winner)})`
+              : "Waiting for the result"}
+          </h2>
+          {standings.length === 0 && current.members.length === 0 ? (
+            <p className="mt-4 text-sm text-zinc-400">No players yet.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {(standings.length > 0 ? standings : current.members.map((member) => ({
+                userId: member.id,
+                displayName: member.displayName,
+                handle: member.handle,
+                avatarUrl: member.avatarUrl,
+                points: 0,
+                rank: 1,
+                pick: member.pick,
+              }))).map((row) => (
+                <li
+                  key={row.userId}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CommunityAvatar
+                      name={row.displayName}
+                      avatarUrl={row.avatarUrl}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {row.rank}. {row.displayName}
+                      </p>
+                      <p className="truncate text-xs text-zinc-500">
+                        {row.pick
+                          ? row.pick.homeScore != null &&
+                            row.pick.awayScore != null
+                            ? `${row.pick.homeScore}–${row.pick.awayScore}`
+                            : formatPoolWinner(row.pick.winner)
+                          : "No tip yet"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-sm font-medium text-sky-200">
+                    {row.points} pts
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
