@@ -35,6 +35,7 @@ import {
   type SportDefinition,
 } from "@/lib/sports/catalog";
 import {
+  HUB_BROWSE_FIXTURES_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
@@ -44,8 +45,8 @@ import {
   HUB_TABS,
   HUB_TRAINING_HREF,
   hubConnectedCount,
-  hubPlayIntentCtas,
-  hubPlayNearbyHref,
+  hubPlayEmptyNearbyHref,
+  hubPlaySportOptions,
   hubSearchHref,
   hubShowsSportControl,
   takeHubPreview,
@@ -465,7 +466,8 @@ export function SportsHub({
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const playIntentCtas = hubPlayIntentCtas(active);
+  const playOptions = hubPlaySportOptions(sports, active);
+  const playNearbyHref = hubPlayEmptyNearbyHref(active, sports);
   const youHistoryEmpty =
     recentPadel.length === 0 &&
     !historyError &&
@@ -654,48 +656,59 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description={
-                  activeSport
-                    ? `Decide what ${activeSport.name.toLowerCase()} to play.`
-                    : "Decide what to play — start a match or a round."
-                }
+                description="Pick a playable sport, then start."
               />
 
-              {playIntentCtas.length > 0 ? (
+              {playOptions.length > 0 ? (
                 <ul
                   className={
-                    playIntentCtas.length > 1
+                    playOptions.length > 1
                       ? "grid gap-3 lg:grid-cols-2 lg:gap-4"
                       : "grid gap-3"
                   }
                 >
-                  {playIntentCtas.map((cta, index) => (
-                    <li key={cta.href}>
-                      <Link
-                        href={cta.href}
+                  {playOptions.map((option, index) => (
+                    <li key={option.slug}>
+                      <article
                         className={[
-                          "group flex h-full flex-col justify-between gap-4 rounded-3xl border px-5 py-6 transition-colors sm:px-6 lg:px-7 lg:py-7",
+                          "flex h-full flex-col justify-between gap-5 rounded-3xl border px-5 py-6 sm:px-6 lg:px-7 lg:py-7",
                           index === 0
-                            ? "border-emerald-400/25 bg-emerald-400/8 hover:border-emerald-400/45"
-                            : "border-white/8 bg-[#141814] hover:border-white/16",
+                            ? "border-emerald-400/25 bg-emerald-400/8"
+                            : "border-white/8 bg-[#141814]",
                         ].join(" ")}
                       >
-                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
-                          {cta.sport === "golf" ? (
-                            <Flag className="h-4 w-4" aria-hidden />
-                          ) : (
-                            <Trophy className="h-4 w-4" aria-hidden />
-                          )}
-                        </span>
-                        <span>
-                          <span className="block font-display text-3xl tracking-wide text-white">
-                            {cta.label}
+                        <div>
+                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
+                            {option.slug === "golf" ? (
+                              <Flag className="h-4 w-4" aria-hidden />
+                            ) : (
+                              <Trophy className="h-4 w-4" aria-hidden />
+                            )}
                           </span>
-                          <span className="mt-1.5 block text-sm leading-relaxed text-zinc-400">
-                            {cta.description}
-                          </span>
-                        </span>
-                      </Link>
+                          <h3 className="mt-4 font-display text-3xl tracking-wide text-white">
+                            {option.name}
+                          </h3>
+                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                            {option.description}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <Link
+                            href={option.startHref}
+                            className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                          >
+                            {option.startLabel}
+                          </Link>
+                          {option.continueHref ? (
+                            <Link
+                              href={option.continueHref}
+                              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white hover:bg-white/5"
+                            >
+                              Continue
+                            </Link>
+                          ) : null}
+                        </div>
+                      </article>
                     </li>
                   ))}
                 </ul>
@@ -703,16 +716,28 @@ export function SportsHub({
                 <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
                   <p className="max-w-md text-sm leading-relaxed text-zinc-400">
                     {activeSport
-                      ? `No scorecard for ${activeSport.name} yet. Find a place to play nearby.`
+                      ? activeSport.capabilities.includes("play")
+                        ? `No ${activeSport.name} scorecard yet. Find a place to play nearby.`
+                        : `${activeSport.name} is watch-only. Pick a playable sport, or browse fixtures.`
                       : "Find a place to play nearby."}
                   </p>
                   <div className="mt-5">
-                    <Link
-                      href={hubPlayNearbyHref(active)}
-                      className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                    >
-                      Find a place to play
-                    </Link>
+                    {activeSport &&
+                    !activeSport.capabilities.includes("play") ? (
+                      <Link
+                        href={HUB_BROWSE_FIXTURES_HREF}
+                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                      >
+                        Browse fixtures
+                      </Link>
+                    ) : (
+                      <Link
+                        href={playNearbyHref}
+                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                      >
+                        Find a place to play
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}
