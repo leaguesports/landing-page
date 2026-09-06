@@ -94,6 +94,12 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/communities"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);
+    assert.equal(shouldProxyApiPath("/api/pools"), true);
+    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34"), true);
+    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/join"), true);
+    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/picks"), true);
+    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/result"), true);
+    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/standings"), true);
     assert.equal(shouldProxyApiPath("/api/me/badges"), true);
     assert.equal(shouldProxyApiPath("/api/me/preferences"), true);
     assert.equal(shouldProxyApiPath("/api/users/search"), true);

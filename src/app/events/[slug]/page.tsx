@@ -1,5 +1,6 @@
 import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
 import { FixtureVenueList } from "@/components/events/FixtureList";
+import { FixturePoolPanel } from "@/components/events/FixturePoolPanel";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import { fixturePublicSlugs } from "@/lib/sports/events-path";
@@ -143,6 +144,13 @@ export default async function EventFixturePage({ params }: PageProps) {
           />
 
           <aside className="lg:pt-2">
+            <div className="mb-8">
+              <FixturePoolPanel
+                slug={fixture.slug}
+                fixtureTitle={fixture.title}
+                kicksOffAt={fixture.startsAt}
+              />
+            </div>
             <div className="mb-6">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
                 Screenings
