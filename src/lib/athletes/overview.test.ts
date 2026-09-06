@@ -98,7 +98,7 @@ describe("athlete live paths", () => {
     );
     assert.match(
       paths.find((path) => path.id === "progress")?.description ?? "",
-      /Your play/,
+      /Play on your hub/,
     );
     assert.match(
       paths.find((path) => path.id === "communities")?.description ?? "",
