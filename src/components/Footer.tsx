@@ -80,6 +80,14 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
+                    href="/communities"
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    Communities
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/athletes"
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >
