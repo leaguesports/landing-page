@@ -1,6 +1,8 @@
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
 import {
   buildUpcomingFixtures,
+  cmsEventsToFixtures,
+  EVENTS_CMS_BY_SLUG_QUERY,
   EVENTS_CMS_ON_DAY_QUERY,
   EVENTS_CMS_QUERY,
   EVENTS_SCREENINGS_ON_DAY_QUERY,
@@ -124,7 +126,58 @@ export async function getFixtureBySlug(
     }
 
     const fixtures = await getUpcomingFixtures({ limit: 48 });
-    return findFixtureBySlug(fixtures, slug);
+    const fromUpcoming = findFixtureBySlug(fixtures, slug);
+    if (fromUpcoming) return fromUpcoming;
+
+    const cmsEvent = await sanityClient.fetch<EventsCmsEventRow | null>(
+      EVENTS_CMS_BY_SLUG_QUERY,
+      { slug: slug.trim() },
+    );
+    if (!cmsEvent) return null;
+
+    const fromCms = cmsEventsToFixtures([cmsEvent], SPORT_CATALOG, {
+      includePast: true,
+    });
+    const cmsDay = fromCms[0]
+      ? parseFixtureSlug(fromCms[0].slug).day
+      : null;
+    if (!cmsDay) {
+      return findFixtureBySlug(fromCms, slug) ?? fromCms[0] ?? null;
+    }
+
+    const { dayStart, dayEnd } = saDayBounds(cmsDay);
+    const [screeningsResult, cmsResult] = await Promise.allSettled([
+      sanityClient.fetch<EventsScreeningVenueRow[]>(
+        EVENTS_SCREENINGS_ON_DAY_QUERY,
+        { dayStart, dayEnd },
+      ),
+      sanityClient.fetch<EventsCmsEventRow[]>(EVENTS_CMS_ON_DAY_QUERY, {
+        dayStart,
+        dayEnd,
+      }),
+    ]);
+    const screeningVenues =
+      screeningsResult.status === "fulfilled"
+        ? (screeningsResult.value ?? [])
+        : [];
+    const cmsEvents =
+      cmsResult.status === "fulfilled" ? (cmsResult.value ?? []) : [];
+    const dayFixtures = buildUpcomingFixtures(
+      screeningVenues,
+      cmsEvents,
+      SPORT_CATALOG,
+      {
+        limit: 48,
+        includePast: true,
+        now: new Date(dayStart),
+      },
+    );
+    return (
+      findFixtureBySlug(dayFixtures, slug) ??
+      findFixtureBySlug(fromCms, slug) ??
+      fromCms[0] ??
+      null
+    );
   } catch (error) {
     console.error("[events] fixture-by-slug fetch failed", error);
     return null;
