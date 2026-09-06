@@ -1,16 +1,15 @@
-import { CITY_DIRECTORY } from "@/data/cities";
-import { intentPath } from "@/lib/intent/paths";
+import {
+  buildSitemapEntries,
+  resolveSitemapOrigin,
+  type SitemapDataSource,
+} from "@/app/sitemap/entries";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import type { MetadataRoute } from "next";
 
 export const revalidate = 3600;
 export const maxDuration = 60;
 
-type SitemapVenue = {
-  id: string;
-  slug: string;
-  updatedAt: string | null;
-};
+const FETCH_TIMEOUT_MS = 12_000;
 
 function isSanityConfigured(): boolean {
   return Boolean(
@@ -19,214 +18,119 @@ function isSanityConfigured(): boolean {
   );
 }
 
-function isSlug(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0 && !value.includes(" ");
-}
-
-function toLastModified(value: string | null | undefined): Date {
-  if (!value) return new Date();
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-}
-
-function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap {
-  const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/privacy`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/terms`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/events`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/venues`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/watch`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/play`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/communities`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/athletes`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/guides`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-  ];
-
-  const cityHubRoutes: MetadataRoute.Sitemap = CITY_DIRECTORY.flatMap(
-    (city) => [
-      {
-        url: `${baseUrl}/venues?intent=watch&location=${city.slug}`,
-        lastModified: now,
-        changeFrequency: "daily" as const,
-        priority: 0.85,
-      },
-      {
-        url: `${baseUrl}/venues?intent=play&location=${city.slug}`,
-        lastModified: now,
-        changeFrequency: "daily" as const,
-        priority: 0.85,
-      },
-    ],
-  );
-
-  return [...staticRoutes, ...cityHubRoutes];
-}
-
-async function getVenues(): Promise<SitemapVenue[]> {
-  if (!isSanityConfigured()) return [];
-
+function safeSiteBaseUrl(): string {
   try {
-    const { sanityClient } = await import("@/sanity/client");
-    const venues = await sanityClient.fetch<SitemapVenue[]>(`
-      *[_type == "venue"] {
-        "id": _id,
-        "slug": slug.current,
-        "updatedAt": _updatedAt
-      }
-    `);
-
-    return Array.isArray(venues) ? venues : [];
+    return resolveSitemapOrigin(getSiteBaseUrl());
   } catch (error) {
-    console.error("[sitemap] venue fetch failed", error);
-    return [];
+    console.error("[sitemap] getSiteBaseUrl failed", error);
+    return resolveSitemapOrigin(null);
   }
 }
 
-async function getGuides(): Promise<{ slug: string }[]> {
-  if (!isSanityConfigured()) return [];
-
+async function withTimeout<T>(
+  label: string,
+  work: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const { listGuides } = await import("./guides/[[...route]]/actions");
-    const rows = await listGuides();
-    return Array.isArray(rows) ? rows : [];
-  } catch (error) {
-    console.error("[sitemap] guide fetch failed", error);
-    return [];
-  }
-}
-
-async function getIntentRoutes(
-  baseUrl: string,
-  now: Date,
-): Promise<MetadataRoute.Sitemap> {
-  if (!isSanityConfigured()) return [];
-
-  try {
-    const { listIndexedIntentPairs } = await import("@/lib/intent/data");
-    const [watchPairs, playPairs] = await Promise.all([
-      listIndexedIntentPairs("watch"),
-      listIndexedIntentPairs("play"),
+    const result = await Promise.race([
+      work(),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${FETCH_TIMEOUT_MS}ms`)),
+          FETCH_TIMEOUT_MS,
+        );
+      }),
     ]);
-
-    const routes: MetadataRoute.Sitemap = [];
-
-    for (const pair of watchPairs) {
-      if (!isSlug(pair.activitySlug) || !isSlug(pair.locationSlug)) continue;
-      routes.push({
-        url: `${baseUrl}${intentPath("watch", pair.activitySlug, pair.locationSlug)}`,
-        lastModified: toLastModified(pair.updatedAt) || now,
-        changeFrequency: "daily",
-        priority: 1,
-      });
-    }
-
-    for (const pair of playPairs) {
-      if (!isSlug(pair.activitySlug) || !isSlug(pair.locationSlug)) continue;
-      routes.push({
-        url: `${baseUrl}${intentPath("play", pair.activitySlug, pair.locationSlug)}`,
-        lastModified: toLastModified(pair.updatedAt) || now,
-        changeFrequency: "daily",
-        priority: 1,
-      });
-    }
-
-    return routes;
+    return result;
   } catch (error) {
-    console.error("[sitemap] intent route fetch failed", error);
-    return [];
+    console.error(`[sitemap] ${label} failed`, error);
+    return fallback;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
+}
+
+function createCmsSource(): SitemapDataSource {
+  return {
+    async getVenues() {
+      if (!isSanityConfigured()) return [];
+      return withTimeout(
+        "venues",
+        async () => {
+          const { sanityClient } = await import("@/sanity/client");
+          const rows = await sanityClient.fetch<
+            { slug: string | null; updatedAt: string | null }[]
+          >(`
+          *[_type == "venue" && defined(slug.current)] {
+            "slug": slug.current,
+            "updatedAt": _updatedAt
+          }
+        `);
+          return Array.isArray(rows) ? rows : [];
+        },
+        [],
+      );
+    },
+    async getGuides() {
+      if (!isSanityConfigured()) return [];
+      return withTimeout(
+        "guides",
+        async () => {
+          // Dedicated GROQ — do not import listGuides from the guides action
+          // module (unguarded Sanity client + catch-all route graph).
+          const { sanityClient } = await import("@/sanity/client");
+          const rows = await sanityClient.fetch<
+            { slug: string | null; updatedAt: string | null }[]
+          >(`
+          *[_type == "guide" && defined(slug.current) && slug.current != ""] {
+            "slug": slug.current,
+            "updatedAt": coalesce(_updatedAt, _createdAt)
+          }
+        `);
+          return Array.isArray(rows) ? rows : [];
+        },
+        [],
+      );
+    },
+    async getIntentPairs(intent) {
+      if (!isSanityConfigured()) return [];
+      return withTimeout(
+        `intent:${intent}`,
+        async () => {
+          const { listIndexedIntentPairs } = await import("@/lib/intent/data");
+          const rows = await listIndexedIntentPairs(intent);
+          return Array.isArray(rows) ? rows : [];
+        },
+        [],
+      );
+    },
+    async getFixtures() {
+      if (!isSanityConfigured()) return [];
+      return withTimeout(
+        "fixtures",
+        async () => {
+          const { getUpcomingFixtures } = await import("@/services/events");
+          const rows = await getUpcomingFixtures({ limit: 48 });
+          return Array.isArray(rows) ? rows : [];
+        },
+        [],
+      );
+    },
+  };
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = getSiteBaseUrl();
-  const now = new Date();
-  const fallback = staticAndCityRoutes(baseUrl, now);
-
   try {
-    const [venues, guides, intentRoutes] = await Promise.all([
-      getVenues(),
-      getGuides(),
-      getIntentRoutes(baseUrl, now),
-    ]);
-
-    const venueRoutes: MetadataRoute.Sitemap = venues
-      .filter((venue) => isSlug(venue.slug))
-      .map((venue) => ({
-        url: `${baseUrl}/venues/${venue.slug}`,
-        lastModified: toLastModified(venue.updatedAt),
-        changeFrequency: "daily" as const,
-        priority: 0.9,
-      }));
-
-    const guideRoutes: MetadataRoute.Sitemap = guides
-      .filter((guide) => isSlug(guide.slug))
-      .map((guide) => ({
-        url: `${baseUrl}/guides/${guide.slug}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      }));
-
-    return [...fallback, ...intentRoutes, ...guideRoutes, ...venueRoutes];
+    return await buildSitemapEntries({
+      baseUrl: safeSiteBaseUrl(),
+      source: createCmsSource(),
+    });
   } catch (error) {
     console.error("[sitemap] generation failed", error);
-    return fallback;
+    return buildSitemapEntries({
+      baseUrl: safeSiteBaseUrl(),
+    });
   }
 }
