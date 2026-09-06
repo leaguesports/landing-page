@@ -163,6 +163,12 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/venues/:cmsId/follow",
   "/api/fixtures/:slug/follow",
   "/api/venues/:cmsId",
+  "/api/pools",
+  "/api/pools/:idOrCode",
+  "/api/pools/:idOrCode/join",
+  "/api/pools/:idOrCode/picks",
+  "/api/pools/:idOrCode/result",
+  "/api/pools/:idOrCode/standings",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */
