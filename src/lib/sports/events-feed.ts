@@ -73,7 +73,7 @@ export const EVENTS_SCREENINGS_QUERY = `*[
   "slug": slug.current,
   ${EVENTS_VENUE_CITY_PROJECTION},
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  "nextKickoff": min(upcoming_screenings[
+  "nextKickoff": math::min(upcoming_screenings[
     defined(startsAt) && startsAt >= $notBefore
   ].startsAt),
   "upcoming_screenings": upcoming_screenings[
@@ -111,7 +111,7 @@ export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
   "slug": slug.current,
   ${EVENTS_VENUE_CITY_PROJECTION},
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  "nextKickoff": min(upcoming_screenings[
+  "nextKickoff": math::min(upcoming_screenings[
     defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
   ].startsAt),
   "upcoming_screenings": upcoming_screenings[

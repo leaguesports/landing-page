@@ -29,12 +29,15 @@ describe("events feed queries", () => {
     assert.match(EVENTS_SCREENINGS_QUERY, /startsAt >= \$notBefore/);
     assert.match(EVENTS_SCREENINGS_QUERY, /order\(startsAt asc\)/);
     assert.match(EVENTS_SCREENINGS_QUERY, /order\(nextKickoff asc\)/);
+    assert.match(EVENTS_SCREENINGS_QUERY, /math::min\(/);
+    assert.doesNotMatch(EVENTS_SCREENINGS_QUERY, /"nextKickoff":\s*min\(/);
     assert.doesNotMatch(EVENTS_SCREENINGS_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->title/);
     assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->slug\.current/);
     assert.match(EVENTS_CMS_QUERY, /_type == "event"/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /\$dayStart/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(nextKickoff asc\)/);
+    assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /math::min\(/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /address\.city->title/);
     assert.doesNotMatch(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
