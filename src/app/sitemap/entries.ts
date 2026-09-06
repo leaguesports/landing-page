@@ -1,3 +1,5 @@
+import { guideHref, isGuideSlug } from "../../lib/guides/slugs.ts";
+
 export const SITEMAP_FALLBACK_ORIGIN = "https://leaguesports.co.za";
 
 /** Path-only slugs Next can serialize without breaking sitemap XML. */
@@ -65,6 +67,7 @@ const STATIC_PATHS: Array<{
   { path: "/communities", changeFrequency: "weekly", priority: 0.8 },
   { path: "/athletes", changeFrequency: "weekly", priority: 0.85 },
   { path: "/guides", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/integrations", changeFrequency: "weekly", priority: 0.7 },
 ];
 
 export function resolveSitemapOrigin(raw?: string | null): string {
@@ -211,8 +214,8 @@ export function guideSitemapRoutes(
 ): SitemapEntry[] {
   const routes: SitemapEntry[] = [];
   for (const row of collectRows<SitemapGuideRow>(rows)) {
-    if (!isSitemapSlug(row.slug)) continue;
-    const entry = sitemapEntry(sitemapAbsoluteUrl(origin, `/guides/${row.slug}`), {
+    if (!isGuideSlug(row.slug)) continue;
+    const entry = sitemapEntry(sitemapAbsoluteUrl(origin, guideHref(row.slug)), {
       lastModified: toSitemapDate(
         typeof row.updatedAt === "string" ? row.updatedAt : null,
         now,

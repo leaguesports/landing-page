@@ -114,6 +114,8 @@ describe("static and CMS row mappers", () => {
     assert.ok(urls.includes(`${ORIGIN}/play`));
     assert.ok(urls.includes(`${ORIGIN}/guides`));
     assert.ok(urls.includes(`${ORIGIN}/events`));
+    assert.ok(urls.includes(`${ORIGIN}/athletes`));
+    assert.ok(urls.includes(`${ORIGIN}/integrations`));
     assert.equal(urls.some((url) => url.includes("?")), false);
   });
 
@@ -127,9 +129,11 @@ describe("static and CMS row mappers", () => {
       [`${ORIGIN}/venues/ok-venue`],
     );
     assert.deepEqual(
-      guideSitemapRoutes(ORIGIN, [{ slug: "" }, { slug: "joburg-padel" }], NOW).map(
-        (row) => row.url,
-      ),
+      guideSitemapRoutes(
+        ORIGIN,
+        [{ slug: "" }, { slug: "Best_Padel" }, { slug: "joburg-padel" }],
+        NOW,
+      ).map((row) => row.url),
       [`${ORIGIN}/guides/joburg-padel`],
     );
     assert.deepEqual(

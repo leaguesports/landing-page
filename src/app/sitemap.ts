@@ -84,7 +84,7 @@ function createCmsSource(): SitemapDataSource {
           const rows = await sanityClient.fetch<
             { slug: string | null; updatedAt: string | null }[]
           >(`
-          *[_type == "guide" && defined(slug.current)] {
+          *[_type == "guide" && defined(slug.current) && slug.current != ""] {
             "slug": slug.current,
             "updatedAt": coalesce(_updatedAt, _createdAt)
           }
