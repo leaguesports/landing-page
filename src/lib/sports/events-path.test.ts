@@ -158,4 +158,35 @@ describe("mergeVenueUpcomingScreenings", () => {
     assert.equal(merged.length, 1);
     assert.equal(merged[0]?.href, "/events/springboks-vs-all-blacks-2026-09-06");
   });
+
+  it("surfaces fixtures that already list the venue when CMS screenings are empty", () => {
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All Blacks",
+              startsAt: "2026-09-06T16:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      [],
+      SPORT_CATALOG,
+      { now },
+    );
+
+    const merged = mergeVenueUpcomingScreenings(
+      { slug: "the-local", upcoming_screenings: [] },
+      fixtures,
+      now,
+    );
+
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0]?.title, "Springboks vs All Blacks");
+    assert.equal(merged[0]?.href, "/events/springboks-vs-all-blacks-2026-09-06");
+  });
 });
