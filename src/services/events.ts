@@ -135,10 +135,14 @@ export async function getFixtureBySlug(
  * Resolve followed fixture slugs into UpcomingFixture rows for the hub calendar.
  * Soft-fails missing CMS/screening data — unknown slugs are skipped.
  * Batches via the upcoming list first; day-scoped detail only for leftovers.
+ * Pass `upcomingFixtures` to reuse a shared Sanity read (e.g. hub preferences).
  */
 export async function resolveFollowedFixtures(
   slugs: Iterable<string> | null | undefined,
-  options: { now?: Date } = {},
+  options: {
+    now?: Date;
+    upcomingFixtures?: UpcomingFixture[] | Promise<UpcomingFixture[]>;
+  } = {},
 ): Promise<UpcomingFixture[]> {
   const unique = uniqueFollowedFixtureSlugs(slugs);
   if (unique.length === 0 || !isSanityConfigured()) return [];
@@ -146,7 +150,9 @@ export async function resolveFollowedFixtures(
   const now = options.now ?? new Date();
 
   try {
-    const upcoming = await getUpcomingFixtures({ limit: 48, now });
+    const upcoming = options.upcomingFixtures
+      ? await Promise.resolve(options.upcomingFixtures)
+      : await getUpcomingFixtures({ limit: 48, now });
     const bySlug = new Map(upcoming.map((item) => [item.slug, item]));
     const resolved: UpcomingFixture[] = [];
     const missing: string[] = [];

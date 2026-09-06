@@ -644,7 +644,7 @@ export function SportsHub({
                   <p className="max-w-md text-sm leading-relaxed text-zinc-400">
                     {activeSport
                       ? `Nothing in the ${activeSport.name} feed yet. Jump to Tools to watch or play.`
-                      : "Follow a fixture on Events, or a venue screening rugby and F1, and your week of games lands here."}
+                      : "Follow sports in onboarding or Focus, or follow a fixture on Events — matching games land here."}
                   </p>
                   {utilities[0] ? (
                     <div className="mt-5 flex flex-wrap gap-3">

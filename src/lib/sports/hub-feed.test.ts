@@ -5,6 +5,7 @@ import {
   filterFeedByVenueSlugs,
   fixtureToFeedItem,
   fixturesToFollowedFeedItems,
+  fixturesToPreferredFeedItems,
   formatHubWhen,
   guidesToFeedItems,
   HUB_EVENTS_QUERY,
@@ -13,9 +14,12 @@ import {
   HUB_SCREENINGS_QUERY,
   MAX_FOLLOWED_FIXTURE_SLUGS,
   MAX_FOLLOWED_VENUE_SLUGS,
+  MAX_PREFERRED_FIXTURE_SLUGS,
   mergeHubFeedItems,
+  normalizePreferredSportSlugs,
   screeningsToFeedItems,
   sortHubFeed,
+  sortHubFeedPreferringSports,
   uniqueFollowedFixtureSlugs,
   uniqueFollowedVenueSlugs,
   type HubFeedItem,
@@ -90,10 +94,27 @@ describe("fixtureToFeedItem + fixturesToFollowedFeedItems", () => {
     assert.equal(item.followedFixture, true);
   });
 
+  it("maps a preference match without the followed flag", () => {
+    const item = fixtureToFeedItem(base, { followed: false });
+    assert.ok(item);
+    assert.equal(item.id, "fixture-springboks-vs-all-blacks-2026-09-06");
+    assert.equal(item.followedFixture, undefined);
+    assert.equal(item.subtitle, "2 venues screening");
+  });
+
   it("falls back to series when no venues are listed", () => {
     const item = fixtureToFeedItem({ ...base, venues: [], series: "f1" });
     assert.ok(item);
     assert.equal(item.subtitle, "f1");
+  });
+
+  it("falls back to preference copy when no venues or series", () => {
+    const item = fixtureToFeedItem(
+      { ...base, venues: [], series: null },
+      { followed: false },
+    );
+    assert.ok(item);
+    assert.equal(item.subtitle, "Matches your sports");
   });
 
   it("orders soonest first when building the calendar strip", () => {
@@ -119,6 +140,131 @@ describe("fixtureToFeedItem + fixturesToFollowedFeedItems", () => {
     );
     assert.equal(items.length, 1);
     assert.equal(items[0]?.title, "Sooner");
+  });
+});
+
+describe("fixturesToPreferredFeedItems", () => {
+  const now = new Date("2026-09-04T12:00:00.000Z");
+  const fixtures: UpcomingFixture[] = [
+    {
+      slug: "springboks-vs-all-blacks-2026-09-06",
+      title: "Springboks vs All Blacks",
+      sportSlug: "rugby",
+      startsAt: "2026-09-06T15:00:00.000Z",
+      venues: [{ name: "The Local", slug: "the-local" }],
+      kind: "both",
+    },
+    {
+      slug: "chiefs-vs-pirates-2026-09-07",
+      title: "Chiefs vs Pirates",
+      sportSlug: "soccer",
+      startsAt: "2026-09-07T15:00:00.000Z",
+      venues: [],
+      kind: "event",
+    },
+    {
+      slug: "monaco-gp-2026-05-24",
+      title: "Monaco GP",
+      sportSlug: "motorsport",
+      startsAt: "2026-05-24T13:00:00.000Z",
+      venues: [],
+      kind: "event",
+    },
+    {
+      slug: "untagged-derby",
+      title: "Mystery Derby",
+      sportSlug: null,
+      startsAt: "2026-09-08T15:00:00.000Z",
+      venues: [],
+      kind: "event",
+    },
+  ];
+
+  it("returns nothing when the user has no preferred sports", () => {
+    assert.deepEqual(fixturesToPreferredFeedItems(fixtures, []), []);
+    assert.deepEqual(fixturesToPreferredFeedItems(fixtures, null), []);
+  });
+
+  it("keeps only fixtures matching preferred sports", () => {
+    const items = fixturesToPreferredFeedItems(fixtures, ["rugby", "soccer"], {
+      now,
+    });
+    assert.deepEqual(
+      items.map((item) => item.title),
+      ["Springboks vs All Blacks", "Chiefs vs Pirates"],
+    );
+    assert.ok(items.every((item) => item.followedFixture !== true));
+    assert.ok(items.every((item) => item.id.startsWith("fixture-")));
+  });
+
+  it("skips fixtures already shown in the followed calendar strip", () => {
+    const items = fixturesToPreferredFeedItems(fixtures, ["rugby", "soccer"], {
+      now,
+      excludeSlugs: ["springboks-vs-all-blacks-2026-09-06"],
+    });
+    assert.deepEqual(
+      items.map((item) => item.title),
+      ["Chiefs vs Pirates"],
+    );
+  });
+
+  it("caps preference matches", () => {
+    const many = Array.from({ length: MAX_PREFERRED_FIXTURE_SLUGS + 4 }, (_, i) => ({
+      ...fixtures[0]!,
+      slug: `rugby-fixture-${i}`,
+      title: `Rugby ${i}`,
+      startsAt: `2026-09-${String(5 + (i % 20)).padStart(2, "0")}T15:00:00.000Z`,
+    }));
+    const items = fixturesToPreferredFeedItems(many, ["rugby"], { now });
+    assert.equal(items.length, MAX_PREFERRED_FIXTURE_SLUGS);
+  });
+});
+
+describe("normalizePreferredSportSlugs + sortHubFeedPreferringSports", () => {
+  it("normalizes hub parents and dedupes", () => {
+    assert.deepEqual(
+      normalizePreferredSportSlugs([" Rugby ", "indoor-golf", "golf", ""]),
+      ["rugby", "golf"],
+    );
+  });
+
+  it("elevates preferred sports within the upcoming bucket", () => {
+    const now = new Date("2026-09-04T12:00:00.000Z");
+    const feed: HubFeedItem[] = [
+      {
+        id: "f1",
+        kind: "event",
+        sportSlug: "motorsport",
+        title: "Soon F1",
+        subtitle: "",
+        href: "/events/f1",
+        startsAt: "2026-09-05T12:00:00.000Z",
+      },
+      {
+        id: "rugby",
+        kind: "event",
+        sportSlug: "rugby",
+        title: "Later Rugby",
+        subtitle: "",
+        href: "/events/rugby",
+        startsAt: "2026-09-06T12:00:00.000Z",
+      },
+      {
+        id: "soccer",
+        kind: "event",
+        sportSlug: "soccer",
+        title: "Mid Soccer",
+        subtitle: "",
+        href: "/events/soccer",
+        startsAt: "2026-09-05T18:00:00.000Z",
+      },
+    ];
+
+    const ranked = sortHubFeedPreferringSports(feed, ["rugby", "soccer"], now);
+    assert.deepEqual(
+      ranked.map((item) => item.title),
+      ["Mid Soccer", "Later Rugby", "Soon F1"],
+    );
   });
 });
 

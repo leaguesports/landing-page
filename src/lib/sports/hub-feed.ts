@@ -1,8 +1,10 @@
 import {
   eventHref,
   inferSportSlug,
+  normalizeSportSlug,
   resolveSportSlug,
   SPORT_CATALOG,
+  toHubSportSlug,
   type SportDefinition,
 } from "./catalog.ts";
 import type { UpcomingFixture } from "./events-feed.ts";
@@ -45,6 +47,9 @@ export const MAX_FOLLOWED_VENUE_SLUGS = 24;
 
 /** Cap followed-fixture resolution — hub calendar strip stays bounded. */
 export const MAX_FOLLOWED_FIXTURE_SLUGS = 24;
+
+/** Cap preference-matched fixtures injected into the For you feed. */
+export const MAX_PREFERRED_FIXTURE_SLUGS = 12;
 
 /** Screenings for specific followed venue slugs (hub return-visit payoff). */
 export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current in $slugs && count(upcoming_screenings) > 0] | order(_updatedAt desc) [0...24] {
@@ -203,32 +208,66 @@ export function uniqueFollowedFixtureSlugs(
   return out;
 }
 
+/** Normalize preference / follow sport slugs onto hub parents. */
+export function normalizePreferredSportSlugs(
+  sports: Iterable<string> | null | undefined,
+): string[] {
+  if (!sports) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of sports) {
+    const normalized = normalizeSportSlug(raw);
+    if (!normalized) continue;
+    const slug = toHubSportSlug(normalized) ?? normalized;
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(slug);
+  }
+  return out;
+}
+
+function fixtureMatchesPreferredSports(
+  fixture: UpcomingFixture,
+  preferred: ReadonlySet<string>,
+): boolean {
+  if (preferred.size === 0) return false;
+  const sport = fixture.sportSlug;
+  if (!sport) return false;
+  const hub = toHubSportSlug(sport) ?? normalizeSportSlug(sport);
+  return Boolean(hub) && preferred.has(hub);
+}
+
 /**
- * Map a public UpcomingFixture onto a hub feed row for the personal calendar.
+ * Map a public UpcomingFixture onto a hub feed row.
  * Always links to `/events/[slug]` so follow/unfollow stays one hop away.
+ * Followed rows get a distinct id + flag for the calendar strip; preference
+ * matches use a plain fixture id so they land in the general For you feed.
  */
 export function fixtureToFeedItem(
   fixture: UpcomingFixture,
+  options: { followed?: boolean } = {},
 ): HubFeedItem | null {
   const slug = fixture.slug.trim();
   const title = fixture.title.trim();
   if (!slug || !title) return null;
 
+  const followed = options.followed ?? true;
   const venueCount = fixture.venues.length;
   const subtitle =
     venueCount > 0
       ? `${venueCount} venue${venueCount === 1 ? "" : "s"} screening`
-      : fixture.series?.trim() || "Fixture you're following";
+      : fixture.series?.trim() ||
+        (followed ? "Fixture you're following" : "Matches your sports");
 
   return {
-    id: `followed-fixture-${slug}`,
+    id: followed ? `followed-fixture-${slug}` : `fixture-${slug}`,
     kind: "event",
     sportSlug: fixture.sportSlug,
     title,
     subtitle,
     href: `/events/${encodeURIComponent(slug)}`,
     startsAt: fixture.startsAt,
-    followedFixture: true,
+    ...(followed ? { followedFixture: true as const } : {}),
   };
 }
 
@@ -238,8 +277,39 @@ export function fixturesToFollowedFeedItems(
 ): HubFeedItem[] {
   const limit = options.limit ?? MAX_FOLLOWED_FIXTURE_SLUGS;
   const items = fixtures
-    .map((fixture) => fixtureToFeedItem(fixture))
+    .map((fixture) => fixtureToFeedItem(fixture, { followed: true }))
     .filter((item): item is HubFeedItem => item !== null);
+  return sortHubFeed(items, options.now).slice(0, limit);
+}
+
+/**
+ * Upcoming fixtures whose sport is in the user's preferences — injected into
+ * the For you feed so onboarding sports pay off without per-fixture follows.
+ * Skips slugs already shown in the followed-fixtures calendar strip.
+ */
+export function fixturesToPreferredFeedItems(
+  fixtures: UpcomingFixture[],
+  preferredSports: Iterable<string> | null | undefined,
+  options: {
+    now?: Date;
+    limit?: number;
+    excludeSlugs?: Iterable<string> | null;
+  } = {},
+): HubFeedItem[] {
+  const preferred = new Set(normalizePreferredSportSlugs(preferredSports));
+  if (preferred.size === 0) return [];
+
+  const excluded = new Set(uniqueFollowedFixtureSlugs(options.excludeSlugs));
+  const limit = options.limit ?? MAX_PREFERRED_FIXTURE_SLUGS;
+  const items = fixtures
+    .filter((fixture) => {
+      const slug = fixture.slug.trim().toLowerCase();
+      if (!slug || excluded.has(slug)) return false;
+      return fixtureMatchesPreferredSports(fixture, preferred);
+    })
+    .map((fixture) => fixtureToFeedItem(fixture, { followed: false }))
+    .filter((item): item is HubFeedItem => item !== null);
+
   return sortHubFeed(items, options.now).slice(0, limit);
 }
 
@@ -317,6 +387,46 @@ export function sortHubFeed(
     const [aBucket, aTime] = rank(a);
     const [bBucket, bTime] = rank(b);
     if (aBucket !== bBucket) return aBucket - bBucket;
+    return aTime - bTime;
+  });
+}
+
+/**
+ * Like sortHubFeed, but within each time bucket elevates items whose sport
+ * matches the user's preferences (All-focus personalization).
+ */
+export function sortHubFeedPreferringSports(
+  items: HubFeedItem[],
+  preferredSports: Iterable<string> | null | undefined,
+  now: Date = new Date(),
+): HubFeedItem[] {
+  const preferred = new Set(normalizePreferredSportSlugs(preferredSports));
+  if (preferred.size === 0) return sortHubFeed(items, now);
+
+  const nowMs = now.getTime();
+
+  function timeRank(item: HubFeedItem): [number, number] {
+    if (!item.startsAt) return [1, nowMs];
+    const time = new Date(item.startsAt).getTime();
+    if (Number.isNaN(time)) return [1, nowMs];
+    if (time >= nowMs) return [0, time];
+    return [2, -time];
+  }
+
+  function isPreferred(item: HubFeedItem): boolean {
+    if (!item.sportSlug) return false;
+    const hub =
+      toHubSportSlug(item.sportSlug) ?? normalizeSportSlug(item.sportSlug);
+    return Boolean(hub) && preferred.has(hub);
+  }
+
+  return [...items].sort((a, b) => {
+    const [aBucket, aTime] = timeRank(a);
+    const [bBucket, bTime] = timeRank(b);
+    if (aBucket !== bBucket) return aBucket - bBucket;
+    const aPref = isPreferred(a) ? 0 : 1;
+    const bPref = isPreferred(b) ? 0 : 1;
+    if (aPref !== bPref) return aPref - bPref;
     return aTime - bTime;
   });
 }

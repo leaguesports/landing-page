@@ -17,7 +17,10 @@ import {
   uniqueFollowedFixtureSlugs,
 } from "@/lib/sports/hub-feed";
 import { listFollowedVenues } from "@/lib/venues/follow";
-import { resolveFollowedFixtures } from "@/services/events";
+import {
+  getUpcomingFixtures,
+  resolveFollowedFixtures,
+} from "@/services/events";
 import type { PadelHistoryItem } from "@/types/padel-match";
 import { redirect } from "next/navigation";
 
@@ -38,8 +41,18 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
   const followedFixtureSlugsPromise = followedFixtureRowsPromise.then((rows) =>
     uniqueFollowedFixtureSlugs(rows.map((row) => row.slug)),
   );
+  // Shared upcoming list — hub preference matches + followed resolution reuse it.
+  const upcomingFixturesPromise = getUpcomingFixtures({ limit: 48 }).catch(
+    () => [],
+  );
   const followedFixturesPromise = followedFixtureSlugsPromise.then((slugs) =>
-    resolveFollowedFixtures(slugs),
+    resolveFollowedFixtures(slugs, {
+      upcomingFixtures: upcomingFixturesPromise,
+    }),
+  );
+
+  const preferredSportsPromise = preferencesPromise.then((result) =>
+    result.ok ? result.preferences.sports : [],
   );
 
   const [
@@ -57,7 +70,12 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     preferencesPromise,
     lookupPlayerHistory(user.id, { cookie }),
     lookupPlayerGolfHistory(user.id, { cookie }),
-    getDashboardHub({ followedVenueSlugs: followedSlugsPromise }),
+    getDashboardHub({
+      followedVenueSlugs: followedSlugsPromise,
+      preferredSports: preferredSportsPromise,
+      excludeFixtureSlugs: followedFixtureSlugsPromise,
+      upcomingFixtures: upcomingFixturesPromise,
+    }),
     followedVenuesPromise,
     followedFixtureRowsPromise,
     followedFixturesPromise,
