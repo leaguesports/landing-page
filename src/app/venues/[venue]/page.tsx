@@ -15,6 +15,7 @@ import {
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { toGolfVenueOption } from "@/lib/golf/venue-options";
+import { isVenueClaimable } from "@/lib/venues/contact-cta";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
@@ -278,10 +279,7 @@ export default async function VenuePage({ params }: Props) {
   const suburbLine = [venue.address.suburb, venue.address.city]
     .filter(Boolean)
     .join(", ");
-  const showClaimBar =
-    venue.is_verified !== true &&
-    venue.claim_status !== "claim_pending" &&
-    venue.claim_status !== "claimed";
+  const showClaimBar = isVenueClaimable(venue);
   const addressLine = [
     venue.address.street,
     venue.address.suburb,
