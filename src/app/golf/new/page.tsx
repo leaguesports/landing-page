@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GolfQuickStart } from "@/components/golf/GolfQuickStart";
 import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
+import { venueQueryKey } from "@/lib/scorecard/start-href";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
@@ -10,18 +11,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function firstParam(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0]?.trim() ?? "";
-  return value?.trim() ?? "";
-}
-
 export default async function NewGolfRoundPage({
   searchParams,
 }: {
-  searchParams: Promise<{ venue?: string | string[] }>;
+  searchParams: Promise<{
+    venue?: string | string[];
+    cmsId?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
-  const requestedSlug = firstParam(params.venue);
+  const requestedSlug = venueQueryKey(params);
 
   const [golfCourses, requestedVenue] = await Promise.all([
     searchVenues({ intent: "play", sportSlug: "golf" }).then((venues) =>
