@@ -1,5 +1,6 @@
+import { guideHref } from "@/lib/guides/slugs";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { GuideDetail } from "./_components/GuideDetail";
 import { GuidesIndex } from "./_components/GuidesIndex";
 import { getGuideBySlug, listGuides } from "./actions";
@@ -64,7 +65,7 @@ export async function generateMetadata({
       images,
     },
     alternates: {
-      canonical: `/guides/${guide.slug}`,
+      canonical: guideHref(guide.slug),
     },
     robots: {
       index: true,
@@ -72,6 +73,14 @@ export async function generateMetadata({
     },
     keywords: [guide.title, ...(guide.keywords ?? []), "LeagueSports"],
   };
+}
+
+export async function generateStaticParams() {
+  const guides = await listGuides();
+  return [
+    { route: [] as string[] },
+    ...guides.map((guide) => ({ route: [guide.slug] })),
+  ];
 }
 
 export default async function GuidesPage({
@@ -89,6 +98,10 @@ export default async function GuidesPage({
 
   if (!guide) {
     return notFound();
+  }
+
+  if (guide.slug !== guideSlug) {
+    permanentRedirect(guideHref(guide.slug));
   }
 
   return <GuideDetail guide={guide} />;
