@@ -1,9 +1,10 @@
 /**
- * Signed-in hub information architecture (#145).
+ * Signed-in hub information architecture (#145 / #150).
  * 4-tab bottom nav — one active panel, sport dropdown, page search.
+ * Play = pick a playable sport, then start that sport's create flow.
  */
 
-import { ALL_SPORTS_SLUG } from "./catalog.ts";
+import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
 import { intentPath } from "../intent/paths.ts";
 import { parseVenueSearch } from "../search/venueSearch.ts";
 
@@ -51,22 +52,40 @@ export const HUB_FOR_YOU_EMPTY_CTAS = [
   { href: HUB_FIND_VENUES_HREF, label: "Find venues" },
 ] as const;
 
-export const HUB_PLAY_INTENT_CTAS = [
-  {
+export type HubPlayStartSpec = {
+  href: string;
+  label: string;
+  description: string;
+};
+
+/**
+ * Playable create-flow map. Later sports (darts/pool) plug in here —
+ * catalog `play` capability alone is not enough (watch-only stays out).
+ */
+export const HUB_PLAY_START_BY_SLUG: Readonly<
+  Record<string, HubPlayStartSpec>
+> = {
+  padel: {
     href: HUB_START_MATCH_HREF,
     label: "Start a match",
-    sport: "padel",
-    description: "Lock a padel scorecard.",
+    description: "Live scorecard for a four-ball.",
   },
-  {
+  golf: {
     href: HUB_START_GOLF_HREF,
     label: "Start a round",
-    sport: "golf",
-    description: "Start a golf scorecard.",
+    description: "Hole-by-hole scorecard for your group.",
   },
-] as const;
+};
 
-export type HubPlayIntentCta = (typeof HUB_PLAY_INTENT_CTAS)[number];
+export type HubPlaySportOption = {
+  slug: string;
+  name: string;
+  startHref: string;
+  startLabel: string;
+  description: string;
+  /** Live/unlocked scorecard href when a clean signal exists; otherwise omitted. */
+  continueHref: string | null;
+};
 
 export function isHubTabId(value: string): value is HubTabId {
   return (HUB_TAB_IDS as readonly string[]).includes(value);
@@ -102,13 +121,79 @@ export function hubWatchHref(active: string): string {
   return intentPath("watch", active);
 }
 
-export function hubPlayIntentCtas(active: string): HubPlayIntentCta[] {
-  if (active === ALL_SPORTS_SLUG) return [...HUB_PLAY_INTENT_CTAS];
-  return HUB_PLAY_INTENT_CTAS.filter((cta) => cta.sport === active);
+export function hubPlayStartHref(slug: string): string | null {
+  return HUB_PLAY_START_BY_SLUG[slug]?.href ?? null;
+}
+
+export function isHubPlayableSport(sport: SportDefinition): boolean {
+  return (
+    sport.capabilities.includes("play") &&
+    hubPlayStartHref(sport.slug) !== null
+  );
+}
+
+export function hubPlayableSports(
+  sports: readonly SportDefinition[],
+): SportDefinition[] {
+  return sports.filter(isHubPlayableSport);
+}
+
+/**
+ * Continue only when a caller passes a real live/unlocked href for that sport.
+ * Hub history is locked results — do not invent a continue from it.
+ */
+export function hubPlayContinueHref(
+  slug: string,
+  continueBySlug?: Readonly<Record<string, string>> | null,
+): string | null {
+  if (!hubPlayStartHref(slug)) return null;
+  const href = continueBySlug?.[slug]?.trim();
+  return href ? href : null;
+}
+
+export function hubPlaySportOptions(
+  sports: readonly SportDefinition[],
+  active: string,
+  continueBySlug?: Readonly<Record<string, string>> | null,
+): HubPlaySportOption[] {
+  const playable = hubPlayableSports(sports);
+  const scoped =
+    active === ALL_SPORTS_SLUG
+      ? playable
+      : playable.filter((sport) => sport.slug === active);
+
+  return scoped.flatMap((sport) => {
+    const spec = HUB_PLAY_START_BY_SLUG[sport.slug];
+    if (!spec) return [];
+    return [
+      {
+        slug: sport.slug,
+        name: sport.name,
+        startHref: spec.href,
+        startLabel: spec.label,
+        description: spec.description,
+        continueHref: hubPlayContinueHref(sport.slug, continueBySlug),
+      },
+    ];
+  });
 }
 
 export function hubPlayNearbyHref(active: string): string {
   return hubPlayHref(active);
+}
+
+/**
+ * Empty-state nearby link. Never emit `/play/{sport}` for sports that
+ * do not support play (watch-only like motorsport).
+ */
+export function hubPlayEmptyNearbyHref(
+  active: string,
+  sports: readonly SportDefinition[],
+): string {
+  if (active === ALL_SPORTS_SLUG) return HUB_PLAY_HREF;
+  const sport = sports.find((item) => item.slug === active);
+  if (sport?.capabilities.includes("play")) return hubPlayHref(active);
+  return HUB_FIND_VENUES_HREF;
 }
 
 /**
