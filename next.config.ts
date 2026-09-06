@@ -51,6 +51,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/athlete-tools",
+        destination: "/athletes",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes
