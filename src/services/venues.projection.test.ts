@@ -121,6 +121,10 @@ describe("sportSlugVariants", () => {
       "golf-sim",
       "golf-simulator",
     ]);
+    assert.deepEqual(sportSlugVariants("driving-range"), [
+      "driving-range",
+      "practice-range",
+    ]);
     assert.deepEqual(sportSlugVariants("sim-racing"), [
       "sim-racing",
       "simracing",

@@ -97,6 +97,8 @@ describe("activity allowlist", () => {
     assert.equal(isAllowlistedActivitySlug("f1"), true);
     assert.equal(isAllowlistedActivitySlug("premier-league"), true);
     assert.equal(isAllowlistedActivitySlug("golf"), true);
+    assert.equal(isAllowlistedActivitySlug("indoor-golf"), true);
+    assert.equal(isAllowlistedActivitySlug("driving-range"), true);
     assert.equal(isAllowlistedActivitySlug("casino"), false);
     assert.equal(isAllowlistedActivitySlug("anything"), false);
   });

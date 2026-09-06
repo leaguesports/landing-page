@@ -91,6 +91,7 @@ export const SEARCH_SPORTS = [
   { name: "Pool", slug: "pool" },
   { name: "Bowling", slug: "bowling" },
   { name: "Indoor Golf", slug: "indoor-golf" },
+  { name: "Driving Range", slug: "driving-range" },
   { name: "Sim Racing", slug: "sim-racing" },
 ] as const;
 

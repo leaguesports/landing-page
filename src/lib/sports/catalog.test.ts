@@ -27,7 +27,9 @@ describe("inferSportSlug", () => {
     assert.equal(inferSportSlug("AR darts night in Sandton"), "darts");
     assert.equal(inferSportSlug("Snooker and pool tables"), "pool");
     assert.equal(inferSportSlug("Hyper bowling in Fourways"), "bowling");
-    assert.equal(inferSportSlug("Golf simulator bays in Joburg"), "indoor-golf");
+    assert.equal(inferSportSlug("Golf simulator bays in Joburg"), "golf");
+    assert.equal(inferSportSlug("Driving range in Sandton"), "golf");
+    assert.equal(inferSportSlug("Indoor golf near me"), "golf");
     assert.equal(inferSportSlug("Sim racing in Cape Town"), "sim-racing");
   });
 
@@ -74,15 +76,18 @@ describe("utilities", () => {
     assert.ok(hrefs.includes("/watch/padel"));
   });
 
-  it("gives golf a round start and history, not padel paths", () => {
+  it("gives golf grouped activities: round, course, simulator, and driving range", () => {
     const golf = SPORT_CATALOG.find((sport) => sport.slug === "golf");
     assert.ok(golf);
     assert.ok(golf.capabilities.includes("scorecard"));
+    assert.ok(golf.activities && golf.activities.length >= 5);
     const utilities = utilitiesForSport(golf);
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/golf/new"));
     assert.ok(hrefs.includes("/golf/history"));
     assert.ok(hrefs.includes("/play/golf"));
+    assert.ok(hrefs.includes("/play/indoor-golf"));
+    assert.ok(hrefs.includes("/play/driving-range"));
     assert.equal(
       utilities.some((item) => item.href === "/padel/new"),
       false,
@@ -90,6 +95,21 @@ describe("utilities", () => {
     assert.equal(
       utilities.find((item) => item.kind === "scorecard")?.title,
       "Start a round",
+    );
+    assert.equal(
+      utilities.find((item) => item.href === "/play/indoor-golf")?.title,
+      "Find a simulator",
+    );
+    assert.equal(
+      utilities.find((item) => item.href === "/play/driving-range")?.title,
+      "Find a driving range",
+    );
+  });
+
+  it("does not list indoor-golf as a top-level hub sport", () => {
+    assert.equal(
+      SPORT_CATALOG.some((sport) => sport.slug === "indoor-golf"),
+      false,
     );
   });
 
@@ -118,7 +138,6 @@ describe("utilities", () => {
       { slug: "darts", title: "Find a board" },
       { slug: "pool", title: "Find a table" },
       { slug: "bowling", title: "Find a lane" },
-      { slug: "indoor-golf", title: "Find a bay" },
       { slug: "sim-racing", title: "Find a sim" },
     ] as const;
 
@@ -182,6 +201,19 @@ describe("filterFeedBySport", () => {
       ["1"],
     );
   });
+
+  it("includes nested golf venue sports when Golf is focused", () => {
+    const golfFeed = [
+      { id: "g", sportSlug: "golf" },
+      { id: "i", sportSlug: "indoor-golf" },
+      { id: "r", sportSlug: "driving-range" },
+      { id: "p", sportSlug: "padel" },
+    ];
+    assert.deepEqual(
+      filterFeedBySport(golfFeed, "golf").map((item) => item.id),
+      ["g", "i", "r"],
+    );
+  });
 });
 
 describe("hub preferences", () => {
@@ -232,5 +264,22 @@ describe("hub preferences", () => {
     );
     assert.deepEqual(stored.followed, ["padel"]);
     assert.equal(stored.active, ALL_SPORTS_SLUG);
+  });
+
+  it("migrates legacy indoor-golf follows onto golf", () => {
+    const golfKnown = ["padel", "golf", "rugby"];
+    const stored = parseHubPreferences(
+      JSON.stringify({ followed: ["indoor-golf", "padel"], active: "indoor-golf" }),
+      { knownSlugs: golfKnown, seedFollowed: [] },
+    );
+    assert.deepEqual(stored.followed, ["golf", "padel"]);
+    assert.equal(stored.active, "golf");
+
+    const selected = selectHubSport(
+      { followed: ["padel"], active: "padel" },
+      "indoor-golf",
+      golfKnown,
+    );
+    assert.deepEqual(selected, { followed: ["padel", "golf"], active: "golf" });
   });
 });

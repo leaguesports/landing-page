@@ -21,12 +21,32 @@ export type HubUtility = {
   emphasis: "primary" | "secondary";
 };
 
+/**
+ * Nested actions under a hub sport (e.g. Golf → round / simulator / range).
+ * Venue directory filters use `venueSportSlug` leaf slugs; hub follow/focus stays on the parent.
+ */
+export type SportActivity = {
+  id: string;
+  name: string;
+  kind: "scorecard" | "history" | "play";
+  /** Venue directory slug when this is a find-venue action. */
+  venueSportSlug?: string;
+  /** Venue noun for play CTAs — bay, range, course. */
+  noun?: string;
+  /** Explicit href for scorecard/history (and optional play overrides). */
+  href?: string;
+  description?: string;
+  emphasis?: "primary" | "secondary";
+};
+
 export type SportDefinition = {
   slug: string;
   name: string;
   /** Venue noun used in play CTAs — court, course, pitch. */
   noun: string;
   capabilities: SportCapability[];
+  /** When set, Tools utilities are built from these instead of capabilities alone. */
+  activities?: SportActivity[];
 };
 
 /** Sports the hub knows how to serve. Extra Sanity sports merge in at runtime. */
@@ -60,6 +80,51 @@ export const SPORT_CATALOG: SportDefinition[] = [
     name: "Golf",
     noun: "course",
     capabilities: ["play", "scorecard"],
+    activities: [
+      {
+        id: "round",
+        name: "Start a round",
+        kind: "scorecard",
+        href: "/golf/new",
+        description: "Hole-by-hole scorecard for your group.",
+        emphasis: "primary",
+      },
+      {
+        id: "history",
+        name: "Round history",
+        kind: "history",
+        href: "/golf/history",
+        description: "Locked rounds on your record.",
+        emphasis: "secondary",
+      },
+      {
+        id: "course",
+        name: "Find a course",
+        kind: "play",
+        venueSportSlug: "golf",
+        noun: "course",
+        description: "Places to play golf near you.",
+        emphasis: "secondary",
+      },
+      {
+        id: "simulator",
+        name: "Find a simulator",
+        kind: "play",
+        venueSportSlug: "indoor-golf",
+        noun: "bay",
+        description: "Indoor golf and simulator bays near you.",
+        emphasis: "secondary",
+      },
+      {
+        id: "driving-range",
+        name: "Find a driving range",
+        kind: "play",
+        venueSportSlug: "driving-range",
+        noun: "range",
+        description: "Ranges to warm up and practice.",
+        emphasis: "secondary",
+      },
+    ],
   },
   {
     slug: "motorsport",
@@ -104,12 +169,6 @@ export const SPORT_CATALOG: SportDefinition[] = [
     capabilities: ["play"],
   },
   {
-    slug: "indoor-golf",
-    name: "Indoor Golf",
-    noun: "bay",
-    capabilities: ["play"],
-  },
-  {
     slug: "sim-racing",
     name: "Sim Racing",
     noun: "sim",
@@ -150,16 +209,56 @@ export const SERIES_TO_SPORT: Record<string, string> = {
   tenpin: "bowling",
   "hyper bowling": "bowling",
   "hyper-bowling": "bowling",
-  "golf simulator": "indoor-golf",
-  "golf sim": "indoor-golf",
-  "golf-sim": "indoor-golf",
-  "simulator golf": "indoor-golf",
-  "indoor golf": "indoor-golf",
+  // Golf family → hub parent (venue leaf slugs stay in VENUE_SPORT_PARENT / search aliases).
+  "golf simulator": "golf",
+  "golf sim": "golf",
+  "golf-sim": "golf",
+  "simulator golf": "golf",
+  "indoor golf": "golf",
+  "indoor-golf": "golf",
+  "driving range": "golf",
+  "driving-range": "golf",
+  "practice range": "golf",
   "sim racing": "sim-racing",
   "racing sim": "sim-racing",
   "racing simulator": "sim-racing",
   simracing: "sim-racing",
 };
+
+/**
+ * Leaf venue-directory slugs nested under a hub parent.
+ * Keep these out of top-level follow/focus chips; SEO/search still use the leaf.
+ */
+export const VENUE_SPORT_PARENT: Record<string, string> = {
+  "indoor-golf": "golf",
+  "golf-sim": "golf",
+  "golf-simulator": "golf",
+  "driving-range": "golf",
+};
+
+/** Display names for nested venue sports (SEO hubs / autocomplete). */
+export const VENUE_SPORT_LABELS: Record<string, string> = {
+  "indoor-golf": "Indoor Golf",
+  "golf-sim": "Indoor Golf",
+  "golf-simulator": "Indoor Golf",
+  "driving-range": "Driving Range",
+};
+
+/** Hub parent for a leaf venue sport, or null when the slug is already top-level. */
+export function parentSportSlug(
+  slug: string | null | undefined,
+): string | null {
+  const normalized = normalizeSportSlug(slug);
+  if (!normalized) return null;
+  return VENUE_SPORT_PARENT[normalized] ?? null;
+}
+
+/** Remap nested venue sports (e.g. indoor-golf) onto their hub parent. */
+export function toHubSportSlug(slug: string | null | undefined): string | null {
+  const normalized = normalizeSportSlug(slug);
+  if (!normalized) return null;
+  return VENUE_SPORT_PARENT[normalized] ?? normalized;
+}
 
 export function normalizeSportSlug(slug: string | null | undefined): string {
   return (slug ?? "").trim().toLowerCase().replace(/\s+/g, "-");
@@ -181,8 +280,11 @@ function uniqueSlugs(values: string[], allowed: Set<string>): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {
-    const slug = normalizeSportSlug(value);
-    if (!slug || !allowed.has(slug) || seen.has(slug)) continue;
+    const raw = normalizeSportSlug(value);
+    if (!raw) continue;
+    // Migrate legacy indoor-golf (etc.) follows onto the hub parent.
+    const slug = toHubSportSlug(raw) ?? raw;
+    if (!allowed.has(slug) || seen.has(slug)) continue;
     seen.add(slug);
     result.push(slug);
   }
@@ -201,6 +303,8 @@ export function mergeHubSports(
   for (const item of live) {
     const slug = normalizeSportSlug(item.slug);
     if (!slug) continue;
+    // Nested venue sports (indoor-golf, driving-range) stay under their hub parent.
+    if (VENUE_SPORT_PARENT[slug]) continue;
     const name = item.name?.trim() || slug;
     const existing = bySlug.get(slug);
     if (existing) {
@@ -296,7 +400,50 @@ export function eventHref(
   return "/watch";
 }
 
+function utilitiesFromActivities(sport: SportDefinition): HubUtility[] {
+  const activities = sport.activities ?? [];
+  const list: HubUtility[] = [];
+
+  for (const activity of activities) {
+    const venueSlug = activity.venueSportSlug ?? sport.slug;
+    const href =
+      activity.href ??
+      (activity.kind === "play"
+        ? `/play/${encodeURIComponent(venueSlug)}`
+        : "#");
+    list.push({
+      id: `${sport.slug}-${activity.id}`,
+      sportSlug: sport.slug,
+      kind: activity.kind,
+      title: activity.name,
+      description:
+        activity.description ??
+        (activity.kind === "play"
+          ? `Places to play ${activity.name.toLowerCase()} near you.`
+          : activity.name),
+      href,
+      emphasis: activity.emphasis ?? (list.length === 0 ? "primary" : "secondary"),
+    });
+  }
+
+  list.push({
+    id: `${sport.slug}-guides`,
+    sportSlug: sport.slug,
+    kind: "guides",
+    title: "Guides",
+    description: `Local tips for ${sport.name.toLowerCase()}.`,
+    href: "/guides",
+    emphasis: "secondary",
+  });
+
+  return list;
+}
+
 export function utilitiesForSport(sport: SportDefinition): HubUtility[] {
+  if (sport.activities && sport.activities.length > 0) {
+    return utilitiesFromActivities(sport);
+  }
+
   const list: HubUtility[] = [];
   const playHref = `/play/${encodeURIComponent(sport.slug)}`;
   const watchHref =
@@ -475,7 +622,14 @@ export function filterFeedBySport<T extends { sportSlug: string | null }>(
   active: string,
 ): T[] {
   if (active === ALL_SPORTS_SLUG) return items;
-  return items.filter((item) => item.sportSlug === active);
+  const focus = normalizeSportSlug(active);
+  return items.filter((item) => {
+    const itemSlug = item.sportSlug;
+    if (!itemSlug) return false;
+    if (itemSlug === focus) return true;
+    // Nested venue sports surface under their hub parent (golf ← indoor-golf).
+    return toHubSportSlug(itemSlug) === focus;
+  });
 }
 
 export type HubPreferences = {
@@ -516,9 +670,13 @@ export function parseHubPreferences(
     const activeRaw = normalizeSportSlug(
       typeof parsed.active === "string" ? parsed.active : "",
     );
-    const active =
-      activeRaw === ALL_SPORTS_SLUG || allowed.has(activeRaw)
+    const activeMapped =
+      activeRaw === ALL_SPORTS_SLUG
         ? activeRaw
+        : (toHubSportSlug(activeRaw) ?? activeRaw);
+    const active =
+      activeMapped === ALL_SPORTS_SLUG || allowed.has(activeMapped)
+        ? activeMapped
         : fallback.active;
     return { followed, active };
   } catch {
@@ -547,7 +705,7 @@ export function selectHubSport(
   if (slug === ALL_SPORTS_SLUG) {
     return { ...prefs, active: ALL_SPORTS_SLUG };
   }
-  const next = normalizeSportSlug(slug);
+  const next = toHubSportSlug(normalizeSportSlug(slug)) ?? normalizeSportSlug(slug);
   if (!allowed.has(next)) return prefs;
   const followed = uniqueSlugs([...prefs.followed, next], allowed);
   return { followed, active: next };
