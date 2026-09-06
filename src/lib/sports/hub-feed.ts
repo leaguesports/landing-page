@@ -1,3 +1,4 @@
+import { guideHref, isGuideSlug } from "../guides/slugs.ts";
 import {
   eventHref,
   inferSportSlug,
@@ -59,7 +60,7 @@ export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current
   upcoming_screenings[0...12]{ title, startsAt }
 }`;
 
-export const HUB_GUIDES_QUERY = `*[_type == "guide"] | order(_createdAt desc) [0...6] {
+export const HUB_GUIDES_QUERY = `*[_type == "guide" && defined(slug.current) && slug.current != ""] | order(_createdAt desc) [0...6] {
   _id,
   _createdAt,
   title,
@@ -348,7 +349,7 @@ export function guidesToFeedItems(
   sports: SportDefinition[] = SPORT_CATALOG,
 ): HubFeedItem[] {
   return guides.flatMap((guide) => {
-    const slug = asString(guide.slug);
+    const slug = isGuideSlug(guide.slug) ? guide.slug : "";
     const title = asString(guide.title);
     if (!slug || !title) return [];
     const keywords = Array.isArray(guide.keywords)
@@ -362,7 +363,7 @@ export function guidesToFeedItems(
         sportSlug: inferSportSlug(blob, sports),
         title,
         subtitle: "Guide",
-        href: `/guides/${slug}`,
+        href: guideHref(slug),
         startsAt: null,
       },
     ];

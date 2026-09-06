@@ -1,14 +1,17 @@
+import { guideHref, isGuideSlug } from "@/lib/guides/slugs";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
 import Image from "next/image";
 import Link from "next/link";
 import type { Guide } from "../actions";
 
 export function GuideCard({ guide }: { guide: Guide }) {
+  if (!isGuideSlug(guide.slug)) return null;
+
   const imageUrl = safeSanityImageUrl(guide.mainImage);
 
   return (
     <Link
-      href={`/guides/${guide.slug}`}
+      href={guideHref(guide.slug)}
       className="group block overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-zinc-800">

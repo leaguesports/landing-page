@@ -426,7 +426,7 @@ export default async function VenuePage({ params }: Props) {
               description="Screenings and who's heading down"
             />
             <div className="grid max-w-3xl gap-5">
-              <VenueMatchSchedule screenings={venue.upcoming_screenings} />
+              <VenueMatchSchedule venue={venue} />
               <VenueAttendanceCounter venueSlug={venue.slug} />
             </div>
           </div>
