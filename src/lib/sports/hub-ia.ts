@@ -3,9 +3,13 @@
  * 4-tab bottom nav — one active panel, sport dropdown, page search.
  */
 
-import { ALL_SPORTS_SLUG } from "./catalog.ts";
+import {
+  activitySupportsIntent,
+  buildIntentActivity,
+} from "../intent/activity.ts";
 import { intentPath } from "../intent/paths.ts";
 import { parseVenueSearch } from "../search/venueSearch.ts";
+import { ALL_SPORTS_SLUG } from "./catalog.ts";
 
 export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
@@ -94,11 +98,15 @@ export function hubPlayShowsGolf(active: string): boolean {
 
 export function hubPlayHref(active: string): string {
   if (active === ALL_SPORTS_SLUG) return HUB_PLAY_HREF;
+  const activity = buildIntentActivity({ slug: active });
+  if (!activitySupportsIntent(activity, "play")) return HUB_PLAY_HREF;
   return intentPath("play", active);
 }
 
 export function hubWatchHref(active: string): string {
   if (active === ALL_SPORTS_SLUG) return HUB_WATCH_HREF;
+  const activity = buildIntentActivity({ slug: active });
+  if (!activitySupportsIntent(activity, "watch")) return HUB_WATCH_HREF;
   return intentPath("watch", active);
 }
 

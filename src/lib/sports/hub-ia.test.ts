@@ -142,6 +142,26 @@ describe("signed-in hub IA (#145)", () => {
     assert.equal(hubWatchHref("all"), HUB_WATCH_HREF);
   });
 
+  it("falls back play/watch hrefs when the focused sport does not support the intent (#147)", () => {
+    assert.equal(hubPlayHref("padel"), "/play/padel");
+    assert.equal(hubWatchHref("padel"), "/watch/padel");
+    assert.equal(hubPlayHref("rugby"), "/play/rugby");
+    assert.equal(hubWatchHref("rugby"), "/watch/rugby");
+    assert.equal(hubPlayHref("golf"), "/play/golf");
+    assert.equal(hubPlayHref("karting"), "/play/karting");
+    assert.equal(hubPlayHref("tennis"), "/play/tennis");
+    assert.equal(hubWatchHref("golf"), HUB_WATCH_HREF);
+    assert.equal(hubWatchHref("karting"), HUB_WATCH_HREF);
+    assert.equal(hubWatchHref("tennis"), HUB_WATCH_HREF);
+    assert.equal(hubPlayHref("motorsport"), HUB_PLAY_HREF);
+    assert.equal(hubWatchHref("motorsport"), "/watch/motorsport");
+    assert.equal(hubPlayNearbyHref("motorsport"), HUB_PLAY_HREF);
+    assert.equal(hubPlayNearbyHref("golf"), "/play/golf");
+    assert.equal(hubSearchHref("", "motorsport"), HUB_PLAY_HREF);
+    assert.equal(hubSearchHref("   ", "golf"), "/play/golf");
+    assert.equal(hubSearchHref("", "padel"), "/play/padel");
+  });
+
   it("caps recent locks and badge icons on the hub", () => {
     assert.equal(HUB_RECENT_LOCK_LIMIT, 8);
     assert.equal(HUB_BADGE_STRIP_LIMIT, 3);
