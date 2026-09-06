@@ -41,24 +41,29 @@ export async function getUpcomingFixtures(
   const now = options.now ?? new Date();
   const notBefore = upcomingNotBeforeIso(now);
 
-  try {
-    const [screeningVenues, cmsEvents] = await Promise.all([
-      sanityClient.fetch<EventsScreeningVenueRow[]>(EVENTS_SCREENINGS_QUERY, {
-        notBefore,
-      }),
-      sanityClient.fetch<EventsCmsEventRow[]>(EVENTS_CMS_QUERY, { notBefore }),
-    ]);
+  const [screeningsResult, cmsResult] = await Promise.allSettled([
+    sanityClient.fetch<EventsScreeningVenueRow[]>(EVENTS_SCREENINGS_QUERY, {
+      notBefore,
+    }),
+    sanityClient.fetch<EventsCmsEventRow[]>(EVENTS_CMS_QUERY, { notBefore }),
+  ]);
 
-    return buildUpcomingFixtures(
-      screeningVenues ?? [],
-      cmsEvents ?? [],
-      SPORT_CATALOG,
-      { limit: options.limit ?? 24, now },
-    );
-  } catch (error) {
-    console.error("[events] fixtures fetch failed", error);
-    return [];
+  if (screeningsResult.status === "rejected") {
+    console.error("[events] screenings fetch failed", screeningsResult.reason);
   }
+  if (cmsResult.status === "rejected") {
+    console.error("[events] CMS events fetch failed", cmsResult.reason);
+  }
+
+  const screeningVenues =
+    screeningsResult.status === "fulfilled" ? (screeningsResult.value ?? []) : [];
+  const cmsEvents =
+    cmsResult.status === "fulfilled" ? (cmsResult.value ?? []) : [];
+
+  return buildUpcomingFixtures(screeningVenues, cmsEvents, SPORT_CATALOG, {
+    limit: options.limit ?? 24,
+    now,
+  });
 }
 
 /**
@@ -76,7 +81,7 @@ export async function getFixtureBySlug(
   try {
     if (day) {
       const { dayStart, dayEnd } = saDayBounds(day);
-      const [screeningVenues, cmsEvents] = await Promise.all([
+      const [screeningsResult, cmsResult] = await Promise.allSettled([
         sanityClient.fetch<EventsScreeningVenueRow[]>(
           EVENTS_SCREENINGS_ON_DAY_QUERY,
           { dayStart, dayEnd },
@@ -87,9 +92,26 @@ export async function getFixtureBySlug(
         }),
       ]);
 
+      if (screeningsResult.status === "rejected") {
+        console.error(
+          "[events] day screenings fetch failed",
+          screeningsResult.reason,
+        );
+      }
+      if (cmsResult.status === "rejected") {
+        console.error("[events] day CMS events fetch failed", cmsResult.reason);
+      }
+
+      const screeningVenues =
+        screeningsResult.status === "fulfilled"
+          ? (screeningsResult.value ?? [])
+          : [];
+      const cmsEvents =
+        cmsResult.status === "fulfilled" ? (cmsResult.value ?? []) : [];
+
       const fixtures = buildUpcomingFixtures(
-        screeningVenues ?? [],
-        cmsEvents ?? [],
+        screeningVenues,
+        cmsEvents,
         SPORT_CATALOG,
         {
           limit: 48,
