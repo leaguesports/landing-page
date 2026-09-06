@@ -40,8 +40,7 @@ export default async function IntegrationsPage() {
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-400">
             Only connectable providers are listed — Import session today.
-            Trackman and Autodarts stay off this page until they are actually
-            available.
+            Hardware that is not available yet stays off this page.
           </p>
           {auth.isAuthenticated ? (
             <Link
