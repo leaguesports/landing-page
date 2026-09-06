@@ -2,6 +2,7 @@ import { SportsHub } from "@/components/home/SportsHub";
 import type { AuthUser } from "@/lib/api-client";
 import { listBadges } from "@/lib/badges/api";
 import { listFollowedFixtures } from "@/lib/events/follow";
+import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
@@ -50,6 +51,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRows,
     followedFixturesResolved,
     friends,
+    myCommunities,
     badges,
   ] = await Promise.all([
     preferencesPromise,
@@ -60,6 +62,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRowsPromise,
     followedFixturesPromise,
     listFriends({ cookie }),
+    listMyCommunities({ cookie }),
     listBadges({ cookie }),
   ]);
 
@@ -96,6 +99,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       followedFixtures={followedFixtures}
       followedFixtureCount={followedFixtureRows.length}
       friends={friends}
+      myCommunities={myCommunities}
       badges={badges}
       sports={hub.sports}
       feed={hub.feed}

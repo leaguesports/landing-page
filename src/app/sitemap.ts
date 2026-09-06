@@ -80,6 +80,12 @@ function staticAndCityRoutes(baseUrl: string, now: Date): MetadataRoute.Sitemap 
       priority: 0.95,
     },
     {
+      url: `${baseUrl}/communities`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/athletes`,
       lastModified: now,
       changeFrequency: "weekly",

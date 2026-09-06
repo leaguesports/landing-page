@@ -2,11 +2,13 @@
 
 import { BadgesPanel } from "@/components/home/BadgesPanel";
 import type { BadgesSnapshot } from "@/lib/badges/api";
+import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import type { AuthUser } from "@/lib/api-client";
+import type { MyCommunity } from "@/lib/communities/communities";
 import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
@@ -86,7 +88,7 @@ const HUB_SECTIONS: {
   {
     id: "friends",
     label: "Friends",
-    description: "Connect and challenge players",
+    description: "Friends and your communities",
     icon: Users,
   },
   {
@@ -143,6 +145,8 @@ type SportsHubProps = {
   /** Raw follow count from the API (may exceed resolved CMS rows). */
   followedFixtureCount?: number;
   friends?: FriendsSnapshot;
+  /** Prefetched `GET /api/me/communities` — empty on failure. */
+  myCommunities?: MyCommunity[];
   badges?: BadgesSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
@@ -252,6 +256,7 @@ export function SportsHub({
   followedFixtures = [],
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
+  myCommunities = [],
   badges = { badges: [], fromApi: false },
   sports,
   feed,
@@ -778,7 +783,16 @@ export function SportsHub({
                 HUB_SECTIONS.find((item) => item.id === "friends")
                   ?.description ?? activeSectionMeta.description
               }
+              action={
+                <Link
+                  href="/communities"
+                  className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+                >
+                  Discover communities
+                </Link>
+              }
             />
+            <CommunitiesPanel initial={myCommunities} className="mb-8" />
             <FriendsPanel
               initial={friends}
               className="mt-0"
