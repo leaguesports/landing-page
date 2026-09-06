@@ -136,8 +136,8 @@ export default function FeaturesPage() {
                   Everything you need to track, improve, and share your sporting journey. All connected, all in one place.
                 </p>
                 <p className="mt-4 text-sm leading-6 text-gray-500">
-                  Padel and golf scorecards lock to your account today — ratings,
-                  badges, and training integrations are on the roadmap.
+                  Padel and golf scorecards lock to your account today. Start a
+                  curated padel training plan from your hub.
                 </p>
               </div>
 
@@ -980,9 +980,15 @@ export default function FeaturesPage() {
                   <svg className="mt-1 h-5 w-5 shrink-0 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Get reminders and stay motivated with progress tracking</span>
+                  <span>Restart a completed plan anytime — history stays on your account</span>
                 </li>
               </ul>
+              <Link
+                href="/training"
+                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:scale-105"
+              >
+                Start Accuracy Focus
+              </Link>
             </div>
           </div>
         </div>

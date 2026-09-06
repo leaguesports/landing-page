@@ -4,11 +4,16 @@ import { BadgesPanel } from "@/components/home/BadgesPanel";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
+import { TrainingPanel } from "@/components/home/TrainingPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import type { AuthUser } from "@/lib/api-client";
 import type { MyCommunity } from "@/lib/communities/communities";
+import {
+  emptyTrainingSnapshot,
+  type TrainingSnapshot,
+} from "@/lib/training/training";
 import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
@@ -50,6 +55,7 @@ import {
   Trophy,
   Tv,
   Users,
+  Dumbbell,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -94,7 +100,7 @@ const HUB_SECTIONS: {
   {
     id: "progress",
     label: "Progress",
-    description: "Form, badges, and locked matches",
+    description: "Form, badges, training, and locked matches",
     icon: Trophy,
   },
 ];
@@ -147,6 +153,8 @@ type SportsHubProps = {
   friends?: FriendsSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
+  /** Prefetched `GET /api/me/training/plans` — empty on 404 / 503 / lag. */
+  training?: TrainingSnapshot;
   badges?: BadgesSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
@@ -232,6 +240,8 @@ function utilityIcon(kind: HubUtility["kind"]) {
       return Flag;
     case "guides":
       return BookOpen;
+    case "training":
+      return Dumbbell;
   }
 }
 
@@ -257,6 +267,7 @@ export function SportsHub({
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
   myCommunities = [],
+  training = emptyTrainingSnapshot(),
   badges = { badges: [], fromApi: false },
   sports,
   feed,
@@ -809,7 +820,7 @@ export function SportsHub({
                 }
                 description={
                   showPadel
-                    ? "Recent padel form, earned badges, and locked matches."
+                    ? "Recent padel form, training plans, earned badges, and locked matches."
                     : "Milestones you’ve unlocked across the sports you play."
                 }
                 action={
@@ -842,11 +853,14 @@ export function SportsHub({
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
                 <div className="space-y-8 lg:col-span-5">
                   {showPadel ? (
-                    <PadelProgressSummary
-                      stats={stats}
-                      variant="hub"
-                      flush
-                    />
+                    <>
+                      <PadelProgressSummary
+                        stats={stats}
+                        variant="hub"
+                        flush
+                      />
+                      <TrainingPanel initial={training} className="mt-0" />
+                    </>
                   ) : (
                     <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
                       <p className="text-sm leading-relaxed text-zinc-400">

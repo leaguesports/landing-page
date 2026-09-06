@@ -9,7 +9,8 @@ export type HubUtilityKind =
   | "watch"
   | "calendar"
   | "series"
-  | "guides";
+  | "guides"
+  | "training";
 
 export type HubUtility = {
   id: string;
@@ -475,6 +476,17 @@ export function utilitiesForSport(sport: SportDefinition): HubUtility[] {
       href: isGolf ? "/golf/history" : "/padel/history",
       emphasis: "secondary",
     });
+    if (sport.slug === "padel") {
+      list.push({
+        id: `${sport.slug}-training`,
+        sportSlug: sport.slug,
+        kind: "training",
+        title: "Training plans",
+        description: "Start a curated padel plan and log each drill.",
+        href: "/training",
+        emphasis: "secondary",
+      });
+    }
   }
 
   if (sport.capabilities.includes("play")) {
@@ -584,6 +596,15 @@ export function utilitiesForAll(): HubUtility[] {
       title: "Match history",
       description: "Locked padel results for your account.",
       href: "/padel/history",
+      emphasis: "secondary",
+    },
+    {
+      id: "all-training",
+      sportSlug: "padel",
+      kind: "training",
+      title: "Padel training",
+      description: "Curated plans — start Accuracy Focus from the hub.",
+      href: "/training",
       emphasis: "secondary",
     },
     {

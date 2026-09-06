@@ -78,6 +78,9 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/communities"), true);
+    assert.equal(shouldProxyApiPath("/api/me/training/plans"), true);
+    assert.equal(shouldProxyApiPath("/api/me/training/enrollments"), true);
+    assert.equal(shouldProxyApiPath("/api/me/training/enrollments/enr-1"), true);
     assert.equal(shouldProxyApiPath("/api/communities"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);
@@ -290,7 +293,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -311,7 +314,7 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)).*)",
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
         assert.equal(
