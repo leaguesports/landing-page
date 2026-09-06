@@ -20,6 +20,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sport = (searchParams.get("sport") ?? "padel").toLowerCase();
   const matchId = searchParams.get("matchId");
+  // Fixture social feeds subscribe via `channel=fixture:<slug>`.
+  const channel = searchParams.get("channel")?.trim() ?? "";
 
   let clientId = `guest_${crypto.randomUUID().slice(0, 10)}`;
 
@@ -40,9 +42,15 @@ export async function GET(request: Request) {
     }
   }
 
-  const channelPattern = matchId
-    ? `${sport}:${matchId}`
-    : `${sport}:*`;
+  let channelPattern: string;
+  if (channel.startsWith("fixture:")) {
+    // Exact fixture channel only — no wildcard publish for social feeds.
+    channelPattern = channel.toLowerCase();
+  } else if (matchId) {
+    channelPattern = `${sport}:${matchId}`;
+  } else {
+    channelPattern = `${sport}:*`;
+  }
 
   const rest = new Ably.Rest({ key: apiKey });
 

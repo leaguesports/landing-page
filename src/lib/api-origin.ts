@@ -75,8 +75,8 @@ export function isFrontendOrigin(origin: string): boolean {
 
 function getApiProxySkipPattern(): string {
   // Match identity (POST/GET /api/matches, lock) is league-sports-api.
-  // Only Ably live-scoring event cache stays on Next.
-  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)";
+  // Ably live-scoring, fixture social feed/live board, and venue claim stay on Next.
+  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)";
 }
 
 /**
