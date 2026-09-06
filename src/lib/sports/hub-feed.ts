@@ -1,4 +1,4 @@
-import { guideHref } from "../guides/slugs.ts";
+import { guideHref, isGuideSlug } from "../guides/slugs.ts";
 import {
   eventHref,
   inferSportSlug,
@@ -349,7 +349,7 @@ export function guidesToFeedItems(
   sports: SportDefinition[] = SPORT_CATALOG,
 ): HubFeedItem[] {
   return guides.flatMap((guide) => {
-    const slug = asString(guide.slug);
+    const slug = isGuideSlug(guide.slug) ? guide.slug : "";
     const title = asString(guide.title);
     if (!slug || !title) return [];
     const keywords = Array.isArray(guide.keywords)

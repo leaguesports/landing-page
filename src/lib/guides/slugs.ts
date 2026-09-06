@@ -2,6 +2,8 @@
 
 const GUIDE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const GUIDE_SLUG_MAX = 96;
+/** Short tokens like `best` or `claim` are too easy to collide; require this for prefix guesses. */
+const GUIDE_PREFIX_MIN = 8;
 
 export type GuideSlugCandidate = {
   slug?: unknown;
@@ -42,9 +44,37 @@ export function publishedGuides<T extends { slug?: unknown }>(
   return rows.filter((row): row is T & { slug: string } => isGuideSlug(row.slug));
 }
 
+function titleSlugOf(row: GuideSlugCandidate): string | null {
+  const title = typeof row.title === "string" ? row.title : "";
+  if (!title) return null;
+  const derived = slugifyGuideTitle(title);
+  return isGuideSlug(derived) ? derived : null;
+}
+
+/**
+ * Unique prefix of a published/title slug. Hyphen-boundary (`requested-…`)
+ * or a safe unique prefix (min length ≥ 8). Never guess when two slugs share it.
+ */
+function uniquePrefixHit(
+  needle: string,
+  aliases: ReadonlyArray<string>,
+): string | null {
+  if (!isGuideSlug(needle) || needle.length < GUIDE_PREFIX_MIN) return null;
+
+  const hyphenHits = aliases.filter((alias) => alias.startsWith(`${needle}-`));
+  if (hyphenHits.length === 1) return hyphenHits[0];
+  if (hyphenHits.length > 1) return null;
+
+  const prefixHits = aliases.filter(
+    (alias) => alias !== needle && alias.startsWith(needle),
+  );
+  if (prefixHits.length === 1) return prefixHits[0];
+  return null;
+}
+
 /**
  * Map a requested URL token to a stored `slug.current`.
- * Exact slug wins; otherwise a unique title-derived slug is accepted.
+ * Exact slug wins, then a unique title-derived slug, then a unique prefix.
  */
 export function resolveGuideSlug(
   requested: string,
@@ -58,12 +88,30 @@ export function resolveGuideSlug(
   const exact = usable.find((row) => row.slug === needle);
   if (exact && typeof exact.slug === "string") return exact.slug;
 
-  const titleHits = usable.filter((row) => {
-    const title = typeof row.title === "string" ? row.title : "";
-    return title.length > 0 && slugifyGuideTitle(title) === needle;
-  });
+  const titleHits = usable.filter((row) => titleSlugOf(row) === needle);
   if (titleHits.length === 1 && typeof titleHits[0]?.slug === "string") {
     return titleHits[0].slug;
+  }
+
+  const storedHits = new Set<string>();
+  const storedAliases = usable.map((row) => row.slug as string);
+  const storedPrefix = uniquePrefixHit(needle, storedAliases);
+  if (storedPrefix) storedHits.add(storedPrefix);
+
+  const titleAliases = usable
+    .map((row) => titleSlugOf(row))
+    .filter((alias): alias is string => alias !== null);
+  const titlePrefix = uniquePrefixHit(needle, titleAliases);
+  if (titlePrefix) {
+    const titleRow = usable.find((row) => titleSlugOf(row) === titlePrefix);
+    if (titleRow && typeof titleRow.slug === "string") {
+      storedHits.add(titleRow.slug);
+    }
+  }
+
+  if (storedHits.size === 1) {
+    const [resolved] = storedHits;
+    return resolved ?? null;
   }
 
   return null;
