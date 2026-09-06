@@ -217,6 +217,13 @@ export function sportSlugVariants(slug: string | null | undefined): string[] {
   ) {
     return ["indoor-golf", "golf-sim", "golf-simulator"];
   }
+  if (
+    slug === "driving-range" ||
+    slug === "drivingrange" ||
+    slug === "practice-range"
+  ) {
+    return ["driving-range", "practice-range"];
+  }
   if (slug === "sim-racing" || slug === "simracing" || slug === "racing-sim") {
     return ["sim-racing", "simracing", "racing-sim"];
   }

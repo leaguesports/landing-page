@@ -37,6 +37,8 @@ const SPORT_ICON_BY_SLUG: Record<string, SportIconComponent> = {
     "indoor-golf": GolfIcon as SportIconComponent,
     "golf-sim": GolfIcon as SportIconComponent,
     "golf-simulator": GolfIcon as SportIconComponent,
+    "driving-range": GolfIcon as SportIconComponent,
+    "practice-range": GolfIcon as SportIconComponent,
     motorsport: MotorsportIcon as SportIconComponent,
     karting: MotorsportIcon as SportIconComponent,
     "go-karting": MotorsportIcon as SportIconComponent,

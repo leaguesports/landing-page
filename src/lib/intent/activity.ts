@@ -1,6 +1,8 @@
 import {
   SERIES_TO_SPORT,
   SPORT_CATALOG,
+  VENUE_SPORT_LABELS,
+  VENUE_SPORT_PARENT,
   normalizeSportSlug,
 } from "../sports/catalog.ts";
 import type { IntentKind } from "./paths.ts";
@@ -41,6 +43,13 @@ function sportSlugVariants(slug: string | null | undefined): string[] {
     slug === "golf-simulator"
   ) {
     return ["indoor-golf", "golf-sim", "golf-simulator"];
+  }
+  if (
+    slug === "driving-range" ||
+    slug === "drivingrange" ||
+    slug === "practice-range"
+  ) {
+    return ["driving-range", "practice-range"];
   }
   if (slug === "sim-racing" || slug === "simracing" || slug === "racing-sim") {
     return ["sim-racing", "simracing", "racing-sim"];
@@ -90,6 +99,11 @@ export function activityQuerySlugs(slug: string | null | undefined): string[] {
   const normalized = normalizeSportSlug(slug);
   if (!normalized) return [];
 
+  // Nested venue leaves (indoor-golf, driving-range) must not expand to parent golf courses.
+  if (VENUE_SPORT_PARENT[normalized]) {
+    return sportSlugVariants(normalized);
+  }
+
   const mapped = SERIES_TO_SPORT[normalized] ?? SERIES_TO_SPORT[slug ?? ""];
   if (mapped) {
     return [
@@ -111,6 +125,7 @@ export function activityDisplayName(
   const normalized = normalizeSportSlug(slug);
   if (fallbackName?.trim()) return fallbackName.trim();
   if (SERIES_DISPLAY[normalized]) return SERIES_DISPLAY[normalized];
+  if (VENUE_SPORT_LABELS[normalized]) return VENUE_SPORT_LABELS[normalized];
   const catalog = SPORT_CATALOG.find((sport) => sport.slug === normalized);
   if (catalog) return catalog.name;
   return slug
@@ -150,6 +165,7 @@ export function isAllowlistedActivitySlug(slug: string | null | undefined): bool
   const normalized = normalizeSportSlug(slug);
   if (!normalized) return false;
   if (SPORT_CATALOG.some((sport) => sport.slug === normalized)) return true;
+  if (VENUE_SPORT_PARENT[normalized]) return true;
   if (SERIES_TO_SPORT[normalized] || SERIES_TO_SPORT[slug ?? ""]) return true;
   if (SERIES_DISPLAY[normalized]) return true;
   return false;

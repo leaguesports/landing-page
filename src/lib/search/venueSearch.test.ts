@@ -82,6 +82,13 @@ describe("parseVenueSearch", () => {
         citySlug: "johannesburg",
       },
       {
+        query: "Play driving range in Rosebank",
+        sportSlug: "driving-range",
+        sportName: "Driving Range",
+        locationSlug: "rosebank",
+        citySlug: "johannesburg",
+      },
+      {
         query: "Play sim racing in Claremont",
         sportSlug: "sim-racing",
         sportName: "Sim Racing",
