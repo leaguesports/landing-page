@@ -1074,9 +1074,12 @@ export default function FeaturesPage() {
                     </div>
                   ))}
                 </div>
-                <button className="w-full rounded-lg bg-white/10 px-4 py-3 text-sm font-medium transition-colors hover:bg-white/20">
-                  Join Community
-                </button>
+                <Link
+                  href="/communities"
+                  className="block w-full rounded-lg bg-white/10 px-4 py-3 text-center text-sm font-medium transition-colors hover:bg-white/20"
+                >
+                  Join a community
+                </Link>
               </div>
             </div>
           </div>
