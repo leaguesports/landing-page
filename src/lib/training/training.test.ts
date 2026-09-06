@@ -18,9 +18,11 @@ import {
   PREFERRED_PLAN_ID,
   unionCompletedStepIds,
   upsertEnrollment,
+  type TrainingEnrollment,
+  type TrainingPlan,
 } from "./training.ts";
 
-const ACCURACY_PLAN = {
+const ACCURACY_PLAN: TrainingPlan = {
   id: "accuracy-focus",
   title: "Accuracy Focus",
   sport: "padel",
@@ -34,7 +36,7 @@ const ACCURACY_PLAN = {
   totalDurationMinutes: 50,
 };
 
-const CONSISTENCY_PLAN = {
+const CONSISTENCY_PLAN: TrainingPlan = {
   id: "consistency-builder",
   title: "Consistency Builder",
   sport: "padel",
@@ -46,7 +48,7 @@ const CONSISTENCY_PLAN = {
   totalDurationMinutes: 35,
 };
 
-const ACTIVE_ENROLLMENT = {
+const ACTIVE_ENROLLMENT: TrainingEnrollment = {
   id: "enr-1",
   planId: "accuracy-focus",
   status: "active",
@@ -58,7 +60,7 @@ const ACTIVE_ENROLLMENT = {
   completedAt: null,
 };
 
-const COMPLETED_ENROLLMENT = {
+const COMPLETED_ENROLLMENT: TrainingEnrollment = {
   ...ACTIVE_ENROLLMENT,
   id: "enr-done",
   status: "completed",
@@ -136,7 +138,7 @@ describe("training parsers", () => {
   it("upserts the active enrollment to the front", () => {
     const next = upsertEnrollment(
       [COMPLETED_ENROLLMENT],
-      { ...ACTIVE_ENROLLMENT, percentComplete: 50 },
+      { ...ACTIVE_ENROLLMENT, percentComplete: 50 } satisfies TrainingEnrollment,
     );
     assert.equal(next[0]?.id, "enr-1");
     assert.equal(next[0]?.percentComplete, 50);

@@ -395,14 +395,16 @@ export async function enrollInPlanWith(
     if (!enrollment) {
       return { ok: false, error: "Unexpected training response", status: 500 };
     }
+    const resumed =
+      typeof body === "object" &&
+      body !== null &&
+      (body as { resumed?: unknown }).resumed === true;
+
     return {
       ok: true,
       value: {
         enrollment,
-        resumed:
-          body &&
-          typeof body === "object" &&
-          (body as { resumed?: unknown }).resumed === true,
+        resumed,
       },
     };
   } catch {
