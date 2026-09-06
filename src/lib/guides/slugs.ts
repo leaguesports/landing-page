@@ -53,23 +53,30 @@ function titleSlugOf(row: GuideSlugCandidate): string | null {
 
 /**
  * Unique prefix of a published/title slug. Hyphen-boundary (`requested-…`)
- * or a safe unique prefix (min length ≥ 8). Never guess when two slugs share it.
+ * or a safe unique prefix (min length ≥ 8). `ambiguous` when two aliases share it.
  */
 function uniquePrefixHit(
   needle: string,
   aliases: ReadonlyArray<string>,
-): string | null {
-  if (!isGuideSlug(needle) || needle.length < GUIDE_PREFIX_MIN) return null;
+): { hit: string | null; ambiguous: boolean } {
+  if (!isGuideSlug(needle) || needle.length < GUIDE_PREFIX_MIN) {
+    return { hit: null, ambiguous: false };
+  }
 
   const hyphenHits = aliases.filter((alias) => alias.startsWith(`${needle}-`));
-  if (hyphenHits.length === 1) return hyphenHits[0];
-  if (hyphenHits.length > 1) return null;
+  if (hyphenHits.length > 1) return { hit: null, ambiguous: true };
+  if (hyphenHits.length === 1) {
+    return { hit: hyphenHits[0] ?? null, ambiguous: false };
+  }
 
   const prefixHits = aliases.filter(
     (alias) => alias !== needle && alias.startsWith(needle),
   );
-  if (prefixHits.length === 1) return prefixHits[0];
-  return null;
+  if (prefixHits.length > 1) return { hit: null, ambiguous: true };
+  if (prefixHits.length === 1) {
+    return { hit: prefixHits[0] ?? null, ambiguous: false };
+  }
+  return { hit: null, ambiguous: false };
 }
 
 /**
@@ -93,25 +100,19 @@ export function resolveGuideSlug(
     return titleHits[0].slug;
   }
 
-  const storedHits = new Set<string>();
   const storedAliases = usable.map((row) => row.slug as string);
   const storedPrefix = uniquePrefixHit(needle, storedAliases);
-  if (storedPrefix) storedHits.add(storedPrefix);
+  if (storedPrefix.ambiguous) return null;
+  if (storedPrefix.hit) return storedPrefix.hit;
 
   const titleAliases = usable
     .map((row) => titleSlugOf(row))
     .filter((alias): alias is string => alias !== null);
   const titlePrefix = uniquePrefixHit(needle, titleAliases);
-  if (titlePrefix) {
-    const titleRow = usable.find((row) => titleSlugOf(row) === titlePrefix);
-    if (titleRow && typeof titleRow.slug === "string") {
-      storedHits.add(titleRow.slug);
-    }
-  }
-
-  if (storedHits.size === 1) {
-    const [resolved] = storedHits;
-    return resolved ?? null;
+  if (titlePrefix.ambiguous) return null;
+  if (titlePrefix.hit) {
+    const titleRow = usable.find((row) => titleSlugOf(row) === titlePrefix.hit);
+    if (titleRow && typeof titleRow.slug === "string") return titleRow.slug;
   }
 
   return null;
