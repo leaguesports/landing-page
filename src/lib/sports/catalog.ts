@@ -129,6 +129,8 @@ export const SERIES_TO_SPORT: Record<string, string> = {
   "formula 1": "motorsport",
   "formula 2": "motorsport",
   football: "soccer",
+  "premier-league": "soccer",
+  "six-nations": "rugby",
   paddle: "padel",
   "go-karting": "karting",
   "go karting": "karting",
@@ -289,18 +291,18 @@ export function eventHref(
   if (SERIES_TO_SPORT[seriesSlug] === "motorsport") return "/motorsport";
   const sport = resolveSportSlug(series);
   if (sport) {
-    return `/venues?intent=watch&sport=${encodeURIComponent(sport)}`;
+    return `/watch/${encodeURIComponent(sport)}`;
   }
-  return "/venues?intent=watch";
+  return "/watch";
 }
 
 export function utilitiesForSport(sport: SportDefinition): HubUtility[] {
   const list: HubUtility[] = [];
-  const playHref = `/venues?intent=play&sport=${encodeURIComponent(sport.slug)}`;
+  const playHref = `/play/${encodeURIComponent(sport.slug)}`;
   const watchHref =
     sport.slug === "motorsport"
-      ? "/venues?intent=watch"
-      : `/venues?intent=watch&sport=${encodeURIComponent(sport.slug)}`;
+      ? "/watch"
+      : `/watch/${encodeURIComponent(sport.slug)}`;
 
   if (sport.capabilities.includes("scorecard")) {
     const isGolf = sport.slug === "golf";
@@ -416,7 +418,7 @@ export function utilitiesForAll(): HubUtility[] {
       kind: "play",
       title: "Find a venue",
       description: "Courts, clubs, and pitches near you.",
-      href: "/venues?intent=play",
+      href: "/play",
       emphasis: "primary",
     },
     {
@@ -425,7 +427,7 @@ export function utilitiesForAll(): HubUtility[] {
       kind: "watch",
       title: "Watch live",
       description: "Find a bar or fan zone screening sport.",
-      href: "/venues?intent=watch",
+      href: "/watch",
       emphasis: "secondary",
     },
     {

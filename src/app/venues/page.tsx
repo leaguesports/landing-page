@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import { searchVenues } from "@/services/venues";
 import {
   hasActiveVenueFilters,
@@ -9,8 +10,25 @@ import {
   venueResultCountLabel,
   venueSearchSummary,
 } from "@/lib/search/venueSearch";
+import { intentPath } from "@/lib/intent/paths";
 import { VenueDirectoryCard } from "./_components/VenueDirectoryCard";
 import { VenueFinder } from "./_components/VenueFinder";
+
+
+function redirectIntentQueryToSeoPath(filters: {
+  intent: string | null;
+  sportSlug: string | null;
+  locationSlug: string | null;
+}) {
+  if (
+    (filters.intent === "watch" || filters.intent === "play") &&
+    filters.sportSlug
+  ) {
+    permanentRedirect(
+      intentPath(filters.intent, filters.sportSlug, filters.locationSlug),
+    );
+  }
+}
 
 export async function generateMetadata({
   searchParams,
@@ -23,6 +41,7 @@ export async function generateMetadata({
   }>;
 }): Promise<Metadata> {
   const filters = parseVenueSearchParams(await searchParams);
+  redirectIntentQueryToSeoPath(filters);
   const filtered = hasActiveVenueFilters(filters);
   const title = filtered ? venueSearchSummary(filters) : "Venues";
   const description = filtered
@@ -43,6 +62,7 @@ export default async function VenuesPage({
 }) {
   const params = await searchParams;
   const filters = parseVenueSearchParams(params);
+  redirectIntentQueryToSeoPath(filters);
   const venues = await searchVenues({
     intent: filters.intent,
     sportSlug: filters.sportSlug,

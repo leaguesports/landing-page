@@ -73,8 +73,8 @@ export function FixtureVenueList({ fixture }: { fixture: UpcomingFixture }) {
         <Link
           href={
             fixture.sportSlug
-              ? `/venues?intent=watch&sport=${encodeURIComponent(fixture.sportSlug)}`
-              : "/venues?intent=watch"
+              ? `/watch/${encodeURIComponent(fixture.sportSlug)}`
+              : "/watch"
           }
           className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
         >

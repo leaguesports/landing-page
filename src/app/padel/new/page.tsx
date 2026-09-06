@@ -75,7 +75,7 @@ export default async function NewPadelMatchPage({
             href={
               initialVenue
                 ? `/venues/${initialVenue.slug}`
-                : "/venues?intent=play&sport=padel"
+                : "/play/padel"
             }
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >

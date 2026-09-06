@@ -520,14 +520,14 @@ export default async function VenuePage({ params }: Props) {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/venues?intent=watch"
+                href="/watch"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
               >
                 Find places to watch <ChevronRight className="h-3.5 w-3.5" />
               </Link>
               <span className="hidden text-zinc-700 sm:inline">|</span>
               <Link
-                href="/venues?intent=play"
+                href="/play"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
               >
                 Find places to play <ChevronRight className="h-3.5 w-3.5" />

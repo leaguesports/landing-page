@@ -32,7 +32,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="/venues?intent=watch"
+                    href="/watch"
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >
                     Watch
@@ -48,7 +48,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="/venues?intent=play"
+                    href="/play"
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >
                     Play

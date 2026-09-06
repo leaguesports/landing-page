@@ -4,6 +4,7 @@ import {
   type IntentMode,
 } from "../../data/cities.ts";
 import { toSlug } from "../../data/suburbs.ts";
+import { intentOrDirectoryHref } from "../intent/paths.ts";
 
 export type VenueSearchIntent = IntentMode;
 
@@ -209,14 +210,7 @@ export function venueDirectoryHref(next: {
   sport?: string | null;
   location?: string | null;
 }): string {
-  const params = new URLSearchParams();
-  if (next.intent === "play" || next.intent === "watch") {
-    params.set("intent", next.intent);
-  }
-  if (next.sport) params.set("sport", next.sport);
-  if (next.location) params.set("location", next.location);
-  const qs = params.toString();
-  return qs ? `/venues?${qs}` : "/venues";
+  return intentOrDirectoryHref(next);
 }
 
 /**
