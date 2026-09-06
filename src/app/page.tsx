@@ -129,7 +129,7 @@ async function MarketingHome() {
 
       <HomeDiscovery />
 
-      <HomeValueSections />
+      <HomeValueSections fixtures={upcomingFixtures} />
 
       <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">

@@ -2,6 +2,7 @@ import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
 import { FixtureVenueList } from "@/components/events/FixtureList";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
+import { fixturePublicSlugs } from "@/lib/sports/events-path";
 import { formatFixtureWhen } from "@/lib/sports/events-feed";
 import { getFixtureBySlug, getUpcomingFixtures } from "@/services/events";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
@@ -35,9 +36,13 @@ export async function generateMetadata({
 
 export async function generateStaticParams() {
   const fixtures = await getUpcomingFixtures({ limit: 24 });
-  return fixtures
-    .filter((fixture) => fixture.venues.length > 0)
-    .map((fixture) => ({ slug: fixture.slug }));
+  const slugs = new Set<string>();
+  for (const fixture of fixtures) {
+    for (const slug of fixturePublicSlugs(fixture)) {
+      slugs.add(slug);
+    }
+  }
+  return [...slugs].map((slug) => ({ slug }));
 }
 
 export default async function EventFixturePage({ params }: PageProps) {

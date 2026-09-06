@@ -1,4 +1,9 @@
-import type { VenueScreening } from "@/services/venues";
+import {
+  mergeVenueUpcomingScreenings,
+  type VenueScreeningDisplay,
+} from "@/lib/sports/events-path";
+import { getUpcomingFixtures } from "@/services/events";
+import Link from "next/link";
 
 function formatScreeningWhen(startsAt: string): string {
   const parsed = new Date(startsAt);
@@ -14,12 +19,22 @@ function formatScreeningWhen(startsAt: string): string {
   return startsAt;
 }
 
-export function VenueMatchSchedule({
+export async function VenueMatchSchedule({
+  venue,
   screenings = [],
 }: {
-  screenings?: VenueScreening[] | null;
+  venue?: {
+    slug: string;
+    upcoming_screenings?:
+      | { title?: string | null; startsAt?: string | null; setupTags?: string[] }[]
+      | null;
+  } | null;
+  screenings?: VenueScreeningDisplay[] | null;
 }) {
-  const items = screenings ?? [];
+  const items = mergeVenueUpcomingScreenings(
+    venue ?? { slug: "", upcoming_screenings: screenings },
+    await getUpcomingFixtures({ limit: 48 }),
+  );
 
   return (
     <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
@@ -39,7 +54,16 @@ export function VenueMatchSchedule({
               key={`${item.title}-${item.startsAt}-${index}`}
               className="border-t border-white/6 pt-4 first:border-t-0 first:pt-0"
             >
-              <p className="text-base font-medium text-white">{item.title}</p>
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="text-base font-medium text-white transition-colors hover:text-sky-400"
+                >
+                  {item.title}
+                </Link>
+              ) : (
+                <p className="text-base font-medium text-white">{item.title}</p>
+              )}
               <p className="mt-2 inline-flex rounded-full border border-white/12 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
                 {formatScreeningWhen(item.startsAt)}
               </p>
