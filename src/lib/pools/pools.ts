@@ -1,13 +1,23 @@
-"use client";
+import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { invokeFetch } from "../invoke-fetch.ts";
 
-import { getPublicSiteOrigin } from "@/lib/api-origin";
+export const POOL_WINNERS = ["home", "away", "draw"] as const;
+export type PoolWinner = (typeof POOL_WINNERS)[number];
 
-/** Mirrors API `PredictionPoolHttp` plus optional standings. */
+export const POOL_ROLES = ["owner", "member"] as const;
+export type PoolRole = (typeof POOL_ROLES)[number];
+
 export type PoolPick = {
   tip: string | null;
   homeScore: number | null;
   awayScore: number | null;
-  winner: "home" | "away" | "draw" | null;
+  winner: PoolWinner | null;
+};
+
+export type PoolResult = {
+  homeScore: number;
+  awayScore: number;
+  winner: PoolWinner;
 };
 
 export type PoolMember = {
@@ -15,21 +25,15 @@ export type PoolMember = {
   displayName: string;
   handle: string;
   avatarUrl: string | null;
-  role: "owner" | "member";
+  role: PoolRole;
   joinedAt: string;
   pick: PoolPick | null;
-};
-
-export type PoolResult = {
-  homeScore: number;
-  awayScore: number;
-  winner: "home" | "away" | "draw";
 };
 
 export type PredictionPool = {
   id: string;
   fixtureSlug: string;
-  title: string;
+  title: string | null;
   inviteCode: string;
   createdByUserId: string;
   kicksOffAt: string | null;
@@ -38,18 +42,17 @@ export type PredictionPool = {
   result: PoolResult | null;
   memberCount: number;
   joined: boolean;
-  role: "owner" | "member" | null;
+  role: PoolRole | null;
   myPick: PoolPick | null;
   createdAt: string;
   members: PoolMember[];
 };
 
-export type PoolStandingRow = {
+export type PoolStanding = {
   userId: string;
   displayName: string;
   handle: string;
   avatarUrl: string | null;
-  role: "owner" | "member";
   points: number;
   rank: number;
   pick: PoolPick | null;
@@ -58,357 +61,597 @@ export type PoolStandingRow = {
 export type PoolStandings = {
   locked: boolean;
   result: PoolResult | null;
-  standings: PoolStandingRow[];
+  standings: PoolStanding[];
 };
 
-export type PoolsErrorCode =
-  | "unauthenticated"
-  | "not_found"
-  | "validation"
-  | "conflict"
-  | "forbidden"
-  | "unavailable"
-  | "network";
+export type CreatePoolInput = {
+  fixtureSlug: string;
+  title?: string | null;
+  kicksOffAt?: string | null;
+};
+
+export type SubmitPoolPickInput = {
+  tip?: string | null;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  winner?: PoolWinner | null;
+};
+
+export type RecordPoolResultInput = {
+  homeScore: number;
+  awayScore: number;
+  winner?: PoolWinner | null;
+};
+
+export type PoolsDeps = {
+  fetch: typeof fetch;
+  baseUrl: string;
+  cookie?: string;
+  signal?: AbortSignal;
+};
 
 export type PoolsResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: PoolsErrorCode; status: number; message: string };
+  | { ok: true; value: T }
+  | { ok: false; error: string; status: number };
 
-function parseWinner(value: unknown): "home" | "away" | "draw" | null {
-  return value === "home" || value === "away" || value === "draw" ? value : null;
+function requestHeaders(cookie?: string, json = false): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (json) headers["Content-Type"] = "application/json";
+  if (cookie) headers.Cookie = cookie;
+  return headers;
 }
 
-function parsePick(value: unknown): PoolPick | null {
-  if (!value || typeof value !== "object") {
+function rootUrl(baseUrl: string): string {
+  return `${baseUrl.replace(/\/$/, "")}/api/pools`;
+}
+
+function poolUrl(baseUrl: string, idOrCode: string): string {
+  return `${rootUrl(baseUrl)}/${encodeURIComponent(idOrCode)}`;
+}
+
+async function readJson(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function errorFromBody(body: unknown, fallback: string): string {
+  if (
+    body &&
+    typeof body === "object" &&
+    typeof (body as { error?: unknown }).error === "string"
+  ) {
+    return (body as { error: string }).error;
+  }
+  return fallback;
+}
+
+function isPoolWinner(value: unknown): value is PoolWinner {
+  return value === "home" || value === "away" || value === "draw";
+}
+
+function isPoolRole(value: unknown): value is PoolRole {
+  return value === "owner" || value === "member";
+}
+
+export function parsePoolPick(value: unknown): PoolPick | null {
+  if (value == null) return null;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    row.tip !== null &&
+    row.tip !== undefined &&
+    typeof row.tip !== "string"
+  ) {
     return null;
   }
-  const pick = value as Record<string, unknown>;
-  const homeScore =
-    typeof pick.homeScore === "number" && Number.isFinite(pick.homeScore)
-      ? pick.homeScore
-      : null;
-  const awayScore =
-    typeof pick.awayScore === "number" && Number.isFinite(pick.awayScore)
-      ? pick.awayScore
-      : null;
+  if (
+    row.homeScore !== null &&
+    row.homeScore !== undefined &&
+    typeof row.homeScore !== "number"
+  ) {
+    return null;
+  }
+  if (
+    row.awayScore !== null &&
+    row.awayScore !== undefined &&
+    typeof row.awayScore !== "number"
+  ) {
+    return null;
+  }
+  if (
+    row.winner !== null &&
+    row.winner !== undefined &&
+    !isPoolWinner(row.winner)
+  ) {
+    return null;
+  }
   return {
-    tip: typeof pick.tip === "string" ? pick.tip : null,
-    homeScore,
-    awayScore,
-    winner: parseWinner(pick.winner),
+    tip: typeof row.tip === "string" ? row.tip : null,
+    homeScore: typeof row.homeScore === "number" ? row.homeScore : null,
+    awayScore: typeof row.awayScore === "number" ? row.awayScore : null,
+    winner: isPoolWinner(row.winner) ? row.winner : null,
   };
 }
 
-function parseResult(value: unknown): PoolResult | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const result = value as Record<string, unknown>;
-  if (typeof result.homeScore !== "number" || typeof result.awayScore !== "number") {
-    return null;
-  }
-  const winner = parseWinner(result.winner);
-  if (!winner) {
+export function parsePoolResult(value: unknown): PoolResult | null {
+  if (value == null) return null;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.homeScore !== "number" ||
+    typeof row.awayScore !== "number" ||
+    !isPoolWinner(row.winner)
+  ) {
     return null;
   }
   return {
-    homeScore: result.homeScore,
-    awayScore: result.awayScore,
-    winner,
+    homeScore: row.homeScore,
+    awayScore: row.awayScore,
+    winner: row.winner,
   };
 }
 
-function parseMember(value: unknown): PoolMember | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const member = value as Record<string, unknown>;
-  if (typeof member.id !== "string" || typeof member.displayName !== "string") {
+export function parsePoolMember(value: unknown): PoolMember | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.displayName !== "string" ||
+    typeof row.handle !== "string" ||
+    !isPoolRole(row.role) ||
+    typeof row.joinedAt !== "string"
+  ) {
     return null;
   }
   return {
-    id: member.id,
-    displayName: member.displayName,
-    handle: typeof member.handle === "string" ? member.handle : "",
-    avatarUrl: typeof member.avatarUrl === "string" ? member.avatarUrl : null,
-    role: member.role === "owner" ? "owner" : "member",
-    joinedAt: typeof member.joinedAt === "string" ? member.joinedAt : "",
-    pick: parsePick(member.pick),
+    id: row.id,
+    displayName: row.displayName,
+    handle: row.handle,
+    avatarUrl: typeof row.avatarUrl === "string" ? row.avatarUrl : null,
+    role: row.role,
+    joinedAt: row.joinedAt,
+    pick: parsePoolPick(row.pick),
   };
 }
 
 export function parsePredictionPool(value: unknown): PredictionPool | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const pool = value as Record<string, unknown>;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
   if (
-    typeof pool.id !== "string" ||
-    typeof pool.fixtureSlug !== "string" ||
-    typeof pool.inviteCode !== "string" ||
-    typeof pool.title !== "string"
+    typeof row.id !== "string" ||
+    typeof row.fixtureSlug !== "string" ||
+    typeof row.inviteCode !== "string" ||
+    typeof row.createdByUserId !== "string" ||
+    typeof row.memberCount !== "number" ||
+    !Number.isFinite(row.memberCount) ||
+    typeof row.locked !== "boolean" ||
+    typeof row.createdAt !== "string"
   ) {
     return null;
   }
-  const members = Array.isArray(pool.members)
-    ? pool.members.map(parseMember).filter((member): member is PoolMember => member !== null)
-    : [];
+  if (row.title !== null && row.title !== undefined && typeof row.title !== "string") {
+    return null;
+  }
+  if (
+    row.kicksOffAt !== null &&
+    row.kicksOffAt !== undefined &&
+    typeof row.kicksOffAt !== "string"
+  ) {
+    return null;
+  }
+  if (
+    row.lockedAt !== null &&
+    row.lockedAt !== undefined &&
+    typeof row.lockedAt !== "string"
+  ) {
+    return null;
+  }
+  if (row.role !== null && row.role !== undefined && !isPoolRole(row.role)) {
+    return null;
+  }
+  const members = Array.isArray(row.members) ? row.members : [];
   return {
-    id: pool.id,
-    fixtureSlug: pool.fixtureSlug,
-    title: pool.title,
-    inviteCode: pool.inviteCode,
-    createdByUserId: typeof pool.createdByUserId === "string" ? pool.createdByUserId : "",
-    kicksOffAt: typeof pool.kicksOffAt === "string" ? pool.kicksOffAt : null,
-    lockedAt: typeof pool.lockedAt === "string" ? pool.lockedAt : null,
-    locked: pool.locked === true,
-    result: parseResult(pool.result),
-    memberCount: typeof pool.memberCount === "number" ? pool.memberCount : members.length,
-    joined: pool.joined === true,
-    role: pool.role === "owner" || pool.role === "member" ? pool.role : null,
-    myPick: parsePick(pool.myPick),
-    createdAt: typeof pool.createdAt === "string" ? pool.createdAt : "",
-    members,
+    id: row.id,
+    fixtureSlug: row.fixtureSlug,
+    title: typeof row.title === "string" ? row.title : null,
+    inviteCode: row.inviteCode,
+    createdByUserId: row.createdByUserId,
+    kicksOffAt: typeof row.kicksOffAt === "string" ? row.kicksOffAt : null,
+    lockedAt: typeof row.lockedAt === "string" ? row.lockedAt : null,
+    locked: row.locked,
+    result: parsePoolResult(row.result),
+    memberCount: row.memberCount,
+    joined: row.joined === true,
+    role: isPoolRole(row.role) ? row.role : null,
+    myPick: parsePoolPick(row.myPick),
+    createdAt: row.createdAt,
+    members: members
+      .map(parsePoolMember)
+      .filter((item): item is PoolMember => !!item),
+  };
+}
+
+export function parsePoolStanding(value: unknown): PoolStanding | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.userId !== "string" ||
+    typeof row.displayName !== "string" ||
+    typeof row.handle !== "string" ||
+    typeof row.points !== "number" ||
+    typeof row.rank !== "number"
+  ) {
+    return null;
+  }
+  return {
+    userId: row.userId,
+    displayName: row.displayName,
+    handle: row.handle,
+    avatarUrl: typeof row.avatarUrl === "string" ? row.avatarUrl : null,
+    points: row.points,
+    rank: row.rank,
+    pick: parsePoolPick(row.pick),
   };
 }
 
 export function parsePoolStandings(value: unknown): PoolStandings | null {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.locked !== "boolean" || !Array.isArray(row.standings)) {
     return null;
   }
-  const body = value as Record<string, unknown>;
-  const standings = Array.isArray(body.standings)
-    ? body.standings.flatMap((row): PoolStandingRow[] => {
-        if (!row || typeof row !== "object") {
-          return [];
-        }
-        const standing = row as Record<string, unknown>;
-        if (typeof standing.userId !== "string" || typeof standing.displayName !== "string") {
-          return [];
-        }
-        return [
-          {
-            userId: standing.userId,
-            displayName: standing.displayName,
-            handle: typeof standing.handle === "string" ? standing.handle : "",
-            avatarUrl: typeof standing.avatarUrl === "string" ? standing.avatarUrl : null,
-            role: standing.role === "owner" ? "owner" : "member",
-            points: typeof standing.points === "number" ? standing.points : 0,
-            rank: typeof standing.rank === "number" ? standing.rank : 1,
-            pick: parsePick(standing.pick),
-          },
-        ];
-      })
-    : [];
   return {
-    locked: body.locked === true,
-    result: parseResult(body.result),
-    standings,
+    locked: row.locked,
+    result: parsePoolResult(row.result),
+    standings: row.standings
+      .map(parsePoolStanding)
+      .filter((item): item is PoolStanding => !!item),
   };
 }
 
-function parsePoolEnvelope(value: unknown): PredictionPool | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const envelope = value as Record<string, unknown>;
-  return parsePredictionPool(envelope.pool);
+function poolFromBody(body: unknown): PredictionPool | null {
+  if (!body || typeof body !== "object") return null;
+  return parsePredictionPool((body as { pool?: unknown }).pool);
 }
 
-function mapStatus(status: number): PoolsErrorCode {
-  if (status === 401) {
-    return "unauthenticated";
+function browserBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
   }
-  if (status === 403) {
-    return "forbidden";
-  }
-  if (status === 404) {
-    return "not_found";
-  }
-  if (status === 409) {
-    return "conflict";
-  }
-  if (status === 400) {
-    return "validation";
-  }
-  if (status === 0 || status === 502 || status === 503) {
-    return "unavailable";
-  }
-  return "network";
+  return getRailwayApiOrigin();
 }
 
-function messageFor(code: PoolsErrorCode, fallback: string): string {
-  switch (code) {
-    case "unauthenticated":
-      return "Sign in to create or join a pool.";
-    case "not_found":
-      return "This pool is not live yet.";
-    case "validation":
-      return fallback || "Check the pool details and try again.";
-    case "conflict":
-      return fallback || "Tips are locked for this fixture.";
-    case "forbidden":
-      return "Only the pool owner can record the result.";
-    case "unavailable":
-      return "Prediction pools are not live yet. Check back after the next deploy.";
-    default:
-      return fallback || "Could not reach prediction pools. Try again.";
-  }
+function fail(error: string, status: number): PoolsResult<never> {
+  return { ok: false, error, status };
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-function errorFromResponse(status: number, body: unknown, fallback: string): PoolsResult<never> {
-  const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-  const apiMessage = typeof record.message === "string" ? record.message : "";
-  const code = mapStatus(status);
-  return {
-    ok: false,
-    error: code,
-    status,
-    message: messageFor(code, apiMessage || fallback),
-  };
-}
-
-function networkError(): PoolsResult<never> {
-  return {
-    ok: false,
-    error: "network",
-    status: 0,
-    message: messageFor("unavailable", ""),
-  };
-}
-
-async function requestPool(
-  path: string,
-  init: RequestInit,
-  fallback: string,
+export async function createPoolWith(
+  input: CreatePoolInput,
+  deps: PoolsDeps,
 ): Promise<PoolsResult<PredictionPool>> {
+  const fixtureSlug = input.fixtureSlug.trim();
+  if (!fixtureSlug || !deps.baseUrl) {
+    return fail("Fixture slug is required", 400);
+  }
+
+  const payload: Record<string, string> = { fixtureSlug };
+  if (input.title?.trim()) payload.title = input.title.trim();
+  if (input.kicksOffAt?.trim()) payload.kicksOffAt = input.kicksOffAt.trim();
+
   try {
-    const response = await fetch(path, {
-      ...init,
+    const res = await invokeFetch(deps.fetch, rootUrl(deps.baseUrl), {
+      method: "POST",
       credentials: "include",
+      cache: "no-store",
+      headers: requestHeaders(deps.cookie, true),
+      body: JSON.stringify(payload),
+      signal: deps.signal,
     });
-    const body = await readJson(response);
-    if (!response.ok) {
-      return errorFromResponse(response.status, body, fallback);
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, "Could not create prediction pool"), res.status);
     }
-    const pool = parsePoolEnvelope(body);
-    if (!pool) {
-      return {
-        ok: false,
-        error: "network",
-        status: response.status,
-        message: "Unexpected pool response.",
-      };
-    }
-    return { ok: true, data: pool };
+    const pool = poolFromBody(body);
+    if (!pool) return fail("Unexpected prediction pool response", 500);
+    return { ok: true, value: pool };
   } catch {
-    return networkError();
+    return fail("Could not reach prediction pools API", 0);
   }
 }
 
-export async function createPool(input: {
-  fixtureSlug: string;
-  title?: string;
-  kicksOffAt?: string;
-}): Promise<PoolsResult<PredictionPool>> {
-  return requestPool(
-    "/api/pools",
-    {
+export async function getPoolWith(
+  idOrCode: string,
+  deps: PoolsDeps,
+): Promise<PoolsResult<PredictionPool>> {
+  const trimmed = idOrCode.trim();
+  if (!trimmed || !deps.baseUrl) {
+    return fail("Missing pool code", 400);
+  }
+
+  try {
+    const res = await invokeFetch(deps.fetch, poolUrl(deps.baseUrl, trimmed), {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: requestHeaders(deps.cookie),
+      signal: deps.signal,
+    });
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, `Could not load pool (${res.status})`), res.status);
+    }
+    const pool = poolFromBody(body);
+    if (!pool) return fail("Unexpected prediction pool response", 500);
+    return { ok: true, value: pool };
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
+}
+
+export async function joinPoolWith(
+  idOrCode: string,
+  deps: PoolsDeps,
+): Promise<PoolsResult<PredictionPool>> {
+  const trimmed = idOrCode.trim();
+  if (!trimmed || !deps.baseUrl) {
+    return fail("Missing pool code", 400);
+  }
+
+  try {
+    const res = await invokeFetch(deps.fetch, `${poolUrl(deps.baseUrl, trimmed)}/join`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fixtureSlug: input.fixtureSlug,
-        ...(input.title ? { title: input.title } : {}),
-        ...(input.kicksOffAt ? { kicksOffAt: input.kicksOffAt } : {}),
-      }),
-    },
-    "Could not create the pool.",
-  );
+      credentials: "include",
+      cache: "no-store",
+      headers: requestHeaders(deps.cookie),
+      signal: deps.signal,
+    });
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, "Could not join pool"), res.status);
+    }
+    const pool = poolFromBody(body);
+    if (!pool) return fail("Unexpected prediction pool response", 500);
+    return { ok: true, value: pool };
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
 }
 
-export async function getPool(idOrCode: string): Promise<PoolsResult<PredictionPool>> {
-  return requestPool(`/api/pools/${encodeURIComponent(idOrCode)}`, { method: "GET" }, "Pool not found.");
+export async function submitPoolPickWith(
+  idOrCode: string,
+  input: SubmitPoolPickInput,
+  deps: PoolsDeps,
+): Promise<PoolsResult<PredictionPool>> {
+  const trimmed = idOrCode.trim();
+  if (!trimmed || !deps.baseUrl) {
+    return fail("Missing pool code", 400);
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (input.tip?.trim()) payload.tip = input.tip.trim();
+  if (typeof input.homeScore === "number") payload.homeScore = input.homeScore;
+  if (typeof input.awayScore === "number") payload.awayScore = input.awayScore;
+  if (input.winner) payload.winner = input.winner;
+
+  try {
+    const res = await invokeFetch(deps.fetch, `${poolUrl(deps.baseUrl, trimmed)}/picks`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: requestHeaders(deps.cookie, true),
+      body: JSON.stringify(payload),
+      signal: deps.signal,
+    });
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, "Could not save pick"), res.status);
+    }
+    const pool = poolFromBody(body);
+    if (!pool) return fail("Unexpected prediction pool response", 500);
+    return { ok: true, value: pool };
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
 }
 
-export async function joinPool(idOrCode: string): Promise<PoolsResult<PredictionPool>> {
-  return requestPool(
-    `/api/pools/${encodeURIComponent(idOrCode)}/join`,
-    { method: "POST" },
-    "Could not join the pool.",
-  );
+export async function getPoolStandingsWith(
+  idOrCode: string,
+  deps: PoolsDeps,
+): Promise<PoolsResult<PoolStandings>> {
+  const trimmed = idOrCode.trim();
+  if (!trimmed || !deps.baseUrl) {
+    return fail("Missing pool code", 400);
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      `${poolUrl(deps.baseUrl, trimmed)}/standings`,
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, "Could not load standings"), res.status);
+    }
+    const standings = parsePoolStandings(body);
+    if (!standings) return fail("Unexpected standings response", 500);
+    return { ok: true, value: standings };
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
+}
+
+export async function recordPoolResultWith(
+  idOrCode: string,
+  input: RecordPoolResultInput,
+  deps: PoolsDeps,
+): Promise<PoolsResult<PredictionPool>> {
+  const trimmed = idOrCode.trim();
+  if (!trimmed || !deps.baseUrl) {
+    return fail("Missing pool code", 400);
+  }
+
+  const payload: Record<string, unknown> = {
+    homeScore: input.homeScore,
+    awayScore: input.awayScore,
+  };
+  if (input.winner) payload.winner = input.winner;
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      `${poolUrl(deps.baseUrl, trimmed)}/result`,
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie, true),
+        body: JSON.stringify(payload),
+        signal: deps.signal,
+      },
+    );
+    const body = await readJson(res);
+    if (!res.ok) {
+      return fail(errorFromBody(body, "Could not record result"), res.status);
+    }
+    const pool = poolFromBody(body);
+    if (!pool) return fail("Unexpected prediction pool response", 500);
+    return { ok: true, value: pool };
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
+}
+
+export async function getPoolResult(
+  idOrCode: string,
+  options: { cookie?: string } = {},
+): Promise<PoolsResult<PredictionPool>> {
+  if (!isApiConfigured()) {
+    return fail("API is not configured", 0);
+  }
+  return getPoolWith(idOrCode, {
+    fetch,
+    baseUrl: browserBaseUrl(),
+    cookie: options.cookie,
+    signal: AbortSignal.timeout(8000),
+  });
+}
+
+/** RSC-friendly helper: null on 404 / migration lag / network failure. */
+export async function getPool(
+  idOrCode: string,
+  options: { cookie?: string } = {},
+): Promise<PredictionPool | null> {
+  const result = await getPoolResult(idOrCode, options);
+  return result.ok ? result.value : null;
+}
+
+export async function getPoolStandings(
+  idOrCode: string,
+  options: { cookie?: string } = {},
+): Promise<PoolStandings | null> {
+  if (!isApiConfigured()) return null;
+  const result = await getPoolStandingsWith(idOrCode, {
+    fetch,
+    baseUrl: browserBaseUrl(),
+    cookie: options.cookie,
+    signal: AbortSignal.timeout(8000),
+  });
+  return result.ok ? result.value : null;
+}
+
+export async function createPool(
+  input: CreatePoolInput,
+): Promise<PoolsResult<PredictionPool>> {
+  if (!isApiConfigured()) {
+    return fail("API is not configured", 0);
+  }
+  try {
+    return await createPoolWith(input, {
+      fetch,
+      baseUrl: browserBaseUrl(),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
+}
+
+export async function joinPool(
+  idOrCode: string,
+): Promise<PoolsResult<PredictionPool>> {
+  if (!isApiConfigured()) {
+    return fail("API is not configured", 0);
+  }
+  try {
+    return await joinPoolWith(idOrCode, {
+      fetch,
+      baseUrl: browserBaseUrl(),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
 }
 
 export async function submitPoolPick(
   idOrCode: string,
-  pick: { tip?: string; homeScore?: number; awayScore?: number; winner?: "home" | "away" | "draw" },
+  input: SubmitPoolPickInput,
 ): Promise<PoolsResult<PredictionPool>> {
-  return requestPool(
-    `/api/pools/${encodeURIComponent(idOrCode)}/picks`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(pick),
-    },
-    "Could not save your tip.",
-  );
+  if (!isApiConfigured()) {
+    return fail("API is not configured", 0);
+  }
+  try {
+    return await submitPoolPickWith(idOrCode, input, {
+      fetch,
+      baseUrl: browserBaseUrl(),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    return fail("Could not reach prediction pools API", 0);
+  }
 }
 
 export async function recordPoolResult(
   idOrCode: string,
-  result: { homeScore: number; awayScore: number; winner?: "home" | "away" | "draw" },
+  input: RecordPoolResultInput,
 ): Promise<PoolsResult<PredictionPool>> {
-  return requestPool(
-    `/api/pools/${encodeURIComponent(idOrCode)}/result`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(result),
-    },
-    "Could not record the result.",
-  );
-}
-
-export async function getPoolStandings(idOrCode: string): Promise<PoolsResult<PoolStandings>> {
+  if (!isApiConfigured()) {
+    return fail("API is not configured", 0);
+  }
   try {
-    const response = await fetch(`/api/pools/${encodeURIComponent(idOrCode)}/standings`, {
-      method: "GET",
-      credentials: "include",
+    return await recordPoolResultWith(idOrCode, input, {
+      fetch,
+      baseUrl: browserBaseUrl(),
+      signal: AbortSignal.timeout(10000),
     });
-    const body = await readJson(response);
-    if (!response.ok) {
-      return errorFromResponse(response.status, body, "Standings not available.");
-    }
-    const standings = parsePoolStandings(body);
-    if (!standings) {
-      return {
-        ok: false,
-        error: "network",
-        status: response.status,
-        message: "Unexpected standings response.",
-      };
-    }
-    return { ok: true, data: standings };
   } catch {
-    return networkError();
+    return fail("Could not reach prediction pools API", 0);
   }
 }
 
-export function isPoolsUnavailable(result: PoolsResult<unknown>): boolean {
-  return !result.ok && (result.error === "unavailable" || result.status === 404 || result.status === 0);
+export function formatPoolWinner(winner: PoolWinner | null): string {
+  if (winner === "home") return "Home";
+  if (winner === "away") return "Away";
+  if (winner === "draw") return "Draw";
+  return "No pick";
 }
 
-export function poolSharePath(inviteCode: string): string {
-  return `/pools/${encodeURIComponent(inviteCode)}`;
+export function formatMemberCount(count: number): string {
+  return count === 1 ? "1 player" : `${count} players`;
 }
 
-export function poolShareUrl(inviteCode: string, origin = getPublicSiteOrigin()): string {
-  return `${origin}${poolSharePath(inviteCode)}`;
+export function isPoolsUnavailable(status: number): boolean {
+  return status === 0 || status === 404 || status === 503;
 }
