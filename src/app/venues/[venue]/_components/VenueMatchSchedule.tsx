@@ -1,3 +1,4 @@
+import { venueScreeningEmptyCopy } from "@/lib/venues/contact-cta";
 import {
   mergeVenueUpcomingScreenings,
   type VenueScreeningDisplay,
@@ -25,6 +26,8 @@ export async function VenueMatchSchedule({
 }: {
   venue?: {
     slug: string;
+    phone?: string | null;
+    whatsapp?: string | null;
     upcoming_screenings?:
       | { title?: string | null; startsAt?: string | null; setupTags?: string[] }[]
       | null;
@@ -44,8 +47,7 @@ export async function VenueMatchSchedule({
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 px-4 py-5 text-sm leading-relaxed text-zinc-400">
-          Live sports broadcast daily. Contact venue directly via WhatsApp to
-          verify specific fixture broadcasts.
+          {venueScreeningEmptyCopy(venue ?? {})}
         </div>
       ) : (
         <ul className="space-y-4">

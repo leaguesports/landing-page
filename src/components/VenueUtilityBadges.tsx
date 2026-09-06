@@ -1,4 +1,8 @@
 import {
+  resolveVenueWhatsAppCta,
+  type VenueContactFields,
+} from "@/lib/venues/contact-cta";
+import {
   Beer,
   Car,
   Cigarette,
@@ -10,6 +14,7 @@ import {
   Volume2,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 export type VenueUtilityFlags = {
@@ -25,25 +30,10 @@ export type VenueUtilityFlags = {
   website?: string | null;
 };
 
-function normalizePhoneForWhatsApp(phone: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return null;
-  // SA local 0XX… → 27XX…
-  if (digits.startsWith("0") && digits.length >= 9) {
-    return `27${digits.slice(1)}`;
-  }
-  return digits;
-}
+export type VenueContactVenue = VenueUtilityFlags & VenueContactFields;
 
-function buildVenueWhatsAppUrl(
-  phone: string,
-  venueName: string,
-): string | null {
-  const waPhone = normalizePhoneForWhatsApp(phone);
-  if (!waPhone) return null;
-  const text = `Hi ${venueName} team, I found your profile on League Sports and would like to inquire about...`;
-  return `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-}
+const SECONDARY_ACTION_CLASS =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white";
 
 type BadgeTone = "power" | "av" | "amenity";
 
@@ -166,57 +156,62 @@ export function VenueUtilityBadges({
   );
 }
 
+/** Watch + Play hero contact row. Rules: `src/lib/venues/contact-cta.ts`. */
 export function VenueContactActions({
   venue,
   directionsUrl,
   className = "",
 }: {
-  venue: VenueUtilityFlags;
+  venue: VenueContactVenue;
   directionsUrl?: string | null;
   className?: string;
 }) {
-  const venueName = venue.name?.trim() || "the venue";
-  const waHref = venue.phone
-    ? buildVenueWhatsAppUrl(venue.phone, venueName)
-    : null;
-
-  if (!waHref && !directionsUrl && !venue.website) return null;
+  const cta = resolveVenueWhatsAppCta(venue);
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
-      {waHref && (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      {cta.kind === "whatsapp" ? (
         <a
-          href={waHref}
+          href={cta.href}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-[#1ebe57]"
         >
           <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
-          Inquire / Book via WhatsApp
+          {cta.label}
         </a>
+      ) : cta.kind === "claim" ? (
+        <Link href={cta.href} className={SECONDARY_ACTION_CLASS}>
+          <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+          {cta.label}
+        </Link>
+      ) : (
+        <p className="inline-flex min-h-11 items-center rounded-full border border-dashed border-white/12 px-4 py-2 text-sm text-zinc-500">
+          {cta.label}
+        </p>
       )}
-      {directionsUrl && (
+      {directionsUrl ? (
         <a
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
+          className={SECONDARY_ACTION_CLASS}
         >
           <MapPin className="h-4 w-4 shrink-0" aria-hidden />
           Get Directions
         </a>
-      )}
-      {venue.website && (
+      ) : null}
+      {venue.website ? (
         <a
           href={venue.website}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white hover:text-white"
+          className={SECONDARY_ACTION_CLASS}
         >
           <Globe className="h-4 w-4 shrink-0" aria-hidden />
           Official Website
         </a>
-      )}
+      ) : null}
     </div>
   );
 }
