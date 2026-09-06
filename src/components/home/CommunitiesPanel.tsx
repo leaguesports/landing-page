@@ -11,12 +11,20 @@ import Link from "next/link";
 type CommunitiesPanelProps = {
   initial: MyCommunity[];
   className?: string;
+  /** Hub People block — short list + See all. */
+  compact?: boolean;
+  previewLimit?: number;
 };
 
 export function CommunitiesPanel({
   initial,
   className = "mb-8",
+  compact = false,
+  previewLimit = 4,
 }: CommunitiesPanelProps) {
+  const visible = compact ? initial.slice(0, previewLimit) : initial;
+  const hiddenCount = initial.length - visible.length;
+
   return (
     <section className={className} aria-labelledby="hub-your-communities">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -33,8 +41,14 @@ export function CommunitiesPanel({
           href="/communities"
           className="inline-flex items-center gap-1 text-sm font-medium text-emerald-300 hover:text-emerald-200"
         >
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          Create
+          {compact && initial.length > 0 ? (
+            "See all"
+          ) : (
+            <>
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              Create
+            </>
+          )}
         </Link>
       </div>
 
@@ -51,6 +65,39 @@ export function CommunitiesPanel({
             Discover communities
           </Link>
         </div>
+      ) : compact ? (
+        <ul className="space-y-2">
+          {visible.map((community) => (
+            <li key={community.id}>
+              <Link
+                href={`/communities/${community.id}`}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 transition-colors hover:border-white/16"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-white">
+                    {community.name}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                    {community.city} · {formatCommunitySport(community.sport)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-medium text-emerald-300/90">
+                  {formatMemberCount(community.memberCount)}
+                </span>
+              </Link>
+            </li>
+          ))}
+          {hiddenCount > 0 ? (
+            <li>
+              <Link
+                href="/communities"
+                className="inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
+              >
+                See all {initial.length} communities
+              </Link>
+            </li>
+          ) : null}
+        </ul>
       ) : (
         <ul className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
           {initial.map((community) => (

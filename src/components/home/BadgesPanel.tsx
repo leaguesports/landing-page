@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { BadgesSnapshot, PersistedBadge } from "@/lib/badges/api";
-import { BADGE_CATALOG, type BadgeId } from "@/lib/badges/catalog";
+import { BADGE_CATALOG, badgeById, type BadgeId } from "@/lib/badges/catalog";
 import { evaluateBadges } from "@/lib/badges/evaluate";
 import { hasScorecardShareSignal } from "@/lib/badges/share-signal";
 import type { PlayerHistoryStats } from "@/lib/padel/history";
+import {
+  HUB_BADGE_STRIP_LIMIT,
+  takeHubPreview,
+} from "@/lib/sports/hub-ia";
 
 type BadgesPanelProps = {
   /** Server GET snapshot — never POST on view. */
@@ -14,8 +18,10 @@ type BadgesPanelProps = {
   padelStats: PlayerHistoryStats;
   golfLocked: number;
   friendCount: number;
-  /** Override outer spacing — use when the panel sits in its own hub tab. */
+  /** Override outer spacing — use when the panel sits under a parent heading. */
   className?: string;
+  /** Hub uses a count + icon strip; `/athletes` keeps the full catalog. */
+  variant?: "full" | "strip";
 };
 
 export function BadgesPanel({
@@ -24,6 +30,7 @@ export function BadgesPanel({
   golfLocked,
   friendCount,
   className = "mt-6",
+  variant = "full",
 }: BadgesPanelProps) {
   const [shared, setShared] = useState(false);
 
@@ -57,6 +64,56 @@ export function BadgesPanel({
   }, [localEarned, serverBadges, shared]);
 
   const earnedCount = earnedIds.length;
+  const stripIds = takeHubPreview(earnedIds, HUB_BADGE_STRIP_LIMIT);
+
+  if (variant === "strip") {
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Badges
+          </p>
+          <p className="text-xs tabular-nums text-zinc-500">
+            {earnedCount}/{BADGE_CATALOG.length}
+          </p>
+        </div>
+        {earnedCount === 0 ? (
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            Lock a match to earn your first badge.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-wrap items-center gap-2">
+            {stripIds.map((id) => {
+              const badge = badgeById(id);
+              const label = badge?.name ?? id;
+              return (
+                <li
+                  key={id}
+                  title={badge?.description ?? label}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1"
+                >
+                  <span
+                    aria-hidden
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/20 font-display text-xs text-emerald-200"
+                  >
+                    {label.charAt(0)}
+                  </span>
+                  <span className="text-xs font-medium text-emerald-100">
+                    {label}
+                  </span>
+                </li>
+              );
+            })}
+            {earnedCount > stripIds.length ? (
+              <li className="text-xs tabular-nums text-zinc-500">
+                +{earnedCount - stripIds.length}
+              </li>
+            ) : null}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

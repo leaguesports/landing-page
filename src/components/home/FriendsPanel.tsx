@@ -19,12 +19,16 @@ import { useEffect, useState, useTransition, type FormEvent } from "react";
 
 type FriendsPanelProps = {
   initial: FriendsSnapshot;
-  /** Override outer spacing — use when the panel sits in its own hub tab. */
+  /** Override outer spacing — use when the panel sits under a parent heading. */
   className?: string;
   /** When false, skip the panel eyebrow (parent already titled the section). */
   showHeading?: boolean;
-  /** Live incoming-request count for hub tab badges while this panel stays mounted. */
+  /** Live incoming-request count for the People heading badge. */
   onIncomingCountChange?: (count: number) => void;
+  /** Hub People block — avatars / short list + See all. */
+  compact?: boolean;
+  /** Max friends shown before See all (compact only). */
+  previewLimit?: number;
 };
 
 function FriendAvatar({
@@ -58,6 +62,8 @@ export function FriendsPanel({
   className = "mt-8",
   showHeading = true,
   onIncomingCountChange,
+  compact = false,
+  previewLimit = 5,
 }: FriendsPanelProps) {
   const [friends, setFriends] = useState<Friend[]>(initial.friends);
   const [incoming, setIncoming] = useState<FriendRequest[]>(initial.incoming);
@@ -65,6 +71,7 @@ export function FriendsPanel({
   const [handle, setHandle] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(!compact);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -182,6 +189,10 @@ export function FriendsPanel({
 
   const empty =
     friends.length === 0 && incoming.length === 0 && outgoing.length === 0;
+  const showFull = !compact || expanded;
+  const visibleFriends = showFull
+    ? friends
+    : friends.slice(0, previewLimit);
 
   return (
     <div className={className}>
@@ -294,12 +305,16 @@ export function FriendsPanel({
             </ul>
           ) : null}
 
-          {friends.length > 0 ? (
-            <ul className="space-y-2">
-              {friends.map((friend) => (
+          {visibleFriends.length > 0 ? (
+            <ul className={compact && !showFull ? "flex flex-wrap gap-2" : "space-y-2"}>
+              {visibleFriends.map((friend) => (
                 <li
                   key={friend.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
+                  className={
+                    compact && !showFull
+                      ? "flex min-w-0 items-center gap-2 rounded-full border border-white/8 bg-[#141814] py-1.5 pl-1.5 pr-3"
+                      : "flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
+                  }
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <FriendAvatar
@@ -310,36 +325,52 @@ export function FriendsPanel({
                       <p className="truncate text-sm font-medium text-white">
                         {friend.displayName}
                       </p>
-                      <p className="truncate text-xs text-zinc-500">
-                        @{friend.handle}
-                      </p>
+                      {compact && !showFull ? null : (
+                        <p className="truncate text-xs text-zinc-500">
+                          @{friend.handle}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Link
-                      href="/padel/new"
-                      className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
-                    >
-                      Challenge
-                    </Link>
-                    <button
-                      type="button"
-                      disabled={pending}
-                      aria-label={`Remove ${friend.handle}`}
-                      onClick={() =>
-                        onRemove(friend.id, `Removed @${friend.handle}`)
-                      }
-                      className="rounded-full border border-white/12 p-1.5 text-zinc-500 hover:text-white disabled:opacity-60"
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden />
-                    </button>
-                  </div>
+                  {compact && !showFull ? null : (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Link
+                        href="/padel/new"
+                        className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
+                      >
+                        Challenge
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        aria-label={`Remove ${friend.handle}`}
+                        onClick={() =>
+                          onRemove(friend.id, `Removed @${friend.handle}`)
+                        }
+                        className="rounded-full border border-white/12 p-1.5 text-zinc-500 hover:text-white disabled:opacity-60"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           ) : null}
 
-          {outgoing.length > 0 ? (
+          {compact && !showFull && (friends.length > 0 || outgoing.length > 0) ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              {friends.length > previewLimit
+                ? `See all ${friends.length} friends`
+                : "See all"}
+            </button>
+          ) : null}
+
+          {showFull && outgoing.length > 0 ? (
             <ul className="space-y-2">
               {outgoing.map((request) => (
                 <li

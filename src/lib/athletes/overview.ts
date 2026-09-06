@@ -105,7 +105,7 @@ export function athletePaths(counts: AthleteOverviewCounts): AthletePath[] {
     {
       id: "progress",
       title: "Progress",
-      description: "Form from locked results — open Progress on your hub.",
+      description: "Form from locked results — Your play on your hub.",
       href: ATHLETE_LIVE_HREFS.hub,
       stat: formatLockedPair(counts.padelLocked, counts.golfLocked),
     },
