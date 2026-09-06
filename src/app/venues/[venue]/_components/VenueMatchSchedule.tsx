@@ -1,4 +1,8 @@
-import type { VenueScreeningDisplay } from "@/lib/sports/events-path";
+import {
+  mergeVenueUpcomingScreenings,
+  type VenueScreeningDisplay,
+} from "@/lib/sports/events-path";
+import { getUpcomingFixtures } from "@/services/events";
 import Link from "next/link";
 
 function formatScreeningWhen(startsAt: string): string {
@@ -15,12 +19,22 @@ function formatScreeningWhen(startsAt: string): string {
   return startsAt;
 }
 
-export function VenueMatchSchedule({
+export async function VenueMatchSchedule({
+  venue,
   screenings = [],
 }: {
+  venue?: {
+    slug: string;
+    upcoming_screenings?:
+      | { title?: string | null; startsAt?: string | null; setupTags?: string[] }[]
+      | null;
+  } | null;
   screenings?: VenueScreeningDisplay[] | null;
 }) {
-  const items = screenings ?? [];
+  const items = mergeVenueUpcomingScreenings(
+    venue ?? { slug: "", upcoming_screenings: screenings },
+    await getUpcomingFixtures({ limit: 48 }),
+  );
 
   return (
     <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">

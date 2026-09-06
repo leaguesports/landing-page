@@ -1,6 +1,8 @@
 import { VenueDirectoryCard } from "@/app/venues/_components/VenueDirectoryCard";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
+import { mergeVenueUpcomingScreenings } from "@/lib/sports/events-path";
+import { getUpcomingFixtures } from "@/services/events";
 import type { VenueDetail } from "@/services/venues";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +19,7 @@ type IntentVenuesSectionProps = {
   activitySlug: string;
 };
 
-export function IntentVenuesSection({
+export async function IntentVenuesSection({
   intent,
   venues,
   activityName,
@@ -32,6 +34,8 @@ export function IntentVenuesSection({
   const fallbackSuburb = suburbTitle ?? locationTitle;
   const fallbackCity = cityTitle ?? "this city";
   const verb = intent === "watch" ? "Watch" : "Play";
+  const fixtures =
+    intent === "watch" ? await getUpcomingFixtures({ limit: 48 }) : [];
 
   return (
     <section
@@ -81,7 +85,7 @@ export function IntentVenuesSection({
                 intent={intent}
                 nextScreening={
                   intent === "watch"
-                    ? venue.upcoming_screenings?.[0] ?? null
+                    ? mergeVenueUpcomingScreenings(venue, fixtures)[0] ?? null
                     : null
                 }
               />
