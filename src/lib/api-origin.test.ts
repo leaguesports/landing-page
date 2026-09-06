@@ -81,6 +81,16 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/me/training/plans"), true);
     assert.equal(shouldProxyApiPath("/api/me/training/enrollments"), true);
     assert.equal(shouldProxyApiPath("/api/me/training/enrollments/enr-1"), true);
+    assert.equal(shouldProxyApiPath("/api/me/integrations"), true);
+    assert.equal(shouldProxyApiPath("/api/me/integrations/generic-import"), true);
+    assert.equal(
+      shouldProxyApiPath("/api/me/integrations/generic-import/connect"),
+      true,
+    );
+    assert.equal(
+      shouldProxyApiPath("/api/me/integrations/generic-import/sync"),
+      true,
+    );
     assert.equal(shouldProxyApiPath("/api/communities"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);

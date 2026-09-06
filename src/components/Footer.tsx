@@ -102,6 +102,14 @@ export default function Footer() {
                     Training
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/integrations"
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    Connected services
+                  </Link>
+                </li>
               </ul>
             </div>
 

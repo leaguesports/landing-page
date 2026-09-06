@@ -4,12 +4,17 @@ import { BadgesPanel } from "@/components/home/BadgesPanel";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
+import { IntegrationsPanel } from "@/components/home/IntegrationsPanel";
 import { TrainingPanel } from "@/components/home/TrainingPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import type { AuthUser } from "@/lib/api-client";
 import type { MyCommunity } from "@/lib/communities/communities";
+import {
+  emptyIntegrationsSnapshot,
+  type IntegrationsSnapshot,
+} from "@/lib/integrations/integrations";
 import {
   emptyTrainingSnapshot,
   type TrainingSnapshot,
@@ -100,7 +105,7 @@ const HUB_SECTIONS: {
   {
     id: "progress",
     label: "Progress",
-    description: "Form, badges, training, and locked matches",
+    description: "Form, badges, training, connected services, and locked matches",
     icon: Trophy,
   },
 ];
@@ -155,6 +160,8 @@ type SportsHubProps = {
   myCommunities?: MyCommunity[];
   /** Prefetched `GET /api/me/training/plans` — empty on 404 / 503 / lag. */
   training?: TrainingSnapshot;
+  /** Prefetched `GET /api/me/integrations` — connectable providers only. */
+  integrations?: IntegrationsSnapshot;
   badges?: BadgesSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
@@ -268,6 +275,7 @@ export function SportsHub({
   friends = emptyFriendsSnapshot(),
   myCommunities = [],
   training = emptyTrainingSnapshot(),
+  integrations = emptyIntegrationsSnapshot(),
   badges = { badges: [], fromApi: false },
   sports,
   feed,
@@ -820,7 +828,7 @@ export function SportsHub({
                 }
                 description={
                   showPadel
-                    ? "Recent padel form, training plans, earned badges, and locked matches."
+                    ? "Recent padel form, training plans, connected services, earned badges, and locked matches."
                     : "Milestones you’ve unlocked across the sports you play."
                 }
                 action={
@@ -848,6 +856,11 @@ export function SportsHub({
                     ) : null}
                   </div>
                 }
+              />
+
+              <IntegrationsPanel
+                initial={integrations}
+                className="mb-10"
               />
 
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
