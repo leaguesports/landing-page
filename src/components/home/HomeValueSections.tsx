@@ -1,5 +1,10 @@
 import { HomeScorecardPreview } from "@/components/home/HomeScorecardPreview";
 import { venueDirectoryHref } from "@/lib/search/venueSearch";
+import {
+  fixtureWatchHref,
+  tonightFixtureTeasers,
+} from "@/lib/sports/events-path";
+import type { UpcomingFixture } from "@/lib/sports/events-feed";
 import { MapPin, Trophy, Tv } from "lucide-react";
 import Link from "next/link";
 
@@ -20,7 +25,13 @@ const CHECK = (
   </svg>
 );
 
-export function HomeValueSections() {
+export function HomeValueSections({
+  fixtures = [],
+}: {
+  fixtures?: UpcomingFixture[];
+}) {
+  const tonight = tonightFixtureTeasers(fixtures);
+
   return (
     <>
       <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
@@ -33,48 +44,56 @@ export function HomeValueSections() {
               <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#141814]">
                 <div className="border-b border-white/8 px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
-                    Tonight
+                    {tonight.heading}
                   </p>
                   <p className="mt-1 font-display text-2xl tracking-wide text-white">
                     Where to watch
                   </p>
                 </div>
-                <ul className="divide-y divide-white/8">
-                  {[
-                    {
-                      sport: "Soccer",
-                      title: "Kaizer Chiefs vs Orlando Pirates",
-                      where: "12 venues",
-                    },
-                    {
-                      sport: "Rugby",
-                      title: "Stormers vs Bulls",
-                      where: "8 venues",
-                    },
-                    {
-                      sport: "F1",
-                      title: "Race weekend screenings",
-                      where: "6 venues",
-                    },
-                  ].map((row) => (
-                    <li
-                      key={row.title}
-                      className="flex items-start justify-between gap-4 px-5 py-4"
+                {tonight.items.length > 0 ? (
+                  <ul className="divide-y divide-white/8">
+                    {tonight.items.map((fixture) => {
+                      const venueCount = fixture.venues.length;
+                      return (
+                        <li key={fixture.slug}>
+                          <Link
+                            href={fixtureWatchHref(fixture)}
+                            className="flex items-start justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/4"
+                          >
+                            <div className="min-w-0">
+                              {fixture.sportSlug ? (
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-400">
+                                  {fixture.sportSlug.replace(/-/g, " ")}
+                                </p>
+                              ) : null}
+                              <p className="mt-1 text-sm font-medium text-white">
+                                {fixture.title}
+                              </p>
+                            </div>
+                            <span className="shrink-0 text-xs text-zinc-500">
+                              {venueCount > 0
+                                ? `${venueCount} venue${venueCount === 1 ? "" : "s"}`
+                                : "On the calendar"}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="px-5 py-6">
+                    <p className="text-sm leading-relaxed text-zinc-400">
+                      Upcoming fixtures appear here once they are on the Events
+                      calendar.
+                    </p>
+                    <Link
+                      href="/events"
+                      className="mt-4 inline-flex min-h-10 items-center text-sm font-medium text-sky-300 hover:text-white"
                     >
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-400">
-                          {row.sport}
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-white">
-                          {row.title}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-xs text-zinc-500">
-                        {row.where}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                      See events
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
             <div className="order-1 space-y-6 lg:order-2">
