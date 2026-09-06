@@ -4,6 +4,7 @@ import { listBadges } from "@/lib/badges/api";
 import { listFollowedFixtures } from "@/lib/events/follow";
 import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
+import { listTrainingPlans } from "@/lib/training/training";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 import {
@@ -53,6 +54,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     friends,
     myCommunities,
     badges,
+    training,
   ] = await Promise.all([
     preferencesPromise,
     lookupPlayerHistory(user.id, { cookie }),
@@ -64,6 +66,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     listFriends({ cookie }),
     listMyCommunities({ cookie }),
     listBadges({ cookie }),
+    listTrainingPlans({ cookie }),
   ]);
 
   const preferences = preferencesResult.ok
@@ -101,6 +104,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       friends={friends}
       myCommunities={myCommunities}
       badges={badges}
+      training={training}
       sports={hub.sports}
       feed={hub.feed}
       nowIso={new Date().toISOString()}

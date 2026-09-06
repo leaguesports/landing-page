@@ -94,6 +94,14 @@ export default function Footer() {
                     For athletes
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/training"
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    Training
+                  </Link>
+                </li>
               </ul>
             </div>
 

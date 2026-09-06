@@ -72,6 +72,7 @@ describe("utilities", () => {
     const hrefs = utilitiesForSport(padel).map((item) => item.href);
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/padel/history"));
+    assert.ok(hrefs.includes("/training"));
     assert.ok(hrefs.includes("/play/padel"));
     assert.ok(hrefs.includes("/watch/padel"));
   });
@@ -170,6 +171,7 @@ describe("utilities", () => {
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/padel/new"));
     assert.ok(hrefs.includes("/golf/new"));
+    assert.ok(hrefs.includes("/training"));
     assert.ok(hrefs.includes("/play"));
     assert.ok(hrefs.includes("/watch"));
   });
