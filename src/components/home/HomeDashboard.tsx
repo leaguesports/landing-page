@@ -111,6 +111,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       user={user}
       historyError={history.error}
       historyItems={items}
+      golfHistoryError={golfHistory.error}
+      golfHistoryItems={golfHistory.error ? [] : golfHistory.items}
       lockedActivity={{
         padel: padelCount,
         golf: golfCount,
