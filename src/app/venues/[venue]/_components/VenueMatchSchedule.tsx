@@ -1,4 +1,5 @@
-import type { VenueScreening } from "@/services/venues";
+import type { VenueScreeningDisplay } from "@/lib/sports/events-feed";
+import Link from "next/link";
 
 function formatScreeningWhen(startsAt: string): string {
   const parsed = new Date(startsAt);
@@ -17,7 +18,7 @@ function formatScreeningWhen(startsAt: string): string {
 export function VenueMatchSchedule({
   screenings = [],
 }: {
-  screenings?: VenueScreening[] | null;
+  screenings?: VenueScreeningDisplay[] | null;
 }) {
   const items = screenings ?? [];
 
@@ -39,7 +40,16 @@ export function VenueMatchSchedule({
               key={`${item.title}-${item.startsAt}-${index}`}
               className="border-t border-white/6 pt-4 first:border-t-0 first:pt-0"
             >
-              <p className="text-base font-medium text-white">{item.title}</p>
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="text-base font-medium text-white transition-colors hover:text-sky-400"
+                >
+                  {item.title}
+                </Link>
+              ) : (
+                <p className="text-base font-medium text-white">{item.title}</p>
+              )}
               <p className="mt-2 inline-flex rounded-full border border-white/12 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
                 {formatScreeningWhen(item.startsAt)}
               </p>

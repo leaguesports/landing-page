@@ -1,7 +1,11 @@
 import { VenueUtilityBadges } from "@/components/VenueUtilityBadges";
+import {
+  formatFixtureWhen,
+  type VenueScreeningDisplay,
+} from "@/lib/sports/events-feed";
 import { isRemoteVenuePhoto, venuePhotoUrl } from "@/lib/venues/photo";
 import type { Venue } from "@/services/venues";
-import { MapPin, Star } from "lucide-react";
+import { CalendarDays, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,13 +29,18 @@ function venueSportLabels(
 export function VenueDirectoryCard({
   venue,
   intent,
+  nextScreening = null,
 }: {
   venue: Venue;
   intent: string | null;
+  nextScreening?: VenueScreeningDisplay | null;
 }) {
   const imageSrc = venuePhotoUrl(venue, { width: 800, height: 480 });
   const place = venuePlaceLine(venue);
   const sports = venueSportLabels(venue, intent);
+  const when = nextScreening
+    ? formatFixtureWhen(nextScreening.startsAt)
+    : null;
 
   return (
     <Link
@@ -72,6 +81,15 @@ export function VenueDirectoryCard({
           <p className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-300">
             <Star className="h-3.5 w-3.5 fill-amber-300" aria-hidden />
             {venue.rating.toFixed(1)}
+          </p>
+        ) : null}
+        {intent === "watch" && nextScreening ? (
+          <p className="mt-3 inline-flex items-start gap-1.5 text-sm text-sky-300">
+            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              {nextScreening.title}
+              {when ? ` · ${when}` : ""}
+            </span>
           </p>
         ) : null}
         {sports.length > 0 ? (

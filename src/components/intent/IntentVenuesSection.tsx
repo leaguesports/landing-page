@@ -79,6 +79,11 @@ export function IntentVenuesSection({
                 key={venue._id}
                 venue={venue}
                 intent={intent}
+                nextScreening={
+                  intent === "watch"
+                    ? venue.upcoming_screenings?.[0] ?? null
+                    : null
+                }
               />
             ))}
           </div>
