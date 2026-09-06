@@ -4,28 +4,25 @@ import { BadgesPanel } from "@/components/home/BadgesPanel";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
-import { IntegrationsPanel } from "@/components/home/IntegrationsPanel";
-import { TrainingPanel } from "@/components/home/TrainingPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { SportIcon } from "@/components/icons/sports";
 import type { AuthUser } from "@/lib/api-client";
+import {
+  athleteDisplayName,
+  athleteHandle,
+} from "@/lib/athletes/overview";
 import type { MyCommunity } from "@/lib/communities/communities";
 import {
   emptyIntegrationsSnapshot,
   type IntegrationsSnapshot,
 } from "@/lib/integrations/integrations";
 import {
-  emptyTrainingSnapshot,
-  type TrainingSnapshot,
-} from "@/lib/training/training";
-import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
 import { updatePreferences } from "@/lib/preferences/preferences";
 import { summarisePlayerHistory } from "@/lib/padel/history";
-import { PadelProgressSummary } from "@/components/padel/PadelProgressSummary";
 import {
   ALL_SPORTS_SLUG,
   defaultHubPreferences,
@@ -35,11 +32,20 @@ import {
   selectHubSport,
   serializeHubPreferences,
   unfollowHubSport,
-  utilitiesForActiveSport,
   type HubPreferences,
-  type HubUtility,
   type SportDefinition,
 } from "@/lib/sports/catalog";
+import {
+  HUB_FOR_YOU_EMPTY_CTAS,
+  HUB_INTEGRATIONS_HREF,
+  HUB_PEOPLE_PREVIEW_LIMIT,
+  HUB_RECENT_LOCK_LIMIT,
+  HUB_START_GOLF_HREF,
+  HUB_START_MATCH_HREF,
+  HUB_TRAINING_HREF,
+  hubConnectedCount,
+  takeHubPreview,
+} from "@/lib/sports/hub-ia";
 import {
   filterFeedByVenueSlugs,
   formatHubWhen,
@@ -53,14 +59,9 @@ import {
   Calendar,
   Flag,
   Heart,
-  History,
-  LayoutGrid,
-  MapPin,
   Sparkles,
-  Trophy,
   Tv,
   Users,
-  Dumbbell,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -75,46 +76,13 @@ import {
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
-
-type HubSection = "for-you" | "tools" | "friends" | "progress";
-
-const HUB_SECTIONS: {
-  id: HubSection;
-  label: string;
-  description: string;
-  icon: typeof Sparkles;
-}[] = [
-  {
-    id: "for-you",
-    label: "For you",
-    description: "Games you follow, venue screenings, and guides",
-    icon: Sparkles,
-  },
-  {
-    id: "tools",
-    label: "Tools",
-    description: "Scorecards, venues, and sport utilities",
-    icon: LayoutGrid,
-  },
-  {
-    id: "friends",
-    label: "Friends",
-    description: "Friends and your communities",
-    icon: Users,
-  },
-  {
-    id: "progress",
-    label: "Progress",
-    description: "Form, badges, training, connected services, and locked matches",
-    icon: Trophy,
-  },
-];
-
 function SectionHeading({
+  id,
   title,
   description,
   action,
 }: {
+  id?: string;
   title: string;
   description?: string;
   action?: ReactNode;
@@ -122,7 +90,10 @@ function SectionHeading({
   return (
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h2 className="font-display text-2xl tracking-wide text-white">
+        <h2
+          id={id}
+          className="font-display text-2xl tracking-wide text-white"
+        >
           {title}
         </h2>
         {description ? (
@@ -133,6 +104,35 @@ function SectionHeading({
       </div>
       {action}
     </div>
+  );
+}
+
+function HubAvatar({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl?: string | null;
+}) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- remote OAuth avatars
+      <img
+        src={avatarUrl}
+        alt=""
+        className="h-11 w-11 rounded-full border border-white/10 object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 font-display text-lg text-emerald-300"
+      aria-hidden
+    >
+      {name.trim().charAt(0).toUpperCase() || "?"}
+    </span>
   );
 }
 
@@ -158,8 +158,6 @@ type SportsHubProps = {
   friends?: FriendsSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
-  /** Prefetched `GET /api/me/training/plans` — empty on 404 / 503 / lag. */
-  training?: TrainingSnapshot;
   /** Prefetched `GET /api/me/integrations` — connectable providers only. */
   integrations?: IntegrationsSnapshot;
   badges?: BadgesSnapshot;
@@ -231,27 +229,6 @@ function useHubPreferences(
   return [prefs, setPrefs] as const;
 }
 
-function utilityIcon(kind: HubUtility["kind"]) {
-  switch (kind) {
-    case "scorecard":
-      return Trophy;
-    case "history":
-      return History;
-    case "play":
-      return MapPin;
-    case "watch":
-      return Tv;
-    case "calendar":
-      return Calendar;
-    case "series":
-      return Flag;
-    case "guides":
-      return BookOpen;
-    case "training":
-      return Dumbbell;
-  }
-}
-
 function feedIcon(kind: HubFeedItem["kind"]) {
   if (kind === "event") return Calendar;
   if (kind === "screening") return Tv;
@@ -274,7 +251,6 @@ export function SportsHub({
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
   myCommunities = [],
-  training = emptyTrainingSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
   badges = { badges: [], fromApi: false },
   sports,
@@ -302,15 +278,12 @@ export function SportsHub({
     initialActiveSport,
   );
   const tablistId = useId();
-  const sectionTablistId = useId();
-  const [section, setSection] = useState<HubSection>("for-you");
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
   );
   const nowMs = new Date(nowIso).getTime();
 
   const active = prefs.active;
-  const utilities = utilitiesForActiveSport(active, sports);
   const visibleFeed = filterFeedBySport(feed, active);
   const visibleFollowedFixtures = useMemo(
     () => filterFeedBySport(followedFixtures, active),
@@ -359,17 +332,17 @@ export function SportsHub({
     (item) => item.id !== nextUp?.id && !followedRestIds.has(item.id),
   );
   const nextUpIsFollowedFixture = Boolean(nextUp?.followedFixture);
-  const showPadel =
-    active === ALL_SPORTS_SLUG || active === "padel";
+  const showPadel = active === ALL_SPORTS_SLUG || active === "padel";
   const stats = summarisePlayerHistory(historyItems, user.id);
   const activeSport =
     active === ALL_SPORTS_SLUG
       ? null
       : sports.find((sport) => sport.slug === active) ?? null;
-  const recent = historyItems.slice(0, 8);
+  const recent = takeHubPreview(historyItems, HUB_RECENT_LOCK_LIMIT);
   const followedSet = new Set(prefs.followed);
-  const activeSectionMeta =
-    HUB_SECTIONS.find((item) => item.id === section) ?? HUB_SECTIONS[0];
+  const displayName = athleteDisplayName(user);
+  const handle = athleteHandle(user);
+  const connectedCount = hubConnectedCount(integrations.providers);
 
   function focusSport(slug: string) {
     setPrefs(selectHubSport(prefs, slug, knownSlugs));
@@ -379,589 +352,497 @@ export function SportsHub({
     setPrefs(unfollowHubSport(prefs, slug, knownSlugs));
   }
 
+  const forYouEmpty =
+    !nextUp &&
+    followedRest.length === 0 &&
+    followedFixtureRest.length === 0 &&
+    generalRest.length === 0;
+
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
       <FriendsSnapshotSeed snapshot={friends} />
       <h1 className="sr-only">Your hub</h1>
 
-      <nav
-        className="sticky top-16 z-40 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl"
-        aria-label="Hub"
-      >
+      <div className="sticky top-16 z-40 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div
-            id={sectionTablistId}
-            role="tablist"
-            aria-label="Hub sections"
-            className="-mx-4 flex gap-1 overflow-x-auto px-4 py-2.5 sm:mx-0 sm:gap-2 sm:overflow-visible sm:px-0"
-          >
-            {HUB_SECTIONS.map((item) => {
-              const Icon = item.icon;
-              const selected = section === item.id;
-              const badge =
-                item.id === "friends" && friendRequestCount > 0
-                  ? friendRequestCount
-                  : null;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  aria-controls={`hub-panel-${item.id}`}
-                  id={`hub-tab-${item.id}`}
-                  onClick={() => setSection(item.id)}
-                  className={[
-                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
-                    selected
-                      ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-100"
-                      : "border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/4 hover:text-white",
-                  ].join(" ")}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {item.label}
-                  {badge ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1.5 text-[11px] font-semibold text-zinc-950 tabular-nums">
-                      {badge}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <HubAvatar name={displayName} avatarUrl={user.avatarUrl} />
+              <div className="min-w-0">
+                <p className="truncate font-display text-xl tracking-wide text-white">
+                  {displayName}
+                </p>
+                {handle ? (
+                  <p className="truncate text-xs text-zinc-500">{handle}</p>
+                ) : (
+                  <p className="text-xs text-zinc-500">Your hub</p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={HUB_START_MATCH_HREF}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+              >
+                Start a match
+              </Link>
+              <Link
+                href={HUB_START_GOLF_HREF}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
+              >
+                Start golf
+              </Link>
+            </div>
           </div>
 
-          {section !== "friends" ? (
-            <div className="border-t border-white/5 py-2.5">
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                Focus sport
-              </p>
-              <div
-                id={tablistId}
-                role="tablist"
-                aria-label="Filter hub by sport"
-                className="-mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-              >
+          <div className="border-t border-white/5 py-2.5">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              Focus
+            </p>
+            <div
+              id={tablistId}
+              role="tablist"
+              aria-label="Filter For You by sport"
+              className="-mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+            >
+              <SportChip
+                label="All"
+                selected={active === ALL_SPORTS_SLUG}
+                followed={false}
+                onSelect={() => focusSport(ALL_SPORTS_SLUG)}
+              />
+              {sports.map((sport) => (
                 <SportChip
-                  label="All"
-                  selected={active === ALL_SPORTS_SLUG}
-                  followed={false}
-                  onSelect={() => focusSport(ALL_SPORTS_SLUG)}
-                />
-                {sports.map((sport) => (
-                  <SportChip
-                    key={sport.slug}
-                    label={sport.name}
-                    sportSlug={sport.slug}
-                    selected={active === sport.slug}
-                    followed={followedSet.has(sport.slug)}
-                    count={
-                      sport.slug === "padel"
-                        ? padelLocked
-                        : sport.slug === "golf"
-                          ? golfLocked
-                          : undefined
-                    }
-                    onSelect={() => focusSport(sport.slug)}
-                    onUnfollow={
-                      followedSet.has(sport.slug)
-                        ? () => unfollow(sport.slug)
+                  key={sport.slug}
+                  label={sport.name}
+                  sportSlug={sport.slug}
+                  selected={active === sport.slug}
+                  followed={followedSet.has(sport.slug)}
+                  count={
+                    sport.slug === "padel"
+                      ? padelLocked
+                      : sport.slug === "golf"
+                        ? golfLocked
                         : undefined
+                  }
+                  onSelect={() => focusSport(sport.slug)}
+                  onUnfollow={
+                    followedSet.has(sport.slug)
+                      ? () => unfollow(sport.slug)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl space-y-14 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <section aria-labelledby="hub-for-you" className="mx-auto max-w-3xl">
+          <SectionHeading
+            id="hub-for-you"
+            title={activeSport ? `${activeSport.name} for you` : "For you"}
+            description="Games you follow, venue screenings, and guides."
+            action={
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Feed
+              </span>
+            }
+          />
+
+          {nextUp ? (
+            <Link
+              href={nextUp.href}
+              className="group mb-4 block overflow-hidden rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5 transition-colors hover:border-emerald-400/40 sm:p-6"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                {nextUpIsFollowedFixture
+                  ? "Game you're following · "
+                  : nextUp.venueSlug &&
+                      followedSlugs.includes(nextUp.venueSlug)
+                    ? "From venues you follow · "
+                    : "Next up · "}
+                {feedKindLabel(nextUp.kind)}
+              </p>
+              <h3 className="mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl">
+                {nextUp.title}
+              </h3>
+              <p className="mt-2 text-sm text-zinc-400">
+                {nextUp.subtitle}
+                {nextUp.startsAt ? ` · ${formatHubWhen(nextUp.startsAt)}` : ""}
+              </p>
+            </Link>
+          ) : null}
+
+          {followedFixtureRest.length > 0 ? (
+            <div className="mb-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Flag className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  Games you&apos;re following
+                </p>
+              </div>
+              <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-emerald-400/15 bg-[#141814]">
+                {followedFixtureRest.slice(0, 6).map((item) => {
+                  const Icon = feedIcon(item.kind);
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        href={item.href}
+                        className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
+                      >
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                            Fixture
+                            {item.startsAt
+                              ? ` · ${formatHubWhen(item.startsAt)}`
+                              : ""}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-white">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-500">
+                            {item.subtitle}
+                          </p>
+                        </div>
+                        <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : followedFixtureCount > 0 &&
+            visibleFollowedFixtures.length === 0 ? (
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              Games you follow will show here when kickoff details are
+              available.{" "}
+              <Link
+                href="/events"
+                className="font-medium text-emerald-300 hover:text-emerald-200"
+              >
+                Browse fixtures
+              </Link>
+            </p>
+          ) : null}
+
+          {followedVenues.length > 0 && followedRest.length > 0 ? (
+            <div className="mb-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Heart
+                  className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
+                  aria-hidden
+                />
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  From venues you follow
+                </p>
+              </div>
+              <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-emerald-400/15 bg-[#141814]">
+                {followedRest.slice(0, 4).map((item) => {
+                  const Icon = feedIcon(item.kind);
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        href={item.href}
+                        className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
+                      >
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                            {feedKindLabel(item.kind)}
+                            {item.startsAt
+                              ? ` · ${formatHubWhen(item.startsAt)}`
+                              : ""}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-white">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-500">
+                            {item.subtitle}
+                          </p>
+                        </div>
+                        <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : followedVenues.length > 0 && followedFeed.length === 0 ? (
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              No upcoming screenings from venues you follow yet. Check back
+              when they post fixtures.
+            </p>
+          ) : null}
+
+          {generalRest.length > 0 ? (
+            <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
+              {generalRest.slice(0, 8).map((item) => {
+                const Icon = feedIcon(item.kind);
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
+                    >
+                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                          {feedKindLabel(item.kind)}
+                          {item.startsAt
+                            ? ` · ${formatHubWhen(item.startsAt)}`
+                            : ""}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-white">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-500">
+                          {item.subtitle}
+                        </p>
+                      </div>
+                      <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : forYouEmpty ? (
+            <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
+              <p className="max-w-md text-sm leading-relaxed text-zinc-400">
+                {activeSport
+                  ? `Nothing in the ${activeSport.name} feed yet. Browse fixtures or find a venue.`
+                  : "Follow sports in onboarding or Focus, or follow a fixture on Events — matching games land here."}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {HUB_FOR_YOU_EMPTY_CTAS.map((cta, index) => (
+                  <Link
+                    key={cta.href}
+                    href={cta.href}
+                    className={
+                      index === 0
+                        ? "inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                        : "inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white hover:bg-white/5"
                     }
-                  />
+                  >
+                    {cta.label}
+                  </Link>
                 ))}
               </div>
             </div>
           ) : null}
-        </div>
-      </nav>
+        </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div
-          role="tabpanel"
-          id={`hub-panel-${section}`}
-          aria-labelledby={`hub-tab-${section}`}
-        >
-          {section === "for-you" ? (
-            <div className="mx-auto max-w-3xl">
-              <SectionHeading
-                title={activeSport ? `${activeSport.name} feed` : "Up next"}
-                description={activeSectionMeta.description}
-              />
+        <section aria-labelledby="hub-your-play" className="mx-auto max-w-3xl">
+          <SectionHeading
+            id="hub-your-play"
+            title="Your play"
+            description="Start a match, recent locks, and a snapshot of form."
+            action={
+              <div className="flex flex-col items-start gap-2 sm:items-end">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-2xl tracking-wide text-white tabular-nums">
+                    {gamesKnown ? gamesPlayed : "—"}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Games
+                  </span>
+                </div>
+                {activityError ? (
+                  <p className="max-w-[14rem] text-[11px] leading-snug text-amber-300/90 sm:text-right">
+                    Couldn’t load all activity
+                  </p>
+                ) : null}
+              </div>
+            }
+          />
 
-              {nextUp ? (
-                <Link
-                  href={nextUp.href}
-                  className="group mb-4 block overflow-hidden rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5 transition-colors hover:border-emerald-400/40 sm:p-6"
+          <div className="mb-6 flex flex-wrap gap-2">
+            <Link
+              href={HUB_START_MATCH_HREF}
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+            >
+              Start a match
+            </Link>
+            <Link
+              href={HUB_START_GOLF_HREF}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
+            >
+              Start golf
+            </Link>
+            <Link
+              href="/padel/history"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-zinc-300 hover:text-white"
+            >
+              History
+            </Link>
+          </div>
+
+          {showPadel && stats.locked > 0 ? (
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Locked", value: String(stats.locked) },
+                { label: "Wins", value: String(stats.wins) },
+                { label: "Win rate", value: `${stats.winRate}%` },
+                {
+                  label: "Form",
+                  value:
+                    stats.recentForm.length > 0
+                      ? stats.recentForm.join(" ")
+                      : "—",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-4"
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                    {nextUpIsFollowedFixture
-                      ? "Game you're following · "
-                      : nextUp.venueSlug &&
-                          followedSlugs.includes(nextUp.venueSlug)
-                        ? "From venues you follow · "
-                        : "Next up · "}
-                    {feedKindLabel(nextUp.kind)}
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    {stat.label}
                   </p>
-                  <h3 className="mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl">
-                    {nextUp.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    {nextUp.subtitle}
-                    {nextUp.startsAt
-                      ? ` · ${formatHubWhen(nextUp.startsAt)}`
-                      : ""}
+                  <p className="mt-1.5 font-display text-xl tracking-wide text-white tabular-nums">
+                    {stat.value}
                   </p>
-                </Link>
-              ) : null}
-
-              {followedFixtureRest.length > 0 ? (
-                <div className="mb-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Flag
-                      className="h-3.5 w-3.5 text-emerald-300"
-                      aria-hidden
-                    />
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      Games you&apos;re following
-                    </p>
-                  </div>
-                  <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-emerald-400/15 bg-[#141814]">
-                    {followedFixtureRest.slice(0, 6).map((item) => {
-                      const Icon = feedIcon(item.kind);
-                      return (
-                        <li key={item.id}>
-                          <Link
-                            href={item.href}
-                            className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
-                          >
-                            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
-                              <Icon className="h-4 w-4" aria-hidden />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
-                                Fixture
-                                {item.startsAt
-                                  ? ` · ${formatHubWhen(item.startsAt)}`
-                                  : ""}
-                              </p>
-                              <p className="mt-1 text-sm font-medium text-white">
-                                {item.title}
-                              </p>
-                              <p className="mt-1 text-sm text-zinc-500">
-                                {item.subtitle}
-                              </p>
-                            </div>
-                            <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
                 </div>
-              ) : followedFixtureCount > 0 &&
-                visibleFollowedFixtures.length === 0 ? (
-                <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-                  Games you follow will show here when kickoff details are
-                  available.{" "}
-                  <Link
-                    href="/events"
-                    className="font-medium text-emerald-300 hover:text-emerald-200"
-                  >
-                    Browse fixtures
-                  </Link>
-                </p>
-              ) : null}
-
-              {followedVenues.length > 0 && followedRest.length > 0 ? (
-                <div className="mb-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Heart
-                      className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
-                      aria-hidden
-                    />
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      From venues you follow
-                    </p>
-                  </div>
-                  <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-emerald-400/15 bg-[#141814]">
-                    {followedRest.slice(0, 4).map((item) => {
-                      const Icon = feedIcon(item.kind);
-                      return (
-                        <li key={item.id}>
-                          <Link
-                            href={item.href}
-                            className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
-                          >
-                            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
-                              <Icon className="h-4 w-4" aria-hidden />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
-                                {feedKindLabel(item.kind)}
-                                {item.startsAt
-                                  ? ` · ${formatHubWhen(item.startsAt)}`
-                                  : ""}
-                              </p>
-                              <p className="mt-1 text-sm font-medium text-white">
-                                {item.title}
-                              </p>
-                              <p className="mt-1 text-sm text-zinc-500">
-                                {item.subtitle}
-                              </p>
-                            </div>
-                            <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ) : followedVenues.length > 0 && followedFeed.length === 0 ? (
-                <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-                  No upcoming screenings from venues you follow yet. Check back
-                  when they post fixtures.
-                </p>
-              ) : null}
-
-              {generalRest.length > 0 ? (
-                <ul className="divide-y divide-white/8 overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
-                  {generalRest.slice(0, 8).map((item) => {
-                    const Icon = feedIcon(item.kind);
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={item.href}
-                          className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-white/3 sm:px-6"
-                        >
-                          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-zinc-300">
-                            <Icon className="h-4 w-4" aria-hidden />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
-                              {feedKindLabel(item.kind)}
-                              {item.startsAt
-                                ? ` · ${formatHubWhen(item.startsAt)}`
-                                : ""}
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-white">
-                              {item.title}
-                            </p>
-                            <p className="mt-1 text-sm text-zinc-500">
-                              {item.subtitle}
-                            </p>
-                          </div>
-                          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : !nextUp &&
-                followedRest.length === 0 &&
-                followedFixtureRest.length === 0 ? (
-                <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
-                  <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                    {activeSport
-                      ? `Nothing in the ${activeSport.name} feed yet. Jump to Tools to watch or play.`
-                      : "Follow sports in onboarding or Focus, or follow a fixture on Events — matching games land here."}
-                  </p>
-                  {utilities[0] ? (
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <Link
-                        href="/events"
-                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        Browse fixtures
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => setSection("tools")}
-                        className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white hover:bg-white/5"
-                      >
-                        Browse tools
-                      </button>
-                    </div>
-                  ) : (
-                    <Link
-                      href="/events"
-                      className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                    >
-                      Browse fixtures
-                    </Link>
-                  )}
-                </div>
-              ) : null}
+              ))}
             </div>
           ) : null}
 
-          {section === "tools" ? (
-            <div>
-              <SectionHeading
-                title={
-                  activeSport
-                    ? `${activeSport.name} tools`
-                    : "What do you need?"
-                }
-                description={
-                  activeSport
-                    ? `Utilities for watching, playing, and tracking ${activeSport.name.toLowerCase()}.`
-                    : "Start a match, find a venue, or jump into whatever you follow."
-                }
-              />
-
-              <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-                <div className="lg:col-span-8">
-                  <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {utilities.map((utility) => {
-                      const Icon = utilityIcon(utility.kind);
-                      return (
-                        <li key={utility.id}>
-                          <Link
-                            href={utility.href}
-                            className="group flex h-full min-h-28 flex-col rounded-3xl border border-white/8 bg-[#141814] p-5 transition-colors hover:border-white/16"
-                          >
-                            <Icon
-                              className="h-4 w-4 text-emerald-300"
-                              aria-hidden
-                            />
-                            <p className="mt-3 text-sm font-medium text-white group-hover:text-[var(--color-brand)]">
-                              {utility.title}
-                            </p>
-                            <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-                              {utility.description}
-                            </p>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
+          {showPadel ? (
+            <div className="mb-6">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  Recent locks
+                </p>
+                {historyItems.length > 0 ? (
+                  <Link
+                    href="/padel/history"
+                    className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                  >
+                    View all
+                  </Link>
+                ) : null}
+              </div>
+              {historyError ? (
+                <div className="space-y-5 rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
+                  <p className="text-sm text-red-300">{historyError}</p>
+                  <Link
+                    href={HUB_START_MATCH_HREF}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                  >
+                    Start a match anyway
+                  </Link>
                 </div>
-
-                <div className="lg:col-span-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Heart
-                      className="h-3.5 w-3.5 fill-emerald-300 text-emerald-300"
-                      aria-hidden
-                    />
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      Followed venues
-                    </p>
-                  </div>
-                  {followedVenues.length > 0 ? (
-                    <ul className="space-y-2">
-                      {followedVenues.slice(0, 6).map((venue) => (
-                        <li key={venue.id}>
-                          <Link
-                            href={`/venues/${venue.slug}`}
-                            className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 transition-colors hover:border-white/16"
-                          >
-                            <span className="min-w-0">
-                              <span className="block truncate text-sm font-medium text-white group-hover:text-[var(--color-brand)]">
-                                {venue.name}
-                              </span>
-                            </span>
-                            <ArrowUpRight
-                              className="h-4 w-4 shrink-0 text-zinc-600 group-hover:text-white"
-                              aria-hidden
-                            />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-5">
-                      <p className="text-sm leading-relaxed text-zinc-400">
-                        Follow a venue from its listing and it will show up here
-                        — with upcoming screenings in your feed.
-                      </p>
-                      <Link
-                        href="/venues"
-                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                      >
-                        Find venues
-                      </Link>
-                    </div>
-                  )}
+              ) : recent.length === 0 ? (
+                <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-8">
+                  <p className="max-w-md text-sm leading-relaxed text-zinc-400">
+                    No locked padel matches yet. Start a match, play it out,
+                    and end the scorecard — only locked results land here.
+                  </p>
                 </div>
+              ) : (
+                <PadelHistoryList items={recent} playerUserId={user.id} />
+              )}
+            </div>
+          ) : (
+            <div className="mb-6 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
+              <p className="text-sm leading-relaxed text-zinc-400">
+                {golfLocked > 0
+                  ? `${golfLocked} locked golf round${golfLocked === 1 ? "" : "s"} on your record.`
+                  : "Switch Focus to Padel to see locked matches, or start a golf round."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {golfLocked > 0 ? (
+                  <Link
+                    href="/golf/history"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
+                  >
+                    Golf history
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => focusSport("padel")}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  >
+                    Focus padel
+                  </button>
+                )}
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* Keep FriendsPanel mounted so accept/decline/add survive section switches. */}
-          <div
-            className={
-              section === "friends" ? "mx-auto max-w-2xl" : "hidden"
-            }
-            hidden={section !== "friends"}
-            inert={section !== "friends" ? true : undefined}
-            aria-hidden={section !== "friends"}
-          >
-            <SectionHeading
-              title="Your circle"
-              description={
-                HUB_SECTIONS.find((item) => item.id === "friends")
-                  ?.description ?? activeSectionMeta.description
-              }
-              action={
+          <BadgesPanel
+            initial={badges}
+            padelStats={stats}
+            golfLocked={golfLocked}
+            friendCount={friends.friends.length}
+            variant="strip"
+            className="mt-0"
+          />
+
+          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <Link
+              href={HUB_INTEGRATIONS_HREF}
+              className="font-medium text-zinc-400 hover:text-white"
+            >
+              {connectedCount > 0
+                ? `Connected · ${connectedCount}`
+                : "Connected services"}
+            </Link>
+            <Link
+              href={HUB_TRAINING_HREF}
+              className="font-medium text-zinc-400 hover:text-white"
+            >
+              Training
+            </Link>
+          </div>
+        </section>
+
+        <section aria-labelledby="hub-people" className="mx-auto max-w-3xl">
+          <SectionHeading
+            id="hub-people"
+            title="People"
+            description="Friends and communities — short lists, then See all."
+            action={
+              friendRequestCount > 0 ? (
+                <span className="inline-flex items-center gap-2 text-sm text-emerald-200">
+                  <Users className="h-4 w-4" aria-hidden />
+                  {friendRequestCount} request
+                  {friendRequestCount === 1 ? "" : "s"}
+                </span>
+              ) : (
                 <Link
                   href="/communities"
                   className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
                 >
                   Discover communities
                 </Link>
-              }
-            />
-            <CommunitiesPanel initial={myCommunities} className="mb-8" />
-            <FriendsPanel
-              initial={friends}
-              className="mt-0"
-              showHeading={false}
-              onIncomingCountChange={setFriendRequestCount}
-            />
-          </div>
-
-          {section === "progress" ? (
-            <div>
-              <SectionHeading
-                title={
-                  showPadel ? "Form and milestones" : "Badges and activity"
-                }
-                description={
-                  showPadel
-                    ? "Recent padel form, training plans, connected services, earned badges, and locked matches."
-                    : "Milestones you’ve unlocked across the sports you play."
-                }
-                action={
-                  <div className="flex flex-col items-start gap-2 sm:items-end">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-display text-2xl tracking-wide text-white tabular-nums">
-                        {gamesKnown ? gamesPlayed : "—"}
-                      </span>
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                        Games
-                      </span>
-                    </div>
-                    {activityError ? (
-                      <p className="max-w-[14rem] text-[11px] leading-snug text-amber-300/90 sm:text-right">
-                        Couldn’t load all activity
-                      </p>
-                    ) : null}
-                    {showPadel && historyItems.length > 0 ? (
-                      <Link
-                        href="/padel/history"
-                        className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                      >
-                        View all history
-                      </Link>
-                    ) : null}
-                  </div>
-                }
-              />
-
-              <IntegrationsPanel
-                initial={integrations}
-                className="mb-10"
-              />
-
-              <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-                <div className="space-y-8 lg:col-span-5">
-                  {showPadel ? (
-                    <>
-                      <PadelProgressSummary
-                        stats={stats}
-                        variant="hub"
-                        flush
-                      />
-                      <TrainingPanel initial={training} className="mt-0" />
-                    </>
-                  ) : (
-                    <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
-                      <p className="text-sm leading-relaxed text-zinc-400">
-                        Switch the sport filter to Padel to see match form, or
-                        keep collecting badges across every sport you play.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => focusSport("padel")}
-                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                      >
-                        Focus padel
-                      </button>
-                    </div>
-                  )}
-                  <BadgesPanel
-                    initial={badges}
-                    padelStats={stats}
-                    golfLocked={golfLocked}
-                    friendCount={friends.friends.length}
-                    className="mt-0"
-                  />
-                </div>
-
-                <div className="lg:col-span-7">
-                  {showPadel ? (
-                    <>
-                      <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                          Padel
-                        </p>
-                        <h3 className="mt-1 font-display text-2xl tracking-wide text-white">
-                          Locked matches
-                        </h3>
-                      </div>
-
-                      {historyError ? (
-                        <div className="space-y-5 rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-8 sm:px-8">
-                          <p className="text-sm text-red-300">{historyError}</p>
-                          <Link
-                            href="/padel/new"
-                            className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                          >
-                            Start a match anyway
-                          </Link>
-                        </div>
-                      ) : recent.length === 0 ? (
-                        <div className="space-y-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
-                          <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                            No locked padel matches yet. Start a match, play it
-                            out, and end the scorecard — only locked results
-                            land here.
-                          </p>
-                          <Link
-                            href="/padel/new"
-                            className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                          >
-                            Start your first match
-                          </Link>
-                        </div>
-                      ) : (
-                        <PadelHistoryList
-                          items={recent}
-                          playerUserId={user.id}
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
-                      <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                        Locked match history shows up when Padel is in focus.
-                        Use Tools for other sports’ scorecards and calendars.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSection("tools")}
-                        className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                      >
-                        Open tools
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
+              )
+            }
+          />
+          <CommunitiesPanel
+            initial={myCommunities}
+            compact
+            previewLimit={HUB_PEOPLE_PREVIEW_LIMIT}
+            className="mb-8"
+          />
+          <FriendsPanel
+            initial={friends}
+            compact
+            previewLimit={HUB_PEOPLE_PREVIEW_LIMIT}
+            className="mt-0"
+            showHeading
+            onIncomingCountChange={setFriendRequestCount}
+          />
+        </section>
       </div>
     </div>
   );
@@ -1002,11 +883,7 @@ function SportChip({
         ].join(" ")}
       >
         {sportSlug ? (
-          <SportIcon
-            sportSlug={sportSlug}
-            size={16}
-            color="currentColor"
-          />
+          <SportIcon sportSlug={sportSlug} size={16} color="currentColor" />
         ) : null}
         {label}
         {typeof count === "number" && count > 0 ? (
