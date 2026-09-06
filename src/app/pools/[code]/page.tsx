@@ -45,9 +45,9 @@ export default async function PredictionPoolPage({ params }: PoolPageProps) {
             Pool not found
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400">
-            This invite may have expired, or prediction pools haven’t been
-            migrated on this environment yet. Create a pool from a fixture page
-            once the API is live.
+            This invite link is invalid or the pool has been removed. Create a
+            new friends tip pool from any fixture page, then share it on
+            WhatsApp.
           </p>
           <Link
             href="/events"
