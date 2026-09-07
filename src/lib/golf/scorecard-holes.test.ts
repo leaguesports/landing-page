@@ -130,7 +130,7 @@ describe("toScorecardHoles", () => {
     assert.equal(hole?.tees.find((tee) => tee.teeName === "Red")?.meters, 302);
   });
 
-  it("does not highlight when the round has no tee", () => {
+  it("maps legacy null teeName without breaking (no selected tee)", () => {
     const [hole] = toScorecardHoles(
       [{ number: 1, par: 4, strokeIndex: 9 }],
       kyalamiCourse(),

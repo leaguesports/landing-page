@@ -1,7 +1,12 @@
 "use client";
 
+import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
+import {
+  buildStartOrganisedGolfOverrides,
+  isGolfStartReady,
+} from "@/lib/golf/pre-round";
 import { dispatchInboxChanged } from "@/lib/notifications/inbox";
 import {
   cancelOrganisedGame,
@@ -13,6 +18,7 @@ import {
   startOrganisedGame,
   type OrganisedGame,
 } from "@/lib/organised-games/organised-games";
+import type { GolfCourseCms, GolfHolesPlayed } from "@/types/golf-round";
 import { formatHubWhen } from "@/lib/sports/hub-feed";
 import { hubOrganisedGameJoinHref } from "@/lib/sports/hub-ia";
 import { Check, Copy, Loader2, X } from "lucide-react";
@@ -24,6 +30,7 @@ type OrganisedGameDetailProps = {
   game: OrganisedGame;
   venueName: string | null;
   venueHref: string | null;
+  golfCourse?: GolfCourseCms | null;
 };
 
 function PersonRow({
@@ -74,6 +81,7 @@ export function OrganisedGameDetail({
   game: initial,
   venueName,
   venueHref,
+  golfCourse = null,
 }: OrganisedGameDetailProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -82,6 +90,12 @@ export function OrganisedGameDetail({
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<"rsvp" | "start" | "cancel" | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [teeName, setTeeName] = useState("");
+  const [startingHole, setStartingHole] = useState(1);
+  const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(18);
+  const golfStartReady =
+    game.sport !== "golf" ||
+    isGolfStartReady({ teeName, startingHole, holesPlayed });
 
   // Invitee GET / RSVP auto-reads the invite notice on the API — refresh the bell.
   useEffect(() => {
@@ -143,8 +157,21 @@ export function OrganisedGameDetail({
       return;
     }
     setError(null);
+    let startOverrides = undefined;
+    if (game.sport === "golf") {
+      const built = buildStartOrganisedGolfOverrides({
+        teeName,
+        startingHole,
+        holesPlayed,
+      });
+      if (!built.ok) {
+        setError(built.error);
+        return;
+      }
+      startOverrides = built.overrides;
+    }
     setBusy("start");
-    const result = await startOrganisedGame(game.id);
+    const result = await startOrganisedGame(game.id, startOverrides);
     setBusy(null);
     if (!result.ok) {
       if (result.status === 401) {
@@ -300,9 +327,25 @@ export function OrganisedGameDetail({
 
       {isHost && isOpen ? (
         <div className="space-y-3">
+          {game.sport === "golf" ? (
+            <GolfPreRoundSetup
+              golfCourse={golfCourse}
+              teeName={teeName}
+              onTeeNameChange={setTeeName}
+              startingHole={startingHole}
+              onStartingHoleChange={setStartingHole}
+              holesPlayed={holesPlayed}
+              onHolesPlayedChange={setHolesPlayed}
+            />
+          ) : null}
+          {game.sport === "golf" && !golfStartReady ? (
+            <p className="text-center text-xs text-zinc-500">
+              Pick a tee to enable Start.
+            </p>
+          ) : null}
           <button
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || !golfStartReady}
             onClick={() => void onStart()}
             className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
           >

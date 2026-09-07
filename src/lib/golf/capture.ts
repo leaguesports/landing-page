@@ -14,6 +14,12 @@ import {
   parseApiGolfRound,
   type CreateGolfRoundDeps,
 } from "./api-round.ts";
+import {
+  isHolesPlayed,
+  isStartingHole,
+  isValidTeeName,
+  normalizeTeeName,
+} from "./pre-round.ts";
 import { getLoopbackApiProxyOrigin, getRailwayApiOrigin } from "../api-origin.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
 import { getSiteBaseUrl } from "../site-url.ts";
@@ -26,8 +32,8 @@ export type CaptureGolfRoundBody = {
   startsAt?: string;
   playedAt?: string;
   holesPlayed: GolfHolesPlayed;
-  startingHole?: number;
-  teeName?: string | null;
+  startingHole: number;
+  teeName: string;
   course: {
     name?: string | null;
     holes: Array<{ number: number; par: number; strokeIndex: number }>;
@@ -40,10 +46,6 @@ export type CaptureGolfRoundBody = {
   }>;
   score: GolfScore;
 };
-
-function isHolesPlayed(value: unknown): value is GolfHolesPlayed {
-  return value === 9 || value === 18;
-}
 
 function isSlot(value: unknown): value is GolfPlayerSlot {
   return value === 1 || value === 2 || value === 3 || value === 4;
@@ -129,12 +131,11 @@ export function toCaptureGolfRoundBody(
   };
 
   const startingHole = input.startingHole ?? 1;
-  if (
-    !Number.isInteger(startingHole) ||
-    startingHole < 1 ||
-    startingHole > 18
-  ) {
+  if (!isStartingHole(startingHole)) {
     throw new GolfApiError(400, "startingHole must be 1–18");
+  }
+  if (!isValidTeeName(input.teeName)) {
+    throw new GolfApiError(400, "teeName must be 1–40 characters");
   }
 
   return {
@@ -142,7 +143,7 @@ export function toCaptureGolfRoundBody(
     ...(startsAt ? { startsAt } : { playedAt }),
     holesPlayed: input.holesPlayed,
     startingHole,
-    teeName: input.teeName?.trim() || null,
+    teeName: normalizeTeeName(input.teeName),
     course: {
       name: input.course.name ?? null,
       holes: holes.map((hole) => ({

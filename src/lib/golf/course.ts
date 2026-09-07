@@ -5,6 +5,7 @@ import type {
   GolfCourseSnapshot,
   GolfHolesPlayed,
 } from "../../types/golf-round.ts";
+import { holeOrder, isHolesPlayed, isStartingHole } from "./pre-round.ts";
 
 function isPlayableHole(
   hole: GolfCourseCmsHole | null | undefined,
@@ -35,16 +36,6 @@ export function hasPlayableGolfCourse(
   return playable.length >= 9;
 }
 
-function holeSequence(
-  holesPlayed: GolfHolesPlayed,
-  startingHole: number,
-): number[] {
-  return Array.from({ length: holesPlayed }, (_, index) => {
-    const number = startingHole + index;
-    return number > 18 ? number - 18 : number;
-  });
-}
-
 /**
  * Pick consecutive holes for 9/18 from a CMS course.
  * Returns [] when any expected hole is missing or not playable.
@@ -55,8 +46,7 @@ export function selectHoles(
   startingHole = 1,
 ): GolfCourseHole[] {
   if (!course?.holes?.length) return [];
-  if (holesPlayed !== 9 && holesPlayed !== 18) return [];
-  if (!Number.isInteger(startingHole) || startingHole < 1 || startingHole > 18) {
+  if (!isHolesPlayed(holesPlayed) || !isStartingHole(startingHole)) {
     return [];
   }
 
@@ -71,7 +61,7 @@ export function selectHoles(
   }
 
   const selected: GolfCourseHole[] = [];
-  for (const number of holeSequence(holesPlayed, startingHole)) {
+  for (const number of holeOrder(holesPlayed, startingHole)) {
     const hole = byNumber.get(number);
     if (!hole) return [];
     selected.push(hole);

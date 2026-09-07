@@ -9,6 +9,7 @@ import {
   readGolfRoundLocal,
   writeGolfRoundLocal,
 } from "@/lib/golf/round-store";
+import { formatHoleRangeLabel } from "@/lib/golf/pre-round";
 import { toScorecardHoles } from "@/lib/golf/scorecard-holes";
 import {
   allHolesScored,
@@ -76,9 +77,13 @@ function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
 }
 
 function layoutLabel(round: GolfRound): string {
-  if (round.holesPlayed === 18) return "18 holes";
-  if (round.startingHole === 10) return "Back 9";
-  return "Front 9";
+  if (round.holesPlayed === 18 && round.startingHole === 1) return "18 holes";
+  if (round.holesPlayed === 9 && round.startingHole === 10) return "Back 9";
+  if (round.holesPlayed === 9 && round.startingHole === 1) return "Front 9";
+  return (
+    formatHoleRangeLabel(round.holesPlayed, round.startingHole) ||
+    `${round.holesPlayed} holes`
+  );
 }
 
 export function GolfScorecard({
@@ -214,10 +219,11 @@ export function GolfScorecard({
       </header>
 
       <div className="px-4 pt-4 text-center">
-        {round.venue?.name || round.course.name ? (
+        {round.venue?.name || round.course.name || round.teeName ? (
           <p className="truncate text-xs text-zinc-500">
-            {round.venue?.name || round.course.name}
-            {round.teeName ? ` · ${round.teeName}` : ""}
+            {[round.venue?.name || round.course.name, round.teeName]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         ) : null}
         <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">

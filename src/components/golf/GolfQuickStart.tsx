@@ -12,6 +12,7 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/golf/api-round";
 import { toCourseSnapshot } from "@/lib/golf/course";
+import { isGolfStartReady } from "@/lib/golf/pre-round";
 import { cacheGolfRoundSnapshot } from "@/lib/golf/round-store";
 import {
   isGolfVenue,
@@ -23,8 +24,7 @@ import type {
   GolfPlayer,
   GolfPlayerSlot,
 } from "@/types/golf-round";
-
-type LayoutChoice = "18" | "front9" | "back9";
+import { GolfPreRoundSetup } from "./GolfPreRoundSetup";
 
 type GolfQuickStartProps = {
   venues: GolfVenueOption[];
@@ -39,15 +39,6 @@ function findVenueBySlug(
   const key = slug?.trim().toLowerCase();
   if (!key) return null;
   return venues.find((venue) => venue.slug.toLowerCase() === key) ?? null;
-}
-
-function layoutToHoles(layout: LayoutChoice): {
-  holesPlayed: GolfHolesPlayed;
-  startingHole: number;
-} {
-  if (layout === "front9") return { holesPlayed: 9, startingHole: 1 };
-  if (layout === "back9") return { holesPlayed: 9, startingHole: 10 };
-  return { holesPlayed: 18, startingHole: 1 };
 }
 
 function makeGuest(name: string, slot: GolfPlayerSlot): GolfPlayer {
@@ -73,15 +64,14 @@ export function GolfQuickStart({
   const [startsAtLocal, setStartsAtLocal] = useState(() =>
     toDatetimeLocalValue(new Date()),
   );
-  const [layout, setLayout] = useState<LayoutChoice>("18");
-  const [teeName, setTeeName] = useState<string>("");
+  const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(18);
+  const [startingHole, setStartingHole] = useState(1);
+  const [teeName, setTeeName] = useState("");
   const [playerCount, setPlayerCount] = useState(1);
   const [names, setNames] = useState<string[]>(["", "", "", ""]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
-
-  const tees = venue?.golfCourse?.tees?.filter((tee) => tee.name?.trim()) ?? [];
 
   const selfName = useMemo(() => {
     if (isAuthenticated && user?.id) {
@@ -99,10 +89,16 @@ export function GolfQuickStart({
   const startsAtIso = datetimeLocalToIso(startsAtLocal);
   const activeNames = resolvedNames.slice(0, playerCount);
   const namesReady = activeNames.every((name) => name.trim().length > 0);
+  const preRoundReady = isGolfStartReady({
+    teeName,
+    startingHole,
+    holesPlayed,
+  });
   const ready =
     Boolean(venue) &&
     Boolean(startsAtIso) &&
     namesReady &&
+    preRoundReady &&
     !starting &&
     !isPending;
 
@@ -116,8 +112,7 @@ export function GolfQuickStart({
 
   function handleVenueSelect(option: GolfVenueOption | null) {
     setVenue(option);
-    const firstTee = option?.golfCourse?.tees?.find((tee) => tee.name?.trim());
-    setTeeName(firstTee?.name ?? "");
+    setTeeName("");
   }
 
   async function handleStart() {
@@ -133,8 +128,11 @@ export function GolfQuickStart({
       setError("Enter a name for each player");
       return;
     }
+    if (!preRoundReady) {
+      setError("Pick a tee, starting hole, and holes played");
+      return;
+    }
 
-    const { holesPlayed, startingHole } = layoutToHoles(layout);
     const course = toCourseSnapshot(
       venue.golfCourse,
       holesPlayed,
@@ -178,7 +176,7 @@ export function GolfQuickStart({
           startsAt: startsAtIso,
           holesPlayed,
           startingHole,
-          teeName: teeName.trim() || null,
+          teeName: teeName.trim(),
           course,
           players,
         },
@@ -205,8 +203,8 @@ export function GolfQuickStart({
         </h1>
         <p className="max-w-md text-sm leading-relaxed text-zinc-400">
           {lockVenue && venue
-            ? `Starting at ${venue.name}. Pick a layout, tee, and 1–4 players, then open the scorecard.`
-            : "A course with hole data is required. Pick layout, tee, and 1–4 players."}
+            ? `Starting at ${venue.name}. Pick tee, starting hole, holes played, and 1–4 players, then open the scorecard.`
+            : "A course with hole data is required. Pick tee, starting hole, holes played, and 1–4 players."}
         </p>
       </header>
 
@@ -263,64 +261,15 @@ export function GolfQuickStart({
         </label>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-200">Layout</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {(
-            [
-              { id: "18", label: "18 holes" },
-              { id: "front9", label: "Front 9" },
-              { id: "back9", label: "Back 9" },
-            ] as const
-          ).map((option) => {
-            const active = layout === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setLayout(option.id)}
-                className={[
-                  "min-h-12 rounded-2xl border text-sm font-medium transition-colors",
-                  active
-                    ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                    : "border-white/10 bg-white/5 text-zinc-300 hover:border-white/20",
-                ].join(" ")}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {tees.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-zinc-200">Tee</h2>
-          <div className="flex flex-wrap gap-2">
-            {tees.map((tee) => {
-              const active = teeName === tee.name;
-              return (
-                <button
-                  key={tee.name}
-                  type="button"
-                  onClick={() => setTeeName(tee.name)}
-                  className={[
-                    "min-h-11 rounded-full border px-4 text-sm font-medium transition-colors",
-                    active
-                      ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                      : "border-white/10 bg-white/5 text-zinc-300 hover:border-white/20",
-                  ].join(" ")}
-                >
-                  {tee.name}
-                  {tee.color ? (
-                    <span className="ml-1 text-zinc-500">· {tee.color}</span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
+      <GolfPreRoundSetup
+        golfCourse={venue?.golfCourse}
+        teeName={teeName}
+        onTeeNameChange={setTeeName}
+        startingHole={startingHole}
+        onStartingHoleChange={setStartingHole}
+        holesPlayed={holesPlayed}
+        onHolesPlayedChange={setHolesPlayed}
+      />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -370,6 +319,12 @@ export function GolfQuickStart({
       {error ? (
         <p className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
           {error}
+        </p>
+      ) : null}
+
+      {venue && !preRoundReady ? (
+        <p className="text-center text-xs text-zinc-500">
+          Pick a tee to enable Start.
         </p>
       ) : null}
 
