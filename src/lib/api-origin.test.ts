@@ -67,9 +67,11 @@ describe("shouldProxyApiPath", () => {
 
   it("proxies match identity to Railway and keeps Ably events local", () => {
     assert.equal(shouldProxyApiPath("/api/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/matches/capture"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
     assert.equal(shouldProxyApiPath("/api/golf-rounds"), true);
+    assert.equal(shouldProxyApiPath("/api/golf-rounds/capture"), true);
     assert.equal(shouldProxyApiPath("/api/golf-rounds/abc"), true);
     assert.equal(shouldProxyApiPath("/api/golf-rounds/abc/lock"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
@@ -336,6 +338,25 @@ describe("getApiProxyRewrites", () => {
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/matches")?.destination,
           "https://api.example.test/api/matches",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/matches/capture")
+            ?.destination,
+          "https://api.example.test/api/matches/capture",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/golf-rounds/capture")
+            ?.destination,
+          "https://api.example.test/api/golf-rounds/capture",
+        );
+        const rewriteSources = rewrites.map((rule) => rule.source);
+        assert.ok(
+          rewriteSources.indexOf("/api/matches/capture") <
+            rewriteSources.indexOf("/api/matches/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/golf-rounds/capture") <
+            rewriteSources.indexOf("/api/golf-rounds/:id"),
         );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/venues/:cmsId")

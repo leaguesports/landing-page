@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   HUB_BADGE_STRIP_LIMIT,
   HUB_BROWSE_FIXTURES_HREF,
+  HUB_CAPTURE_GOLF_HREF,
+  HUB_CAPTURE_PADEL_HREF,
   HUB_DEFAULT_TAB,
   HUB_FIND_VENUES_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
@@ -10,8 +12,11 @@ import {
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
+  HUB_PLAY_CAPTURE_BY_SLUG,
   HUB_PLAY_HREF,
   HUB_PLAY_START_BY_SLUG,
+  HUB_PLAY_VERB_IDS,
+  HUB_PLAY_VERBS,
   HUB_RECENT_LOCK_LIMIT,
   HUB_SPORT_CONTROL,
   HUB_START_ACTION_TABS,
@@ -23,9 +28,11 @@ import {
   HUB_TRAINING_HREF,
   HUB_WATCH_HREF,
   hubOwnsRecentLocks,
+  hubPlayCaptureHref,
   hubPlayContinueHref,
   hubPlayEmptyNearbyHref,
   hubPlayHref,
+  hubPlayHrefForVerb,
   hubPlayNearbyHref,
   hubPlayShowsGolf,
   hubPlayShowsPadel,
@@ -33,6 +40,7 @@ import {
   hubPlayStartHref,
   hubPlayableSports,
   isHubPlayableSport,
+  isHubPlayVerbId,
   hubSearchHref,
   hubShowsSportControl,
   hubShowsStartActions,
@@ -43,7 +51,7 @@ import {
 } from "./hub-ia.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
 
-describe("signed-in hub IA (#145 / #150)", () => {
+describe("signed-in hub IA (#145 / #150 / #153)", () => {
   it("exposes exactly four bottom-nav tabs in locked order", () => {
     assert.deepEqual(HUB_TAB_IDS, ["home", "play", "people", "you"]);
     assert.deepEqual(
@@ -129,25 +137,40 @@ describe("signed-in hub IA (#145 / #150)", () => {
     assert.ok(!playable.some((sport) => sport.capabilities.includes("watch") && !sport.capabilities.includes("play")));
   });
 
+  it("lists Start game and Capture results before any sport pick", () => {
+    assert.deepEqual(HUB_PLAY_VERB_IDS, ["start", "capture"]);
+    assert.deepEqual(
+      HUB_PLAY_VERBS.map((verb) => verb.label),
+      ["Start game", "Capture results"],
+    );
+    assert.equal(isHubPlayVerbId("start"), true);
+    assert.equal(isHubPlayVerbId("capture"), true);
+    assert.equal(isHubPlayVerbId("quick"), false);
+    assert.doesNotMatch(
+      HUB_PLAY_VERBS.map((verb) => verb.label).join(" "),
+      /quick play/i,
+    );
+  });
+
   it("maps playable slugs to create-flow hrefs and scopes by hub focus", () => {
     const all = hubPlaySportOptions(SPORT_CATALOG, "all");
     assert.deepEqual(
-      all.map((option) => [option.slug, option.startHref]),
+      all.map((option) => [option.slug, option.href, option.verb]),
       [
-        ["padel", HUB_START_MATCH_HREF],
-        ["golf", HUB_START_GOLF_HREF],
+        ["padel", HUB_START_MATCH_HREF, "start"],
+        ["golf", HUB_START_GOLF_HREF, "start"],
       ],
     );
     assert.deepEqual(
-      all.map((option) => option.startLabel),
+      all.map((option) => option.label),
       ["Start a match", "Start a round"],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "padel").map((option) => option.startHref),
+      hubPlaySportOptions(SPORT_CATALOG, "padel").map((option) => option.href),
       [HUB_START_MATCH_HREF],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "golf").map((option) => option.startHref),
+      hubPlaySportOptions(SPORT_CATALOG, "golf").map((option) => option.href),
       [HUB_START_GOLF_HREF],
     );
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
@@ -158,6 +181,41 @@ describe("signed-in hub IA (#145 / #150)", () => {
     assert.equal(hubPlayShowsPadel("golf"), false);
     assert.equal(hubPlayShowsGolf("golf"), true);
     assert.equal(hubPlayShowsGolf("padel"), false);
+  });
+
+  it("maps Capture results to finished-score routes for padel and golf only", () => {
+    assert.equal(HUB_CAPTURE_PADEL_HREF, "/padel/capture");
+    assert.equal(HUB_CAPTURE_GOLF_HREF, "/golf/capture");
+    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), ["padel", "golf"]);
+    assert.equal(hubPlayCaptureHref("padel"), HUB_CAPTURE_PADEL_HREF);
+    assert.equal(hubPlayCaptureHref("golf"), HUB_CAPTURE_GOLF_HREF);
+    assert.equal(hubPlayCaptureHref("darts"), null);
+    assert.equal(hubPlayHrefForVerb("padel", "start"), HUB_START_MATCH_HREF);
+    assert.equal(hubPlayHrefForVerb("golf", "capture"), HUB_CAPTURE_GOLF_HREF);
+    assert.equal(hubPlayHrefForVerb("motorsport", "capture"), null);
+
+    const capture = hubPlaySportOptions(SPORT_CATALOG, "all", null, "capture");
+    assert.deepEqual(
+      capture.map((option) => [option.slug, option.href, option.label]),
+      [
+        ["padel", HUB_CAPTURE_PADEL_HREF, "Capture padel"],
+        ["golf", HUB_CAPTURE_GOLF_HREF, "Capture golf"],
+      ],
+    );
+    assert.equal(
+      capture.every((option) => option.continueHref === null),
+      true,
+    );
+    assert.deepEqual(
+      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "capture").map(
+        (option) => option.href,
+      ),
+      [HUB_CAPTURE_PADEL_HREF],
+    );
+    assert.deepEqual(
+      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture"),
+      [],
+    );
   });
 
   it("omits Continue unless a live href is supplied — never from locked history", () => {

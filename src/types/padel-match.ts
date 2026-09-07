@@ -158,6 +158,25 @@ export type CreatePadelMatchInput = {
   servingTeam?: PadelTeamId;
 };
 
+/** POST /api/matches/capture — finished match, no live scorecard. */
+export type CapturePadelSetInput = {
+  gamesA: number;
+  gamesB: number;
+  tieBreak?: { pointsA: number; pointsB: number } | null;
+  winner?: PadelTeamId | null;
+};
+
+export type CapturePadelMatchInput = {
+  venueCmsId: string;
+  startsAt?: string;
+  playedAt?: string;
+  ruleset: PadelRuleset;
+  pairings: PadelPairing;
+  servingTeam?: PadelTeamId;
+  score: { sets: CapturePadelSetInput[] };
+  winner: PadelTeamId;
+};
+
 export type PadelPointAction =
   | { type: "POINT"; team: PadelTeamId }
   | { type: "UNDO"; previous: PadelMatch };

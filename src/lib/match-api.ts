@@ -7,7 +7,9 @@ import {
   lockPadelMatchWith,
   parseApiMatch,
 } from "@/lib/padel/api-match";
+import { capturePadelMatchWith } from "@/lib/padel/capture";
 import type {
+  CapturePadelMatchInput,
   CreatePadelMatchInput,
   LockPadelMatchBody,
   MatchChannelEvent,
@@ -57,6 +59,16 @@ export async function createPadelMatch(
   display: { venue: PadelMatchVenue },
 ): Promise<PadelMatch> {
   return createPadelMatchWith(input, display.venue, {
+    fetch,
+    baseUrl: getRequestBase(),
+  });
+}
+
+export async function capturePadelMatch(
+  input: CapturePadelMatchInput,
+  display: { venue: PadelMatchVenue },
+): Promise<PadelMatch> {
+  return capturePadelMatchWith(input, display.venue, {
     fetch,
     baseUrl: getRequestBase(),
   });

@@ -101,6 +101,19 @@ export type CreateGolfRoundInput = {
   players: GolfPlayer[];
 };
 
+/** POST /api/golf-rounds/capture — finished round, no live scorecard. */
+export type CaptureGolfRoundInput = {
+  venueCmsId: string;
+  startsAt?: string;
+  playedAt?: string;
+  holesPlayed: GolfHolesPlayed;
+  startingHole?: number;
+  teeName?: string | null;
+  course: GolfCourseSnapshot;
+  players: GolfPlayer[];
+  score: GolfScore;
+};
+
 /** Locked history row from GET /api/golf-rounds?playerUserId=. */
 export type GolfHistoryItem = {
   id: string;
