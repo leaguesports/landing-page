@@ -4,7 +4,7 @@ import { PadelQuickStart } from "@/components/padel/PadelQuickStart";
 import type { AuthUser } from "@/lib/api-client";
 import type { QuickStartInitialSelf } from "@/lib/padel/quick-start-defaults";
 import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
-import { venueQueryKey } from "@/lib/scorecard/start-href";
+import { firstSearchParam, venueQueryKey } from "@/lib/scorecard/start-href";
 import { getServerAuthState } from "@/lib/server-auth";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
@@ -32,6 +32,10 @@ export default async function NewPadelMatchPage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    /** Originating community id from a challenge CTA — context only. */
+    community?: string | string[];
+    /** Opponent display name prefilled as a Team B guest. */
+    guest?: string | string[];
   }>;
 }) {
   const params = await searchParams;
@@ -93,6 +97,7 @@ export default async function NewPadelMatchPage({
         initialVenueSlug={initialVenue?.slug}
         lockVenue={Boolean(initialVenue)}
         initialSelf={initialSelf}
+        initialGuestName={firstSearchParam(params.guest) || null}
       />
     </main>
   );

@@ -161,6 +161,7 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/communities",
   "/api/communities/:id",
   "/api/communities/:id/join",
+  "/api/communities/:id/activity",
   "/api/me/badges",
   "/api/me/preferences",
   "/api/users/search",
