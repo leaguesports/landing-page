@@ -23,10 +23,12 @@ export default async function CaptureGolfRoundPage({
   const requestedSlug = venueQueryKey(params);
 
   const [golfCourses, requestedVenue] = await Promise.all([
-    searchVenues({ intent: "play", sportSlug: "golf" }).then((venues) =>
-      venues.map(toGolfVenueOption).filter(isGolfVenue),
-    ),
-    requestedSlug ? getVenueBySlug(requestedSlug) : Promise.resolve(null),
+    searchVenues({ intent: "play", sportSlug: "golf" })
+      .then((venues) => venues.map(toGolfVenueOption).filter(isGolfVenue))
+      .catch(() => []),
+    requestedSlug
+      ? getVenueBySlug(requestedSlug).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const requestedOption = requestedVenue

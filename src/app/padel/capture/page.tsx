@@ -37,10 +37,12 @@ export default async function CapturePadelMatchPage({
   const requestedSlug = venueQueryKey(params);
 
   const [padelCourts, requestedVenue, auth] = await Promise.all([
-    searchVenues({ intent: "play", sportSlug: "padel" }).then((venues) =>
-      venues.map(toVenueOption).filter(isPadelVenue),
-    ),
-    requestedSlug ? getVenueBySlug(requestedSlug) : Promise.resolve(null),
+    searchVenues({ intent: "play", sportSlug: "padel" })
+      .then((venues) => venues.map(toVenueOption).filter(isPadelVenue))
+      .catch(() => []),
+    requestedSlug
+      ? getVenueBySlug(requestedSlug).catch(() => null)
+      : Promise.resolve(null),
     getServerAuthState(),
   ]);
 
