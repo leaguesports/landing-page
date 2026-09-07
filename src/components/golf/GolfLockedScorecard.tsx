@@ -5,11 +5,17 @@ import {
   type GolfScoreRel,
   type GolfScorecardCell,
 } from "@/lib/golf/locked-scorecard";
-import type { GolfLiveStrokes, GolfRound } from "@/types/golf-round";
+import type {
+  GolfCourseHole,
+  GolfLiveStrokes,
+  GolfRound,
+} from "@/types/golf-round";
 
 type GolfLockedScorecardProps = {
   round: GolfRound;
   strokes: GolfLiveStrokes;
+  /** Prefer scorecard holes (CMS overlay) when available. */
+  holes?: GolfCourseHole[];
 };
 
 function relClass(rel: GolfScoreRel): string {
@@ -59,11 +65,12 @@ function ScoreCell({
 export function GolfLockedScorecard({
   round,
   strokes,
+  holes,
 }: GolfLockedScorecardProps) {
   const card = buildGolfLockedScorecard(
     round.players,
     strokes,
-    round.course.holes,
+    holes ?? round.course.holes,
   );
   const dateLabel = formatGolfHistoryDate(round.startsAt);
   const courseName =
