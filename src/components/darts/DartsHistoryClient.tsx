@@ -102,7 +102,10 @@ export function DartsHistoryClient() {
           result.
         </p>
       ) : items ? (
-        <DartsHistoryList items={items} />
+        <DartsHistoryList
+          items={items}
+          playerUserId={viewingOwn ? playerUserId : undefined}
+        />
       ) : null}
 
       {viewingOwn && playerUserId && !error ? (

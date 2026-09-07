@@ -47,8 +47,8 @@ export default async function DartsHistoryPage({ searchParams }: PageProps) {
           Locked darts games
         </h1>
         <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-          Date, players, and winner. Only locked 501 games appear here — if
-          the result was not checked out, it did not happen.
+          Remainings, players, and checkout. Only locked 501 games appear
+          here — if the result was not checked out, it did not happen.
         </p>
         {shared ? (
           shared.error ? (
@@ -61,7 +61,10 @@ export default async function DartsHistoryPage({ searchParams }: PageProps) {
               write the first result.
             </p>
           ) : (
-            <DartsHistoryList items={shared.items} />
+            <DartsHistoryList
+              items={shared.items}
+              playerUserId={sharedId}
+            />
           )
         ) : (
           <Suspense

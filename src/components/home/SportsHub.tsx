@@ -1181,7 +1181,10 @@ export function SportsHub({
                           </p>
                         </div>
                       ) : recentDarts.length > 0 ? (
-                        <DartsHistoryList items={recentDarts} />
+                        <DartsHistoryList
+                          items={recentDarts}
+                          playerUserId={user.id}
+                        />
                       ) : (
                         <p className="text-sm leading-relaxed text-zinc-500">
                           No locked darts games yet.

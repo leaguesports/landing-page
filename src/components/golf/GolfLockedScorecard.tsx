@@ -2,7 +2,6 @@ import { formatGolfHistoryDate } from "@/lib/golf/history";
 import {
   buildGolfLockedScorecard,
   formatToPar,
-  golfLayoutLabel,
   type GolfScoreRel,
   type GolfScorecardCell,
 } from "@/lib/golf/locked-scorecard";
@@ -22,15 +21,15 @@ type GolfLockedScorecardProps = {
 function relClass(rel: GolfScoreRel): string {
   switch (rel) {
     case "eagle":
-      return "inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-amber-700 text-amber-800";
+      return "inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-amber-400/80 text-amber-300";
     case "birdie":
-      return "inline-flex h-7 w-7 items-center justify-center rounded-full ring-1 ring-emerald-700 text-emerald-800";
+      return "inline-flex h-7 w-7 items-center justify-center rounded-full ring-1 ring-emerald-400/80 text-emerald-300";
     case "bogey":
-      return "inline-flex h-7 w-7 items-center justify-center rounded-[3px] ring-1 ring-zinc-600 text-zinc-800";
+      return "inline-flex h-7 w-7 items-center justify-center rounded-[3px] ring-1 ring-zinc-400/70 text-zinc-200";
     case "double":
-      return "inline-flex h-7 w-7 items-center justify-center rounded-[3px] ring-2 ring-rose-700 text-rose-800";
+      return "inline-flex h-7 w-7 items-center justify-center rounded-[3px] ring-2 ring-rose-400/80 text-rose-300";
     default:
-      return "tabular-nums text-[#1a2a1c]";
+      return "tabular-nums text-white";
   }
 }
 
@@ -51,7 +50,7 @@ function ScoreCell({
 }) {
   if (!marked || cell.rel == null || cell.rel === "par") {
     return (
-      <span className="tabular-nums text-[#1a2a1c]">{cell.display || "—"}</span>
+      <span className="tabular-nums text-white">{cell.display || "—"}</span>
     );
   }
   const label = relLabel(cell.rel);
@@ -78,19 +77,19 @@ export function GolfLockedScorecard({
     round.venue?.name?.trim() || round.course.name?.trim() || "Golf scorecard";
 
   return (
-    <div className="overflow-hidden rounded-[1.25rem] border border-[#c8b896] bg-[#f3ead6] text-[#1a2a1c] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)]">
-      <div className="flex items-start justify-between gap-3 bg-[#1e3a24] px-4 py-3 text-white">
+    <div className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#101410] text-white shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)]">
+      <div className="flex items-start justify-between gap-3 border-b border-white/8 px-4 py-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
-            Scorecard
+            Locked · Golf
           </p>
           <p className="mt-0.5 truncate font-display text-xl tracking-wide">
             {courseName}
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-emerald-100/80">
+          <p className="mt-0.5 truncate text-[11px] text-zinc-500">
             {[
               round.teeName,
-              golfLayoutLabel(round),
+              round.holesPlayed === 18 ? "18 holes" : `${round.holesPlayed} holes`,
               dateLabel !== "—" ? dateLabel : null,
             ]
               .filter(Boolean)
@@ -108,10 +107,10 @@ export function GolfLockedScorecard({
             Hole-by-hole golf scorecard for {courseName}
           </caption>
           <thead>
-            <tr className="bg-[#e4d7b8]">
+            <tr className="bg-white/[0.04]">
               <th
                 scope="col"
-                className="sticky left-0 z-10 min-w-[4.75rem] bg-[#e4d7b8] px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5c5344] shadow-[1px_0_0_#c8b896]"
+                className="sticky left-0 z-10 min-w-[4.75rem] bg-[#141814] px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 shadow-[1px_0_0_rgba(255,255,255,0.08)]"
               >
                 Hole
               </th>
@@ -122,8 +121,8 @@ export function GolfLockedScorecard({
                   className={[
                     "min-w-8 px-1 py-2 font-semibold tabular-nums",
                     column.kind === "hole"
-                      ? "text-[#3d4a3d]"
-                      : "bg-[#d8c79a] text-[#1a2a1c]",
+                      ? "text-zinc-400"
+                      : "bg-white/[0.06] text-zinc-200",
                   ].join(" ")}
                 >
                   {column.label}
@@ -132,10 +131,10 @@ export function GolfLockedScorecard({
             </tr>
           </thead>
           <tbody>
-            <tr className="bg-[#dce8d4]">
+            <tr className="bg-emerald-400/[0.06]">
               <th
                 scope="row"
-                className="sticky left-0 z-10 bg-[#dce8d4] px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#3d5c3d] shadow-[1px_0_0_#c8b896]"
+                className="sticky left-0 z-10 bg-[#122016] px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300/80 shadow-[1px_0_0_rgba(255,255,255,0.08)]"
               >
                 Par
               </th>
@@ -143,27 +142,27 @@ export function GolfLockedScorecard({
                 <td
                   key={card.columns[index]?.key ?? index}
                   className={[
-                    "px-1 py-1.5 tabular-nums",
+                    "px-1 py-1.5 tabular-nums text-emerald-100/90",
                     card.columns[index]?.kind === "hole"
                       ? "font-medium"
-                      : "bg-[#cfe0c4] font-semibold",
+                      : "bg-emerald-400/10 font-semibold",
                   ].join(" ")}
                 >
                   {cell.display}
                 </td>
               ))}
             </tr>
-            <tr className="bg-[#efe6cc]">
+            <tr className="bg-white/[0.02]">
               <th
                 scope="row"
-                className="sticky left-0 z-10 bg-[#efe6cc] px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b5d3d] shadow-[1px_0_0_#c8b896]"
+                className="sticky left-0 z-10 bg-[#121512] px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 shadow-[1px_0_0_rgba(255,255,255,0.08)]"
               >
                 SI
               </th>
               {card.siRow.map((cell, index) => (
                 <td
                   key={card.columns[index]?.key ?? index}
-                  className="px-1 py-1.5 tabular-nums text-[#6b5d3d]"
+                  className="px-1 py-1.5 tabular-nums text-zinc-500"
                 >
                   {cell.display}
                 </td>
@@ -172,15 +171,17 @@ export function GolfLockedScorecard({
             {card.players.map((player) => (
               <tr
                 key={player.slot}
-                className={player.isLeader ? "bg-[#e7f4e4]" : "bg-[#f7f1e2]"}
+                className={
+                  player.isLeader ? "bg-emerald-400/10" : "bg-transparent"
+                }
               >
                 <th
                   scope="row"
                   className={[
-                    "sticky left-0 z-10 max-w-[5.5rem] truncate px-2 py-2 text-left text-xs font-semibold shadow-[1px_0_0_#c8b896]",
+                    "sticky left-0 z-10 max-w-[5.5rem] truncate px-2 py-2 text-left text-xs font-semibold shadow-[1px_0_0_rgba(255,255,255,0.08)]",
                     player.isLeader
-                      ? "bg-[#e7f4e4] text-emerald-900"
-                      : "bg-[#f7f1e2] text-[#1a2a1c]",
+                      ? "bg-[#15251a] text-emerald-200"
+                      : "bg-[#101410] text-white",
                   ].join(" ")}
                 >
                   {player.displayName}
@@ -193,7 +194,7 @@ export function GolfLockedScorecard({
                       key={column?.key ?? index}
                       className={[
                         "px-1 py-1.5",
-                        summary ? "bg-[#efe3c2] font-semibold" : "",
+                        summary ? "bg-white/5 font-semibold" : "",
                       ].join(" ")}
                     >
                       <ScoreCell cell={cell} marked={!summary} />
@@ -206,7 +207,7 @@ export function GolfLockedScorecard({
         </table>
       </div>
 
-      <ul className="divide-y divide-[#d8c79a] border-t border-[#d8c79a] bg-[#f7f1e2]">
+      <ul className="divide-y divide-white/8 border-t border-white/8 bg-white/[0.02]">
         {card.players.map((player) => (
           <li
             key={player.slot}
@@ -215,19 +216,21 @@ export function GolfLockedScorecard({
             <span
               className={[
                 "truncate text-sm",
-                player.isLeader ? "font-semibold text-emerald-900" : "text-[#3d4a3d]",
+                player.isLeader
+                  ? "font-semibold text-emerald-200"
+                  : "text-zinc-300",
               ].join(" ")}
             >
               {player.displayName}
               {player.isLeader ? (
-                <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
                   Low
                 </span>
               ) : null}
             </span>
-            <span className="text-sm tabular-nums text-[#1a2a1c]">
+            <span className="text-sm tabular-nums text-white">
               {player.gross}
-              <span className="ml-2 text-[#6b5d3d]">
+              <span className="ml-2 text-zinc-500">
                 {formatToPar(player.toPar)}
               </span>
             </span>
@@ -235,7 +238,7 @@ export function GolfLockedScorecard({
         ))}
       </ul>
 
-      <p className="px-4 py-2 text-[10px] leading-relaxed text-[#6b5d3d]">
+      <p className="px-4 py-2 text-[10px] leading-relaxed text-zinc-500">
         Circle is birdie or better. Square is bogey or worse.
       </p>
     </div>

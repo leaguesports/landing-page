@@ -3,6 +3,7 @@ import type {
   DartsMatch,
   DartsPlayer,
 } from "../../types/darts-match.ts";
+import { formatDartsRemainingLine } from "./locked-scorecard.ts";
 
 function firstName(player: Pick<DartsPlayer, "displayName">): string {
   return player.displayName.split(" ")[0] || player.displayName;
@@ -41,11 +42,32 @@ export function dartsWinnerName(
   return null;
 }
 
+/** Remainings scoreline when available; otherwise winner name. */
 export function formatDartsHistoryScore(
   item: Pick<DartsHistoryItem, "players" | "winnerSlot" | "winnerUserId">,
 ): string {
+  if (item.players.some((player) => typeof player.remaining === "number")) {
+    return formatDartsRemainingLine(item.players);
+  }
   const winner = dartsWinnerName(item);
-  return winner ? `${winner} won` : "501";
+  return winner ? `${firstName({ displayName: winner })} won` : "501";
+}
+
+export function didDartsPlayerWin(
+  item: Pick<DartsHistoryItem, "players" | "winnerSlot" | "winnerUserId">,
+  playerUserId: string,
+): boolean | null {
+  const id = playerUserId.trim();
+  if (!id) return null;
+  const seated = item.players.some((player) => player.userId === id);
+  if (!seated) return null;
+  if (item.winnerUserId) return item.winnerUserId === id;
+  if (item.winnerSlot) {
+    const winner = item.players.find((player) => player.slot === item.winnerSlot);
+    if (!winner?.userId) return null;
+    return winner.userId === id;
+  }
+  return null;
 }
 
 export function dartsPlayerHistoryPath(playerUserId: string): string {
