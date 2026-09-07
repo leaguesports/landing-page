@@ -3,7 +3,9 @@
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
 import { lockGolfRound } from "@/lib/golf/api-round";
+import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
 import {
   clearGolfRoundLocal,
   readGolfRoundLocal,
@@ -26,12 +28,6 @@ import type {
 type GolfScorecardProps = {
   initialRound: GolfRound;
 };
-
-function layoutLabel(round: GolfRound): string {
-  if (round.holesPlayed === 18) return "18 holes";
-  if (round.startingHole === 10) return "Back 9";
-  return "Front 9";
-}
 
 export function GolfScorecard({ initialRound }: GolfScorecardProps) {
   const [round, setRound] = useState(initialRound);
@@ -159,19 +155,28 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
         </Link>
       </header>
 
-      <div className="px-4 pt-4 text-center">
-        {round.venue?.name || round.course.name ? (
-          <p className="truncate text-xs text-zinc-500">
-            {round.venue?.name || round.course.name}
-            {round.teeName ? ` · ${round.teeName}` : ""}
+      {locked ? (
+        <div className="flex flex-1 flex-col px-4 py-5">
+          <GolfLockedScorecard
+            round={round}
+            strokes={round.score ? strokesFromScore(round.score) : strokes}
+          />
+        </div>
+      ) : (
+        <div className="px-4 pt-4 text-center">
+          {round.venue?.name || round.course.name ? (
+            <p className="truncate text-xs text-zinc-500">
+              {round.venue?.name || round.course.name}
+              {round.teeName ? ` · ${round.teeName}` : ""}
+            </p>
+          ) : null}
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+            {golfLayoutLabel(round)}
           </p>
-        ) : null}
-        <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-          {locked ? "Result locked" : layoutLabel(round)}
-        </p>
-      </div>
+        </div>
+      )}
 
-      {hole ? (
+      {!locked && hole ? (
         <div className="flex flex-1 flex-col px-4 py-6">
           <div className="flex items-center justify-between gap-3">
             <button

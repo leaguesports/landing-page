@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useLockPadelMatch } from "@/hooks/useLockPadelMatch";
 import { useMatchChannel } from "@/hooks/useMatchChannel";
+import { PadelLockedScorecard } from "@/components/padel/PadelLockedScorecard";
 import { matchWinner } from "@/lib/padel/api-match";
 import {
   formatGamePoint,
@@ -301,13 +302,11 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
   };
   const showShareNudge = !locked && !shareNudgeDismissed;
 
-  const setBadge = locked
-    ? "Saved"
-    : finalized
-      ? "Final"
-      : match.game.isTieBreak
-        ? `Tie-break · Set ${match.currentSetIndex + 1}`
-        : `Set ${match.currentSetIndex + 1}`;
+  const setBadge = finalized
+    ? "Final"
+    : match.game.isTieBreak
+      ? `Tie-break · Set ${match.currentSetIndex + 1}`
+      : `Set ${match.currentSetIndex + 1}`;
 
   const pointA = formatGamePoint(match, "A");
   const pointB = formatGamePoint(match, "B");
@@ -336,18 +335,21 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
       </header>
 
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-4 sm:px-6">
-        <div className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#101410]/90 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-md">
-          <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
+        {locked ? (
+          <PadelLockedScorecard match={match} />
+        ) : (
+          <div className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#101410]/90 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-md">
+            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                {locked ? "Locked · Padel" : "Live · Padel"}
+                Live · Padel
               </p>
               <p className="mt-0.5 truncate text-sm font-medium text-white">
                 {match.venue?.name?.trim() || "Padel match"}
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-              {!locked && !finalized ? (
+              {!finalized ? (
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               ) : null}
               {setBadge}
@@ -388,8 +390,9 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
                 <span className="truncate text-zinc-500">{setHistory}</span>
               ) : null}
             </div>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-auto pt-6">
           {showShareNudge ? (
@@ -404,9 +407,6 @@ export function PadelScorecard({ initialMatch }: PadelScorecardProps) {
           <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {locked ? (
               <div className="space-y-3">
-                <p className="text-center text-sm text-emerald-300">
-                  Final — {winnerLabel ?? "a team"} win
-                </p>
                 <LockedResultShareButton
                   match={{
                     id: match.id,
