@@ -19,6 +19,19 @@ export type GolfCourseHole = {
   strokeIndex: number;
 };
 
+/** Per-tee yardage shown on the live scorecard (meters as stored in CMS). */
+export type ScorecardTeeDistance = {
+  teeName: string;
+  color: string | null;
+  meters: number;
+  selected: boolean;
+};
+
+/** Round hole + optional CMS overlay for the live scorecard hole UI. */
+export type ScorecardHole = GolfCourseHole & {
+  tees: ScorecardTeeDistance[];
+};
+
 export type GolfCourseSnapshot = {
   name?: string | null;
   holes: GolfCourseHole[];

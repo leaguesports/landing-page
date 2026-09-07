@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { GolfScorecardClientLoader } from "@/components/golf/GolfScorecardClientLoader";
+import { lookupGolfCourse } from "@/lib/golf/lookup-course";
 import { lookupGolfRound } from "@/lib/golf/lookup-round";
 
 type PageProps = {
@@ -21,10 +22,15 @@ export default async function GolfRoundPage({ params }: PageProps) {
   const { roundId } = await params;
   const cookie = (await headers()).get("cookie") ?? undefined;
   const round = await lookupGolfRound(roundId, { cookie });
+  const golfCourse = await lookupGolfCourse(round?.venueCmsId);
 
   return (
     <div className="min-h-dvh bg-[#050705]">
-      <GolfScorecardClientLoader roundId={roundId} initialRound={round} />
+      <GolfScorecardClientLoader
+        roundId={roundId}
+        initialRound={round}
+        golfCourse={golfCourse}
+      />
     </div>
   );
 }

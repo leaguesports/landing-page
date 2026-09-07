@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  GOLF_COURSE_PROJECTION,
   hasVenueCoordinates,
   mapVenueRow,
   resolveVenueImage,
@@ -99,6 +100,15 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /courseName/);
     assert.match(VENUE_PROJECTION, /strokeIndex/);
     assert.match(VENUE_PROJECTION, /totalMeters/);
+    assert.match(VENUE_PROJECTION, /distances\[\]/);
+    assert.match(VENUE_PROJECTION, /teeName/);
+  });
+
+  it("reuses GOLF_COURSE_PROJECTION for a cmsId-only course fetch", () => {
+    assert.match(GOLF_COURSE_PROJECTION, /golfCourse\{/);
+    assert.match(GOLF_COURSE_PROJECTION, /strokeIndex/);
+    assert.match(GOLF_COURSE_PROJECTION, /distances\[\]/);
+    assert.match(VENUE_PROJECTION, /golfCourse\{/);
   });
 });
 
@@ -251,11 +261,19 @@ describe("mapVenueRow", () => {
         courseName: "East",
         holesTotal: 18,
         parTotal: 72,
-        holes: [{ number: 1, par: 4, strokeIndex: 7 }],
+        holes: [
+          {
+            number: 1,
+            par: 4,
+            strokeIndex: 7,
+            distances: [{ teeName: "White", meters: 338 }],
+          },
+        ],
         tees: [{ name: "Club" }],
       },
     });
     assert.equal(venue?.golfCourse?.courseName, "East");
     assert.equal(venue?.golfCourse?.holes?.[0]?.strokeIndex, 7);
+    assert.equal(venue?.golfCourse?.holes?.[0]?.distances?.[0]?.meters, 338);
   });
 });
