@@ -1,9 +1,11 @@
-import type { GolfLiveStrokes } from "../../types/golf-round.ts";
+import type { GolfLiveShots, GolfLiveStrokes } from "../../types/golf-round.ts";
+import { parseLiveShots } from "./shots.ts";
 
 export type GolfRoundLocalState = {
   roundId: string;
   currentHoleIndex: number;
   strokes: GolfLiveStrokes;
+  shots?: GolfLiveShots;
   updatedAt: string;
 };
 
@@ -30,6 +32,7 @@ export function readGolfRoundLocal(
       roundId: id,
       currentHoleIndex: Math.max(0, Math.floor(parsed.currentHoleIndex)),
       strokes: parsed.strokes,
+      shots: parseLiveShots(parsed.shots),
       updatedAt:
         typeof parsed.updatedAt === "string"
           ? parsed.updatedAt
@@ -64,6 +67,37 @@ export function clearGolfRoundLocal(roundId: string): void {
     localStorage.removeItem(golfRoundCacheKey(roundId));
   } catch {
     // ignore
+  }
+}
+
+/** Shot log kept after lock so the same device can reopen the scorecard. */
+const SHOTS_PREFIX = "leaguesports.golf.shots.v1.";
+
+export function golfShotsCacheKey(roundId: string): string {
+  return `${SHOTS_PREFIX}${roundId.trim()}`;
+}
+
+export function readGolfShotsLocal(roundId: string): GolfLiveShots {
+  if (typeof window === "undefined") return {};
+  const id = roundId.trim();
+  if (!id) return {};
+  try {
+    const raw = localStorage.getItem(golfShotsCacheKey(id));
+    if (!raw) return {};
+    return parseLiveShots(JSON.parse(raw));
+  } catch {
+    return {};
+  }
+}
+
+export function writeGolfShotsLocal(roundId: string, shots: GolfLiveShots): void {
+  if (typeof window === "undefined") return;
+  const id = roundId.trim();
+  if (!id) return;
+  try {
+    localStorage.setItem(golfShotsCacheKey(id), JSON.stringify(shots));
+  } catch {
+    // quota / private mode
   }
 }
 

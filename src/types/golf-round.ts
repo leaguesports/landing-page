@@ -62,10 +62,32 @@ export type GolfCourseCms = {
   holes?: GolfCourseCmsHole[] | null;
 };
 
+export type GolfShotKind = "gps" | "manual";
+
+/**
+ * One lie/carry on a hole. Optional telemetry — strokes remain the score.
+ * `meters` is null for a GPS start mark (tee) with no previous lie.
+ */
+export type GolfShot = {
+  id: string;
+  sequence: number;
+  meters: number | null;
+  kind: GolfShotKind;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracyMeters?: number | null;
+  recordedAt: string;
+};
+
+/** hole number → slot key → shots in play order. */
+export type GolfLiveShots = Record<number, Record<string, GolfShot[]>>;
+
 export type GolfHoleScore = {
   number: number;
   /** Slot string keys ("1"…"4") → strokes. */
   strokes: Record<string, number>;
+  /** Optional per-player shot log. Ignored by lock until the API stores it. */
+  shots?: Record<string, GolfShot[]>;
 };
 
 export type GolfScore = {

@@ -3,11 +3,14 @@
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GolfShotTracker } from "@/components/golf/GolfShotTracker";
 import { lockGolfRound } from "@/lib/golf/api-round";
 import {
   clearGolfRoundLocal,
   readGolfRoundLocal,
+  readGolfShotsLocal,
   writeGolfRoundLocal,
+  writeGolfShotsLocal,
 } from "@/lib/golf/round-store";
 import { formatHoleRangeLabel } from "@/lib/golf/pre-round";
 import { toScorecardHoles } from "@/lib/golf/scorecard-holes";
@@ -19,8 +22,14 @@ import {
   runningTotals,
   strokesFromScore,
 } from "@/lib/golf/scoring";
+import {
+  hasAnyShots,
+  selectedTeeMeters,
+  shotsFromScore,
+} from "@/lib/golf/shots";
 import type {
   GolfCourseCms,
+  GolfLiveShots,
   GolfLiveStrokes,
   GolfPlayerSlot,
   GolfRound,
@@ -86,6 +95,16 @@ function layoutLabel(round: GolfRound): string {
   );
 }
 
+function initialShotsForRound(round: GolfRound): GolfLiveShots {
+  const local = readGolfRoundLocal(round.id);
+  if (local?.shots && hasAnyShots(local.shots)) return local.shots;
+  const fromScore = shotsFromScore(round.score);
+  if (hasAnyShots(fromScore)) return fromScore;
+  const locked = readGolfShotsLocal(round.id);
+  if (hasAnyShots(locked)) return locked;
+  return local?.shots ?? {};
+}
+
 export function GolfScorecard({
   initialRound,
   golfCourse = null,
@@ -111,6 +130,10 @@ export function GolfScorecard({
     return local?.strokes ?? {};
   });
 
+  const [shots, setShots] = useState<GolfLiveShots>(() =>
+    initialShotsForRound(initialRound),
+  );
+
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
 
@@ -122,14 +145,18 @@ export function GolfScorecard({
   );
 
   useEffect(() => {
-    if (locked) return;
+    if (locked) {
+      if (hasAnyShots(shots)) writeGolfShotsLocal(round.id, shots);
+      return;
+    }
     writeGolfRoundLocal({
       roundId: round.id,
       currentHoleIndex,
       strokes,
+      shots,
       updatedAt: new Date().toISOString(),
     });
-  }, [round.id, currentHoleIndex, strokes, locked]);
+  }, [round.id, currentHoleIndex, strokes, shots, locked]);
 
   const ensureHoleDefault = useCallback(
     (holeNumber: number, par: number) => {
@@ -178,6 +205,7 @@ export function GolfScorecard({
     setLockError(null);
     try {
       const lockedRound = await lockGolfRound(round.id, payload, round.venue);
+      if (hasAnyShots(shots)) writeGolfShotsLocal(round.id, shots);
       setRound(lockedRound);
       clearGolfRoundLocal(round.id);
     } catch (err) {
@@ -274,42 +302,54 @@ export function GolfScorecard({
               const value =
                 strokes[hole.number]?.[key] ?? clampStrokes(hole.par);
               const toPar = value - hole.par;
+              const holeMeters = selectedTeeMeters(hole);
               return (
                 <li
                   key={player.slot}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
+                  className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">
-                      {player.displayName}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {formatToPar(toPar)} this hole
-                    </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {player.displayName}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {formatToPar(toPar)} this hole
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={locked || value <= 1}
+                        onClick={() => adjustStroke(player.slot, -1)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white disabled:opacity-30"
+                        aria-label={`Fewer strokes for ${player.displayName}`}
+                      >
+                        <Minus className="h-4 w-4" aria-hidden />
+                      </button>
+                      <span className="w-10 text-center font-display text-3xl tabular-nums text-white">
+                        {value}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={locked || value >= 15}
+                        onClick={() => adjustStroke(player.slot, 1)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-400 text-zinc-950 disabled:opacity-30"
+                        aria-label={`More strokes for ${player.displayName}`}
+                      >
+                        <Plus className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={locked || value <= 1}
-                      onClick={() => adjustStroke(player.slot, -1)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white disabled:opacity-30"
-                      aria-label={`Fewer strokes for ${player.displayName}`}
-                    >
-                      <Minus className="h-4 w-4" aria-hidden />
-                    </button>
-                    <span className="w-10 text-center font-display text-3xl tabular-nums text-white">
-                      {value}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={locked || value >= 15}
-                      onClick={() => adjustStroke(player.slot, 1)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-400 text-zinc-950 disabled:opacity-30"
-                      aria-label={`More strokes for ${player.displayName}`}
-                    >
-                      <Plus className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
+                  <GolfShotTracker
+                    playerName={player.displayName}
+                    slot={player.slot}
+                    holeNumber={hole.number}
+                    holeMeters={holeMeters}
+                    locked={locked}
+                    shots={shots}
+                    onChange={setShots}
+                  />
                 </li>
               );
             })}
@@ -370,7 +410,8 @@ export function GolfScorecard({
               </p>
             ) : (
               <p className="text-center text-xs text-zinc-500">
-                Enter strokes hole by hole. Lock writes the result to history.
+                Enter strokes hole by hole. Shot distances are optional. Lock
+                writes the score to history.
               </p>
             )}
             <button
