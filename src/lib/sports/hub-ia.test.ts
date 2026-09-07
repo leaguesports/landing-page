@@ -14,6 +14,7 @@ import {
   HUB_PADEL_HISTORY_HREF,
   HUB_PLAY_CAPTURE_BY_SLUG,
   HUB_PLAY_HREF,
+  HUB_PLAY_SPORT_PICK,
   HUB_PLAY_START_BY_SLUG,
   HUB_PLAY_VERB_IDS,
   HUB_PLAY_VERBS,
@@ -33,6 +34,9 @@ import {
   hubPlayEmptyNearbyHref,
   hubPlayHref,
   hubPlayHrefForVerb,
+  hubPlayModalDescription,
+  hubPlayModalSportOptions,
+  hubPlayModalTitle,
   hubPlayNearbyHref,
   hubPlayShowsGolf,
   hubPlayShowsPadel,
@@ -51,7 +55,7 @@ import {
 } from "./hub-ia.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
 
-describe("signed-in hub IA (#145 / #150 / #153)", () => {
+describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
   it("exposes exactly four bottom-nav tabs in locked order", () => {
     assert.deepEqual(HUB_TAB_IDS, ["home", "play", "people", "you"]);
     assert.deepEqual(
@@ -149,6 +153,40 @@ describe("signed-in hub IA (#145 / #150 / #153)", () => {
     assert.doesNotMatch(
       HUB_PLAY_VERBS.map((verb) => verb.label).join(" "),
       /quick play/i,
+    );
+  });
+
+  it("picks the sport in a modal — not inline game blocks", () => {
+    assert.equal(HUB_PLAY_SPORT_PICK, "modal");
+    assert.equal(hubPlayModalTitle("start"), "Start game");
+    assert.equal(hubPlayModalTitle("capture"), "Capture results");
+    assert.match(hubPlayModalDescription("start"), /live scorecard/i);
+    assert.match(hubPlayModalDescription("capture"), /finished score/i);
+
+    const start = hubPlayModalSportOptions(SPORT_CATALOG, "start");
+    assert.deepEqual(
+      start.map((option) => [option.slug, option.href, option.verb]),
+      [
+        ["padel", HUB_START_MATCH_HREF, "start"],
+        ["golf", HUB_START_GOLF_HREF, "start"],
+      ],
+    );
+    const capture = hubPlayModalSportOptions(SPORT_CATALOG, "capture");
+    assert.deepEqual(
+      capture.map((option) => [option.slug, option.href, option.verb]),
+      [
+        ["padel", HUB_CAPTURE_PADEL_HREF, "capture"],
+        ["golf", HUB_CAPTURE_GOLF_HREF, "capture"],
+      ],
+    );
+    assert.deepEqual(
+      hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.name),
+      ["Padel", "Golf"],
+    );
+    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
+    assert.deepEqual(
+      hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.slug),
+      ["padel", "golf"],
     );
   });
 
