@@ -1,11 +1,11 @@
 import { CommunityActivityFeed } from "@/components/communities/CommunityActivityFeed";
 import { CommunityJoinLeave } from "@/components/communities/CommunityJoinLeave";
 import { CommunityMembersList } from "@/components/communities/CommunityMembersList";
+import { listCommunityActivity } from "@/lib/communities/activity";
 import {
   formatCommunitySport,
   formatMemberCount,
   getCommunity,
-  listCommunityActivity,
 } from "@/lib/communities/communities";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";

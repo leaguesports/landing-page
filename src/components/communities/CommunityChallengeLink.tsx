@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { communityChallengeHref } from "@/lib/communities/communities";
+import { communityChallengeHref } from "@/lib/communities/activity";
 import Link from "next/link";
 
 type CommunityChallengeLinkProps = {
