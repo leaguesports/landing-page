@@ -184,6 +184,9 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/organised-games/:id/cancel",
   "/api/organised-games/:id",
   "/api/me/organised-games",
+  "/api/me/notifications",
+  "/api/me/notifications/read-all",
+  "/api/me/notifications/:id/read",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */
