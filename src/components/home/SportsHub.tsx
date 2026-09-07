@@ -8,6 +8,7 @@ import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
+import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -22,6 +23,10 @@ import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
+import {
+  emptyOrganisedGamesSnapshot,
+  type OrganisedGamesSnapshot,
+} from "@/lib/organised-games/organised-games";
 import { updatePreferences } from "@/lib/preferences/preferences";
 import { summarisePlayerHistory } from "@/lib/padel/history";
 import {
@@ -195,6 +200,7 @@ type SportsHubProps = {
   /** Raw follow count from the API (may exceed resolved CMS rows). */
   followedFixtureCount?: number;
   friends?: FriendsSnapshot;
+  organisedGames?: OrganisedGamesSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
   /** Prefetched `GET /api/me/integrations` — connectable providers only. */
@@ -595,6 +601,7 @@ export function SportsHub({
   followedFixtures = [],
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
+  organisedGames = emptyOrganisedGamesSnapshot(),
   myCommunities = [],
   integrations = emptyIntegrationsSnapshot(),
   badges = { badges: [], fromApi: false },
@@ -892,10 +899,10 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description="Start a live game, or capture a finished result."
+                description="Start a live game, organise one with friends, or capture a finished result."
               />
 
-              <ul className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
                 {HUB_PLAY_VERBS.map((verb, index) => (
                   <li key={verb.id}>
                     <button
@@ -913,6 +920,8 @@ export function SportsHub({
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
                         {verb.id === "capture" ? (
                           <ClipboardList className="h-4 w-4" aria-hidden />
+                        ) : verb.id === "organise" ? (
+                          <Calendar className="h-4 w-4" aria-hidden />
                         ) : (
                           <Zap className="h-4 w-4" aria-hidden />
                         )}
@@ -929,6 +938,11 @@ export function SportsHub({
                   </li>
                 ))}
               </ul>
+
+              <OrganisedGamesStrip
+                snapshot={organisedGames}
+                nowIso={nowIso}
+              />
 
               {playVerb ? (
                 <PlaySportModal

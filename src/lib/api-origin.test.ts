@@ -107,6 +107,21 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/users/search"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1/accept"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games/game-1"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/invites"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/rsvp"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/start"), true);
+    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/cancel"), true);
+    assert.equal(
+      shouldProxyApiPath("/api/organised-games/invite/abc123"),
+      true,
+    );
+    assert.equal(
+      shouldProxyApiPath("/api/organised-games/invite/abc123/join"),
+      true,
+    );
+    assert.equal(shouldProxyApiPath("/api/me/organised-games"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -357,6 +372,20 @@ describe("getApiProxyRewrites", () => {
         assert.ok(
           rewriteSources.indexOf("/api/golf-rounds/capture") <
             rewriteSources.indexOf("/api/golf-rounds/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/organised-games/invite/:token") <
+            rewriteSources.indexOf("/api/organised-games/:id"),
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/organised-games")
+            ?.destination,
+          "https://api.example.test/api/organised-games",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/me/organised-games")
+            ?.destination,
+          "https://api.example.test/api/me/organised-games",
         );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/venues/:cmsId")

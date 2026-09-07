@@ -11,9 +11,13 @@ import {
   HUB_GOLF_HISTORY_HREF,
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
+  HUB_ORGANISE_GOLF_HREF,
+  HUB_ORGANISE_PADEL_HREF,
+  HUB_ORGANISED_PREVIEW_LIMIT,
   HUB_PADEL_HISTORY_HREF,
   HUB_PLAY_CAPTURE_BY_SLUG,
   HUB_PLAY_HREF,
+  HUB_PLAY_ORGANISE_BY_SLUG,
   HUB_PLAY_SPORT_PICK,
   HUB_PLAY_START_BY_SLUG,
   HUB_PLAY_VERB_IDS,
@@ -28,6 +32,8 @@ import {
   HUB_TABS,
   HUB_TRAINING_HREF,
   HUB_WATCH_HREF,
+  hubOrganisedGameHref,
+  hubOrganisedGameJoinHref,
   hubOwnsRecentLocks,
   hubPlayCaptureHref,
   hubPlayContinueHref,
@@ -38,6 +44,7 @@ import {
   hubPlayModalSportOptions,
   hubPlayModalTitle,
   hubPlayNearbyHref,
+  hubPlayOrganiseHref,
   hubPlayShowsGolf,
   hubPlayShowsPadel,
   hubPlaySportOptions,
@@ -55,7 +62,7 @@ import {
 } from "./hub-ia.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
 
-describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
+describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
   it("exposes exactly four bottom-nav tabs in locked order", () => {
     assert.deepEqual(HUB_TAB_IDS, ["home", "play", "people", "you"]);
     assert.deepEqual(
@@ -141,14 +148,15 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
     assert.ok(!playable.some((sport) => sport.capabilities.includes("watch") && !sport.capabilities.includes("play")));
   });
 
-  it("lists Start game and Capture results before any sport pick", () => {
-    assert.deepEqual(HUB_PLAY_VERB_IDS, ["start", "capture"]);
+  it("lists Start, Capture, and Organise before any sport pick", () => {
+    assert.deepEqual(HUB_PLAY_VERB_IDS, ["start", "capture", "organise"]);
     assert.deepEqual(
       HUB_PLAY_VERBS.map((verb) => verb.label),
-      ["Start game", "Capture results"],
+      ["Start game", "Capture results", "Organise game"],
     );
     assert.equal(isHubPlayVerbId("start"), true);
     assert.equal(isHubPlayVerbId("capture"), true);
+    assert.equal(isHubPlayVerbId("organise"), true);
     assert.equal(isHubPlayVerbId("quick"), false);
     assert.doesNotMatch(
       HUB_PLAY_VERBS.map((verb) => verb.label).join(" "),
@@ -160,8 +168,10 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
     assert.equal(HUB_PLAY_SPORT_PICK, "modal");
     assert.equal(hubPlayModalTitle("start"), "Start game");
     assert.equal(hubPlayModalTitle("capture"), "Capture results");
+    assert.equal(hubPlayModalTitle("organise"), "Organise game");
     assert.match(hubPlayModalDescription("start"), /live scorecard/i);
     assert.match(hubPlayModalDescription("capture"), /finished score/i);
+    assert.match(hubPlayModalDescription("organise"), /venue/i);
 
     const start = hubPlayModalSportOptions(SPORT_CATALOG, "start");
     assert.deepEqual(
@@ -177,6 +187,14 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
       [
         ["padel", HUB_CAPTURE_PADEL_HREF, "capture"],
         ["golf", HUB_CAPTURE_GOLF_HREF, "capture"],
+      ],
+    );
+    const organise = hubPlayModalSportOptions(SPORT_CATALOG, "organise");
+    assert.deepEqual(
+      organise.map((option) => [option.slug, option.href, option.verb]),
+      [
+        ["padel", HUB_ORGANISE_PADEL_HREF, "organise"],
+        ["golf", HUB_ORGANISE_GOLF_HREF, "organise"],
       ],
     );
     assert.deepEqual(
@@ -254,6 +272,49 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155)", () => {
       hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture"),
       [],
     );
+  });
+
+  it("maps Organise game to padel/golf create-flow hrefs and join/detail paths", () => {
+    assert.equal(HUB_ORGANISE_PADEL_HREF, "/padel/organise");
+    assert.equal(HUB_ORGANISE_GOLF_HREF, "/golf/organise");
+    assert.deepEqual(Object.keys(HUB_PLAY_ORGANISE_BY_SLUG), ["padel", "golf"]);
+    assert.equal(hubPlayOrganiseHref("padel"), HUB_ORGANISE_PADEL_HREF);
+    assert.equal(hubPlayOrganiseHref("golf"), HUB_ORGANISE_GOLF_HREF);
+    assert.equal(hubPlayOrganiseHref("darts"), null);
+    assert.equal(hubPlayHrefForVerb("padel", "organise"), HUB_ORGANISE_PADEL_HREF);
+    assert.equal(hubPlayHrefForVerb("golf", "organise"), HUB_ORGANISE_GOLF_HREF);
+    assert.equal(hubPlayHrefForVerb("motorsport", "organise"), null);
+
+    const organise = hubPlaySportOptions(SPORT_CATALOG, "all", null, "organise");
+    assert.deepEqual(
+      organise.map((option) => [option.slug, option.href, option.label, option.verb]),
+      [
+        ["padel", HUB_ORGANISE_PADEL_HREF, "Organise padel", "organise"],
+        ["golf", HUB_ORGANISE_GOLF_HREF, "Organise golf", "organise"],
+      ],
+    );
+    assert.equal(
+      organise.every((option) => option.continueHref === null),
+      true,
+    );
+    assert.deepEqual(
+      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "organise").map(
+        (option) => option.href,
+      ),
+      [HUB_ORGANISE_PADEL_HREF],
+    );
+    assert.deepEqual(
+      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "organise"),
+      [],
+    );
+    assert.equal(hubOrganisedGameHref("game-1"), "/play/organised/game-1");
+    assert.equal(
+      hubOrganisedGameJoinHref("aa".repeat(16)),
+      `/play/join/${"aa".repeat(16)}`,
+    );
+    assert.equal(hubOrganisedGameHref("  "), HUB_PLAY_HREF);
+    assert.equal(hubOrganisedGameJoinHref(""), HUB_PLAY_HREF);
+    assert.equal(HUB_ORGANISED_PREVIEW_LIMIT, 4);
   });
 
   it("omits Continue unless a live href is supplied — never from locked history", () => {
