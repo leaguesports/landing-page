@@ -2,7 +2,10 @@ import { SportsHub } from "@/components/home/SportsHub";
 import type { AuthUser } from "@/lib/api-client";
 import { listBadges } from "@/lib/badges/api";
 import { listFollowedFixtures } from "@/lib/events/follow";
-import { listMyCommunities } from "@/lib/communities/communities";
+import {
+  listLatestCommunityActivityByIds,
+  listMyCommunities,
+} from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { listIntegrations } from "@/lib/integrations/integrations";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
@@ -13,6 +16,7 @@ import {
   needsOnboarding,
 } from "@/lib/preferences/preferences";
 import { getDashboardHub } from "@/lib/sports/dashboard-feed";
+import { HUB_PEOPLE_PREVIEW_LIMIT } from "@/lib/sports/hub-ia";
 import {
   fixturesToFollowedFeedItems,
   uniqueFollowedFixtureSlugs,
@@ -52,6 +56,14 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     }),
   );
 
+  const myCommunitiesPromise = listMyCommunities({ cookie });
+  const communityActivityPromise = myCommunitiesPromise.then((communities) =>
+    listLatestCommunityActivityByIds(
+      communities.slice(0, HUB_PEOPLE_PREVIEW_LIMIT).map((community) => community.id),
+      { cookie },
+    ),
+  );
+
   const preferredSportsPromise = preferencesPromise.then((result) =>
     result.ok ? result.preferences.sports : [],
   );
@@ -66,6 +78,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixturesResolved,
     friends,
     myCommunities,
+    communityActivity,
     badges,
     integrations,
   ] = await Promise.all([
@@ -82,7 +95,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRowsPromise,
     followedFixturesPromise,
     listFriends({ cookie }),
-    listMyCommunities({ cookie }),
+    myCommunitiesPromise,
+    communityActivityPromise,
     listBadges({ cookie }),
     listIntegrations({ cookie }),
   ]);
@@ -123,6 +137,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       followedFixtureCount={followedFixtureRows.length}
       friends={friends}
       myCommunities={myCommunities}
+      communityActivity={communityActivity}
       badges={badges}
       integrations={integrations}
       sports={hub.sports}

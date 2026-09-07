@@ -3,6 +3,7 @@
 import {
   formatCommunitySport,
   formatMemberCount,
+  type CommunityActivityItem,
   type MyCommunity,
 } from "@/lib/communities/communities";
 import { Plus, Users } from "lucide-react";
@@ -14,6 +15,8 @@ type CommunitiesPanelProps = {
   /** Hub People block — short list + See all. */
   compact?: boolean;
   previewLimit?: number;
+  /** Latest locked result per community id. Soft-fail: omit a key to keep the current strip. */
+  latestActivity?: Record<string, CommunityActivityItem>;
 };
 
 export function CommunitiesPanel({
@@ -21,6 +24,7 @@ export function CommunitiesPanel({
   className = "mb-8",
   compact = false,
   previewLimit = 4,
+  latestActivity = {},
 }: CommunitiesPanelProps) {
   const visible = compact ? initial.slice(0, previewLimit) : initial;
   const hiddenCount = initial.length - visible.length;
@@ -67,26 +71,34 @@ export function CommunitiesPanel({
         </div>
       ) : compact ? (
         <ul className="space-y-2">
-          {visible.map((community) => (
-            <li key={community.id}>
-              <Link
-                href={`/communities/${community.id}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 transition-colors hover:border-white/16"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-white">
-                    {community.name}
+          {visible.map((community) => {
+            const latest = latestActivity[community.id];
+            return (
+              <li key={community.id}>
+                <Link
+                  href={`/communities/${community.id}`}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 transition-colors hover:border-white/16"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-white">
+                      {community.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                      {community.city} · {formatCommunitySport(community.sport)}
+                    </span>
+                    {latest ? (
+                      <span className="mt-1 block truncate text-xs text-emerald-300/90">
+                        {latest.summary}
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-zinc-500">
-                    {community.city} · {formatCommunitySport(community.sport)}
+                  <span className="shrink-0 text-xs font-medium text-emerald-300/90">
+                    {formatMemberCount(community.memberCount)}
                   </span>
-                </span>
-                <span className="shrink-0 text-xs font-medium text-emerald-300/90">
-                  {formatMemberCount(community.memberCount)}
-                </span>
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            );
+          })}
           {hiddenCount > 0 ? (
             <li>
               <Link
@@ -100,25 +112,33 @@ export function CommunitiesPanel({
         </ul>
       ) : (
         <ul className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-          {initial.map((community) => (
-            <li key={community.id} className="min-w-[16rem] max-w-[18rem] shrink-0">
-              <Link
-                href={`/communities/${community.id}`}
-                className="block h-full rounded-3xl border border-white/8 bg-[#141814] px-4 py-4 transition-colors hover:border-white/16"
-              >
-                <p className="truncate text-sm font-medium text-white">
-                  {community.name}
-                </p>
-                <p className="mt-1 truncate text-xs text-zinc-500">
-                  {community.city} · {formatCommunitySport(community.sport)}
-                </p>
-                <p className="mt-3 text-xs font-medium text-emerald-300/90">
-                  {formatMemberCount(community.memberCount)}
-                  {community.role ? ` · ${community.role}` : ""}
-                </p>
-              </Link>
-            </li>
-          ))}
+          {initial.map((community) => {
+            const latest = latestActivity[community.id];
+            return (
+              <li key={community.id} className="min-w-[16rem] max-w-[18rem] shrink-0">
+                <Link
+                  href={`/communities/${community.id}`}
+                  className="block h-full rounded-3xl border border-white/8 bg-[#141814] px-4 py-4 transition-colors hover:border-white/16"
+                >
+                  <p className="truncate text-sm font-medium text-white">
+                    {community.name}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-zinc-500">
+                    {community.city} · {formatCommunitySport(community.sport)}
+                  </p>
+                  <p className="mt-3 text-xs font-medium text-emerald-300/90">
+                    {formatMemberCount(community.memberCount)}
+                    {community.role ? ` · ${community.role}` : ""}
+                  </p>
+                  {latest ? (
+                    <p className="mt-2 truncate text-xs text-zinc-400">
+                      {latest.summary}
+                    </p>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
