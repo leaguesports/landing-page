@@ -44,6 +44,8 @@ type PadelQuickStartProps = {
   lockVenue?: boolean;
   /** Server-seeded self so first paint seats A1 before client auth resolves. */
   initialSelf?: QuickStartInitialSelf | null;
+  /** Opponent display name from `?guest=` — seated as a Team B guest. */
+  initialGuestName?: string | null;
 };
 
 export function PadelQuickStart({
@@ -51,6 +53,7 @@ export function PadelQuickStart({
   initialVenueSlug,
   lockVenue = false,
   initialSelf = null,
+  initialGuestName = null,
 }: PadelQuickStartProps) {
   const router = useRouter();
   const { user, displayName, isAuthenticated } = useAuth();
@@ -65,7 +68,7 @@ export function PadelQuickStart({
   // Seed from server auth when present; otherwise four guests for one-tap.
   // Empty-A1 fill for a late-arriving self is handled by resolvedSlots only.
   const [slots, setSlots] = useState<Record<SlotKey, PadelPlayer | null>>(() =>
-    resolveInitialQuickStartSlots(initialSelf),
+    resolveInitialQuickStartSlots(initialSelf, { guestName: initialGuestName }),
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -258,7 +261,7 @@ export function PadelQuickStart({
             value={startsAtLocal}
             onChange={(e) => setStartsAtLocal(e.target.value)}
             required
-            className="box-border min-h-12 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+            className="box-border min-h-12 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0 focus:border-emerald-400/40"
           />
         </label>
       </section>
