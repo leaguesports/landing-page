@@ -13,6 +13,7 @@ import {
   isAllowlistedActivitySlug,
   type IntentActivity,
 } from "./activity.ts";
+import { collectIndexedIntentPairs } from "./indexed-pairs.ts";
 import type { IntentKind } from "./paths.ts";
 
 export type IntentLocation = {
@@ -248,7 +249,11 @@ export async function listLocationsForActivity(
   );
 }
 
-/** Pairs with at least one matching venue — used by sitemap. */
+/**
+ * Pairs with at least one matching venue — used by sitemap.
+ * Includes suburb *and* parent/city slugs so city landings the intent
+ * pages already serve (e.g. /play/golf/johannesburg) are not dropped.
+ */
 export async function listIndexedIntentPairs(intent: IntentKind): Promise<
   {
     activitySlug: string;
@@ -262,6 +267,9 @@ export async function listIndexedIntentPairs(intent: IntentKind): Promise<
     {
       activitySlugs: (string | null)[] | null;
       locationSlug: string | null;
+      parentSlug: string | null;
+      suburbSlug: string | null;
+      citySlug: string | null;
       updatedAt: string | null;
     }[]
   >(
@@ -272,62 +280,22 @@ export async function listIndexedIntentPairs(intent: IntentKind): Promise<
         address.suburb->slug.current,
         address.city->slug.current
       ),
+      "parentSlug": location->parent->slug.current,
+      "suburbSlug": address.suburb->slug.current,
+      "citySlug": address.city->slug.current,
       "activitySlugs": ${field}[]->slug.current
     }`,
   );
 
-  const pairs = new Map<
-    string,
-    { activitySlug: string; locationSlug: string; updatedAt: string | null }
-  >();
+  const series =
+    intent === "watch"
+      ? await sanityClient.fetch<{ slug: string; sportSlug: string | null }[]>(
+          `*[_type == "series" && defined(slug.current)] {
+            "slug": slug.current,
+            "sportSlug": sport->slug.current,
+          }`,
+        )
+      : [];
 
-  for (const row of rows ?? []) {
-    const locationSlug = row.locationSlug?.trim();
-    if (!locationSlug) continue;
-    for (const activitySlug of row.activitySlugs ?? []) {
-      if (typeof activitySlug !== "string" || !activitySlug.trim()) continue;
-      const key = `${activitySlug}::${locationSlug}`;
-      const existing = pairs.get(key);
-      if (
-        !existing ||
-        (row.updatedAt &&
-          (!existing.updatedAt || row.updatedAt > existing.updatedAt))
-      ) {
-        pairs.set(key, {
-          activitySlug,
-          locationSlug,
-          updatedAt: row.updatedAt,
-        });
-      }
-    }
-  }
-
-  if (intent === "watch") {
-    // Series URLs (e.g. /watch/f1/midrand) that map onto parent sport coverage.
-    const series = await sanityClient.fetch<
-      { slug: string; sportSlug: string | null }[]
-    >(
-      `*[_type == "series" && defined(slug.current)] {
-        "slug": slug.current,
-        "sportSlug": sport->slug.current,
-      }`,
-    );
-
-    for (const item of series ?? []) {
-      if (!item.slug || !item.sportSlug) continue;
-      for (const pair of [...pairs.values()]) {
-        if (pair.activitySlug !== item.sportSlug) continue;
-        const key = `${item.slug}::${pair.locationSlug}`;
-        if (!pairs.has(key)) {
-          pairs.set(key, {
-            activitySlug: item.slug,
-            locationSlug: pair.locationSlug,
-            updatedAt: pair.updatedAt,
-          });
-        }
-      }
-    }
-  }
-
-  return [...pairs.values()];
+  return collectIndexedIntentPairs(intent, rows ?? [], series ?? []);
 }

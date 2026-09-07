@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { collectIndexedIntentPairs } from "../../lib/intent/indexed-pairs.ts";
 import {
   buildSitemapEntries,
   fixtureSitemapRoutes,
@@ -218,6 +219,86 @@ describe("buildSitemapEntries", () => {
 
     const xml = serializeLikeNext(entries);
     assert.equal(xml.includes("&"), false);
+    assert.match(xml, /^<\?xml /);
+  });
+
+  it("includes city landings like /play/golf/johannesburg and watch peers", async () => {
+    const playPairs = collectIndexedIntentPairs("play", [
+      {
+        activitySlugs: ["golf"],
+        locationSlug: "sandton",
+        parentSlug: "johannesburg",
+        suburbSlug: "sandton",
+        citySlug: "johannesburg",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+      {
+        activitySlugs: ["padel"],
+        locationSlug: "fourways",
+        parentSlug: "johannesburg",
+        citySlug: "johannesburg",
+      },
+    ]);
+    const watchPairs = collectIndexedIntentPairs(
+      "watch",
+      [
+        {
+          activitySlugs: ["rugby", "golf"],
+          locationSlug: "sandton",
+          parentSlug: "johannesburg",
+          citySlug: "johannesburg",
+        },
+        {
+          activitySlugs: ["motorsport"],
+          locationSlug: "midrand",
+          parentSlug: "johannesburg",
+          citySlug: "johannesburg",
+        },
+      ],
+      [{ slug: "f1", sportSlug: "motorsport" }],
+    );
+
+    const entries = await buildSitemapEntries({
+      baseUrl: ORIGIN,
+      now: NOW,
+      source: {
+        getVenues: async () => [],
+        getGuides: async () => [],
+        getIntentPairs: async (intent) =>
+          intent === "watch" ? watchPairs : playPairs,
+        getFixtures: async () => [],
+      },
+    });
+
+    const urls = entries.map((entry) => entry.url);
+    assert.ok(urls.includes(`${ORIGIN}/play/golf/johannesburg`));
+    assert.ok(urls.includes(`${ORIGIN}/play/golf/sandton`));
+    assert.ok(urls.includes(`${ORIGIN}/play/padel/johannesburg`));
+    assert.ok(urls.includes(`${ORIGIN}/watch/rugby/johannesburg`));
+    assert.ok(urls.includes(`${ORIGIN}/watch/f1/johannesburg`));
+    assert.ok(urls.includes(`${ORIGIN}/watch/f1/midrand`));
+    assert.equal(urls.includes(`${ORIGIN}/watch/golf/johannesburg`), false);
+    assert.equal(urls.includes(`${ORIGIN}/play/golf/cape-town`), false);
+
+    const golfCity = entries.find(
+      (entry) => entry.url === `${ORIGIN}/play/golf/johannesburg`,
+    );
+    const golfSuburb = entries.find(
+      (entry) => entry.url === `${ORIGIN}/play/golf/sandton`,
+    );
+    assert.ok(golfCity);
+    assert.ok(golfSuburb);
+    assert.equal(golfCity.changeFrequency, golfSuburb.changeFrequency);
+    assert.equal(golfCity.priority, golfSuburb.priority);
+    assert.equal(golfCity.changeFrequency, "daily");
+    assert.equal(golfCity.priority, 1);
+
+    const xml = serializeLikeNext(entries);
+    assert.equal(xml.includes("&"), false);
+    assert.equal(
+      urls.some((url) => url.includes("?") || url.includes("&")),
+      false,
+    );
     assert.match(xml, /^<\?xml /);
   });
 });
