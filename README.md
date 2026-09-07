@@ -14,8 +14,11 @@ Set these on the Vercel project (Production):
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | yes | Sanity project id (sitemap + pages) |
 | `NEXT_PUBLIC_SANITY_DATASET` | yes | Sanity dataset |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional | Google Analytics id |
-| `ABLY_API_KEY` | if padel realtime is used | Ably API key |
+| `ABLY_API_KEY` | if padel or fixture realtime is used | Ably API key |
 | `SANITY_API_TOKEN` | if venue claim writes | Sanity write token |
+| `API_SPORTS_KEY` | if broadcast live scores | API-Sports key (rugby, soccer, F1) |
+| `FIXTURE_OPS_KEY` | if fixture live writes | Protects `PATCH /api/fixtures/:slug/live` and manual ingest |
+| `CRON_SECRET` | auto on Vercel | Protects `GET /api/cron/fixture-live` |
 
 Do **not** set `NEXT_PUBLIC_API_URL` to `https://leaguesports.co.za` — that loops the `/api` proxy.
 
@@ -28,7 +31,23 @@ GOOGLE_REDIRECT_URI=https://leaguesports.co.za/api/auth/providers/google/callbac
 FRONTEND_URL=https://leaguesports.co.za
 ```
 
-Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway.
+Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`, `/api/fixtures/:slug/feed`, `/api/fixtures/:slug/live`, `/api/cron/*`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway.
+
+## Broadcast live scores
+
+Fans on `/events/[slug]` already receive board updates over Ably (`fixture:<slug>`). They should not poll sports-data APIs.
+
+Ingest is a **server poll** of a handful of live CMS fixtures (Springboks Tests, PSL derbies, F1 race sessions):
+
+1. Vercel Cron calls `GET /api/cron/fixture-live` every minute (Pro plan; Hobby is daily).
+2. Only fixtures inside a kickoff window are considered — quiet days cost zero provider calls.
+3. With `API_SPORTS_KEY`, the worker polls API-Sports rugby / football / F1 live endpoints and maps onto the existing `FixtureLiveBoard`.
+4. Without a key, F1 can still try OpenF1 (`session_key=latest`); live telemetry there may require their paid plan.
+5. Material score / leader changes post a feed moment; clock ticks only publish Ably.
+
+Manual run: `curl -H "x-ops-key: $FIXTURE_OPS_KEY" https://leaguesports.co.za/api/cron/fixture-live`.
+
+Provider websockets/webhooks are a later optimisation. Polling is the right first ingest shape because we follow a few editorial fixtures, not a global livescore firehose.
 
 ## Local development (padel match create)
 

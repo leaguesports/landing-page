@@ -1,8 +1,8 @@
 /**
  * Fixture social feed + live board contracts.
  *
- * Manual ops updates today; a sports-data provider can later write the same
- * `FixtureLiveBoard` shape without changing the UI or Ably event names.
+ * Ops or a sports-data ingest worker writes this same `FixtureLiveBoard`
+ * shape. Fans subscribe on Ably `fixture:<slug>` — they never poll providers.
  */
 
 export type FixtureBoardStatus = "scheduled" | "live" | "final";

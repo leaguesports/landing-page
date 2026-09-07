@@ -63,7 +63,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes
-    // (`/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`)
+    // (`/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`,
+    // `/api/fixtures/:slug/{feed,live}`, `/api/cron/*`)
     // are excluded and win via the App Router filesystem. Explicit match
     // and venue sources plus a catch-all proxy the rest to Railway.
     // No rewrites when the Railway origin is unset (Preview / local without env).

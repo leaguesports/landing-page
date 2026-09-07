@@ -3,6 +3,7 @@ import {
   getFixtureFeed,
   setFixtureBoard,
 } from "@/lib/fixtures/feed-store";
+import { getOrHydrateFixtureFeed } from "@/lib/fixtures/hydrate";
 import { isAuthorizedFixtureOps } from "@/lib/fixtures/ops-auth";
 import { publishBoardUpdated } from "@/lib/fixtures/publish";
 import { isValidFixtureSlug, normalizeFixtureSlug } from "@/lib/fixtures/slug";
@@ -47,7 +48,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
   }
 
-  const existing = getFixtureFeed(slug);
+  const existing = await getOrHydrateFixtureFeed(slug);
   if (!existing) {
     return NextResponse.json({ error: "Feed not found" }, { status: 404 });
   }
@@ -55,7 +56,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 /**
- * Manual ops (and later sports-data providers) write the live board here.
+ * Manual ops (and the cron ingest worker) write the live board here.
  * Requires FIXTURE_OPS_KEY on Vercel preview/production.
  */
 export async function PATCH(request: Request, context: RouteContext) {

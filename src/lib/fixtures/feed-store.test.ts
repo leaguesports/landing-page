@@ -163,4 +163,46 @@ describe("setFixtureBoard", () => {
     assert.equal(snapshot.items[0]?.kind, "score_update");
     assert.match(snapshot.items[0]?.body ?? "", /24/);
   });
+
+  it("can update the board without a feed moment", () => {
+    ensureFixtureFeed({
+      slug: "clock-tick",
+      title: "Springboks vs All Blacks",
+      sportSlug: "rugby",
+      venueCount: 0,
+    });
+    const first = setFixtureBoard(
+      "clock-tick",
+      {
+        kind: "match_score",
+        status: "live",
+        home: { name: "Springboks", score: 7 },
+        away: { name: "All Blacks", score: 0 },
+        clock: "12'",
+        updatedAt: new Date().toISOString(),
+        source: "provider:api-sports",
+      },
+      { announce: true },
+    );
+    const second = setFixtureBoard(
+      "clock-tick",
+      {
+        kind: "match_score",
+        status: "live",
+        home: { name: "Springboks", score: 7 },
+        away: { name: "All Blacks", score: 0 },
+        clock: "13'",
+        updatedAt: new Date().toISOString(),
+        source: "provider:api-sports",
+      },
+      { announce: false },
+    );
+    assert.equal(second.items[0]?.id, first.items[0]?.id);
+    assert.equal(
+      second.board && second.board.kind === "match_score"
+        ? second.board.clock
+        : null,
+      "13'",
+    );
+  });
 });

@@ -2,8 +2,8 @@ import type {
   FixtureChannelEvent,
   FixtureFeedItem,
   FixtureLiveBoard,
-} from "@/types/fixture-feed";
-import { fixtureChannelName } from "@/types/fixture-feed";
+} from "../../types/fixture-feed.ts";
+import { fixtureChannelName } from "../../types/fixture-feed.ts";
 
 /**
  * Best-effort Ably publish for fixture feed channels.

@@ -193,7 +193,8 @@ export type EnsureFeedInput = {
 /**
  * Create (or return) a feed for a known fixture page render.
  * Seeds scheduled / 0–0 boards — never invented live scores in prod.
- * In-process Map is MVP-only; shared KV/DB should replace it before scale.
+ * In-process Map is MVP-only; GET hydrates the board from Ably history
+ * when this isolate never ran ingest. Shared KV/DB should replace it before scale.
  */
 export function ensureFixtureFeed(input: EnsureFeedInput): FixtureFeedSnapshot {
   const slug = normalizeFixtureSlug(input.slug);
@@ -241,9 +242,18 @@ export function getFixtureFeed(slug: string): FixtureFeedSnapshot | null {
   };
 }
 
+export type SetFixtureBoardOptions = {
+  /**
+   * Post a score_update feed moment. Clock-only ingest ticks set this false
+   * so the board still updates over Ably without spamming the feed.
+   */
+  announce?: boolean;
+};
+
 export function setFixtureBoard(
   slug: string,
   board: FixtureLiveBoard,
+  options: SetFixtureBoardOptions = {},
 ): FixtureFeedSnapshot {
   const key = normalizeFixtureSlug(slug);
   if (!isValidFixtureSlug(key)) {
@@ -257,23 +267,26 @@ export function setFixtureBoard(
   };
   state.board = nextBoard;
 
+  const announce = options.announce !== false;
   const scoreBody =
     nextBoard.kind === "match_score"
       ? `${nextBoard.home.name} ${nextBoard.home.score}–${nextBoard.away.score} ${nextBoard.away.name}${nextBoard.clock ? ` · ${nextBoard.clock}` : ""}`
       : `P1 ${nextBoard.leaders[0]?.driver ?? "—"}${nextBoard.sessionLabel ? ` · ${nextBoard.sessionLabel}` : ""}`;
 
-  const item: FixtureFeedItem = {
-    id: newId("ops"),
-    fixtureSlug: key,
-    kind: "score_update",
-    authorKind: "ops",
-    authorLabel:
-      nextBoard.kind === "motorsport_top3" ? "Race desk" : "Match desk",
-    body: scoreBody,
-    createdAt: nowIso(),
-    reactionCount: 0,
-  };
-  state.items = [item, ...state.items].slice(0, 80);
+  if (announce && state.items[0]?.body !== scoreBody) {
+    const item: FixtureFeedItem = {
+      id: newId("ops"),
+      fixtureSlug: key,
+      kind: "score_update",
+      authorKind: "ops",
+      authorLabel:
+        nextBoard.kind === "motorsport_top3" ? "Race desk" : "Match desk",
+      body: scoreBody,
+      createdAt: nowIso(),
+      reactionCount: 0,
+    };
+    state.items = [item, ...state.items].slice(0, 80);
+  }
   store.set(key, state);
   trimStore();
   return { fixtureSlug: key, board: nextBoard, items: [...state.items] };

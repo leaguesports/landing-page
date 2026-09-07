@@ -3,6 +3,7 @@ import {
   getFixtureFeed,
   reactToFeedItem,
 } from "@/lib/fixtures/feed-store";
+import { getOrHydrateFixtureFeed } from "@/lib/fixtures/hydrate";
 import {
   publishFeedItemAdded,
   publishReactionUpdated,
@@ -18,8 +19,9 @@ type RouteContext = {
 };
 
 /**
- * Read-only. Does not create feeds — pages call ensureFixtureFeed during SSR.
- * Random slug probing must not grow the in-process Map.
+ * Read-only. Does not create feeds for unknown slugs — pages call
+ * `ensureFixtureFeed` during SSR. Ably history may hydrate a board when
+ * this isolate never ran ingest. Random probing still 404s if Ably is empty.
  */
 export async function GET(_request: Request, context: RouteContext) {
   const { slug: rawSlug } = await context.params;
@@ -28,7 +30,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
   }
 
-  const existing = getFixtureFeed(slug);
+  const existing = await getOrHydrateFixtureFeed(slug);
   if (!existing) {
     return NextResponse.json({ error: "Feed not found" }, { status: 404 });
   }
