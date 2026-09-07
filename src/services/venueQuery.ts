@@ -101,6 +101,31 @@ export type VenueRow = {
  * whatsapp / website also read top-level fields. Explicit `is_verified: false`
  * must not lose a legacy `isVerified: true`.
  */
+export const GOLF_COURSE_PROJECTION = `
+  golfCourse{
+    courseName,
+    holesTotal,
+    parTotal,
+    notes,
+    tees[]{
+      name,
+      color,
+      courseRating,
+      slope,
+      totalMeters
+    },
+    holes[]{
+      number,
+      par,
+      strokeIndex,
+      distances[]{
+        teeName,
+        meters
+      }
+    }
+  }
+`;
+
 export const VENUE_PROJECTION = `
   _id,
   name,
@@ -146,28 +171,7 @@ export const VENUE_PROJECTION = `
     name,
     "slug": slug.current,
   },
-  golfCourse{
-    courseName,
-    holesTotal,
-    parTotal,
-    notes,
-    tees[]{
-      name,
-      color,
-      courseRating,
-      slope,
-      totalMeters
-    },
-    holes[]{
-      number,
-      par,
-      strokeIndex,
-      distances[]{
-        teeName,
-        meters
-      }
-    }
-  },
+  ${GOLF_COURSE_PROJECTION},
 `;
 
 /** Match a city or suburb slug on address refs or the venue location ref. */
@@ -289,7 +293,7 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
   };
 }
 
-function mapGolfCourse(
+export function mapGolfCourse(
   value: GolfCourseCms | null | undefined,
 ): GolfCourseCms | null {
   if (!value || typeof value !== "object") return null;

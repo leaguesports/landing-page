@@ -1,14 +1,15 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { loadGolfCourseByVenueCmsId } from "@/app/golf/actions";
 import { GolfScorecard } from "@/components/golf/GolfScorecard";
 import {
   fetchGolfRound,
   parseApiGolfRound,
 } from "@/lib/golf/api-round";
 import { readCachedGolfRoundSnapshot } from "@/lib/golf/round-store";
-import type { GolfRound } from "@/types/golf-round";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import type { GolfCourseCms, GolfRound } from "@/types/golf-round";
 
 type LoadState =
   | { status: "ready"; round: GolfRound }
@@ -18,9 +19,11 @@ type LoadState =
 export function GolfScorecardClientLoader({
   roundId,
   initialRound,
+  golfCourse: initialGolfCourse = null,
 }: {
   roundId: string;
   initialRound: GolfRound | null;
+  golfCourse?: GolfCourseCms | null;
 }) {
   const [load, setLoad] = useState<LoadState>(() => {
     if (initialRound) return { status: "ready", round: initialRound };
@@ -30,6 +33,9 @@ export function GolfScorecardClientLoader({
       ? { status: "ready", round: parsed }
       : { status: "loading" };
   });
+  const [golfCourse, setGolfCourse] = useState<GolfCourseCms | null>(
+    initialGolfCourse,
+  );
 
   useEffect(() => {
     if (load.status === "ready") return;
@@ -58,6 +64,25 @@ export function GolfScorecardClientLoader({
     };
   }, [roundId, load.status]);
 
+  useEffect(() => {
+    // Server already looked up golfCourse when it had the round.
+    if (initialRound) return;
+    if (golfCourse) return;
+    if (load.status !== "ready") return;
+    const cmsId = load.round.venueCmsId?.trim();
+    if (!cmsId) return;
+
+    let cancelled = false;
+    void loadGolfCourseByVenueCmsId(cmsId).then((course) => {
+      if (cancelled || !course) return;
+      setGolfCourse(course);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [golfCourse, initialRound, load]);
+
   if (load.status === "loading") {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#050705] px-6 text-center text-sm text-zinc-400">
@@ -83,5 +108,11 @@ export function GolfScorecardClientLoader({
     );
   }
 
-  return <GolfScorecard key={load.round.id} initialRound={load.round} />;
+  return (
+    <GolfScorecard
+      key={load.round.id}
+      initialRound={load.round}
+      golfCourse={golfCourse}
+    />
+  );
 }

@@ -9,6 +9,7 @@ import {
   readGolfRoundLocal,
   writeGolfRoundLocal,
 } from "@/lib/golf/round-store";
+import { toScorecardHoles } from "@/lib/golf/scorecard-holes";
 import {
   allHolesScored,
   buildLockPayload,
@@ -18,14 +19,61 @@ import {
   strokesFromScore,
 } from "@/lib/golf/scoring";
 import type {
+  GolfCourseCms,
   GolfLiveStrokes,
   GolfPlayerSlot,
   GolfRound,
+  ScorecardTeeDistance,
 } from "@/types/golf-round";
 
 type GolfScorecardProps = {
   initialRound: GolfRound;
+  golfCourse?: GolfCourseCms | null;
 };
+
+function teeSwatchClass(colorOrName: string | null): string {
+  const key = (colorOrName ?? "").trim().toLowerCase();
+  if (key === "yellow" || key === "gold") return "bg-yellow-400";
+  if (key === "white") return "bg-white";
+  if (key === "blue") return "bg-sky-400";
+  if (key === "red") return "bg-red-500";
+  if (key === "black") return "bg-zinc-950 ring-1 ring-white/40";
+  if (key === "green") return "bg-emerald-500";
+  return "bg-zinc-500";
+}
+
+function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
+  if (tees.length === 0) return null;
+  return (
+    <ul
+      className="mt-3 flex flex-wrap items-center justify-center gap-1.5"
+      aria-label="Tee distances"
+    >
+      {tees.map((tee) => (
+        <li
+          key={tee.teeName}
+          aria-current={tee.selected ? "true" : undefined}
+          className={[
+            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] tabular-nums",
+            tee.selected
+              ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-100"
+              : "border-white/10 bg-white/5 text-zinc-400",
+          ].join(" ")}
+        >
+          <span
+            className={[
+              "h-2 w-2 shrink-0 rounded-full",
+              teeSwatchClass(tee.color ?? tee.teeName),
+            ].join(" ")}
+            aria-hidden
+          />
+          <span className="font-medium">{tee.teeName}</span>
+          <span>{tee.meters} m</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function layoutLabel(round: GolfRound): string {
   if (round.holesPlayed === 18) return "18 holes";
@@ -33,9 +81,15 @@ function layoutLabel(round: GolfRound): string {
   return "Front 9";
 }
 
-export function GolfScorecard({ initialRound }: GolfScorecardProps) {
+export function GolfScorecard({
+  initialRound,
+  golfCourse = null,
+}: GolfScorecardProps) {
   const [round, setRound] = useState(initialRound);
-  const holes = round.course.holes;
+  const holes = useMemo(
+    () => toScorecardHoles(round.course.holes, golfCourse, round.teeName),
+    [round.course.holes, golfCourse, round.teeName],
+  );
   const locked = Boolean(round.lockedAt) || round.status === "locked";
 
   const [currentHoleIndex, setCurrentHoleIndex] = useState(() => {
@@ -183,14 +237,15 @@ export function GolfScorecard({ initialRound }: GolfScorecardProps) {
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
-            <div className="text-center">
+            <div className="min-w-0 flex-1 text-center">
               <p className="font-display text-5xl tracking-wide text-white tabular-nums">
                 {hole.number}
               </p>
               <p className="mt-1 text-sm text-zinc-400">
                 Par {hole.par} · SI {hole.strokeIndex}
               </p>
-              <p className="mt-0.5 text-[11px] text-zinc-600">
+              <HoleTeeDistances tees={hole.tees} />
+              <p className="mt-1.5 text-[11px] text-zinc-600">
                 Hole {currentHoleIndex + 1} of {holes.length}
               </p>
             </div>

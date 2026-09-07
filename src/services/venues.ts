@@ -1,7 +1,10 @@
 import { CITY_DIRECTORY, SEARCH_SPORTS } from "@/data/cities";
 import type { VenueSearchIntent } from "@/lib/search/venueSearch";
 import { sanityClient } from "@/sanity/client";
+import type { GolfCourseCms } from "@/types/golf-round";
 import {
+  GOLF_COURSE_PROJECTION,
+  mapGolfCourse,
   mapVenueRow,
   sportSlugVariants,
   VENUE_IN_LOCATION,
@@ -97,6 +100,29 @@ export async function getVenueBySlug(
 
   if (!row) return null;
   return mapVenueRow(row);
+}
+
+/**
+ * Read-only golfCourse block for a venue `_id` or slug.
+ * Used by the live golf scorecard; does not touch lock/create contracts.
+ */
+export async function getGolfCourseByVenueCmsId(
+  cmsId: string,
+): Promise<GolfCourseCms | null> {
+  const value = cmsId.trim();
+  if (!value) return null;
+
+  try {
+    const row = await sanityClient.fetch<{ golfCourse?: GolfCourseCms | null } | null>(
+      `*[_type == "venue" && (slug.current == $value || _id == $value)][0] {
+        ${GOLF_COURSE_PROJECTION}
+      }`,
+      { value },
+    );
+    return mapGolfCourse(row?.golfCourse);
+  } catch {
+    return null;
+  }
 }
 
 export async function listVenueFilterOptions(): Promise<{
