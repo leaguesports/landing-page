@@ -102,7 +102,8 @@ export function QuickStartFlow({
     return loadRecentPlayers().map((player) => ({
       id: player.id,
       displayName: player.displayName,
-      userId: player.userId,
+      // PadelPlayer.userId is optional; QuickStartSuggestedPlayer requires null.
+      userId: player.userId ?? null,
       isGuest: player.isGuest,
     }));
   }, []);
