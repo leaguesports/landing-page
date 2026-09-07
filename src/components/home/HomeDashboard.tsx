@@ -52,6 +52,8 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     }),
   );
 
+  const myCommunitiesPromise = listMyCommunities({ cookie });
+
   const preferredSportsPromise = preferencesPromise.then((result) =>
     result.ok ? result.preferences.sports : [],
   );
@@ -82,7 +84,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRowsPromise,
     followedFixturesPromise,
     listFriends({ cookie }),
-    listMyCommunities({ cookie }),
+    myCommunitiesPromise,
     listBadges({ cookie }),
     listIntegrations({ cookie }),
   ]);

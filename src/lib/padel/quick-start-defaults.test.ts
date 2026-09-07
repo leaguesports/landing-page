@@ -199,4 +199,21 @@ describe("resolveInitialQuickStartSlots", () => {
     assert.equal(slots.b1.isGuest, true);
     assert.equal(slots.b2.isGuest, true);
   });
+
+  it("prefills B1 with a challenge guest without clearing the other seats", () => {
+    const slots = resolveInitialQuickStartSlots(
+      { id: "u42", displayName: "Pat Rivera" },
+      { guestName: "  Jordan  " },
+    );
+    assert.equal(slots.a1.userId, "u42");
+    assert.match(slots.b1.displayName, /Jordan/i);
+    assert.equal(slots.b1.isGuest, true);
+    assert.equal(slots.a2.isGuest, true);
+    assert.equal(slots.b2.isGuest, true);
+  });
+
+  it("ignores a blank challenge guest name", () => {
+    const slots = resolveInitialQuickStartSlots(null, { guestName: "  " });
+    assert.match(slots.b1.displayName, /Jordan/i);
+  });
 });

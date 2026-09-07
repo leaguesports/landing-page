@@ -1,5 +1,7 @@
-import { CommunityAvatar } from "@/components/communities/CommunityAvatar";
+import { CommunityActivityFeed } from "@/components/communities/CommunityActivityFeed";
 import { CommunityJoinLeave } from "@/components/communities/CommunityJoinLeave";
+import { CommunityMembersList } from "@/components/communities/CommunityMembersList";
+import { listCommunityActivity } from "@/lib/communities/activity";
 import {
   formatCommunitySport,
   formatMemberCount,
@@ -36,7 +38,10 @@ export default async function CommunityDetailPage({
 }: CommunityPageProps) {
   const { id } = await params;
   const cookie = (await cookies()).toString();
-  const community = await getCommunity(id, { cookie });
+  const [community, activity] = await Promise.all([
+    getCommunity(id, { cookie }),
+    listCommunityActivity(id, { cookie }),
+  ]);
 
   if (!community) {
     return (
@@ -89,6 +94,8 @@ export default async function CommunityDetailPage({
           </div>
         </header>
 
+        <CommunityActivityFeed communityId={community.id} items={activity} />
+
         <section className="mt-10" aria-labelledby="community-members-heading">
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
@@ -104,40 +111,10 @@ export default async function CommunityDetailPage({
             </div>
           </div>
 
-          {community.members.length === 0 ? (
-            <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
-              <p className="text-sm text-zinc-400">
-                No member profiles yet. Counts still come from the API.
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {community.members.map((member) => (
-                <li
-                  key={`${member.id}-${member.joinedAt}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <CommunityAvatar
-                      name={member.displayName}
-                      avatarUrl={member.avatarUrl}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">
-                        {member.displayName}
-                      </p>
-                      <p className="truncate text-xs text-zinc-500">
-                        @{member.handle}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
-                    {member.role}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <CommunityMembersList
+            communityId={community.id}
+            members={community.members}
+          />
         </section>
       </div>
     </div>

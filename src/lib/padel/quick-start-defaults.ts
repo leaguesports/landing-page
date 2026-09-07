@@ -97,8 +97,25 @@ export function playerFromInitialSelf(
 /** Resolve one-tap default slots from optional server auth self. */
 export function resolveInitialQuickStartSlots(
   initialSelf: QuickStartInitialSelf | null | undefined,
+  opts?: { guestName?: string | null },
 ): Record<QuickStartSlotKey, PadelPlayer> {
-  return buildDemoGuestSlots(playerFromInitialSelf(initialSelf));
+  return applyChallengeGuestSlot(
+    buildDemoGuestSlots(playerFromInitialSelf(initialSelf)),
+    opts?.guestName,
+  );
+}
+
+/**
+ * Seat a named guest in B1 (across from A1) for community challenge prefills.
+ * Does not overwrite A1. Blank names are ignored so demo guests stay intact.
+ */
+export function applyChallengeGuestSlot(
+  slots: Record<QuickStartSlotKey, PadelPlayer>,
+  guestName?: string | null,
+): Record<QuickStartSlotKey, PadelPlayer> {
+  const name = guestName?.trim();
+  if (!name) return slots;
+  return { ...slots, b1: makeGuestPlayer(name) };
 }
 
 /**
