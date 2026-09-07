@@ -40,6 +40,14 @@ describe("scorecardStartHref", () => {
     assert.equal(scorecardStartHref({ sport: "Golf" }), "/golf/new");
   });
 
+  it("routes darts to /darts/new", () => {
+    assert.equal(scorecardStartHref({ sport: "darts" }), "/darts/new");
+    assert.equal(
+      scorecardStartHref({ sport: "darts", venue: "the-dartboard" }),
+      "/darts/new?venue=the-dartboard",
+    );
+  });
+
   it("forwards a venue slug or cmsId on the start URL", () => {
     assert.equal(
       scorecardStartHref({ venue: "padel-lab-rivonia" }),

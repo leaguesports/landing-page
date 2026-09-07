@@ -6,6 +6,7 @@ import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
+import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
@@ -41,6 +42,7 @@ import {
   type SportDefinition,
 } from "@/lib/sports/catalog";
 import {
+  HUB_DARTS_HISTORY_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
@@ -63,6 +65,7 @@ import {
   formatHubWhen,
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
+import type { DartsHistoryItem } from "@/types/darts-match";
 import type { GolfHistoryItem } from "@/types/golf-round";
 import type { PadelHistoryItem } from "@/types/padel-match";
 import type { FollowedVenue } from "@/lib/venues/follow";
@@ -182,7 +185,8 @@ function HubAvatar({
 export type LockedActivityCounts = {
   padel: number;
   golf: number;
-  /** Set when either padel or golf lookup failed — Games must not look certain. */
+  darts?: number;
+  /** Set when a padel, golf, or darts lookup failed — Games must not look certain. */
   error: string | null;
 };
 
@@ -192,6 +196,8 @@ type SportsHubProps = {
   historyItems: PadelHistoryItem[];
   golfHistoryError?: string | null;
   golfHistoryItems?: GolfHistoryItem[];
+  dartsHistoryError?: string | null;
+  dartsHistoryItems?: DartsHistoryItem[];
   /** Prefer this over shipping full golf history into the client hub. */
   lockedActivity?: LockedActivityCounts;
   followedVenues?: FollowedVenue[];
@@ -596,6 +602,8 @@ export function SportsHub({
   historyItems,
   golfHistoryError = null,
   golfHistoryItems = [],
+  dartsHistoryError = null,
+  dartsHistoryItems = [],
   lockedActivity,
   followedVenues = [],
   followedFixtures = [],
@@ -615,15 +623,17 @@ export function SportsHub({
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
   const padelLocked = lockedActivity?.padel ?? historyItems.length;
   const golfLocked = lockedActivity?.golf ?? golfHistoryItems.length;
+  const dartsLocked = lockedActivity?.darts ?? dartsHistoryItems.length;
   const activityError = lockedActivity?.error ?? historyError;
   const gamesKnown = !activityError;
-  const gamesPlayed = padelLocked + golfLocked;
+  const gamesPlayed = padelLocked + golfLocked + dartsLocked;
   const seedFollowed = useMemo(() => {
     const seeds: string[] = [...initialFollowedSports];
     if (padelLocked > 0) seeds.push("padel");
     if (golfLocked > 0) seeds.push("golf");
+    if (dartsLocked > 0) seeds.push("darts");
     return seeds;
-  }, [golfLocked, initialFollowedSports, padelLocked]);
+  }, [dartsLocked, golfLocked, initialFollowedSports, padelLocked]);
   const [prefs, setPrefs] = useHubPreferences(
     user.id,
     knownSlugs,
@@ -695,6 +705,7 @@ export function SportsHub({
       : sports.find((sport) => sport.slug === active) ?? null;
   const recentPadel = takeHubPreview(historyItems, HUB_RECENT_LOCK_LIMIT);
   const recentGolf = takeHubPreview(golfHistoryItems, HUB_RECENT_LOCK_LIMIT);
+  const recentDarts = takeHubPreview(dartsHistoryItems, HUB_RECENT_LOCK_LIMIT);
   const displayName = athleteDisplayName(user);
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
@@ -706,7 +717,9 @@ export function SportsHub({
     recentPadel.length === 0 &&
     !historyError &&
     recentGolf.length === 0 &&
-    !golfHistoryError;
+    !golfHistoryError &&
+    recentDarts.length === 0 &&
+    !dartsHistoryError;
 
   const closePlaySportModal = useCallback(() => {
     setPlayVerb(null);
@@ -1075,7 +1088,7 @@ export function SportsHub({
                       Recent locks
                     </h3>
                     <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-                      Locked padel matches and golf rounds.
+                      Locked padel, golf, and darts results.
                     </p>
                   </div>
 
@@ -1135,6 +1148,35 @@ export function SportsHub({
                       ) : (
                         <p className="text-sm leading-relaxed text-zinc-500">
                           No locked golf rounds yet.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                          Darts
+                        </p>
+                        {dartsHistoryItems.length > 0 ? (
+                          <Link
+                            href={HUB_DARTS_HISTORY_HREF}
+                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                          >
+                            View all
+                          </Link>
+                        ) : null}
+                      </div>
+                      {dartsHistoryError ? (
+                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
+                          <p className="text-sm text-red-300">
+                            {dartsHistoryError}
+                          </p>
+                        </div>
+                      ) : recentDarts.length > 0 ? (
+                        <DartsHistoryList items={recentDarts} />
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500">
+                          No locked darts games yet.
                         </p>
                       )}
                     </div>

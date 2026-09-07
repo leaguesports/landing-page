@@ -2,8 +2,8 @@
  * Shareable start URLs for venue QR / WhatsApp (#116).
  *
  * `/scorecard` is the stable public alias. It always lands on the live
- * guest start flow (`/padel/new` or `/golf/new`) and never requires an
- * account. Venue is optional.
+ * guest start flow (`/padel/new`, `/golf/new`, or `/darts/new`) and never
+ * requires an account. Venue is optional.
  */
 
 export type ScorecardStartParams = {
@@ -27,8 +27,12 @@ export function venueQueryKey(params: {
   return firstSearchParam(params.venue) || firstSearchParam(params.cmsId);
 }
 
-function startPathForSport(sport: string): "/golf/new" | "/padel/new" {
-  return sport === "golf" ? "/golf/new" : "/padel/new";
+function startPathForSport(
+  sport: string,
+): "/golf/new" | "/darts/new" | "/padel/new" {
+  if (sport === "golf") return "/golf/new";
+  if (sport === "darts") return "/darts/new";
+  return "/padel/new";
 }
 
 /**

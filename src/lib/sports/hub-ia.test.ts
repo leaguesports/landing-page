@@ -3,11 +3,13 @@ import { describe, it } from "node:test";
 import {
   HUB_BADGE_STRIP_LIMIT,
   HUB_BROWSE_FIXTURES_HREF,
+  HUB_CAPTURE_DARTS_HREF,
   HUB_CAPTURE_GOLF_HREF,
   HUB_CAPTURE_PADEL_HREF,
   HUB_DEFAULT_TAB,
   HUB_FIND_VENUES_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
+  HUB_DARTS_HISTORY_HREF,
   HUB_GOLF_HISTORY_HREF,
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
@@ -25,6 +27,7 @@ import {
   HUB_RECENT_LOCK_LIMIT,
   HUB_SPORT_CONTROL,
   HUB_START_ACTION_TABS,
+  HUB_START_DARTS_HREF,
   HUB_START_GOLF_HREF,
   HUB_START_MATCH_HREF,
   HUB_STICKY_START_ACTIONS,
@@ -45,6 +48,7 @@ import {
   hubPlayModalTitle,
   hubPlayNearbyHref,
   hubPlayOrganiseHref,
+  hubPlayShowsDarts,
   hubPlayShowsGolf,
   hubPlayShowsPadel,
   hubPlaySportOptions,
@@ -87,6 +91,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
   it("keeps Start actions inside Play only — never sticky or on Home", () => {
     assert.equal(HUB_START_MATCH_HREF, "/padel/new");
     assert.equal(HUB_START_GOLF_HREF, "/golf/new");
+    assert.equal(HUB_START_DARTS_HREF, "/darts/new");
     assert.equal(HUB_STICKY_START_ACTIONS, false);
     assert.deepEqual(HUB_START_ACTION_TABS, ["play"]);
     assert.equal(hubShowsStartActions("play"), true);
@@ -103,6 +108,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     assert.equal(hubOwnsRecentLocks("people"), false);
     assert.equal(HUB_PADEL_HISTORY_HREF, "/padel/history");
     assert.equal(HUB_GOLF_HISTORY_HREF, "/golf/history");
+    assert.equal(HUB_DARTS_HISTORY_HREF, "/darts/history");
   });
 
   it("uses browse fixtures and venues — never a tools grid or Discover tab", () => {
@@ -126,13 +132,17 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     const playable = hubPlayableSports(SPORT_CATALOG);
     assert.deepEqual(
       playable.map((sport) => sport.slug),
-      ["padel", "golf"],
+      ["padel", "golf", "darts"],
     );
-    assert.deepEqual(Object.keys(HUB_PLAY_START_BY_SLUG), ["padel", "golf"]);
+    assert.deepEqual(Object.keys(HUB_PLAY_START_BY_SLUG), [
+      "padel",
+      "golf",
+      "darts",
+    ]);
     assert.equal(hubPlayStartHref("padel"), HUB_START_MATCH_HREF);
     assert.equal(hubPlayStartHref("golf"), HUB_START_GOLF_HREF);
+    assert.equal(hubPlayStartHref("darts"), HUB_START_DARTS_HREF);
     assert.equal(hubPlayStartHref("motorsport"), null);
-    assert.equal(hubPlayStartHref("darts"), null);
     assert.equal(hubPlayStartHref("pool"), null);
     assert.equal(hubPlayStartHref("rugby"), null);
 
@@ -142,7 +152,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     const padel = SPORT_CATALOG.find((sport) => sport.slug === "padel");
     assert.ok(motorsport && darts && rugby && padel);
     assert.equal(isHubPlayableSport(motorsport), false);
-    assert.equal(isHubPlayableSport(darts), false);
+    assert.equal(isHubPlayableSport(darts), true);
     assert.equal(isHubPlayableSport(rugby), false);
     assert.equal(isHubPlayableSport(padel), true);
     assert.ok(!playable.some((sport) => sport.capabilities.includes("watch") && !sport.capabilities.includes("play")));
@@ -179,6 +189,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       [
         ["padel", HUB_START_MATCH_HREF, "start"],
         ["golf", HUB_START_GOLF_HREF, "start"],
+        ["darts", HUB_START_DARTS_HREF, "start"],
       ],
     );
     const capture = hubPlayModalSportOptions(SPORT_CATALOG, "capture");
@@ -187,6 +198,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       [
         ["padel", HUB_CAPTURE_PADEL_HREF, "capture"],
         ["golf", HUB_CAPTURE_GOLF_HREF, "capture"],
+        ["darts", HUB_CAPTURE_DARTS_HREF, "capture"],
       ],
     );
     const organise = hubPlayModalSportOptions(SPORT_CATALOG, "organise");
@@ -199,12 +211,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     );
     assert.deepEqual(
       hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.name),
-      ["Padel", "Golf"],
+      ["Padel", "Golf", "Darts"],
     );
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
     assert.deepEqual(
       hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.slug),
-      ["padel", "golf"],
+      ["padel", "golf", "darts"],
     );
   });
 
@@ -215,11 +227,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       [
         ["padel", HUB_START_MATCH_HREF, "start"],
         ["golf", HUB_START_GOLF_HREF, "start"],
+        ["darts", HUB_START_DARTS_HREF, "start"],
       ],
     );
     assert.deepEqual(
       all.map((option) => option.label),
-      ["Start a match", "Start a round"],
+      ["Start a match", "Start a round", "Start a game"],
     );
     assert.deepEqual(
       hubPlaySportOptions(SPORT_CATALOG, "padel").map((option) => option.href),
@@ -231,21 +244,31 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     );
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "rugby"), []);
-    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "darts"), []);
+    assert.deepEqual(
+      hubPlaySportOptions(SPORT_CATALOG, "darts").map((option) => option.href),
+      [HUB_START_DARTS_HREF],
+    );
     assert.equal(hubPlayShowsPadel("all"), true);
     assert.equal(hubPlayShowsPadel("padel"), true);
     assert.equal(hubPlayShowsPadel("golf"), false);
     assert.equal(hubPlayShowsGolf("golf"), true);
     assert.equal(hubPlayShowsGolf("padel"), false);
+    assert.equal(hubPlayShowsDarts("darts"), true);
+    assert.equal(hubPlayShowsDarts("padel"), false);
   });
 
-  it("maps Capture results to finished-score routes for padel and golf only", () => {
+  it("maps Capture results to finished-score routes for padel, golf, and darts", () => {
     assert.equal(HUB_CAPTURE_PADEL_HREF, "/padel/capture");
     assert.equal(HUB_CAPTURE_GOLF_HREF, "/golf/capture");
-    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), ["padel", "golf"]);
+    assert.equal(HUB_CAPTURE_DARTS_HREF, "/darts/capture");
+    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), [
+      "padel",
+      "golf",
+      "darts",
+    ]);
     assert.equal(hubPlayCaptureHref("padel"), HUB_CAPTURE_PADEL_HREF);
     assert.equal(hubPlayCaptureHref("golf"), HUB_CAPTURE_GOLF_HREF);
-    assert.equal(hubPlayCaptureHref("darts"), null);
+    assert.equal(hubPlayCaptureHref("darts"), HUB_CAPTURE_DARTS_HREF);
     assert.equal(hubPlayHrefForVerb("padel", "start"), HUB_START_MATCH_HREF);
     assert.equal(hubPlayHrefForVerb("golf", "capture"), HUB_CAPTURE_GOLF_HREF);
     assert.equal(hubPlayHrefForVerb("motorsport", "capture"), null);
@@ -256,6 +279,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       [
         ["padel", HUB_CAPTURE_PADEL_HREF, "Capture padel"],
         ["golf", HUB_CAPTURE_GOLF_HREF, "Capture golf"],
+        ["darts", HUB_CAPTURE_DARTS_HREF, "Capture darts"],
       ],
     );
     assert.equal(
@@ -269,8 +293,10 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       [HUB_CAPTURE_PADEL_HREF],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture"),
-      [],
+      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture").map(
+        (option) => option.href,
+      ),
+      [HUB_CAPTURE_DARTS_HREF],
     );
   });
 
@@ -325,7 +351,11 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     );
     assert.equal(hubPlayContinueHref("padel"), null);
     assert.equal(hubPlayContinueHref("golf", {}), null);
-    assert.equal(hubPlayContinueHref("darts", { darts: "/darts/abc" }), null);
+    assert.equal(
+      hubPlayContinueHref("darts", { darts: "/darts/abc" }),
+      "/darts/abc",
+    );
+    assert.equal(hubPlayContinueHref("pool", { pool: "/pool/abc" }), null);
     assert.equal(
       hubPlayContinueHref("padel", { padel: "/padel/live-1" }),
       "/padel/live-1",

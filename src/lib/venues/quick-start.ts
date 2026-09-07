@@ -1,5 +1,6 @@
 import { hasPlayableGolfCourse } from "../golf/course.ts";
 import type { GolfCourseCms } from "../../types/golf-round.ts";
+import { isDartsVenue } from "../darts/venue-options.ts";
 import {
   isPadelVenue,
   type VenueOption,
@@ -26,6 +27,13 @@ export function golfNewHref(venueSlug?: string | null): string {
   const slug = venueSlug?.trim();
   if (!slug) return "/golf/new";
   return `/golf/new?venue=${encodeURIComponent(slug)}`;
+}
+
+/** Deep link into `/darts/new` with an optional board/pub preselected. */
+export function dartsNewHref(venueSlug?: string | null): string {
+  const slug = venueSlug?.trim();
+  if (!slug) return "/darts/new";
+  return `/darts/new?venue=${encodeURIComponent(slug)}`;
 }
 
 export type VenueQuickStartInput = Pick<VenueOption, "slug" | "sports"> & {
@@ -64,6 +72,17 @@ export function venueQuickStartActivities(
       href: golfNewHref(slug),
       cta: "Start golf round",
       description: "Open a hole-by-hole scorecard at this course.",
+    });
+  }
+
+  if (isDartsVenue(venue)) {
+    activities.push({
+      id: "darts",
+      sportSlug: "darts",
+      name: "Darts",
+      href: dartsNewHref(slug),
+      cta: "Start darts game",
+      description: "Open a 501 double-out scorecard at this venue.",
     });
   }
 
