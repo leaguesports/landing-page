@@ -152,10 +152,21 @@ describe("static and CMS row mappers", () => {
     assert.deepEqual(
       fixtureSitemapRoutes(
         ORIGIN,
-        [{ slug: "springboks-vs-all-blacks-2026-09-06" }],
+        [
+          {
+            slug: "springboks-vs-all-blacks-2026-09-06",
+            startsAt: "2026-09-06T16:00:00.000Z",
+            updatedAt: "2026-09-01T12:00:00.000Z",
+          },
+        ],
         NOW,
-      ).map((row) => row.url),
-      [`${ORIGIN}/events/springboks-vs-all-blacks-2026-09-06`],
+      ).map((row) => ({ url: row.url, lastModified: row.lastModified.toISOString() })),
+      [
+        {
+          url: `${ORIGIN}/events/springboks-vs-all-blacks-2026-09-06`,
+          lastModified: "2026-09-01T12:00:00.000Z",
+        },
+      ],
     );
   });
 });
@@ -300,5 +311,40 @@ describe("buildSitemapEntries", () => {
       false,
     );
     assert.match(xml, /^<\?xml /);
+  });
+});
+
+describe("fixture sitemap lastmod + XML guards", () => {
+  it("prefers CMS updatedAt then kickoff, and still rejects query strings", () => {
+    const [withUpdated] = fixtureSitemapRoutes(
+      ORIGIN,
+      [
+        {
+          slug: "proteas-vs-india-2026-09-20",
+          startsAt: "2026-09-20T12:00:00.000Z",
+          updatedAt: "2026-09-02T08:00:00.000Z",
+        },
+      ],
+      NOW,
+    );
+    assert.equal(
+      withUpdated?.lastModified.toISOString(),
+      "2026-09-02T08:00:00.000Z",
+    );
+
+    const [withKickoff] = fixtureSitemapRoutes(
+      ORIGIN,
+      [{ slug: "sa20-final-2026-02-01", startsAt: "2026-02-01T16:00:00.000Z" }],
+      NOW,
+    );
+    assert.equal(
+      withKickoff?.lastModified.toISOString(),
+      "2026-02-01T16:00:00.000Z",
+    );
+
+    assert.equal(
+      fixtureSitemapRoutes(ORIGIN, [{ slug: "bad slug" }], NOW).length,
+      0,
+    );
   });
 });

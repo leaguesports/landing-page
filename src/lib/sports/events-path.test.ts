@@ -17,6 +17,11 @@ describe("events path slug resolution", () => {
   it("looks up CMS events by slug.current", () => {
     assert.match(EVENTS_CMS_BY_SLUG_QUERY, /slug\.current == \$slug/);
     assert.match(EVENTS_CMS_BY_SLUG_QUERY, /_type == "event"/);
+    assert.match(EVENTS_CMS_BY_SLUG_QUERY, /\bseoIntro\b/);
+    assert.match(EVENTS_CMS_BY_SLUG_QUERY, /\blocalAngle\b/);
+    assert.match(EVENTS_CMS_BY_SLUG_QUERY, /faqs\[\]/);
+    assert.match(EVENTS_CMS_BY_SLUG_QUERY, /hostVenue->/);
+    assert.match(EVENTS_CMS_BY_SLUG_QUERY, /\bf1Details\.track\b/);
   });
 
   it("resolves CMS and title slugs without a day suffix to /events detail", () => {

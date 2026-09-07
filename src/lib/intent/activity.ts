@@ -90,6 +90,12 @@ const SERIES_DISPLAY: Record<string, string> = {
   gt3: "GT3",
   "premier-league": "Premier League",
   "six-nations": "Six Nations",
+  psl: "PSL",
+  sa20: "SA20",
+  proteas: "Proteas",
+  springboks: "Springboks",
+  "rugby-championship": "Rugby Championship",
+  urc: "United Rugby Championship",
 };
 
 /**
