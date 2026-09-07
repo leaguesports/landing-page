@@ -42,6 +42,7 @@ export type SitemapIntentPair = {
 export type SitemapFixtureRow = {
   slug?: unknown;
   startsAt?: unknown;
+  updatedAt?: unknown;
 };
 
 export type SitemapDataSource = {
@@ -261,11 +262,16 @@ export function fixtureSitemapRoutes(
   const routes: SitemapEntry[] = [];
   for (const row of collectRows<SitemapFixtureRow>(rows)) {
     if (!isSitemapSlug(row.slug)) continue;
+    const lastModified = toSitemapDate(
+      typeof row.updatedAt === "string"
+        ? row.updatedAt
+        : typeof row.startsAt === "string"
+          ? row.startsAt
+          : null,
+      now,
+    );
     const entry = sitemapEntry(sitemapAbsoluteUrl(origin, `/events/${row.slug}`), {
-      lastModified: toSitemapDate(
-        typeof row.startsAt === "string" ? row.startsAt : null,
-        now,
-      ),
+      lastModified,
       changeFrequency: "daily",
       priority: 0.9,
     });

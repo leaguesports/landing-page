@@ -12,8 +12,11 @@ export const FIXTURE_TIMEZONE = "Africa/Johannesburg";
 /** Keep fixtures visible for a short window after kickoff. */
 export const UPCOMING_GRACE_MS = 6 * 60 * 60 * 1000;
 
-/** Event-level kickoff, falling back to legacy F1 `f1Details.dateTime`. */
-export const EVENT_KICKOFF_GROQ = "coalesce(startsAt, f1Details.dateTime)";
+/**
+ * Event-level kickoff: new `startDateTime`, legacy `startsAt`, then F1.
+ */
+export const EVENT_KICKOFF_GROQ =
+  "coalesce(startDateTime, startsAt, f1Details.dateTime)";
 
 /** Metro title/slug for city filter — city ref, else location parent, else location. */
 export const EVENTS_VENUE_CITY_PROJECTION = `"city": coalesce(address.city->title, location->parent->title, location->title),
@@ -24,6 +27,27 @@ export type FixtureVenue = {
   slug: string;
   city?: string | null;
   citySlug?: string | null;
+};
+
+export type FixtureFaq = {
+  question: string;
+  answer: string;
+};
+
+export type FixtureTeam = {
+  name: string;
+};
+
+export type FixtureHostVenue = {
+  name: string;
+  slug: string;
+  city?: string | null;
+  citySlug?: string | null;
+};
+
+export type FixtureRelatedGuide = {
+  title: string;
+  slug: string;
 };
 
 export type UpcomingFixture = {
@@ -39,6 +63,17 @@ export type UpcomingFixture = {
   kind: "screening" | "event" | "both";
   /** Editorial flag from CMS. Absent/null is not featured. */
   featured?: boolean;
+  competition?: string | null;
+  broadcastInfo?: string | null;
+  teams?: FixtureTeam[];
+  hostVenue?: FixtureHostVenue | null;
+  seoIntro?: string | null;
+  localAngle?: string | null;
+  faqs?: FixtureFaq[];
+  relatedGuide?: FixtureRelatedGuide | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  updatedAt?: string | null;
 };
 
 export type EventsScreeningVenueRow = {
@@ -55,11 +90,54 @@ export type EventsCmsEventRow = {
   title?: unknown;
   slug?: unknown;
   series?: unknown;
+  sport?: unknown;
   dateTime?: unknown;
   startsAt?: unknown;
+  startDateTime?: unknown;
   featured?: unknown;
   track?: unknown;
+  competition?: unknown;
+  broadcastInfo?: unknown;
+  teams?: unknown;
+  hostVenue?: unknown;
+  seoIntro?: unknown;
+  localAngle?: unknown;
+  faqs?: unknown;
+  relatedGuide?: unknown;
+  seoTitle?: unknown;
+  seoDescription?: unknown;
+  updatedAt?: unknown;
 };
+
+/** Shared projection for CMS event docs — hub list, day lookup, and slug lookup. */
+export const EVENT_CMS_PROJECTION = `"id": _id,
+  title,
+  "slug": slug.current,
+  series,
+  sport,
+  featured,
+  competition,
+  broadcastInfo,
+  "dateTime": ${EVENT_KICKOFF_GROQ},
+  "startDateTime": startDateTime,
+  "startsAt": startsAt,
+  "track": f1Details.track,
+  "updatedAt": _updatedAt,
+  seoTitle,
+  seoDescription,
+  seoIntro,
+  localAngle,
+  "faqs": faqs[]{ question, answer },
+  "teams": teams[]{ name },
+  "hostVenue": hostVenue->{
+    name,
+    "slug": slug.current,
+    ${EVENTS_VENUE_CITY_PROJECTION}
+  },
+  "relatedGuide": relatedGuide->{
+    title,
+    "slug": slug.current
+  }`;
 
 /**
  * Venues with upcoming screenings, ordered by next kickoff — not document age.
@@ -83,7 +161,7 @@ export const EVENTS_SCREENINGS_QUERY = `*[
 
 /**
  * Upcoming CMS events only (not the oldest historical slice).
- * Kickoff is event-level `startsAt` or legacy F1 `f1Details.dateTime`.
+ * Kickoff is `startDateTime`, legacy `startsAt`, or F1 `f1Details.dateTime`.
  * `$notBefore` is an ISO timestamp (now minus grace).
  */
 export const EVENTS_CMS_QUERY = `*[
@@ -91,13 +169,7 @@ export const EVENTS_CMS_QUERY = `*[
   defined(${EVENT_KICKOFF_GROQ}) &&
   ${EVENT_KICKOFF_GROQ} >= $notBefore
 ] | order(${EVENT_KICKOFF_GROQ} asc) [0...24] {
-  "id": _id,
-  title,
-  "slug": slug.current,
-  series,
-  featured,
-  "dateTime": ${EVENT_KICKOFF_GROQ},
-  "track": f1Details.track
+  ${EVENT_CMS_PROJECTION}
 }`;
 
 /** Day-scoped venue screenings for /events/[slug] lookups. */
@@ -126,13 +198,7 @@ export const EVENTS_CMS_ON_DAY_QUERY = `*[
   ${EVENT_KICKOFF_GROQ} >= $dayStart &&
   ${EVENT_KICKOFF_GROQ} < $dayEnd
 ] | order(${EVENT_KICKOFF_GROQ} asc) [0...24] {
-  "id": _id,
-  title,
-  "slug": slug.current,
-  series,
-  featured,
-  "dateTime": ${EVENT_KICKOFF_GROQ},
-  "track": f1Details.track
+  ${EVENT_CMS_PROJECTION}
 }`;
 
 export function upcomingNotBeforeIso(now: Date = new Date()): string {
@@ -184,6 +250,121 @@ function asIso(value: unknown): string | null {
 
 function asFeatured(value: unknown): boolean {
   return value === true;
+}
+
+function parseTeams(value: unknown): FixtureTeam[] {
+  if (!Array.isArray(value)) return [];
+  const teams: FixtureTeam[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const name = asString((item as { name?: unknown }).name);
+    if (!name) continue;
+    teams.push({ name });
+  }
+  return teams;
+}
+
+function parseFaqs(value: unknown): FixtureFaq[] {
+  if (!Array.isArray(value)) return [];
+  const faqs: FixtureFaq[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as { question?: unknown; answer?: unknown };
+    const question = asString(row.question);
+    const answer = asString(row.answer);
+    if (!question || !answer) continue;
+    faqs.push({ question, answer });
+  }
+  return faqs;
+}
+
+function parseHostVenue(value: unknown): FixtureHostVenue | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as {
+    name?: unknown;
+    slug?: unknown;
+    city?: unknown;
+    citySlug?: unknown;
+  };
+  const name = asString(row.name);
+  const slug = asString(row.slug);
+  if (!name || !slug) return null;
+  return {
+    name,
+    slug,
+    city: asString(row.city) || null,
+    citySlug: asString(row.citySlug) || null,
+  };
+}
+
+function parseRelatedGuide(value: unknown): FixtureRelatedGuide | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { title?: unknown; slug?: unknown };
+  const title = asString(row.title);
+  const slug = asString(row.slug);
+  if (!title || !slug) return null;
+  return { title, slug };
+}
+
+type FixtureSeoFields = {
+  competition: string | null;
+  broadcastInfo: string | null;
+  teams: FixtureTeam[];
+  hostVenue: FixtureHostVenue | null;
+  seoIntro: string | null;
+  localAngle: string | null;
+  faqs: FixtureFaq[];
+  relatedGuide: FixtureRelatedGuide | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  updatedAt: string | null;
+};
+
+const EMPTY_SEO: FixtureSeoFields = {
+  competition: null,
+  broadcastInfo: null,
+  teams: [],
+  hostVenue: null,
+  seoIntro: null,
+  localAngle: null,
+  faqs: [],
+  relatedGuide: null,
+  seoTitle: null,
+  seoDescription: null,
+  updatedAt: null,
+};
+
+function seoFromCmsRow(row: EventsCmsEventRow): FixtureSeoFields {
+  return {
+    competition: asString(row.competition) || null,
+    broadcastInfo: asString(row.broadcastInfo) || null,
+    teams: parseTeams(row.teams),
+    hostVenue: parseHostVenue(row.hostVenue),
+    seoIntro: asString(row.seoIntro) || null,
+    localAngle: asString(row.localAngle) || null,
+    faqs: parseFaqs(row.faqs),
+    relatedGuide: parseRelatedGuide(row.relatedGuide),
+    seoTitle: asString(row.seoTitle) || null,
+    seoDescription: asString(row.seoDescription) || null,
+    updatedAt: asIso(row.updatedAt),
+  };
+}
+
+function applySeo(
+  target: FixtureSeoFields,
+  seo: FixtureSeoFields,
+): void {
+  if (seo.competition) target.competition = seo.competition;
+  if (seo.broadcastInfo) target.broadcastInfo = seo.broadcastInfo;
+  if (seo.teams.length > 0) target.teams = seo.teams;
+  if (seo.hostVenue) target.hostVenue = seo.hostVenue;
+  if (seo.seoIntro) target.seoIntro = seo.seoIntro;
+  if (seo.localAngle) target.localAngle = seo.localAngle;
+  if (seo.faqs.length > 0) target.faqs = seo.faqs;
+  if (seo.relatedGuide) target.relatedGuide = seo.relatedGuide;
+  if (seo.seoTitle) target.seoTitle = seo.seoTitle;
+  if (seo.seoDescription) target.seoDescription = seo.seoDescription;
+  if (seo.updatedAt) target.updatedAt = seo.updatedAt;
 }
 
 /**
@@ -282,7 +463,7 @@ type MutableFixture = {
   hasScreening: boolean;
   hasEvent: boolean;
   featured: boolean;
-};
+} & FixtureSeoFields;
 
 function toUpcoming(row: MutableFixture): UpcomingFixture {
   const venues = [...row.venues.values()].sort((a, b) =>
@@ -305,6 +486,17 @@ function toUpcoming(row: MutableFixture): UpcomingFixture {
     eventPageHref: row.eventPageHref,
     kind,
     featured: row.featured,
+    competition: row.competition,
+    broadcastInfo: row.broadcastInfo,
+    teams: row.teams,
+    hostVenue: row.hostVenue,
+    seoIntro: row.seoIntro,
+    localAngle: row.localAngle,
+    faqs: row.faqs,
+    relatedGuide: row.relatedGuide,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -385,6 +577,7 @@ export function groupScreeningsIntoFixtures(
         hasScreening: true,
         hasEvent: false,
         featured: false,
+        ...EMPTY_SEO,
       });
     }
   }
@@ -406,7 +599,8 @@ export function cmsEventsToFixtures(
     const eventSlug = asString(row.slug);
     if (!title) continue;
     const series = asString(row.series);
-    const startsAt = asIso(row.dateTime) ?? asIso(row.startsAt);
+    const startsAt =
+      asIso(row.startDateTime) ?? asIso(row.dateTime) ?? asIso(row.startsAt);
     if (
       !options.includePast &&
       startsAt &&
@@ -416,10 +610,12 @@ export function cmsEventsToFixtures(
     }
 
     const sportSlug =
+      resolveSportSlug(asString(row.sport), sports) ??
       resolveSportSlug(series, sports) ??
       inferSportSlug(`${series} ${title}`, sports);
     // Slug from title+day so screenings of the same fixture merge on the same URL.
     const slug = fixtureSlugFromTitle(title, startsAt);
+    const seo = seoFromCmsRow(row);
 
     out.push({
       slug,
@@ -431,6 +627,7 @@ export function cmsEventsToFixtures(
       eventPageHref: eventHref(series, eventSlug || slugifyTitle(title)),
       kind: "event",
       featured: asFeatured(row.featured),
+      ...seo,
     });
   }
 
@@ -451,7 +648,7 @@ export function mergeUpcomingFixtures(
     const key = normalizeFixtureKey(item.title, item.startsAt);
     const existing = byKey.get(key);
     if (!existing) {
-      byKey.set(key, {
+      const created: MutableFixture = {
         slug: item.slug,
         title: item.title,
         sportSlug: item.sportSlug,
@@ -462,7 +659,22 @@ export function mergeUpcomingFixtures(
         hasScreening: from === "screening" || item.kind === "both",
         hasEvent: from === "event" || item.kind === "both",
         featured: Boolean(item.featured),
+        ...EMPTY_SEO,
+      };
+      applySeo(created, {
+        competition: item.competition ?? null,
+        broadcastInfo: item.broadcastInfo ?? null,
+        teams: item.teams ?? [],
+        hostVenue: item.hostVenue ?? null,
+        seoIntro: item.seoIntro ?? null,
+        localAngle: item.localAngle ?? null,
+        faqs: item.faqs ?? [],
+        relatedGuide: item.relatedGuide ?? null,
+        seoTitle: item.seoTitle ?? null,
+        seoDescription: item.seoDescription ?? null,
+        updatedAt: item.updatedAt ?? null,
       });
+      byKey.set(key, created);
       return;
     }
 
@@ -485,6 +697,19 @@ export function mergeUpcomingFixtures(
     if (item.series) existing.series = item.series;
     if (item.eventPageHref) existing.eventPageHref = item.eventPageHref;
     if (item.featured) existing.featured = true;
+    applySeo(existing, {
+      competition: item.competition ?? null,
+      broadcastInfo: item.broadcastInfo ?? null,
+      teams: item.teams ?? [],
+      hostVenue: item.hostVenue ?? null,
+      seoIntro: item.seoIntro ?? null,
+      localAngle: item.localAngle ?? null,
+      faqs: item.faqs ?? [],
+      relatedGuide: item.relatedGuide ?? null,
+      seoTitle: item.seoTitle ?? null,
+      seoDescription: item.seoDescription ?? null,
+      updatedAt: item.updatedAt ?? null,
+    });
     if (
       from === "screening" ||
       item.kind === "screening" ||

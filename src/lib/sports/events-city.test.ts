@@ -8,7 +8,7 @@ import {
 } from "./events-city.ts";
 
 describe("parseEventsCityParam", () => {
-  it("maps CPT / JHB / DBN and city-directory aliases", () => {
+  it("maps JHB / CPT / DBN / PTA and city-directory aliases", () => {
     assert.equal(parseEventsCityParam("cpt"), "cpt");
     assert.equal(parseEventsCityParam("CPT"), "cpt");
     assert.equal(parseEventsCityParam("cape-town"), "cpt");
@@ -18,12 +18,15 @@ describe("parseEventsCityParam", () => {
     assert.equal(parseEventsCityParam("Johannesburg"), "jhb");
     assert.equal(parseEventsCityParam("dbn"), "dbn");
     assert.equal(parseEventsCityParam("durban"), "dbn");
+    assert.equal(parseEventsCityParam("pta"), "pta");
+    assert.equal(parseEventsCityParam("pretoria"), "pta");
+    assert.equal(parseEventsCityParam("tshwane"), "pta");
   });
 
   it("treats unknown or empty values as All cities", () => {
     assert.equal(parseEventsCityParam(undefined), null);
     assert.equal(parseEventsCityParam(""), null);
-    assert.equal(parseEventsCityParam("pretoria"), null);
+    assert.equal(parseEventsCityParam("stellenbosch"), null);
     assert.equal(parseEventsCityParam(["", "cpt"]), null);
   });
 });
@@ -101,6 +104,7 @@ describe("eventsCityLabel", () => {
     assert.equal(eventsCityLabel("cpt"), "Cape Town");
     assert.equal(eventsCityLabel("jhb"), "Johannesburg");
     assert.equal(eventsCityLabel("dbn"), "Durban");
+    assert.equal(eventsCityLabel("pta"), "Pretoria");
     assert.equal(eventsCityLabel(null), null);
   });
 });

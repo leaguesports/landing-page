@@ -22,6 +22,9 @@ describe("inferSportSlug", () => {
     assert.equal(inferSportSlug("Watch football tonight"), "soccer");
     assert.equal(inferSportSlug("Padel courts in Sandton"), "padel");
     assert.equal(inferSportSlug("Springbok rugby at the pub"), "rugby");
+    assert.equal(inferSportSlug("PSL derby at the fan park"), "soccer");
+    assert.equal(inferSportSlug("SA20 at Newlands"), "cricket");
+    assert.equal(inferSportSlug("Proteas vs India"), "cricket");
     assert.equal(inferSportSlug("Go karting in Rosebank"), "karting");
     assert.equal(inferSportSlug("Indoor go-karting tracks"), "karting");
     assert.equal(inferSportSlug("AR darts night in Sandton"), "darts");

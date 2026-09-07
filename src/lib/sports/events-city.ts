@@ -1,6 +1,6 @@
 import { CITY_DIRECTORY } from "../../data/cities.ts";
 
-export type EventsCityCode = "cpt" | "jhb" | "dbn";
+export type EventsCityCode = "jhb" | "cpt" | "dbn" | "pta";
 
 export type EventsCityFilter = {
   code: EventsCityCode;
@@ -8,17 +8,19 @@ export type EventsCityFilter = {
   directorySlug: string;
 };
 
-/** Shareable `/events?city=` values for the three SA metros. */
+/** Shareable `/events?city=` values — Joburg → CT → Durban / Pretoria. */
 export const EVENTS_CITY_FILTERS: EventsCityFilter[] = [
-  { code: "cpt", label: "Cape Town", directorySlug: "cape-town" },
   { code: "jhb", label: "Johannesburg", directorySlug: "johannesburg" },
+  { code: "cpt", label: "Cape Town", directorySlug: "cape-town" },
   { code: "dbn", label: "Durban", directorySlug: "durban" },
+  { code: "pta", label: "Pretoria", directorySlug: "pretoria" },
 ];
 
 const DIRECTORY_SLUG_TO_CODE: Record<string, EventsCityCode> = {
-  "cape-town": "cpt",
   johannesburg: "jhb",
+  "cape-town": "cpt",
   durban: "dbn",
+  pretoria: "pta",
 };
 
 function normalizeCityToken(value: string): string {
@@ -31,9 +33,10 @@ function normalizeCityToken(value: string): string {
 
 function buildMetroTokens(): Record<EventsCityCode, Set<string>> {
   const tokens: Record<EventsCityCode, Set<string>> = {
-    cpt: new Set(["cpt", "cape-town", "capetown"]),
     jhb: new Set(["jhb", "johannesburg", "joburg", "jozi"]),
+    cpt: new Set(["cpt", "cape-town", "capetown"]),
     dbn: new Set(["dbn", "durban"]),
+    pta: new Set(["pta", "pretoria", "tshwane"]),
   };
 
   for (const city of CITY_DIRECTORY) {

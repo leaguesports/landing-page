@@ -1,6 +1,6 @@
 import {
   canonicalizeFixtureTitle,
-  EVENT_KICKOFF_GROQ,
+  EVENT_CMS_PROJECTION,
   fixtureCalendarDay,
   fixtureSlugFromTitle,
   normalizeFixtureKey,
@@ -15,13 +15,7 @@ export const EVENTS_CMS_BY_SLUG_QUERY = `*[
   _type == "event" &&
   slug.current == $slug
 ][0] {
-  "id": _id,
-  title,
-  "slug": slug.current,
-  series,
-  featured,
-  "dateTime": ${EVENT_KICKOFF_GROQ},
-  "track": f1Details.track
+  ${EVENT_CMS_PROJECTION}
 }`;
 
 export type VenueScreeningDisplay = {

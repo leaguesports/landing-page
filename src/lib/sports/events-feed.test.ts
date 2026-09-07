@@ -43,22 +43,35 @@ describe("events feed queries", () => {
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
   });
 
-  it("uses coalesce(startsAt, f1Details.dateTime) and does not require F1-only kickoff", () => {
-    assert.equal(EVENT_KICKOFF_GROQ, "coalesce(startsAt, f1Details.dateTime)");
-    assert.match(EVENTS_CMS_QUERY, /coalesce\(startsAt,\s*f1Details\.dateTime\)/);
-    assert.match(
-      EVENTS_CMS_QUERY,
-      /coalesce\(startsAt,\s*f1Details\.dateTime\) >= \$notBefore/,
+  it("uses coalesce(startDateTime, startsAt, f1Details.dateTime) and does not require F1-only kickoff", () => {
+    assert.equal(
+      EVENT_KICKOFF_GROQ,
+      "coalesce(startDateTime, startsAt, f1Details.dateTime)",
     );
     assert.match(
       EVENTS_CMS_QUERY,
-      /order\(coalesce\(startsAt,\s*f1Details\.dateTime\) asc\)/,
+      /coalesce\(startDateTime,\s*startsAt,\s*f1Details\.dateTime\)/,
+    );
+    assert.match(
+      EVENTS_CMS_QUERY,
+      /coalesce\(startDateTime,\s*startsAt,\s*f1Details\.dateTime\) >= \$notBefore/,
+    );
+    assert.match(
+      EVENTS_CMS_QUERY,
+      /order\(coalesce\(startDateTime,\s*startsAt,\s*f1Details\.dateTime\) asc\)/,
     );
     assert.doesNotMatch(EVENTS_CMS_QUERY, /defined\(f1Details\.dateTime\)/);
     assert.match(EVENTS_CMS_QUERY, /\bfeatured\b/);
+    assert.match(EVENTS_CMS_QUERY, /\bseoIntro\b/);
+    assert.match(EVENTS_CMS_QUERY, /\blocalAngle\b/);
+    assert.match(EVENTS_CMS_QUERY, /faqs\[\]/);
+    assert.match(EVENTS_CMS_QUERY, /hostVenue->/);
+    assert.match(EVENTS_CMS_QUERY, /relatedGuide->/);
+    assert.match(EVENTS_CMS_QUERY, /\bstartDateTime\b/);
+    assert.match(EVENTS_CMS_QUERY, /\bf1Details\.track\b/);
     assert.match(
       EVENTS_CMS_ON_DAY_QUERY,
-      /coalesce\(startsAt,\s*f1Details\.dateTime\)/,
+      /coalesce\(startDateTime,\s*startsAt,\s*f1Details\.dateTime\)/,
     );
     assert.doesNotMatch(EVENTS_CMS_ON_DAY_QUERY, /defined\(f1Details\.dateTime\)/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\bfeatured\b/);
@@ -336,6 +349,43 @@ describe("cmsEventsToFixtures", () => {
     assert.equal(fixtures[0]?.featured, true);
     assert.equal(fixtures[0]?.startsAt, "2026-09-06T16:00:00.000Z");
   });
+
+  it("maps startDateTime, sport, teams, and SEO fields from CMS rows", () => {
+    const fixtures = cmsEventsToFixtures(
+      [
+        {
+          title: "Chiefs vs Pirates",
+          slug: "soweto-derby",
+          sport: "soccer",
+          series: "psl",
+          startDateTime: "2026-09-12T13:00:00.000Z",
+          competition: "PSL",
+          teams: [{ name: "Kaizer Chiefs" }, { name: "Orlando Pirates" }],
+          seoIntro: "A unique intro about the Soweto derby in Johannesburg.",
+          localAngle: "Joburg bars will be packed for this one.",
+          faqs: [
+            { question: "Where to watch?", answer: "Listed screening venues." },
+          ],
+          hostVenue: {
+            name: "FNB Stadium",
+            slug: "fnb-stadium",
+            city: "Johannesburg",
+            citySlug: "johannesburg",
+          },
+        },
+      ],
+      SPORT_CATALOG,
+      { now: new Date("2026-09-05T10:00:00.000Z") },
+    );
+
+    assert.equal(fixtures[0]?.sportSlug, "soccer");
+    assert.equal(fixtures[0]?.series, "psl");
+    assert.equal(fixtures[0]?.startsAt, "2026-09-12T13:00:00.000Z");
+    assert.equal(fixtures[0]?.competition, "PSL");
+    assert.equal(fixtures[0]?.teams?.[0]?.name, "Kaizer Chiefs");
+    assert.equal(fixtures[0]?.hostVenue?.slug, "fnb-stadium");
+    assert.match(fixtures[0]?.seoIntro ?? "", /Soweto derby/);
+  });
 });
 
 describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
@@ -367,6 +417,8 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
           series: "f1",
           dateTime: "2026-09-07T13:00:00.000Z",
           featured: true,
+          seoIntro: "Editorial intro for the Italian Grand Prix weekend.",
+          localAngle: "Joburg motorsport bars will put this one on the big screen.",
         },
       ],
       SPORT_CATALOG,
@@ -380,6 +432,7 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
     assert.equal(merged[0]?.venues.length, 1);
     assert.ok(merged[0]?.eventPageHref);
     assert.equal(merged[0]?.featured, true);
+    assert.equal(merged[0]?.seoIntro, "Editorial intro for the Italian Grand Prix weekend.");
   });
 
   it("orders soonest fixtures with venues first on equal kickoff", () => {

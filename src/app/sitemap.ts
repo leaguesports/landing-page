@@ -112,8 +112,11 @@ function createCmsSource(): SitemapDataSource {
         "fixtures",
         async () => {
           const { getUpcomingFixtures } = await import("@/services/events");
+          const { toIndexableSitemapFixtures } = await import(
+            "@/lib/events/sitemap"
+          );
           const rows = await getUpcomingFixtures({ limit: 48 });
-          return Array.isArray(rows) ? rows : [];
+          return toIndexableSitemapFixtures(Array.isArray(rows) ? rows : []);
         },
         [],
       );
