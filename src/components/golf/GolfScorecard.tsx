@@ -3,13 +3,14 @@
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
 import { lockGolfRound } from "@/lib/golf/api-round";
+import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
 import {
   clearGolfRoundLocal,
   readGolfRoundLocal,
   writeGolfRoundLocal,
 } from "@/lib/golf/round-store";
-import { formatHoleRangeLabel } from "@/lib/golf/pre-round";
 import { toScorecardHoles } from "@/lib/golf/scorecard-holes";
 import {
   allHolesScored,
@@ -76,16 +77,6 @@ function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
   );
 }
 
-function layoutLabel(round: GolfRound): string {
-  if (round.holesPlayed === 18 && round.startingHole === 1) return "18 holes";
-  if (round.holesPlayed === 9 && round.startingHole === 10) return "Back 9";
-  if (round.holesPlayed === 9 && round.startingHole === 1) return "Front 9";
-  return (
-    formatHoleRangeLabel(round.holesPlayed, round.startingHole) ||
-    `${round.holesPlayed} holes`
-  );
-}
-
 export function GolfScorecard({
   initialRound,
   golfCourse = null,
@@ -120,6 +111,7 @@ export function GolfScorecard({
     () => runningTotals(round.players, strokes, holes),
     [round.players, strokes, holes],
   );
+  const lockedStrokes = round.score ? strokesFromScore(round.score) : strokes;
 
   useEffect(() => {
     if (locked) return;
@@ -218,20 +210,30 @@ export function GolfScorecard({
         </Link>
       </header>
 
-      <div className="px-4 pt-4 text-center">
-        {round.venue?.name || round.course.name || round.teeName ? (
-          <p className="truncate text-xs text-zinc-500">
-            {[round.venue?.name || round.course.name, round.teeName]
-              .filter(Boolean)
-              .join(" · ")}
+      {locked ? (
+        <div className="flex flex-1 flex-col px-4 py-5">
+          <GolfLockedScorecard
+            round={round}
+            strokes={lockedStrokes}
+            holes={holes}
+          />
+        </div>
+      ) : (
+        <div className="px-4 pt-4 text-center">
+          {round.venue?.name || round.course.name || round.teeName ? (
+            <p className="truncate text-xs text-zinc-500">
+              {[round.venue?.name || round.course.name, round.teeName]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ) : null}
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+            {golfLayoutLabel(round)}
           </p>
-        ) : null}
-        <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
-          {locked ? "Result locked" : layoutLabel(round)}
-        </p>
-      </div>
+        </div>
+      )}
 
-      {hole ? (
+      {!locked && hole ? (
         <div className="flex flex-1 flex-col px-4 py-6">
           <div className="flex items-center justify-between gap-3">
             <button
