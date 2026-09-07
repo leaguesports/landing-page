@@ -6,6 +6,7 @@ import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { listIntegrations } from "@/lib/integrations/integrations";
 import { listMyOrganisedGames } from "@/lib/organised-games/organised-games";
+import { lookupPlayerDartsHistory } from "@/lib/darts/lookup-history";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 import {
@@ -61,6 +62,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     preferencesResult,
     history,
     golfHistory,
+    dartsHistory,
     hub,
     followedVenues,
     followedFixtureRows,
@@ -74,6 +76,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     preferencesPromise,
     lookupPlayerHistory(user.id, { cookie }),
     lookupPlayerGolfHistory(user.id, { cookie }),
+    lookupPlayerDartsHistory(user.id, { cookie }),
     getDashboardHub({
       followedVenueSlugs: followedSlugsPromise,
       preferredSports: preferredSportsPromise,
@@ -102,8 +105,11 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
   const items: PadelHistoryItem[] = history.error ? [] : history.items;
   const padelCount = history.error ? 0 : history.items.length;
   const golfCount = golfHistory.error ? 0 : golfHistory.items.length;
+  const dartsCount = dartsHistory.error ? 0 : dartsHistory.items.length;
   const activityError =
-    [history.error, golfHistory.error].filter(Boolean).join(" · ") || null;
+    [history.error, golfHistory.error, dartsHistory.error]
+      .filter(Boolean)
+      .join(" · ") || null;
 
   const followedFixtures = fixturesToFollowedFeedItems(
     followedFixturesResolved,
@@ -116,9 +122,12 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       historyItems={items}
       golfHistoryError={golfHistory.error}
       golfHistoryItems={golfHistory.error ? [] : golfHistory.items}
+      dartsHistoryError={dartsHistory.error}
+      dartsHistoryItems={dartsHistory.error ? [] : dartsHistory.items}
       lockedActivity={{
         padel: padelCount,
         golf: golfCount,
+        darts: dartsCount,
         error: activityError,
       }}
       followedVenues={followedVenues}

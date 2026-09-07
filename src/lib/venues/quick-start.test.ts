@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  dartsNewHref,
   golfNewHref,
   padelNewHref,
   venueQuickStartActivities,
@@ -62,6 +63,20 @@ describe("golfNewHref", () => {
     assert.equal(
       golfNewHref("glendower-golf-club"),
       "/golf/new?venue=glendower-golf-club",
+    );
+  });
+});
+
+describe("dartsNewHref", () => {
+  it("returns the bare new-game path without a slug", () => {
+    assert.equal(dartsNewHref(), "/darts/new");
+    assert.equal(dartsNewHref("  "), "/darts/new");
+  });
+
+  it("encodes the venue slug as a query param", () => {
+    assert.equal(
+      dartsNewHref("the-dartboard"),
+      "/darts/new?venue=the-dartboard",
     );
   });
 });
@@ -134,6 +149,19 @@ describe("venueQuickStartActivities", () => {
       ),
       [],
     );
+  });
+
+  it("offers darts when Play sports include darts", () => {
+    const activities = venueQuickStartActivities(
+      venue({
+        slug: "the-dartboard",
+        sports: ["darts", "pool"],
+      }),
+    );
+    assert.equal(activities.length, 1);
+    assert.equal(activities[0]?.id, "darts");
+    assert.equal(activities[0]?.href, "/darts/new?venue=the-dartboard");
+    assert.equal(activities[0]?.cta, "Start darts game");
   });
 
   it("returns nothing for watch-only sports bars", () => {

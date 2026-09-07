@@ -6,7 +6,7 @@ import {
   type HubPlaySportOption,
   type HubPlayVerbId,
 } from "@/lib/sports/hub-ia";
-import { ArrowUpRight, Flag, Trophy, X } from "lucide-react";
+import { ArrowUpRight, Flag, Target, Trophy, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 
@@ -118,6 +118,8 @@ export function PlaySportModal({ verb, options, onClose }: PlaySportModalProps) 
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/4 text-emerald-200">
                     {option.slug === "golf" ? (
                       <Flag className="h-4 w-4" aria-hidden />
+                    ) : option.slug === "darts" ? (
+                      <Target className="h-4 w-4" aria-hidden />
                     ) : (
                       <Trophy className="h-4 w-4" aria-hidden />
                     )}

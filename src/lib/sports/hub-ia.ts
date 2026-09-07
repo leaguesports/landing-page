@@ -14,8 +14,10 @@ import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
 
 export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
+export const HUB_START_DARTS_HREF = "/darts/new" as const;
 export const HUB_CAPTURE_PADEL_HREF = "/padel/capture" as const;
 export const HUB_CAPTURE_GOLF_HREF = "/golf/capture" as const;
+export const HUB_CAPTURE_DARTS_HREF = "/darts/capture" as const;
 export const HUB_ORGANISE_PADEL_HREF = "/padel/organise" as const;
 export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
@@ -27,6 +29,7 @@ export const HUB_TRAINING_HREF = "/training" as const;
 export const HUB_INTEGRATIONS_HREF = "/integrations" as const;
 export const HUB_PADEL_HISTORY_HREF = "/padel/history" as const;
 export const HUB_GOLF_HISTORY_HREF = "/golf/history" as const;
+export const HUB_DARTS_HISTORY_HREF = "/darts/history" as const;
 
 export const HUB_RECENT_LOCK_LIMIT = 8;
 export const HUB_BADGE_STRIP_LIMIT = 3;
@@ -103,7 +106,7 @@ export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
 ];
 
 /**
- * Playable live create-flow map. Later sports (darts/pool) plug in here —
+ * Playable live create-flow map. Later sports (pool) plug in here —
  * catalog `play` capability alone is not enough (watch-only stays out).
  */
 export const HUB_PLAY_START_BY_SLUG: Readonly<
@@ -118,6 +121,11 @@ export const HUB_PLAY_START_BY_SLUG: Readonly<
     href: HUB_START_GOLF_HREF,
     label: "Start a round",
     description: "Hole-by-hole scorecard for your group.",
+  },
+  darts: {
+    href: HUB_START_DARTS_HREF,
+    label: "Start a game",
+    description: "501 double-out live scorecard.",
   },
 };
 
@@ -136,6 +144,11 @@ export const HUB_PLAY_CAPTURE_BY_SLUG: Readonly<
     href: HUB_CAPTURE_GOLF_HREF,
     label: "Capture golf",
     description: "Enter a finished round score.",
+  },
+  darts: {
+    href: HUB_CAPTURE_DARTS_HREF,
+    label: "Capture darts",
+    description: "Enter a finished 501 game.",
   },
 };
 
@@ -193,6 +206,10 @@ export function hubPlayShowsPadel(active: string): boolean {
 
 export function hubPlayShowsGolf(active: string): boolean {
   return active === ALL_SPORTS_SLUG || active === "golf";
+}
+
+export function hubPlayShowsDarts(active: string): boolean {
+  return active === ALL_SPORTS_SLUG || active === "darts";
 }
 
 export function hubPlayHref(active: string): string {

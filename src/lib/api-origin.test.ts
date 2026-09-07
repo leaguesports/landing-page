@@ -74,8 +74,13 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/golf-rounds/capture"), true);
     assert.equal(shouldProxyApiPath("/api/golf-rounds/abc"), true);
     assert.equal(shouldProxyApiPath("/api/golf-rounds/abc/lock"), true);
+    assert.equal(shouldProxyApiPath("/api/darts"), true);
+    assert.equal(shouldProxyApiPath("/api/darts/capture"), true);
+    assert.equal(shouldProxyApiPath("/api/darts/abc"), true);
+    assert.equal(shouldProxyApiPath("/api/darts/abc/turns"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/golf-rounds"), true);
+    assert.equal(shouldProxyApiPath("/api/venues/sanity-pub/darts"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
@@ -378,6 +383,19 @@ describe("getApiProxyRewrites", () => {
         assert.ok(
           rewriteSources.indexOf("/api/golf-rounds/capture") <
             rewriteSources.indexOf("/api/golf-rounds/:id"),
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/darts/capture")
+            ?.destination,
+          "https://api.example.test/api/darts/capture",
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/darts/capture") <
+            rewriteSources.indexOf("/api/darts/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/darts/:id/turns") <
+            rewriteSources.indexOf("/api/darts/:id"),
         );
         assert.ok(
           rewriteSources.indexOf("/api/organised-games/invite/:token") <
