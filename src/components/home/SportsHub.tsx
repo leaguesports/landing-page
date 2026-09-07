@@ -49,6 +49,7 @@ import {
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
   HUB_PLAY_VERBS,
+  HUB_QUICK_START,
   HUB_RECENT_LOCK_LIMIT,
   HUB_TABS,
   HUB_TRAINING_HREF,
@@ -79,6 +80,7 @@ import {
   Heart,
   Home,
   ListFilter,
+  Navigation,
   Search,
   Sparkles,
   Trophy,
@@ -912,23 +914,35 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description="Start a live game, organise one with friends, or capture a finished result."
+                description="Quick start from your location, or start, organise, or capture manually."
               />
 
+              <Link
+                href={HUB_QUICK_START.href}
+                className="mb-4 flex w-full flex-col items-start gap-4 rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-400/15 via-emerald-400/5 to-transparent px-5 py-6 text-left transition-colors hover:border-emerald-400/45 sm:px-6 lg:mb-5 lg:px-7 lg:py-7"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
+                  <Navigation className="h-4 w-4" aria-hidden />
+                </span>
+                <div>
+                  <h3 className="font-display text-3xl tracking-wide text-white">
+                    {HUB_QUICK_START.label}
+                  </h3>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-300">
+                    {HUB_QUICK_START.description}
+                  </p>
+                </div>
+              </Link>
+
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-                {HUB_PLAY_VERBS.map((verb, index) => (
+                {HUB_PLAY_VERBS.map((verb) => (
                   <li key={verb.id}>
                     <button
                       type="button"
                       aria-haspopup="dialog"
                       aria-expanded={playVerb === verb.id}
                       onClick={() => setPlayVerb(verb.id)}
-                      className={[
-                        "flex h-full w-full flex-col items-start gap-5 rounded-3xl border px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7",
-                        index === 0
-                          ? "border-emerald-400/25 bg-emerald-400/8"
-                          : "border-white/8 bg-[#141814]",
-                      ].join(" ")}
+                      className="flex h-full w-full flex-col items-start gap-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
                         {verb.id === "capture" ? (

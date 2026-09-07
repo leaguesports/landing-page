@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import {
+  distanceKm,
+  type GeoCoords,
+} from "@/lib/geo/distance";
 
-export type GeoCoords = {
-  latitude: number;
-  longitude: number;
-};
+export type { GeoCoords };
+export { distanceKm };
 
 export type GeoStatus = "idle" | "loading" | "ready" | "error" | "unsupported";
 
@@ -45,21 +47,4 @@ export function useGeolocation() {
   }, []);
 
   return { coords, status, error, request };
-}
-
-/** Haversine distance in km */
-export function distanceKm(
-  a: GeoCoords,
-  b: { latitude: number; longitude: number },
-): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.latitude - a.latitude);
-  const dLon = toRad(b.longitude - a.longitude);
-  const lat1 = toRad(a.latitude);
-  const lat2 = toRad(b.latitude);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
 }

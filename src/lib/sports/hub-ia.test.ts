@@ -24,6 +24,8 @@ import {
   HUB_PLAY_START_BY_SLUG,
   HUB_PLAY_VERB_IDS,
   HUB_PLAY_VERBS,
+  HUB_QUICK_START,
+  HUB_QUICK_START_HREF,
   HUB_RECENT_LOCK_LIMIT,
   HUB_SPORT_CONTROL,
   HUB_START_ACTION_TABS,
@@ -172,6 +174,9 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
       HUB_PLAY_VERBS.map((verb) => verb.label).join(" "),
       /quick play/i,
     );
+    assert.equal(HUB_QUICK_START.href, HUB_QUICK_START_HREF);
+    assert.match(HUB_QUICK_START.label, /quick start/i);
+    assert.match(HUB_QUICK_START.description, /location/i);
   });
 
   it("picks the sport in a modal — not inline game blocks", () => {

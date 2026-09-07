@@ -11,6 +11,9 @@ import {
 import { intentPath } from "../intent/paths.ts";
 import { parseVenueSearch } from "../search/venueSearch.ts";
 import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
+import { HUB_QUICK_START_HREF } from "../play/quick-start.ts";
+
+export { HUB_QUICK_START_HREF };
 
 export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
@@ -83,7 +86,8 @@ export type HubPlayVerbOption = {
 
 /**
  * Play verbs first — sport pick is a modal, not inline game blocks.
- * Quick Play is out of scope; later sports plug into the maps below.
+ * Quick start is a separate location → venue + sport + friends entry
+ * (`HUB_QUICK_START_HREF`), not a fourth verb.
  */
 export const HUB_PLAY_SPORT_PICK = "modal" as const;
 
@@ -104,6 +108,14 @@ export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
     description: "Set a venue and time, then invite friends.",
   },
 ];
+
+/** Location-based who / what / where entry from the Play tab. */
+export const HUB_QUICK_START = {
+  href: HUB_QUICK_START_HREF,
+  label: "Quick start",
+  description:
+    "Use your location to pick the nearest venue, sport, and friends.",
+} as const;
 
 /**
  * Playable live create-flow map. Later sports (pool) plug in here —

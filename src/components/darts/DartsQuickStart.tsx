@@ -3,7 +3,7 @@
 import { Clock, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -16,6 +16,7 @@ import {
   toDartsMatchVenue,
   type DartsVenueOption,
 } from "@/lib/darts/venue-options";
+import { consumeQuickStartPlayerSeed } from "@/lib/play/quick-start";
 import type { DartsPlayer, DartsPlayerSlot } from "@/types/darts-match";
 import {
   DARTS_MAX_PLAYERS,
@@ -69,6 +70,25 @@ export function DartsQuickStart({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    const companions = consumeQuickStartPlayerSeed("darts", initialVenueSlug);
+    if (companions.length === 0) return;
+    const companionNames = companions.map((player) => player.displayName);
+    setPlayerCount(
+      Math.min(
+        DARTS_MAX_PLAYERS,
+        Math.max(DARTS_MIN_PLAYERS, 1 + companionNames.length),
+      ),
+    );
+    setNames((prev) => {
+      const next = [...prev];
+      companionNames.forEach((name, index) => {
+        next[index + 1] = name;
+      });
+      return next;
+    });
+  }, [initialVenueSlug]);
 
   const selfName = useMemo(() => {
     if (isAuthenticated && user?.id) {
