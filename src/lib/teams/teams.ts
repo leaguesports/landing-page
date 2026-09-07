@@ -191,6 +191,17 @@ export function formatMemberCount(count: number): string {
   return count === 1 ? "1 member" : `${count} members`;
 }
 
+export function teamsListEmptyCopy(
+  teamCount: number,
+  listSport: TeamListSportFilter,
+): string {
+  if (listSport && listSport !== TEAM_LIST_SPORT_ALL) {
+    return `No ${formatTeamSport(listSport)} teams yet.`;
+  }
+  if (teamCount === 0) return "No teams yet — create one and it’ll show here.";
+  return "No teams yet.";
+}
+
 /** List-page filter only. Hub sport must not be passed here. */
 export function filterTeamsByListSport<T extends Pick<PublicTeamSummary, "sport">>(
   teams: readonly T[],

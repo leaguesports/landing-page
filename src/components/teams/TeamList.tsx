@@ -7,6 +7,7 @@ import {
   formatMemberCount,
   formatTeamRole,
   formatTeamSport,
+  teamsListEmptyCopy,
   teamProfileHref,
   type PublicTeamSummary,
   type TeamListSportFilter,
@@ -100,9 +101,7 @@ export function TeamList({ teams, pendingInvites = [] }: TeamListProps) {
       {visible.length === 0 ? (
         <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-            {teams.length === 0
-              ? "No teams yet — create one and it’ll show here."
-              : `No ${sport === TEAM_LIST_SPORT_ALL ? "" : `${formatTeamSport(sport)} `}teams yet.`}
+            {teamsListEmptyCopy(teams.length, sport)}
           </p>
         </div>
       ) : (

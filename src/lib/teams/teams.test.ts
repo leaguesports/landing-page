@@ -25,6 +25,7 @@ import {
   createTeamWith,
   deleteTeamWith,
   filterTeamsByListSport,
+  teamsListEmptyCopy,
   formatMemberCount,
   formatTeamRole,
   formatTeamSport,
@@ -198,6 +199,15 @@ describe("teams sport filter", () => {
       ["g"],
     );
     assert.equal(TEAM_SPORTS.includes("padel"), true);
+  });
+
+  it("uses sport-specific empty copy so list chips feel live", () => {
+    assert.equal(
+      teamsListEmptyCopy(0, TEAM_LIST_SPORT_ALL),
+      "No teams yet — create one and it’ll show here.",
+    );
+    assert.equal(teamsListEmptyCopy(0, "padel"), "No Padel teams yet.");
+    assert.equal(teamsListEmptyCopy(2, "golf"), "No Golf teams yet.");
   });
 
   it("does not hide other-sport teams when the hub sport dropdown is padel", () => {
