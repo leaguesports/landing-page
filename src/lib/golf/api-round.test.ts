@@ -63,6 +63,43 @@ describe("parseApiGolfRound", () => {
     const round = parseApiGolfRound({ ...liveRound, teeName: "Yellow" });
     assert.equal(round?.teeName, "Yellow");
   });
+
+  it("reads optional shot logs on a locked score without requiring them", () => {
+    const round = parseApiGolfRound({
+      ...liveRound,
+      status: "locked",
+      score: {
+        holes: [
+          {
+            number: 10,
+            strokes: { "1": 4 },
+            shots: {
+              "1": [
+                {
+                  id: "s1",
+                  sequence: 1,
+                  meters: 220,
+                  kind: "manual",
+                  recordedAt: "2026-09-07T10:00:00.000Z",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    assert.equal(round?.score?.holes[0]?.strokes["1"], 4);
+    assert.equal(round?.score?.holes[0]?.shots?.["1"]?.[0]?.meters, 220);
+  });
+
+  it("still parses a score that has only strokes", () => {
+    const round = parseApiGolfRound({
+      ...liveRound,
+      score: { holes: [{ number: 10, strokes: { "1": 5 } }] },
+    });
+    assert.equal(round?.score?.holes[0]?.strokes["1"], 5);
+    assert.equal(round?.score?.holes[0]?.shots, undefined);
+  });
 });
 
 describe("parseGolfHistoryItem", () => {

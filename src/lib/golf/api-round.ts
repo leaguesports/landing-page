@@ -15,6 +15,7 @@ import type {
   GolfScore,
   LockGolfRoundBody,
 } from "../../types/golf-round.ts";
+import { parseHoleShots } from "./shots.ts";
 import {
   isStartingHole,
   isValidTeeName,
@@ -227,7 +228,7 @@ function parseScore(value: unknown): GolfScore | null {
   const holes = [];
   for (const raw of row.holes) {
     if (!raw || typeof raw !== "object") return null;
-    const hole = raw as { number?: unknown; strokes?: unknown };
+    const hole = raw as { number?: unknown; strokes?: unknown; shots?: unknown };
     if (typeof hole.number !== "number") return null;
     if (!hole.strokes || typeof hole.strokes !== "object") return null;
     const strokes: Record<string, number> = {};
@@ -236,7 +237,12 @@ function parseScore(value: unknown): GolfScore | null {
     )) {
       if (typeof stroke === "number") strokes[key] = stroke;
     }
-    holes.push({ number: hole.number, strokes });
+    const shots = parseHoleShots(hole.shots);
+    holes.push(
+      shots
+        ? { number: hole.number, strokes, shots }
+        : { number: hole.number, strokes },
+    );
   }
   return { holes };
 }
