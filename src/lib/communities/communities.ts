@@ -35,11 +35,38 @@ export type MyCommunity = CommunitySummary & {
   joinedAt: string;
 };
 
+export type CommunityActivitySport = "padel" | "golf";
+export type CommunityActivityKind = "match" | "round";
+
+export type CommunityActivityPlayer = {
+  userId: string | null;
+  displayName: string;
+  isGuest: boolean;
+};
+
+export type CommunityActivityItem = {
+  id: string;
+  sport: CommunityActivitySport;
+  kind: CommunityActivityKind;
+  lockedAt: string;
+  venueCmsId: string | null;
+  venueName: string | null;
+  path: string;
+  summary: string;
+  players: CommunityActivityPlayer[];
+};
+
 export type CreateCommunityInput = {
   name: string;
   city: string;
   sport?: CommunitySport | null;
 };
+
+/** Cap hub strip activity fetches so we never N+1 the full membership list. */
+export const COMMUNITY_ACTIVITY_HUB_LIMIT = 5;
+
+export const CHALLENGE_COMMUNITY_QUERY = "community";
+export const CHALLENGE_GUEST_QUERY = "guest";
 
 export type CommunitiesDeps = {
   fetch: typeof fetch;
@@ -69,6 +96,10 @@ function communityUrl(baseUrl: string, id: string): string {
 
 function joinUrl(baseUrl: string, id: string): string {
   return `${communityUrl(baseUrl, id)}/join`;
+}
+
+function activityUrl(baseUrl: string, id: string): string {
+  return `${communityUrl(baseUrl, id)}/activity`;
 }
 
 function meUrl(baseUrl: string): string {
@@ -178,390 +209,147 @@ export function parseMyCommunity(value: unknown): MyCommunity | null {
   return { ...summary, joinedAt };
 }
 
-function parseCommunityList(body: unknown): CommunitySummary[] {
+function isActivitySport(value: unknown): value is CommunityActivitySport {
+  return value === "padel" || value === "golf";
+}
+
+function isActivityKind(value: unknown): value is CommunityActivityKind {
+  return value === "match" || value === "round";
+}
+
+/**
+ * Deep links from GET /activity are same-origin scorecard paths only.
+ * Reject anything else so the feed cannot render an unexpected href.
+ */
+export function isCommunityActivityPath(path: string, sport?: CommunityActivitySport): boolean {
+  if (sport === "padel") return /^\/padel\/[A-Za-z0-9_-]+$/.test(path);
+  if (sport === "golf") return /^\/golf\/[A-Za-z0-9_-]+$/.test(path);
+  return /^\/(padel|golf)\/[A-Za-z0-9_-]+$/.test(path);
+}
+
+export function parseCommunityActivityPlayer(
+  value: unknown,
+): CommunityActivityPlayer | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.displayName !== "string" || typeof row.isGuest !== "boolean") {
+    return null;
+  }
+  if (row.userId !== null && row.userId !== undefined && typeof row.userId !== "string") {
+    return null;
+  }
+  return {
+    userId: typeof row.userId === "string" ? row.userId : null,
+    displayName: row.displayName,
+    isGuest: row.isGuest,
+  };
+}
+
+export function parseCommunityActivityItem(
+  value: unknown,
+): CommunityActivityItem | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    !row.id.trim() ||
+    !isActivitySport(row.sport) ||
+    !isActivityKind(row.kind) ||
+    typeof row.lockedAt !== "string" ||
+    typeof row.path !== "string" ||
+    typeof row.summary !== "string"
+  ) {
+    return null;
+  }
+  if (row.sport === "padel" && row.kind !== "match") return null;
+  if (row.sport === "golf" && row.kind !== "round") return null;
+  if (!isCommunityActivityPath(row.path, row.sport)) return null;
+  if (row.venueCmsId !== null && row.venueCmsId !== undefined && typeof row.venueCmsId !== "string") {
+    return null;
+  }
+  if (row.venueName !== null && row.venueName !== undefined && typeof row.venueName !== "string") {
+    return null;
+  }
+
+  const players = Array.isArray(row.players)
+    ? row.players
+        .map(parseCommunityActivityPlayer)
+        .filter((item): item is CommunityActivityPlayer => !!item)
+    : [];
+
+  return {
+    id: row.id,
+    sport: row.sport,
+    kind: row.kind,
+    lockedAt: row.lockedAt,
+    venueCmsId: typeof row.venueCmsId === "string" ? row.venueCmsId : null,
+    venueName: typeof row.venueName === "string" ? row.venueName : null,
+    path: row.path,
+    summary: row.summary,
+    players,
+  };
+}
+
+export function parseCommunityActivityItems(body: unknown): CommunityActivityItem[] {
   if (!body || typeof body !== "object") return [];
-  const rows = (body as { communities?: unknown }).communities;
+  const rows = (body as { items?: unknown }).items;
   if (!Array.isArray(rows)) return [];
   return rows
-    .map(parseCommunitySummary)
-    .filter((item): item is CommunitySummary => !!item);
+    .map(parseCommunityActivityItem)
+    .filter((item): item is CommunityActivityItem => !!item);
 }
 
-function parseMyCommunityList(body: unknown): MyCommunity[] {
-  if (!body || typeof body !== "object") return [];
-  const rows = (body as { communities?: unknown }).communities;
-  if (!Array.isArray(rows)) return [];
-  return rows
-    .map(parseMyCommunity)
-    .filter((item): item is MyCommunity => !!item);
+/**
+ * `/padel/new` challenge query params (documented for issue #140):
+ * - `community` — originating community id (context only; not persisted on the match)
+ * - `guest` — opponent display name, prefilled as a Team B guest when present
+ *
+ * Guests are still allowed on create. Either param may be omitted.
+ */
+export function communityChallengeHref(opts: {
+  communityId?: string | null;
+  guestName?: string | null;
+} = {}): string {
+  const params = new URLSearchParams();
+  const communityId = opts.communityId?.trim();
+  if (communityId) params.set(CHALLENGE_COMMUNITY_QUERY, communityId);
+  const guestName = opts.guestName?.trim();
+  if (guestName) params.set(CHALLENGE_GUEST_QUERY, guestName);
+  const query = params.toString();
+  return query ? `/padel/new?${query}` : "/padel/new";
 }
 
-export function formatCommunitySport(sport: CommunitySport | null): string {
-  if (sport === "padel") return "Padel";
-  if (sport === "multi") return "Multi-sport";
-  return "Any sport";
+export function formatActivitySport(sport: CommunityActivitySport): string {
+  return sport === "golf" ? "Golf" : "Padel";
 }
 
-export function formatMemberCount(count: number): string {
-  return count === 1 ? "1 member" : `${count} members`;
-}
-
-/** Hide Leave when the caller is the only owner (or members are unknown). */
-export function isSoleOwnerLeaveBlocked(
-  community: Pick<CommunitySummary, "role"> & {
-    members?: ReadonlyArray<Pick<CommunityMember, "role">>;
-  },
-): boolean {
-  if (community.role !== "owner") return false;
-  if (!community.members) return true;
-  return community.members.filter((member) => member.role === "owner").length <= 1;
-}
-
-function browserBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-  return getRailwayApiOrigin();
-}
-
-export async function listCommunitiesWith(
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<CommunitySummary[]>> {
-  if (!deps.baseUrl) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, rootUrl(deps.baseUrl), {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie),
-      signal: deps.signal,
-    });
-
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: `Could not load communities (${res.status})`,
-        status: res.status,
-      };
-    }
-
-    return { ok: true, value: parseCommunityList(await readJson(res)) };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function getCommunityWith(
-  id: string,
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<Community>> {
-  const trimmed = id.trim();
-  if (!trimmed || !deps.baseUrl) {
-    return { ok: false, error: "Missing community id", status: 400 };
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, communityUrl(deps.baseUrl, trimmed), {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie),
-      signal: deps.signal,
-    });
-
-    const body = await readJson(res);
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: errorFromBody(body, `Could not load community (${res.status})`),
-        status: res.status,
-      };
-    }
-
-    const community = parseCommunity(
-      body && typeof body === "object"
-        ? (body as { community?: unknown }).community
-        : null,
-    );
-    if (!community) {
-      return { ok: false, error: "Unexpected community response", status: 500 };
-    }
-    return { ok: true, value: community };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function createCommunityWith(
-  input: CreateCommunityInput,
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<Community>> {
-  const name = input.name.trim();
-  const city = input.city.trim();
-  if (!name || !city || !deps.baseUrl) {
-    return { ok: false, error: "Name and city are required", status: 400 };
-  }
-
-  const payload: Record<string, string> = { name, city };
-  if (input.sport === "padel" || input.sport === "multi") {
-    payload.sport = input.sport;
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, rootUrl(deps.baseUrl), {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie, true),
-      body: JSON.stringify(payload),
-      signal: deps.signal,
-    });
-
-    const body = await readJson(res);
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: errorFromBody(body, "Could not create community"),
-        status: res.status,
-      };
-    }
-
-    const community = parseCommunity(
-      body && typeof body === "object"
-        ? (body as { community?: unknown }).community
-        : null,
-    );
-    if (!community) {
-      return { ok: false, error: "Unexpected community response", status: 500 };
-    }
-    return { ok: true, value: community };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function joinCommunityWith(
-  id: string,
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<Community>> {
-  const trimmed = id.trim();
-  if (!trimmed || !deps.baseUrl) {
-    return { ok: false, error: "Missing community id", status: 400 };
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, joinUrl(deps.baseUrl, trimmed), {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie),
-      signal: deps.signal,
-    });
-
-    const body = await readJson(res);
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: errorFromBody(body, "Could not join community"),
-        status: res.status,
-      };
-    }
-
-    const community = parseCommunity(
-      body && typeof body === "object"
-        ? (body as { community?: unknown }).community
-        : null,
-    );
-    if (!community) {
-      return { ok: false, error: "Unexpected community response", status: 500 };
-    }
-    return { ok: true, value: community };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function leaveCommunityWith(
-  id: string,
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<true>> {
-  const trimmed = id.trim();
-  if (!trimmed || !deps.baseUrl) {
-    return { ok: false, error: "Missing community id", status: 400 };
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, joinUrl(deps.baseUrl, trimmed), {
-      method: "DELETE",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie),
-      signal: deps.signal,
-    });
-
-    if (!res.ok) {
-      const body = await readJson(res);
-      return {
-        ok: false,
-        error: errorFromBody(body, "Could not leave community"),
-        status: res.status,
-      };
-    }
-
-    return { ok: true, value: true };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function listMyCommunitiesWith(
-  deps: CommunitiesDeps,
-): Promise<CommunitiesResult<MyCommunity[]>> {
-  if (!deps.baseUrl) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-
-  try {
-    const res = await invokeFetch(deps.fetch, meUrl(deps.baseUrl), {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-      headers: requestHeaders(deps.cookie),
-      signal: deps.signal,
-    });
-
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: `Could not load your communities (${res.status})`,
-        status: res.status,
-      };
-    }
-
-    return { ok: true, value: parseMyCommunityList(await readJson(res)) };
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function listCommunitiesResult(options: {
-  cookie?: string;
-} = {}): Promise<CommunitiesResult<CommunitySummary[]>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  return listCommunitiesWith({
-    fetch,
-    baseUrl: browserBaseUrl(),
-    cookie: options.cookie,
-    signal: AbortSignal.timeout(8000),
+export function formatActivityWhen(iso: string, nowMs = Date.now()): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const deltaSec = Math.round((nowMs - then) / 1000);
+  if (deltaSec < 45) return "just now";
+  const deltaMin = Math.round(deltaSec / 60);
+  if (deltaMin < 60) return `${Math.max(1, deltaMin)}m ago`;
+  const deltaHr = Math.round(deltaMin / 60);
+  if (deltaHr < 48) return `${deltaHr}h ago`;
+  const parsed = new Date(iso);
+  return parsed.toLocaleDateString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
-/** RSC-friendly helper: empty list on 404 / migration lag / network failure. */
-export async function listCommunities(options: {
-  cookie?: string;
-} = {}): Promise<CommunitySummary[]> {
-  const result = await listCommunitiesResult(options);
-  return result.ok ? result.value : [];
-}
-
-export async function getCommunityResult(
-  id: string,
-  options: { cookie?: string } = {},
-): Promise<CommunitiesResult<Community>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  return getCommunityWith(id, {
-    fetch,
-    baseUrl: browserBaseUrl(),
-    cookie: options.cookie,
-    signal: AbortSignal.timeout(8000),
+export function challengeGuestFromActivity(
+  item: Pick<CommunityActivityItem, "players">,
+  selfUserId?: string | null,
+): string | undefined {
+  const self = selfUserId?.trim() || null;
+  const opponent = item.players.find((player) => {
+    const name = player.displayName.trim();
+    if (!name) return false;
+    if (self && player.userId === self) return false;
+    return true;
   });
-}
-
-/** RSC-friendly helper: null on 404 / migration lag / network failure. */
-export async function getCommunity(
-  id: string,
-  options: { cookie?: string } = {},
-): Promise<Community | null> {
-  const result = await getCommunityResult(id, options);
-  return result.ok ? result.value : null;
-}
-
-export async function listMyCommunitiesResult(options: {
-  cookie?: string;
-} = {}): Promise<CommunitiesResult<MyCommunity[]>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  return listMyCommunitiesWith({
-    fetch,
-    baseUrl: browserBaseUrl(),
-    cookie: options.cookie,
-    signal: AbortSignal.timeout(8000),
-  });
-}
-
-/** RSC-friendly helper: empty list on 401 / 404 / migration lag. */
-export async function listMyCommunities(options: {
-  cookie?: string;
-} = {}): Promise<MyCommunity[]> {
-  const result = await listMyCommunitiesResult(options);
-  return result.ok ? result.value : [];
-}
-
-export async function createCommunity(
-  input: CreateCommunityInput,
-): Promise<CommunitiesResult<Community>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  try {
-    return await createCommunityWith(input, {
-      fetch,
-      baseUrl: browserBaseUrl(),
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function joinCommunity(
-  id: string,
-): Promise<CommunitiesResult<Community>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  try {
-    return await joinCommunityWith(id, {
-      fetch,
-      baseUrl: browserBaseUrl(),
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
-}
-
-export async function leaveCommunity(
-  id: string,
-): Promise<CommunitiesResult<true>> {
-  if (!isApiConfigured()) {
-    return { ok: false, error: "API is not configured", status: 0 };
-  }
-  try {
-    return await leaveCommunityWith(id, {
-      fetch,
-      baseUrl: browserBaseUrl(),
-      signal: AbortSignal.timeout(8000),
-    });
-  } catch {
-    return { ok: false, error: "Could not reach communities API", status: 0 };
-  }
+  return opponent?.displayName.trim() || undefined;
 }
