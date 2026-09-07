@@ -63,23 +63,27 @@ import {
   ArrowUpRight,
   BookOpen,
   Calendar,
-  ChevronDown,
+  Check,
   Flag,
   Heart,
   Home,
+  ListFilter,
   Search,
   Sparkles,
   Trophy,
   Tv,
   User,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
+  useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type FormEvent,
@@ -87,6 +91,12 @@ import {
 } from "react";
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
+
+const HUB_ICON_BTN =
+  "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#101410] text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/8 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
+
+const HUB_ICON_BTN_ACTIVE =
+  "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-400/35 bg-emerald-400/10 text-emerald-200 transition-colors hover:border-emerald-400/50 hover:bg-emerald-400/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
 
 const HUB_CONTROL =
   "min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] text-sm text-white outline-none focus:border-emerald-400/40";
@@ -293,6 +303,94 @@ function FeedRow({ item }: { item: HubFeedItem }) {
   );
 }
 
+function HubModal({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    const focusables = panelRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusables?.[0]?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
+        className="relative z-10 flex max-h-[min(32rem,85vh)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#141814] shadow-[0_24px_60px_rgba(0,0,0,0.55)] sm:rounded-3xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-white/8 px-5 py-4">
+          <div className="min-w-0">
+            <h2
+              id={titleId}
+              className="font-display text-2xl tracking-wide text-white"
+            >
+              {title}
+            </h2>
+            {description ? (
+              <p
+                id={descriptionId}
+                className="mt-1 text-sm leading-relaxed text-zinc-500"
+              >
+                {description}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/4 text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function HubSportControl({
   active,
   sports,
@@ -302,27 +400,96 @@ function HubSportControl({
   sports: SportDefinition[];
   onChange: (slug: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const filtered = active !== ALL_SPORTS_SLUG;
+  const activeName =
+    sports.find((sport) => sport.slug === active)?.name ?? "All sports";
+
+  function pickSport(slug: string) {
+    onChange(slug);
+    setOpen(false);
+  }
+
   return (
-    <label className="relative block min-w-0 lg:w-56 lg:shrink-0">
-      <span className="sr-only">Filter hub by sport</span>
-      <select
-        value={active}
-        onChange={(event) => onChange(event.target.value)}
-        aria-label="Filter hub by sport"
-        className={`${HUB_CONTROL} appearance-none px-4 pr-10`}
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={
+          filtered
+            ? `Filter hub by sport, ${activeName} selected`
+            : "Filter hub by sport"
+        }
+        onClick={() => setOpen(true)}
+        className={filtered ? HUB_ICON_BTN_ACTIVE : HUB_ICON_BTN}
       >
-        <option value={ALL_SPORTS_SLUG}>All sports</option>
-        {sports.map((sport) => (
-          <option key={sport.slug} value={sport.slug}>
-            {sport.name}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
-        aria-hidden
-      />
-    </label>
+        <ListFilter className="h-4 w-4" aria-hidden />
+        {filtered ? (
+          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        ) : null}
+      </button>
+
+      <HubModal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Filter by sport"
+        description="Scopes Home, Play, and search."
+      >
+        <div id={panelId} className="p-2">
+          <ul className="space-y-0.5" role="listbox" aria-label="Sports">
+            <li>
+              <button
+                type="button"
+                role="option"
+                aria-selected={active === ALL_SPORTS_SLUG}
+                onClick={() => pickSport(ALL_SPORTS_SLUG)}
+                className={[
+                  "flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors",
+                  active === ALL_SPORTS_SLUG
+                    ? "bg-emerald-400/10 text-emerald-100"
+                    : "text-zinc-300 hover:bg-white/5 hover:text-white",
+                ].join(" ")}
+              >
+                <span>All sports</span>
+                {active === ALL_SPORTS_SLUG ? (
+                  <Check className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden />
+                ) : null}
+              </button>
+            </li>
+            {sports.map((sport) => {
+              const selected = active === sport.slug;
+              return (
+                <li key={sport.slug}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => pickSport(sport.slug)}
+                    className={[
+                      "flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors",
+                      selected
+                        ? "bg-emerald-400/10 text-emerald-100"
+                        : "text-zinc-300 hover:bg-white/5 hover:text-white",
+                    ].join(" ")}
+                  >
+                    <span>{sport.name}</span>
+                    {selected ? (
+                      <Check
+                        className="h-4 w-4 shrink-0 text-emerald-300"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </HubModal>
+    </>
   );
 }
 
@@ -335,26 +502,79 @@ function HubSearch({
   onQueryChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const searchId = useId();
+  const panelId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    onSubmit(event);
+    setOpen(false);
+  }
+
   return (
-    <form onSubmit={onSubmit} className="relative min-w-0 flex-1" role="search">
-      <label className="sr-only" htmlFor={searchId}>
-        Search venues, play, and watch
-      </label>
-      <Search
-        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
-        aria-hidden
-      />
-      <input
-        id={searchId}
-        type="search"
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Search venues, play, watch…"
-        autoComplete="off"
-        className={`${HUB_CONTROL} px-4 pl-10 placeholder:text-zinc-600`}
-      />
-    </form>
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label="Search venues, play, and watch"
+        onClick={() => setOpen(true)}
+        className={query.trim() ? HUB_ICON_BTN_ACTIVE : HUB_ICON_BTN}
+      >
+        <Search className="h-4 w-4" aria-hidden />
+      </button>
+
+      <HubModal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Search"
+        description="Find venues, play, and watch."
+      >
+        <form
+          id={panelId}
+          onSubmit={handleSubmit}
+          className="space-y-4 p-5"
+          role="search"
+        >
+          <label className="sr-only" htmlFor={searchId}>
+            Search venues, play, and watch
+          </label>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            />
+            <input
+              ref={inputRef}
+              id={searchId}
+              type="search"
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Venues, play, watch…"
+              autoComplete="off"
+              className={`${HUB_CONTROL} px-4 pl-10 placeholder:text-zinc-600`}
+            />
+          </div>
+          <button
+            type="submit"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+          >
+            Search
+          </button>
+        </form>
+      </HubModal>
+    </>
   );
 }
 
@@ -493,7 +713,7 @@ export function SportsHub({
       <h1 className="sr-only">Your hub</h1>
 
       <div className="sticky top-16 z-30 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 py-3 sm:px-6 lg:max-w-5xl lg:flex-row lg:items-center lg:gap-3 lg:px-8">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2.5 sm:px-6 lg:max-w-5xl lg:px-8">
           {showSportControl ? (
             <HubSportControl
               active={active}

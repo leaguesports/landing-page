@@ -1,6 +1,6 @@
 /**
  * Signed-in hub information architecture (#145).
- * 4-tab bottom nav — one active panel, sport dropdown, page search.
+ * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
  */
 
 import { ALL_SPORTS_SLUG } from "./catalog.ts";
