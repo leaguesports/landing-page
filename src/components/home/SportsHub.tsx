@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgesPanel } from "@/components/home/BadgesPanel";
+import { PlaySportModal } from "@/components/home/PlaySportModal";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
@@ -35,7 +36,6 @@ import {
   type SportDefinition,
 } from "@/lib/sports/catalog";
 import {
-  HUB_BROWSE_FIXTURES_HREF,
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
@@ -46,8 +46,7 @@ import {
   HUB_TABS,
   HUB_TRAINING_HREF,
   hubConnectedCount,
-  hubPlayEmptyNearbyHref,
-  hubPlaySportOptions,
+  hubPlayModalSportOptions,
   hubSearchHref,
   hubShowsSportControl,
   takeHubPreview,
@@ -693,20 +692,23 @@ export function SportsHub({
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const playOptions = hubPlaySportOptions(
-    sports,
-    active,
-    null,
-    playVerb ?? "start",
-  );
-  const playNearbyHref = hubPlayEmptyNearbyHref(active, sports);
-  const selectedPlayVerb =
-    HUB_PLAY_VERBS.find((verb) => verb.id === playVerb) ?? null;
+  const playModalOptions = playVerb
+    ? hubPlayModalSportOptions(sports, playVerb)
+    : [];
   const youHistoryEmpty =
     recentPadel.length === 0 &&
     !historyError &&
     recentGolf.length === 0 &&
     !golfHistoryError;
+
+  const closePlaySportModal = useCallback(() => {
+    setPlayVerb(null);
+  }, []);
+
+  function selectTab(id: HubTabId) {
+    setTab(id);
+    setPlayVerb(null);
+  }
 
   function focusSport(slug: string) {
     setPrefs(selectHubSport(prefs, slug, knownSlugs));
@@ -890,139 +892,51 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description={
-                  selectedPlayVerb
-                    ? `Pick a playable sport to ${selectedPlayVerb.label.toLowerCase()}.`
-                    : "Start a live game, or capture a finished result."
-                }
-                action={
-                  selectedPlayVerb ? (
-                    <button
-                      type="button"
-                      onClick={() => setPlayVerb(null)}
-                      className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
-                    >
-                      ← Start game or capture
-                    </button>
-                  ) : null
-                }
+                description="Start a live game, or capture a finished result."
               />
 
-              {playVerb === null ? (
-                <ul className="grid gap-3 lg:grid-cols-2 lg:gap-4">
-                  {HUB_PLAY_VERBS.map((verb, index) => (
-                    <li key={verb.id}>
-                      <button
-                        type="button"
-                        onClick={() => setPlayVerb(verb.id)}
-                        className={[
-                          "flex h-full w-full flex-col items-start gap-5 rounded-3xl border px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7",
-                          index === 0
-                            ? "border-emerald-400/25 bg-emerald-400/8"
-                            : "border-white/8 bg-[#141814]",
-                        ].join(" ")}
-                      >
-                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
-                          {verb.id === "capture" ? (
-                            <ClipboardList className="h-4 w-4" aria-hidden />
-                          ) : (
-                            <Zap className="h-4 w-4" aria-hidden />
-                          )}
-                        </span>
-                        <div>
-                          <h3 className="font-display text-3xl tracking-wide text-white">
-                            {verb.label}
-                          </h3>
-                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-                            {verb.description}
-                          </p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : playOptions.length > 0 ? (
-                <ul
-                  className={
-                    playOptions.length > 1
-                      ? "grid gap-3 lg:grid-cols-2 lg:gap-4"
-                      : "grid gap-3"
-                  }
-                >
-                  {playOptions.map((option, index) => (
-                    <li key={option.slug}>
-                      <article
-                        className={[
-                          "flex h-full flex-col justify-between gap-5 rounded-3xl border px-5 py-6 sm:px-6 lg:px-7 lg:py-7",
-                          index === 0
-                            ? "border-emerald-400/25 bg-emerald-400/8"
-                            : "border-white/8 bg-[#141814]",
-                        ].join(" ")}
-                      >
-                        <div>
-                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
-                            {option.slug === "golf" ? (
-                              <Flag className="h-4 w-4" aria-hidden />
-                            ) : (
-                              <Trophy className="h-4 w-4" aria-hidden />
-                            )}
-                          </span>
-                          <h3 className="mt-4 font-display text-3xl tracking-wide text-white">
-                            {option.name}
-                          </h3>
-                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-                            {option.description}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          <Link
-                            href={option.href}
-                            className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                          >
-                            {option.label}
-                          </Link>
-                          {option.continueHref ? (
-                            <Link
-                              href={option.continueHref}
-                              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white hover:bg-white/5"
-                            >
-                              Continue
-                            </Link>
-                          ) : null}
-                        </div>
-                      </article>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-8 sm:px-8">
-                  <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                    {activeSport
-                      ? activeSport.capabilities.includes("play")
-                        ? `No ${activeSport.name} scorecard yet. Find a place to play nearby.`
-                        : `${activeSport.name} is watch-only. Pick a playable sport, or browse fixtures.`
-                      : "Find a place to play nearby."}
-                  </p>
-                  <div className="mt-5">
-                    {activeSport &&
-                    !activeSport.capabilities.includes("play") ? (
-                      <Link
-                        href={HUB_BROWSE_FIXTURES_HREF}
-                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        Browse fixtures
-                      </Link>
-                    ) : (
-                      <Link
-                        href={playNearbyHref}
-                        className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        Find a place to play
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
+              <ul className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+                {HUB_PLAY_VERBS.map((verb, index) => (
+                  <li key={verb.id}>
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-expanded={playVerb === verb.id}
+                      onClick={() => setPlayVerb(verb.id)}
+                      className={[
+                        "flex h-full w-full flex-col items-start gap-5 rounded-3xl border px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7",
+                        index === 0
+                          ? "border-emerald-400/25 bg-emerald-400/8"
+                          : "border-white/8 bg-[#141814]",
+                      ].join(" ")}
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
+                        {verb.id === "capture" ? (
+                          <ClipboardList className="h-4 w-4" aria-hidden />
+                        ) : (
+                          <Zap className="h-4 w-4" aria-hidden />
+                        )}
+                      </span>
+                      <div>
+                        <h3 className="font-display text-3xl tracking-wide text-white">
+                          {verb.label}
+                        </h3>
+                        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                          {verb.description}
+                        </p>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              {playVerb ? (
+                <PlaySportModal
+                  verb={playVerb}
+                  options={playModalOptions}
+                  onClose={closePlaySportModal}
+                />
+              ) : null}
             </section>
           </div>
         ) : null}
@@ -1217,7 +1131,7 @@ export function SportsHub({
                       Start or capture a result from{" "}
                       <button
                         type="button"
-                        onClick={() => setTab("play")}
+                        onClick={() => selectTab("play")}
                         className="font-medium text-emerald-300 hover:text-emerald-200"
                       >
                         Play
@@ -1302,7 +1216,7 @@ export function SportsHub({
                 aria-selected={selected}
                 aria-controls={`hub-panel-${item.id}`}
                 id={`hub-tab-${item.id}`}
-                onClick={() => setTab(item.id)}
+                onClick={() => selectTab(item.id)}
                 className={[
                   "relative flex min-h-14 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors",
                   selected ? "text-emerald-200" : "text-zinc-500 hover:text-white",

@@ -1,7 +1,7 @@
 /**
- * Signed-in hub information architecture (#145 / #150 / #153).
+ * Signed-in hub information architecture (#145 / #150 / #153 / #155).
  * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
- * Play = verb first (Start game / Capture results), then playable sport.
+ * Play = verb first (Start game / Capture results), then sport pick in a modal.
  */
 
 import {
@@ -75,9 +75,11 @@ export type HubPlayVerbOption = {
 };
 
 /**
- * Play verbs first — sport pick is the second step.
+ * Play verbs first — sport pick is a modal, not inline game blocks.
  * Quick Play is out of scope; later sports plug into the maps below.
  */
+export const HUB_PLAY_SPORT_PICK = "modal" as const;
+
 export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
   {
     id: "start",
@@ -266,6 +268,26 @@ export function hubPlaySportOptions(
       },
     ];
   });
+}
+
+/**
+ * Modal sport list is every playable sport — hub focus only filters the feed.
+ */
+export function hubPlayModalSportOptions(
+  sports: readonly SportDefinition[],
+  verb: HubPlayVerbId,
+): HubPlaySportOption[] {
+  return hubPlaySportOptions(sports, ALL_SPORTS_SLUG, null, verb);
+}
+
+export function hubPlayModalTitle(verb: HubPlayVerbId): string {
+  return verb === "capture" ? "Capture results" : "Start game";
+}
+
+export function hubPlayModalDescription(verb: HubPlayVerbId): string {
+  return verb === "capture"
+    ? "Pick a sport to record a finished score."
+    : "Pick a sport to open a live scorecard.";
 }
 
 export function hubPlayNearbyHref(active: string): string {
