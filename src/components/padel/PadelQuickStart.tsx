@@ -31,7 +31,11 @@ import {
   writeLastPadelVenueSlug,
   type QuickStartInitialSelf,
 } from "@/lib/padel/quick-start-defaults";
-import { makeUserPlayer, rememberPlayers } from "@/lib/padel/recent-players";
+import { makeGuestPlayer, makeUserPlayer, rememberPlayers } from "@/lib/padel/recent-players";
+import {
+  consumeQuickStartPlayerSeed,
+  type QuickStartSuggestedPlayer,
+} from "@/lib/play/quick-start";
 import {
   toMatchVenue,
   type VenueOption,
@@ -45,6 +49,43 @@ type PadelQuickStartProps = {
   /** Server-seeded self so first paint seats A1 before client auth resolves. */
   initialSelf?: QuickStartInitialSelf | null;
 };
+
+function playerFromQuickStartSeed(
+  seed: QuickStartSuggestedPlayer,
+): PadelPlayer {
+  if (seed.userId) {
+    return makeUserPlayer({
+      id: seed.userId,
+      displayName: seed.displayName,
+      userId: seed.userId,
+    });
+  }
+  return makeGuestPlayer(seed.displayName);
+}
+
+/**
+ * Apply location Quick Start companions into empty companion slots.
+ * Never overwrites an intentional pick; keeps demo guests when no seed.
+ */
+export function applyQuickStartCompanions(
+  slots: Record<SlotKey, PadelPlayer | null>,
+  companions: readonly QuickStartSuggestedPlayer[],
+): Record<SlotKey, PadelPlayer | null> {
+  if (companions.length === 0) return slots;
+  const next = { ...slots };
+  const companionSlots: SlotKey[] = ["a2", "b1", "b2"];
+  let index = 0;
+  for (const key of companionSlots) {
+    if (index >= companions.length) break;
+    const current = next[key];
+    // Replace demo guests / empty seats so location Quick Start can seat friends.
+    if (!current || current.isGuest) {
+      next[key] = playerFromQuickStartSeed(companions[index]!);
+      index += 1;
+    }
+  }
+  return next;
+}
 
 export function PadelQuickStart({
   venues,
@@ -112,6 +153,16 @@ export function PadelQuickStart({
       return lastUsed;
     });
   }, [venues, lockVenue, initialVenueSlug]);
+
+  // Seat companions from location Quick Start once (sessionStorage seed).
+  useEffect(() => {
+    const slug = initialVenueSlug ?? venue?.slug ?? null;
+    const companions = consumeQuickStartPlayerSeed("padel", slug);
+    if (companions.length === 0) return;
+    setSlots((current) => applyQuickStartCompanions(current, companions));
+    // Only on mount / when the locked venue becomes known.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed
+  }, [initialVenueSlug]);
 
   // Keep signed-in user in A1 when that slot is empty so history binds.
   // Overlay only — never write back into `slots` on auth refresh / tab focus.

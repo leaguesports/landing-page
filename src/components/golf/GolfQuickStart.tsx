@@ -3,7 +3,7 @@
 import { Clock, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -19,6 +19,7 @@ import {
   toGolfRoundVenue,
   type GolfVenueOption,
 } from "@/lib/golf/venue-options";
+import { consumeQuickStartPlayerSeed } from "@/lib/play/quick-start";
 import type {
   GolfHolesPlayed,
   GolfPlayer,
@@ -72,6 +73,20 @@ export function GolfQuickStart({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    const companions = consumeQuickStartPlayerSeed("golf", initialVenueSlug);
+    if (companions.length === 0) return;
+    const companionNames = companions.map((player) => player.displayName);
+    setPlayerCount(Math.min(4, 1 + companionNames.length));
+    setNames((prev) => {
+      const next = [...prev];
+      companionNames.forEach((name, index) => {
+        next[index + 1] = name;
+      });
+      return next;
+    });
+  }, [initialVenueSlug]);
 
   const selfName = useMemo(() => {
     if (isAuthenticated && user?.id) {
