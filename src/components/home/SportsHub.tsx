@@ -5,6 +5,7 @@ import { PlaySportModal } from "@/components/home/PlaySportModal";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
+import { TeamsPanel } from "@/components/home/TeamsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
@@ -16,6 +17,10 @@ import {
   athleteHandle,
 } from "@/lib/athletes/overview";
 import type { MyCommunity } from "@/lib/communities/communities";
+import {
+  emptyTeamsSnapshot,
+  type TeamsSnapshot,
+} from "@/lib/teams/teams";
 import {
   emptyIntegrationsSnapshot,
   type IntegrationsSnapshot,
@@ -209,6 +214,8 @@ type SportsHubProps = {
   organisedGames?: OrganisedGamesSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
+  /** Prefetched `GET /api/teams` — empty on failure. */
+  myTeams?: TeamsSnapshot;
   /** Prefetched `GET /api/me/integrations` — connectable providers only. */
   integrations?: IntegrationsSnapshot;
   badges?: BadgesSnapshot;
@@ -611,6 +618,7 @@ export function SportsHub({
   friends = emptyFriendsSnapshot(),
   organisedGames = emptyOrganisedGamesSnapshot(),
   myCommunities = [],
+  myTeams = emptyTeamsSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
   badges = { badges: [], fromApi: false },
   sports,
@@ -1215,7 +1223,7 @@ export function SportsHub({
             <SectionHeading
               id="hub-people"
               title="People"
-              description="Friends and communities — short lists, then See all."
+              description="Friends, communities, and teams — short lists, then See all."
               action={
                 friendRequestCount > 0 ? (
                   <span className="inline-flex items-center gap-2 text-sm text-emerald-200">
@@ -1247,6 +1255,13 @@ export function SportsHub({
             className="mt-0"
             showHeading
             onIncomingCountChange={setFriendRequestCount}
+          />
+          <TeamsPanel
+            initial={myTeams}
+            compact
+            previewLimit={HUB_PEOPLE_PREVIEW_LIMIT}
+            className="mt-8"
+            hubSport={active}
           />
         </div>
       </div>
