@@ -11,6 +11,7 @@ import {
   isLoopbackApiOrigin,
   shouldProxyApiPath,
 } from "./api-origin.ts";
+import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
 
 const ORIGIN_ENV_KEYS = [
   "API_ORIGIN",
@@ -101,6 +102,14 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/communities"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);
+    assert.equal(shouldProxyApiPath("/api/teams"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/join"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/invite"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/invite-link"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/leave"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/transfer-ownership"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/members/u2"), true);
     assert.equal(shouldProxyApiPath("/api/pools"), true);
     assert.equal(shouldProxyApiPath("/api/pools/ab12cd34"), true);
     assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/join"), true);
@@ -400,6 +409,23 @@ describe("getApiProxyRewrites", () => {
         assert.ok(
           rewriteSources.indexOf("/api/organised-games/invite/:token") <
             rewriteSources.indexOf("/api/organised-games/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/teams/join") <
+            rewriteSources.indexOf("/api/teams/:id"),
+        );
+        const teamSources = API_PROXY_EXPLICIT_SOURCES.filter((source) =>
+          source.startsWith("/api/teams"),
+        );
+        assert.deepEqual(teamSources, [...TEAM_PROXY_SOURCES]);
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/teams")?.destination,
+          "https://api.example.test/api/teams",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/teams/join")
+            ?.destination,
+          "https://api.example.test/api/teams/join",
         );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/organised-games")

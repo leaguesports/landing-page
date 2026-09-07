@@ -4,6 +4,7 @@ import { listBadges } from "@/lib/badges/api";
 import { listFollowedFixtures } from "@/lib/events/follow";
 import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
+import { listTeams } from "@/lib/teams/teams";
 import { listIntegrations } from "@/lib/integrations/integrations";
 import { listMyOrganisedGames } from "@/lib/organised-games/organised-games";
 import { lookupPlayerDartsHistory } from "@/lib/darts/lookup-history";
@@ -70,6 +71,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     friends,
     organisedGames,
     myCommunities,
+    myTeams,
     badges,
     integrations,
   ] = await Promise.all([
@@ -89,6 +91,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     listFriends({ cookie }),
     listMyOrganisedGames({ cookie }),
     listMyCommunities({ cookie }),
+    listTeams({ cookie }),
     listBadges({ cookie }),
     listIntegrations({ cookie }),
   ]);
@@ -136,6 +139,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       friends={friends}
       organisedGames={organisedGames}
       myCommunities={myCommunities}
+      myTeams={myTeams}
       badges={badges}
       integrations={integrations}
       sports={hub.sports}

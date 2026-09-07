@@ -16,6 +16,9 @@ import {
   HUB_ORGANISE_GOLF_HREF,
   HUB_ORGANISE_PADEL_HREF,
   HUB_ORGANISED_PREVIEW_LIMIT,
+  HUB_PEOPLE_BLOCKS,
+  HUB_TEAMS_HREF,
+  HUB_TEAMS_NEW_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PLAY_CAPTURE_BY_SLUG,
   HUB_PLAY_HREF,
@@ -86,6 +89,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     assert.equal(hubShowsSportControl("play"), true);
     assert.equal(hubShowsSportControl("people"), false);
     assert.equal(hubShowsSportControl("you"), false);
+  });
+
+  it("puts Teams third on People under Friends + Communities", () => {
+    assert.deepEqual(HUB_PEOPLE_BLOCKS, ["communities", "friends", "teams"]);
+    assert.equal(HUB_TEAMS_HREF, "/teams");
+    assert.equal(HUB_TEAMS_NEW_HREF, "/teams/new");
   });
 
   it("keeps Start actions inside Play only — never sticky or on Home", () => {

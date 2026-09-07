@@ -34,6 +34,10 @@ export const HUB_DARTS_HISTORY_HREF = "/darts/history" as const;
 export const HUB_RECENT_LOCK_LIMIT = 8;
 export const HUB_BADGE_STRIP_LIMIT = 3;
 export const HUB_PEOPLE_PREVIEW_LIMIT = 5;
+export const HUB_TEAMS_HREF = "/teams" as const;
+export const HUB_TEAMS_NEW_HREF = "/teams/new" as const;
+/** People tab block order — Teams is third under Friends + Communities. */
+export const HUB_PEOPLE_BLOCKS = ["communities", "friends", "teams"] as const;
 /** Thin hosted/invited strip on Play — keep the verb grid the focus. */
 export const HUB_ORGANISED_PREVIEW_LIMIT = 4;
 
