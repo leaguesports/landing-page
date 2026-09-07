@@ -17,6 +17,7 @@ import {
   previewOrganisedGameInviteWith,
   rsvpOrganisedGameWith,
   startOrganisedGameWith,
+  toStartOrganisedGameBody,
   type OrganisedGame,
 } from "./organised-games.ts";
 
@@ -272,8 +273,9 @@ describe("organised games client", () => {
     if (rsvp.ok) assert.equal(rsvp.value.viewer.rsvp, "accepted");
 
     const started = await startOrganisedGameWith("game-1", {
-      fetch: async (url) => {
+      fetch: async (url, init) => {
         assert.match(String(url), /\/start$/);
+        assert.equal(String(init?.body), JSON.stringify({}));
         return new Response(
           JSON.stringify({
             game: {
@@ -354,5 +356,50 @@ describe("organised games client", () => {
     if (result.ok) return;
     assert.match(result.error, /12 hours before startsAt/i);
     assert.equal(result.status, 400);
+  });
+
+  it("posts golf start overrides (teeName, startingHole, holesPlayed)", async () => {
+    assert.deepEqual(
+      toStartOrganisedGameBody({
+        teeName: "Yellow",
+        startingHole: 10,
+        holesPlayed: 9,
+      }),
+      { teeName: "Yellow", startingHole: 10, holesPlayed: 9 },
+    );
+
+    const started = await startOrganisedGameWith(
+      "game-1",
+      {
+        fetch: async (url, init) => {
+          assert.match(String(url), /\/start$/);
+          assert.equal(
+            String(init?.body),
+            JSON.stringify({
+              teeName: "Yellow",
+              startingHole: 10,
+              holesPlayed: 9,
+            }),
+          );
+          return new Response(
+            JSON.stringify({
+              game: {
+                ...GAME,
+                sport: "golf",
+                status: "started",
+                live: { sport: "golf", id: "r1", path: "/golf/r1" },
+              },
+              live: { sport: "golf", id: "r1", path: "/golf/r1" },
+            }),
+            { status: 201 },
+          );
+        },
+        baseUrl: "https://api.example.test",
+      },
+      { teeName: "Yellow", startingHole: 10, holesPlayed: 9 },
+    );
+    assert.equal(started.ok, true);
+    if (!started.ok) return;
+    assert.equal(started.value.live.path, "/golf/r1");
   });
 });

@@ -15,6 +15,11 @@ import type {
   GolfScore,
   LockGolfRoundBody,
 } from "../../types/golf-round.ts";
+import {
+  isStartingHole,
+  isValidTeeName,
+  normalizeTeeName,
+} from "./pre-round.ts";
 
 export const GOLF_API_UNAVAILABLE = "Golf round API is unavailable.";
 export const GOLF_API_UNREACHABLE =
@@ -289,11 +294,11 @@ export function parseApiGolfRound(
     startsAt:
       typeof row.startsAt === "string" && row.startsAt ? row.startsAt : "",
     holesPlayed,
-    startingHole:
-      typeof row.startingHole === "number" && Number.isInteger(row.startingHole)
-        ? row.startingHole
-        : 1,
-    teeName: typeof row.teeName === "string" ? row.teeName : null,
+    startingHole: isStartingHole(row.startingHole) ? row.startingHole : 1,
+    teeName:
+      typeof row.teeName === "string" && row.teeName.trim()
+        ? row.teeName.trim()
+        : null,
     course,
     players,
     score: parseScore(row.score),
@@ -352,9 +357,11 @@ export function parseGolfHistoryItem(value: unknown): GolfHistoryItem | null {
       row.holesPlayed === 9 || row.holesPlayed === 18
         ? row.holesPlayed
         : course.holes.length,
-    startingHole:
-      typeof row.startingHole === "number" ? row.startingHole : 1,
-    teeName: typeof row.teeName === "string" ? row.teeName : null,
+    startingHole: isStartingHole(row.startingHole) ? row.startingHole : 1,
+    teeName:
+      typeof row.teeName === "string" && row.teeName.trim()
+        ? row.teeName.trim()
+        : null,
     course,
     players,
     score: parseScore(row.score),
@@ -373,12 +380,19 @@ function parseHistoryList(value: unknown): GolfHistoryItem[] | null {
 }
 
 export function toCreateGolfRoundBody(input: CreateGolfRoundInput) {
+  if (!isValidTeeName(input.teeName)) {
+    throw new GolfApiError(400, "teeName must be 1–40 characters");
+  }
+  const startingHole = input.startingHole ?? 1;
+  if (!isStartingHole(startingHole)) {
+    throw new GolfApiError(400, "startingHole must be 1–18");
+  }
   return {
     venueCmsId: input.venueCmsId,
     startsAt: input.startsAt,
     holesPlayed: input.holesPlayed,
-    startingHole: input.startingHole ?? 1,
-    teeName: input.teeName ?? null,
+    startingHole,
+    teeName: normalizeTeeName(input.teeName),
     course: {
       name: input.course.name ?? null,
       holes: input.course.holes.map((hole) => ({

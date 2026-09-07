@@ -7,7 +7,8 @@ import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
   title: "New Golf Round | LeagueSports",
-  description: "Start a live golf round with a course, tee, and 1–4 players.",
+  description:
+    "Start a live golf round with a course, tee, starting hole, holes played, and 1–4 players.",
   robots: { index: false, follow: false },
 };
 

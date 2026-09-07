@@ -1,5 +1,6 @@
 import { OrganisedGameDetail } from "@/components/play/OrganisedGameDetail";
 import { getLoginPageHref } from "@/lib/auth-return-to";
+import { lookupGolfCourse } from "@/lib/golf/lookup-course";
 import { getOrganisedGameResult } from "@/lib/organised-games/organised-games";
 import { hubOrganisedGameHref } from "@/lib/sports/hub-ia";
 import { getVenueBySlug } from "@/services/venues";
@@ -85,7 +86,12 @@ export default async function OrganisedGamePage({
     );
   }
 
-  const venue = await getVenueBySlug(result.value.venueCmsId).catch(() => null);
+  const [venue, golfCourse] = await Promise.all([
+    getVenueBySlug(result.value.venueCmsId).catch(() => null),
+    result.value.sport === "golf"
+      ? lookupGolfCourse(result.value.venueCmsId)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
@@ -103,6 +109,7 @@ export default async function OrganisedGamePage({
         game={result.value}
         venueName={venue?.name ?? null}
         venueHref={venue?.slug ? `/venues/${venue.slug}` : null}
+        golfCourse={golfCourse ?? venue?.golfCourse ?? null}
       />
     </main>
   );

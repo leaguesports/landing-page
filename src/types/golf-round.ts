@@ -103,13 +103,13 @@ export type LockGolfRoundBody = {
   score: GolfScore;
 };
 
-/** POST /api/golf-rounds body. */
+/** POST /api/golf-rounds body. Live API requires teeName (1–40). */
 export type CreateGolfRoundInput = {
   venueCmsId: string;
   startsAt: string;
   holesPlayed: GolfHolesPlayed;
   startingHole?: number;
-  teeName?: string | null;
+  teeName: string;
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
 };
@@ -121,7 +121,7 @@ export type CaptureGolfRoundInput = {
   playedAt?: string;
   holesPlayed: GolfHolesPlayed;
   startingHole?: number;
-  teeName?: string | null;
+  teeName: string;
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
   score: GolfScore;

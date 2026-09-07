@@ -595,9 +595,37 @@ export type StartOrganisedGameResult = {
   live: OrganisedGameLive;
 };
 
+/** Optional golf start overrides — live API requires teeName (1–40). */
+export type StartOrganisedGameOverrides = {
+  teeName?: string;
+  startingHole?: number;
+  holesPlayed?: number;
+};
+
+export function toStartOrganisedGameBody(
+  overrides?: StartOrganisedGameOverrides | null,
+): Record<string, string | number> {
+  if (!overrides) return {};
+  const body: Record<string, string | number> = {};
+  if (typeof overrides.teeName === "string" && overrides.teeName.trim()) {
+    body.teeName = overrides.teeName.trim();
+  }
+  if (
+    typeof overrides.startingHole === "number" &&
+    Number.isInteger(overrides.startingHole)
+  ) {
+    body.startingHole = overrides.startingHole;
+  }
+  if (overrides.holesPlayed === 9 || overrides.holesPlayed === 18) {
+    body.holesPlayed = overrides.holesPlayed;
+  }
+  return body;
+}
+
 export async function startOrganisedGameWith(
   id: string,
   deps: OrganisedGamesDeps,
+  overrides?: StartOrganisedGameOverrides | null,
 ): Promise<OrganisedGamesResult<StartOrganisedGameResult>> {
   const trimmed = id.trim();
   if (!trimmed || !deps.baseUrl) {
@@ -613,7 +641,7 @@ export async function startOrganisedGameWith(
         credentials: "include",
         cache: "no-store",
         headers: requestHeaders(deps.cookie, true),
-        body: JSON.stringify({}),
+        body: JSON.stringify(toStartOrganisedGameBody(overrides)),
         signal: deps.signal,
       },
     );
@@ -778,16 +806,21 @@ export async function rsvpOrganisedGame(
 
 export async function startOrganisedGame(
   id: string,
+  overrides?: StartOrganisedGameOverrides | null,
 ): Promise<OrganisedGamesResult<StartOrganisedGameResult>> {
   if (!isApiConfigured()) {
     return { ok: false, error: "API is not configured", status: 0 };
   }
   try {
-    return await startOrganisedGameWith(id, {
-      fetch,
-      baseUrl: browserBaseUrl(),
-      signal: AbortSignal.timeout(15000),
-    });
+    return await startOrganisedGameWith(
+      id,
+      {
+        fetch,
+        baseUrl: browserBaseUrl(),
+        signal: AbortSignal.timeout(15000),
+      },
+      overrides,
+    );
   } catch {
     return { ok: false, error: "Could not reach organised games API", status: 0 };
   }

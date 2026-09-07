@@ -131,6 +131,10 @@ describe("toCaptureGolfRoundBody", () => {
         }),
       /strokes 1–15/,
     );
+    assert.throws(
+      () => toCaptureGolfRoundBody({ ...captureInput, teeName: "" }),
+      /teeName must be 1–40/,
+    );
   });
 });
 
