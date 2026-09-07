@@ -12,14 +12,32 @@ import {
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
 import {
+  applyInboxAllRead,
+  applyInboxNotificationRead,
+  dispatchInboxChanged,
+  emptyInboxPage,
+  formatUnreadBadge,
+  inboxNotificationCopy,
+  inboxNotificationHref,
+  INBOX_CHANGED_EVENT,
+  isOrganisedGameInvite,
+  listInboxNotifications,
+  markAllInboxNotificationsRead,
+  markInboxNotificationRead,
+  type InboxNotification,
+  type InboxNotificationsPage,
+} from "@/lib/notifications/inbox";
+import {
   dispatchFriendsChanged,
   notificationsFromFriends,
   type AppNotification,
 } from "@/lib/notifications/notifications";
-import { Bell, Check, UserPlus, X } from "lucide-react";
+import { formatHubWhen } from "@/lib/sports/hub-feed";
+import { Bell, Check, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -69,6 +87,13 @@ function formatRelativeTime(iso: string, nowMs: number): string {
   return `${deltaDay}d ago`;
 }
 
+function inviteBody(item: InboxNotification, nowMs: number): string {
+  const copy = inboxNotificationCopy(item);
+  if (!isOrganisedGameInvite(item)) return copy.body;
+  const when = formatHubWhen(item.payload.startsAt, new Date(nowMs));
+  return when ? `${copy.body} · ${when}` : copy.body;
+}
+
 export default function NotificationCenter() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
@@ -84,6 +109,12 @@ export default function NotificationCenter() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [inbox, setInbox] = useState<InboxNotificationsPage | null>(null);
+  const [inboxStatus, setInboxStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [inboxError, setInboxError] = useState<string | null>(null);
+  const [inboxPending, setInboxPending] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -92,12 +123,62 @@ export default function NotificationCenter() {
     setOpen(false);
   }
 
+  const refreshInbox = useCallback(() => {
+    void listInboxNotifications({ limit: 20 }).then((result) => {
+      if (result.ok) {
+        setInbox(result.value);
+        setInboxStatus("ready");
+        setInboxError(null);
+        return;
+      }
+      setInboxStatus("error");
+      setInboxError(result.error);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      void Promise.resolve().then(() => {
+        setInbox(null);
+        setInboxStatus("idle");
+        setInboxError(null);
+      });
+      return;
+    }
+    refreshInbox();
+  }, [isAuthenticated, isLoading, refreshInbox]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    function onInboxChanged() {
+      refreshInbox();
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "visible") refreshInbox();
+    }
+
+    window.addEventListener(INBOX_CHANGED_EVENT, onInboxChanged);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener(INBOX_CHANGED_EVENT, onInboxChanged);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [isAuthenticated, refreshInbox]);
+
   // Fetch the friends graph only when the inbox opens and no RSC seed exists.
   // Avoids GET /api/me/friends on every signed-in route view.
   useEffect(() => {
     if (!open) return;
     ensureLoaded();
   }, [open, ensureLoaded]);
+
+  useEffect(() => {
+    if (!open) return;
+    refreshInbox();
+  }, [open, refreshInbox]);
 
   useEffect(() => {
     if (!open) return;
@@ -122,12 +203,16 @@ export default function NotificationCenter() {
     };
   }, [open]);
 
-  const items: AppNotification[] = snapshot
+  const friendItems: AppNotification[] = snapshot
     ? notificationsFromFriends(snapshot)
     : [];
-  const loaded = status === "ready" || status === "error";
+  const inboxItems = inbox?.notifications ?? [];
+  const friendsLoaded = status === "ready" || status === "error";
+  const inboxLoaded = inboxStatus === "ready" || inboxStatus === "error";
   const error =
-    actionError ?? (status === "error" ? loadError : null);
+    actionError ??
+    inboxError ??
+    (status === "error" ? loadError : null);
 
   function publishSnapshot(next: FriendsSnapshot) {
     applySnapshot(next);
@@ -176,6 +261,45 @@ export default function NotificationCenter() {
     });
   }
 
+  function onOpenInboxItem(item: InboxNotification) {
+    setOpen(false);
+    if (item.readAt) return;
+    const readAt = new Date().toISOString();
+    setInbox((current) =>
+      current ? applyInboxNotificationRead(current, item.id, readAt) : current,
+    );
+    void markInboxNotificationRead(item.id).then((result) => {
+      if (!result.ok) {
+        refreshInbox();
+        return;
+      }
+      const confirmed = result.value.readAt ?? readAt;
+      setInbox((current) =>
+        current
+          ? applyInboxNotificationRead(current, item.id, confirmed)
+          : current,
+      );
+    });
+  }
+
+  function onMarkAllRead() {
+    const page = inbox ?? emptyInboxPage();
+    if (page.unreadCount <= 0) return;
+    setActionError(null);
+    setInboxPending(true);
+    const readAt = new Date().toISOString();
+    setInbox(applyInboxAllRead(page, readAt));
+    void markAllInboxNotificationsRead().then((result) => {
+      setInboxPending(false);
+      if (!result.ok) {
+        setActionError(result.error);
+        refreshInbox();
+        return;
+      }
+      dispatchInboxChanged();
+    });
+  }
+
   if (isLoading) {
     return (
       <div
@@ -189,8 +313,19 @@ export default function NotificationCenter() {
     return null;
   }
 
-  const count = items.length;
-  const badgeLabel = count > 9 ? "9+" : count > 0 ? String(count) : null;
+  const inboxUnread = inbox?.unreadCount ?? 0;
+  const count = inboxUnread + friendItems.length;
+  const badgeLabel = formatUnreadBadge(count);
+  const listEmpty =
+    inboxStatus === "ready" &&
+    friendsLoaded &&
+    inboxItems.length === 0 &&
+    friendItems.length === 0;
+  const listLoading =
+    !inboxLoaded &&
+    !friendsLoaded &&
+    inboxItems.length === 0 &&
+    friendItems.length === 0;
 
   return (
     <div ref={rootRef} className="relative">
@@ -201,7 +336,7 @@ export default function NotificationCenter() {
         aria-controls={panelId}
         aria-label={
           count > 0
-            ? `Notifications, ${count} pending`
+            ? `Notifications, ${count} unread`
             : "Notifications"
         }
         onClick={() => {
@@ -225,18 +360,27 @@ export default function NotificationCenter() {
           aria-label="Notification center"
           className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/10 bg-[#141814] shadow-[0_18px_40px_rgba(0,0,0,0.45)] max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:top-16 max-sm:mt-2 max-sm:w-auto"
         >
-          <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-white">Notifications</p>
               <p className="text-xs text-zinc-500">
                 {count === 0
                   ? "You’re all caught up"
                   : count === 1
-                    ? "1 item needs a look"
-                    : `${count} items need a look`}
+                    ? "1 unread"
+                    : `${count} unread`}
               </p>
             </div>
-            <UserPlus className="h-4 w-4 text-emerald-300/80" aria-hidden />
+            {inboxUnread > 0 ? (
+              <button
+                type="button"
+                disabled={inboxPending}
+                onClick={onMarkAllRead}
+                className="shrink-0 text-xs font-medium text-emerald-300 hover:text-emerald-200 disabled:opacity-60"
+              >
+                Mark all read
+              </button>
+            ) : null}
           </div>
 
           {error ? (
@@ -249,13 +393,13 @@ export default function NotificationCenter() {
           ) : null}
 
           <div className="max-h-[min(24rem,70vh)] overflow-y-auto">
-            {!loaded ? (
+            {listLoading ? (
               <p className="px-4 py-6 text-sm text-zinc-500">Loading…</p>
-            ) : count === 0 ? (
+            ) : listEmpty ? (
               <div className="px-4 py-6">
                 <p className="text-sm leading-relaxed text-zinc-400">
-                  No pending friend requests. When someone wants to connect,
-                  it will show up here.
+                  No notifications yet. Invites to organised games will show up
+                  here.
                 </p>
                 <Link
                   href="/"
@@ -267,7 +411,63 @@ export default function NotificationCenter() {
               </div>
             ) : (
               <ul className="divide-y divide-white/6">
-                {items.map((item) => (
+                {inboxItems.map((item) => {
+                  const copy = inboxNotificationCopy(item);
+                  const href = inboxNotificationHref(item);
+                  const unread = item.readAt == null;
+                  const inner = (
+                    <div className="flex items-start gap-3">
+                      <ActorAvatar
+                        name={copy.title}
+                        avatarUrl={item.actor?.avatarUrl ?? null}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p
+                            className={[
+                              "truncate text-sm font-medium",
+                              unread ? "text-white" : "text-zinc-300",
+                            ].join(" ")}
+                          >
+                            {copy.title}
+                          </p>
+                          <time
+                            className="shrink-0 text-[11px] text-zinc-600"
+                            dateTime={item.createdAt}
+                          >
+                            {formatRelativeTime(item.createdAt, nowMs)}
+                          </time>
+                        </div>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          {inviteBody(item, nowMs)}
+                        </p>
+                      </div>
+                      {unread ? (
+                        <span
+                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  );
+
+                  return (
+                    <li key={item.id} className="px-4 py-3">
+                      {href ? (
+                        <Link
+                          href={href}
+                          className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+                          onClick={() => onOpenInboxItem(item)}
+                        >
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div>{inner}</div>
+                      )}
+                    </li>
+                  );
+                })}
+                {friendItems.map((item) => (
                   <li key={item.id} className="px-4 py-3">
                     <div className="flex items-start gap-3">
                       <ActorAvatar
@@ -314,6 +514,9 @@ export default function NotificationCenter() {
                     </div>
                   </li>
                 ))}
+                {!friendsLoaded ? (
+                  <li className="px-4 py-3 text-sm text-zinc-500">Loading…</li>
+                ) : null}
               </ul>
             )}
           </div>

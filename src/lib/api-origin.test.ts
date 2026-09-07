@@ -122,6 +122,12 @@ describe("shouldProxyApiPath", () => {
       true,
     );
     assert.equal(shouldProxyApiPath("/api/me/organised-games"), true);
+    assert.equal(shouldProxyApiPath("/api/me/notifications"), true);
+    assert.equal(shouldProxyApiPath("/api/me/notifications/read-all"), true);
+    assert.equal(
+      shouldProxyApiPath("/api/me/notifications/n-1/read"),
+      true,
+    );
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -387,6 +393,26 @@ describe("getApiProxyRewrites", () => {
             ?.destination,
           "https://api.example.test/api/me/organised-games",
         );
+        assert.ok(
+          rewriteSources.indexOf("/api/me/notifications/read-all") <
+            rewriteSources.indexOf("/api/me/notifications/:id/read"),
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/me/notifications")
+            ?.destination,
+          "https://api.example.test/api/me/notifications",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/me/notifications/read-all")
+            ?.destination,
+          "https://api.example.test/api/me/notifications/read-all",
+        );
+        assert.equal(
+          rewrites.find(
+            (rule) => rule.source === "/api/me/notifications/:id/read",
+          )?.destination,
+          "https://api.example.test/api/me/notifications/:id/read",
+        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/venues/:cmsId")
             ?.destination,
@@ -471,6 +497,30 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/friends/:userId/accept`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/notifications`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/notifications/read-all`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/notifications/:id/read`,
         ),
         true,
       );

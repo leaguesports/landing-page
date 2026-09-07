@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
+import { dispatchInboxChanged } from "@/lib/notifications/inbox";
 import {
   cancelOrganisedGame,
   formatOrganisedGameRsvp,
@@ -17,7 +18,7 @@ import { hubOrganisedGameJoinHref } from "@/lib/sports/hub-ia";
 import { Check, Copy, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type OrganisedGameDetailProps = {
   game: OrganisedGame;
@@ -82,6 +83,11 @@ export function OrganisedGameDetail({
   const [busy, setBusy] = useState<"rsvp" | "start" | "cancel" | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
+  // Invitee GET / RSVP auto-reads the invite notice on the API — refresh the bell.
+  useEffect(() => {
+    dispatchInboxChanged();
+  }, []);
+
   const isHost = game.viewer.role === "host";
   const isInvitee = game.viewer.role === "invitee";
   const isOpen = game.status === "open";
@@ -128,6 +134,7 @@ export function OrganisedGameDetail({
       return;
     }
     setGame(result.value);
+    dispatchInboxChanged();
   }
 
   async function onStart() {
