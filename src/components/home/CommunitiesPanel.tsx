@@ -1,9 +1,9 @@
 "use client";
 
+import type { CommunityActivityItem } from "@/lib/communities/activity";
 import {
   formatCommunitySport,
   formatMemberCount,
-  type CommunityActivityItem,
   type MyCommunity,
 } from "@/lib/communities/communities";
 import { Plus, Users } from "lucide-react";
