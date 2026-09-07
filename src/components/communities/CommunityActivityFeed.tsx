@@ -5,7 +5,7 @@ import {
   formatActivitySport,
   formatActivityWhen,
   type CommunityActivityItem,
-} from "@/lib/communities/communities";
+} from "@/lib/communities/activity";
 import Link from "next/link";
 
 export function CommunityActivityFeed({

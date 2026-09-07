@@ -2,10 +2,8 @@ import { SportsHub } from "@/components/home/SportsHub";
 import type { AuthUser } from "@/lib/api-client";
 import { listBadges } from "@/lib/badges/api";
 import { listFollowedFixtures } from "@/lib/events/follow";
-import {
-  listLatestCommunityActivityByIds,
-  listMyCommunities,
-} from "@/lib/communities/communities";
+import { listLatestCommunityActivityByIds } from "@/lib/communities/activity";
+import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { listIntegrations } from "@/lib/integrations/integrations";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
