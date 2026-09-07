@@ -39,15 +39,27 @@ Fans on `/events/[slug]` already receive board updates over Ably (`fixture:<slug
 
 Ingest is a **server poll** of a handful of live CMS fixtures (Springboks Tests, PSL derbies, F1 race sessions):
 
-1. Vercel Cron calls `GET /api/cron/fixture-live` every minute (Pro plan; Hobby is daily).
+1. Call `GET /api/cron/fixture-live` on a schedule (auth: Vercel `CRON_SECRET` bearer, or `x-ops-key`).
 2. Only fixtures inside a kickoff window are considered — quiet days cost zero provider calls.
 3. With `API_SPORTS_KEY`, the worker polls API-Sports rugby / football / F1 live endpoints and maps onto the existing `FixtureLiveBoard`.
 4. Without a key, F1 can still try OpenF1 (`session_key=latest`); live telemetry there may require their paid plan.
 5. Material score / leader changes post a feed moment; clock ticks only publish Ably.
 
-Manual run: `curl -H "x-ops-key: $FIXTURE_OPS_KEY" https://leaguesports.co.za/api/cron/fixture-live`.
+This Vercel project is on **Hobby**, which rejects cron expressions more frequent than once per day (a `* * * * *` `vercel.json` cron fails the preview deploy). Keep the HTTP route and trigger it during live windows:
 
-Provider websockets/webhooks are a later optimisation. Polling is the right first ingest shape because we follow a few editorial fixtures, not a global livescore firehose.
+```bash
+curl -H "x-ops-key: $FIXTURE_OPS_KEY" https://leaguesports.co.za/api/cron/fixture-live
+```
+
+On Pro, native minute scheduling is:
+
+```json
+{
+  "crons": [{ "path": "/api/cron/fixture-live", "schedule": "* * * * *" }]
+}
+```
+
+Until then, any external scheduler (Railway worker, GitHub Action, cron-job.org) can hit the same URL. Provider websockets/webhooks are a later optimisation. Polling is the right first ingest shape because we follow a few editorial fixtures, not a global livescore firehose.
 
 ## Local development (padel match create)
 

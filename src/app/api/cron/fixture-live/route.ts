@@ -6,8 +6,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Vercel Cron + manual ops trigger. Polls sports-data APIs only when a CMS
- * fixture is inside its live window, then writes `FixtureLiveBoard` + Ably.
+ * Manual ops + external scheduler trigger. Polls sports-data APIs only when a
+ * CMS fixture is inside its live window, then writes `FixtureLiveBoard` + Ably.
+ *
+ * Do not register a sub-daily Vercel Cron here while the project is Hobby —
+ * `* * * * *` fails the deployment. Hit this route with CRON_SECRET / ops key.
  */
 async function run(request: Request) {
   if (!isAuthorizedFixtureIngest(request)) {
