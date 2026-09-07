@@ -138,9 +138,11 @@ export function isApiConfigured(): boolean {
  */
 export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/matches",
+  "/api/matches/capture",
   "/api/matches/:id/lock",
   "/api/matches/:id",
   "/api/golf-rounds",
+  "/api/golf-rounds/capture",
   "/api/golf-rounds/:id/lock",
   "/api/golf-rounds/:id",
   "/api/me/followed-venues",

@@ -41,6 +41,7 @@ import {
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
+  HUB_PLAY_VERBS,
   HUB_RECENT_LOCK_LIMIT,
   HUB_TABS,
   HUB_TRAINING_HREF,
@@ -50,6 +51,7 @@ import {
   hubSearchHref,
   hubShowsSportControl,
   takeHubPreview,
+  type HubPlayVerbId,
   type HubTabId,
 } from "@/lib/sports/hub-ia";
 import {
@@ -65,6 +67,7 @@ import {
   BookOpen,
   Calendar,
   Check,
+  ClipboardList,
   Flag,
   Heart,
   Home,
@@ -76,6 +79,7 @@ import {
   User,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -622,6 +626,7 @@ export function SportsHub({
   );
   const tablistId = useId();
   const [tab, setTab] = useState<HubTabId>("home");
+  const [playVerb, setPlayVerb] = useState<HubPlayVerbId | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
@@ -688,8 +693,15 @@ export function SportsHub({
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const playOptions = hubPlaySportOptions(sports, active);
+  const playOptions = hubPlaySportOptions(
+    sports,
+    active,
+    null,
+    playVerb ?? "start",
+  );
   const playNearbyHref = hubPlayEmptyNearbyHref(active, sports);
+  const selectedPlayVerb =
+    HUB_PLAY_VERBS.find((verb) => verb.id === playVerb) ?? null;
   const youHistoryEmpty =
     recentPadel.length === 0 &&
     !historyError &&
@@ -878,10 +890,58 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description="Pick a playable sport, then start."
+                description={
+                  selectedPlayVerb
+                    ? `Pick a playable sport to ${selectedPlayVerb.label.toLowerCase()}.`
+                    : "Start a live game, or capture a finished result."
+                }
+                action={
+                  selectedPlayVerb ? (
+                    <button
+                      type="button"
+                      onClick={() => setPlayVerb(null)}
+                      className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+                    >
+                      ← Start game or capture
+                    </button>
+                  ) : null
+                }
               />
 
-              {playOptions.length > 0 ? (
+              {playVerb === null ? (
+                <ul className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+                  {HUB_PLAY_VERBS.map((verb, index) => (
+                    <li key={verb.id}>
+                      <button
+                        type="button"
+                        onClick={() => setPlayVerb(verb.id)}
+                        className={[
+                          "flex h-full w-full flex-col items-start gap-5 rounded-3xl border px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7",
+                          index === 0
+                            ? "border-emerald-400/25 bg-emerald-400/8"
+                            : "border-white/8 bg-[#141814]",
+                        ].join(" ")}
+                      >
+                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
+                          {verb.id === "capture" ? (
+                            <ClipboardList className="h-4 w-4" aria-hidden />
+                          ) : (
+                            <Zap className="h-4 w-4" aria-hidden />
+                          )}
+                        </span>
+                        <div>
+                          <h3 className="font-display text-3xl tracking-wide text-white">
+                            {verb.label}
+                          </h3>
+                          <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                            {verb.description}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : playOptions.length > 0 ? (
                 <ul
                   className={
                     playOptions.length > 1
@@ -916,10 +976,10 @@ export function SportsHub({
                         </div>
                         <div className="flex flex-wrap gap-3">
                           <Link
-                            href={option.startHref}
+                            href={option.href}
                             className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
                           >
-                            {option.startLabel}
+                            {option.label}
                           </Link>
                           {option.continueHref ? (
                             <Link
@@ -1154,7 +1214,7 @@ export function SportsHub({
 
                   {youHistoryEmpty ? (
                     <p className="mt-6 text-sm leading-relaxed text-zinc-500">
-                      Start a match or round from{" "}
+                      Start or capture a result from{" "}
                       <button
                         type="button"
                         onClick={() => setTab("play")}

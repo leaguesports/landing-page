@@ -1,7 +1,7 @@
 /**
- * Signed-in hub information architecture (#145 / #150).
+ * Signed-in hub information architecture (#145 / #150 / #153).
  * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
- * Play = pick a playable sport, then start that sport's create flow.
+ * Play = verb first (Start game / Capture results), then playable sport.
  */
 
 import {
@@ -14,6 +14,8 @@ import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
 
 export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
+export const HUB_CAPTURE_PADEL_HREF = "/padel/capture" as const;
+export const HUB_CAPTURE_GOLF_HREF = "/golf/capture" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
@@ -62,8 +64,35 @@ export type HubPlayStartSpec = {
   description: string;
 };
 
+export const HUB_PLAY_VERB_IDS = ["start", "capture"] as const;
+
+export type HubPlayVerbId = (typeof HUB_PLAY_VERB_IDS)[number];
+
+export type HubPlayVerbOption = {
+  id: HubPlayVerbId;
+  label: string;
+  description: string;
+};
+
 /**
- * Playable create-flow map. Later sports (darts/pool) plug in here —
+ * Play verbs first — sport pick is the second step.
+ * Quick Play is out of scope; later sports plug into the maps below.
+ */
+export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
+  {
+    id: "start",
+    label: "Start game",
+    description: "Open a live scorecard for a playable sport.",
+  },
+  {
+    id: "capture",
+    label: "Capture results",
+    description: "Record a finished game without a live scorecard.",
+  },
+];
+
+/**
+ * Playable live create-flow map. Later sports (darts/pool) plug in here —
  * catalog `play` capability alone is not enough (watch-only stays out).
  */
 export const HUB_PLAY_START_BY_SLUG: Readonly<
@@ -81,12 +110,34 @@ export const HUB_PLAY_START_BY_SLUG: Readonly<
   },
 };
 
+/**
+ * Finished-score capture map. Same playable sports as live start for now.
+ */
+export const HUB_PLAY_CAPTURE_BY_SLUG: Readonly<
+  Record<string, HubPlayStartSpec>
+> = {
+  padel: {
+    href: HUB_CAPTURE_PADEL_HREF,
+    label: "Capture padel",
+    description: "Enter a finished four-ball score.",
+  },
+  golf: {
+    href: HUB_CAPTURE_GOLF_HREF,
+    label: "Capture golf",
+    description: "Enter a finished round score.",
+  },
+};
+
 export type HubPlaySportOption = {
   slug: string;
   name: string;
+  verb: HubPlayVerbId;
+  href: string;
+  label: string;
+  description: string;
+  /** @deprecated Use `href` — kept so start-verb callers stay readable. */
   startHref: string;
   startLabel: string;
-  description: string;
   /** Live/unlocked scorecard href when a clean signal exists; otherwise omitted. */
   continueHref: string | null;
 };
@@ -129,8 +180,32 @@ export function hubWatchHref(active: string): string {
   return intentPath("watch", active);
 }
 
+export function isHubPlayVerbId(value: string): value is HubPlayVerbId {
+  return (HUB_PLAY_VERB_IDS as readonly string[]).includes(value);
+}
+
 export function hubPlayStartHref(slug: string): string | null {
   return HUB_PLAY_START_BY_SLUG[slug]?.href ?? null;
+}
+
+export function hubPlayCaptureHref(slug: string): string | null {
+  return HUB_PLAY_CAPTURE_BY_SLUG[slug]?.href ?? null;
+}
+
+export function hubPlayHrefForVerb(
+  slug: string,
+  verb: HubPlayVerbId,
+): string | null {
+  return verb === "capture" ? hubPlayCaptureHref(slug) : hubPlayStartHref(slug);
+}
+
+export function hubPlaySpecForVerb(
+  slug: string,
+  verb: HubPlayVerbId,
+): HubPlayStartSpec | null {
+  return verb === "capture"
+    ? (HUB_PLAY_CAPTURE_BY_SLUG[slug] ?? null)
+    : (HUB_PLAY_START_BY_SLUG[slug] ?? null);
 }
 
 export function isHubPlayableSport(sport: SportDefinition): boolean {
@@ -163,6 +238,7 @@ export function hubPlaySportOptions(
   sports: readonly SportDefinition[],
   active: string,
   continueBySlug?: Readonly<Record<string, string>> | null,
+  verb: HubPlayVerbId = "start",
 ): HubPlaySportOption[] {
   const playable = hubPlayableSports(sports);
   const scoped =
@@ -171,16 +247,22 @@ export function hubPlaySportOptions(
       : playable.filter((sport) => sport.slug === active);
 
   return scoped.flatMap((sport) => {
-    const spec = HUB_PLAY_START_BY_SLUG[sport.slug];
+    const spec = hubPlaySpecForVerb(sport.slug, verb);
     if (!spec) return [];
     return [
       {
         slug: sport.slug,
         name: sport.name,
+        verb,
+        href: spec.href,
+        label: spec.label,
+        description: spec.description,
         startHref: spec.href,
         startLabel: spec.label,
-        description: spec.description,
-        continueHref: hubPlayContinueHref(sport.slug, continueBySlug),
+        continueHref:
+          verb === "start"
+            ? hubPlayContinueHref(sport.slug, continueBySlug)
+            : null,
       },
     ];
   });
