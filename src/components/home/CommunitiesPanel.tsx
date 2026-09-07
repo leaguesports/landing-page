@@ -1,6 +1,9 @@
 "use client";
 
-import type { CommunityActivityItem } from "@/lib/communities/activity";
+import {
+  listLatestCommunityActivityByIds,
+  type CommunityActivityItem,
+} from "@/lib/communities/activity";
 import {
   formatCommunitySport,
   formatMemberCount,
@@ -8,6 +11,7 @@ import {
 } from "@/lib/communities/communities";
 import { Plus, Users } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type CommunitiesPanelProps = {
   initial: MyCommunity[];
@@ -15,7 +19,11 @@ type CommunitiesPanelProps = {
   /** Hub People block — short list + See all. */
   compact?: boolean;
   previewLimit?: number;
-  /** Latest locked result per community id. Soft-fail: omit a key to keep the current strip. */
+  /**
+   * Optional latest locked result per community id (RSC prefetch).
+   * When omitted, the compact/preview list fetches activity client-side
+   * (capped to visible ids). Soft-fail: missing keys keep the current strip.
+   */
   latestActivity?: Record<string, CommunityActivityItem>;
 };
 
@@ -24,10 +32,32 @@ export function CommunitiesPanel({
   className = "mb-8",
   compact = false,
   previewLimit = 4,
-  latestActivity = {},
+  latestActivity,
 }: CommunitiesPanelProps) {
   const visible = compact ? initial.slice(0, previewLimit) : initial;
   const hiddenCount = initial.length - visible.length;
+  const [fetchedActivity, setFetchedActivity] = useState<
+    Record<string, CommunityActivityItem>
+  >({});
+  // Compact hub strip only — never N+1 the full membership list.
+  const previewKey = compact
+    ? visible.map((community) => community.id).join(",")
+    : "";
+
+  useEffect(() => {
+    if (latestActivity) return;
+    if (!previewKey) return;
+    const ids = previewKey.split(",");
+    let cancelled = false;
+    void listLatestCommunityActivityByIds(ids).then((map) => {
+      if (!cancelled) setFetchedActivity(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [latestActivity, previewKey]);
+
+  const activityById = latestActivity ?? fetchedActivity;
 
   return (
     <section className={className} aria-labelledby="hub-your-communities">
@@ -72,7 +102,7 @@ export function CommunitiesPanel({
       ) : compact ? (
         <ul className="space-y-2">
           {visible.map((community) => {
-            const latest = latestActivity[community.id];
+            const latest = activityById[community.id];
             return (
               <li key={community.id}>
                 <Link
@@ -113,7 +143,7 @@ export function CommunitiesPanel({
       ) : (
         <ul className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
           {initial.map((community) => {
-            const latest = latestActivity[community.id];
+            const latest = activityById[community.id];
             return (
               <li key={community.id} className="min-w-[16rem] max-w-[18rem] shrink-0">
                 <Link
