@@ -89,6 +89,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 const HUB_PREFS_EVENT = "leaguesports-hub-prefs";
 
@@ -342,10 +343,10 @@ function HubModal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-6">
       <div
         aria-hidden
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -387,7 +388,8 @@ function HubModal({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
