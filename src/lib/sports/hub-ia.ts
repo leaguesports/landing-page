@@ -1,7 +1,7 @@
 /**
- * Signed-in hub information architecture (#145 / #150 / #153 / #155).
+ * Signed-in hub information architecture (#145 / #150 / #153 / #155 / #157).
  * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
- * Play = verb first (Start game / Capture results), then sport pick in a modal.
+ * Play = verb first (Start / Capture / Organise), then sport pick in a modal.
  */
 
 import {
@@ -16,6 +16,8 @@ export const HUB_START_MATCH_HREF = "/padel/new" as const;
 export const HUB_START_GOLF_HREF = "/golf/new" as const;
 export const HUB_CAPTURE_PADEL_HREF = "/padel/capture" as const;
 export const HUB_CAPTURE_GOLF_HREF = "/golf/capture" as const;
+export const HUB_ORGANISE_PADEL_HREF = "/padel/organise" as const;
+export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
@@ -29,6 +31,8 @@ export const HUB_GOLF_HISTORY_HREF = "/golf/history" as const;
 export const HUB_RECENT_LOCK_LIMIT = 8;
 export const HUB_BADGE_STRIP_LIMIT = 3;
 export const HUB_PEOPLE_PREVIEW_LIMIT = 5;
+/** Thin hosted/invited strip on Play — keep the verb grid the focus. */
+export const HUB_ORGANISED_PREVIEW_LIMIT = 4;
 
 export const HUB_SPORT_CONTROL = "dropdown" as const;
 /** Start match/round live inside Play only — never a sticky bar above the nav. */
@@ -64,7 +68,7 @@ export type HubPlayStartSpec = {
   description: string;
 };
 
-export const HUB_PLAY_VERB_IDS = ["start", "capture"] as const;
+export const HUB_PLAY_VERB_IDS = ["start", "capture", "organise"] as const;
 
 export type HubPlayVerbId = (typeof HUB_PLAY_VERB_IDS)[number];
 
@@ -90,6 +94,11 @@ export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
     id: "capture",
     label: "Capture results",
     description: "Record a finished game without a live scorecard.",
+  },
+  {
+    id: "organise",
+    label: "Organise game",
+    description: "Set a venue and time, then invite friends.",
   },
 ];
 
@@ -127,6 +136,24 @@ export const HUB_PLAY_CAPTURE_BY_SLUG: Readonly<
     href: HUB_CAPTURE_GOLF_HREF,
     label: "Capture golf",
     description: "Enter a finished round score.",
+  },
+};
+
+/**
+ * Organise-ahead map. Same playable sports as live start for v1.
+ */
+export const HUB_PLAY_ORGANISE_BY_SLUG: Readonly<
+  Record<string, HubPlayStartSpec>
+> = {
+  padel: {
+    href: HUB_ORGANISE_PADEL_HREF,
+    label: "Organise padel",
+    description: "Court, time, and optional friend invites.",
+  },
+  golf: {
+    href: HUB_ORGANISE_GOLF_HREF,
+    label: "Organise golf",
+    description: "Course, time, and optional friend invites.",
   },
 };
 
@@ -194,20 +221,38 @@ export function hubPlayCaptureHref(slug: string): string | null {
   return HUB_PLAY_CAPTURE_BY_SLUG[slug]?.href ?? null;
 }
 
+export function hubPlayOrganiseHref(slug: string): string | null {
+  return HUB_PLAY_ORGANISE_BY_SLUG[slug]?.href ?? null;
+}
+
 export function hubPlayHrefForVerb(
   slug: string,
   verb: HubPlayVerbId,
 ): string | null {
-  return verb === "capture" ? hubPlayCaptureHref(slug) : hubPlayStartHref(slug);
+  if (verb === "capture") return hubPlayCaptureHref(slug);
+  if (verb === "organise") return hubPlayOrganiseHref(slug);
+  return hubPlayStartHref(slug);
 }
 
 export function hubPlaySpecForVerb(
   slug: string,
   verb: HubPlayVerbId,
 ): HubPlayStartSpec | null {
-  return verb === "capture"
-    ? (HUB_PLAY_CAPTURE_BY_SLUG[slug] ?? null)
-    : (HUB_PLAY_START_BY_SLUG[slug] ?? null);
+  if (verb === "capture") return HUB_PLAY_CAPTURE_BY_SLUG[slug] ?? null;
+  if (verb === "organise") return HUB_PLAY_ORGANISE_BY_SLUG[slug] ?? null;
+  return HUB_PLAY_START_BY_SLUG[slug] ?? null;
+}
+
+/** Detail for a hosted or invited organised game. */
+export function hubOrganisedGameHref(id: string): string {
+  const trimmed = id.trim();
+  return trimmed ? `/play/organised/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
+}
+
+/** Join-via-link page. FE builds this from host `inviteToken`. */
+export function hubOrganisedGameJoinHref(token: string): string {
+  const trimmed = token.trim();
+  return trimmed ? `/play/join/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
 }
 
 export function isHubPlayableSport(sport: SportDefinition): boolean {
@@ -281,13 +326,17 @@ export function hubPlayModalSportOptions(
 }
 
 export function hubPlayModalTitle(verb: HubPlayVerbId): string {
-  return verb === "capture" ? "Capture results" : "Start game";
+  if (verb === "capture") return "Capture results";
+  if (verb === "organise") return "Organise game";
+  return "Start game";
 }
 
 export function hubPlayModalDescription(verb: HubPlayVerbId): string {
-  return verb === "capture"
-    ? "Pick a sport to record a finished score."
-    : "Pick a sport to open a live scorecard.";
+  if (verb === "capture") return "Pick a sport to record a finished score.";
+  if (verb === "organise") {
+    return "Pick a sport to set a venue, time, and optional invites.";
+  }
+  return "Pick a sport to open a live scorecard.";
 }
 
 export function hubPlayNearbyHref(active: string): string {

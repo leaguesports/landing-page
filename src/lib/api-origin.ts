@@ -175,6 +175,15 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/pools/:idOrCode/picks",
   "/api/pools/:idOrCode/result",
   "/api/pools/:idOrCode/standings",
+  "/api/organised-games",
+  "/api/organised-games/invite/:token",
+  "/api/organised-games/invite/:token/join",
+  "/api/organised-games/:id/invites",
+  "/api/organised-games/:id/rsvp",
+  "/api/organised-games/:id/start",
+  "/api/organised-games/:id/cancel",
+  "/api/organised-games/:id",
+  "/api/me/organised-games",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */

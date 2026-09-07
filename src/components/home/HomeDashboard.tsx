@@ -5,6 +5,7 @@ import { listFollowedFixtures } from "@/lib/events/follow";
 import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { listIntegrations } from "@/lib/integrations/integrations";
+import { listMyOrganisedGames } from "@/lib/organised-games/organised-games";
 import { lookupPlayerGolfHistory } from "@/lib/golf/lookup-history";
 import { lookupPlayerHistory } from "@/lib/padel/lookup-history";
 import {
@@ -65,6 +66,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRows,
     followedFixturesResolved,
     friends,
+    organisedGames,
     myCommunities,
     badges,
     integrations,
@@ -82,6 +84,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     followedFixtureRowsPromise,
     followedFixturesPromise,
     listFriends({ cookie }),
+    listMyOrganisedGames({ cookie }),
     listMyCommunities({ cookie }),
     listBadges({ cookie }),
     listIntegrations({ cookie }),
@@ -122,6 +125,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       followedFixtures={followedFixtures}
       followedFixtureCount={followedFixtureRows.length}
       friends={friends}
+      organisedGames={organisedGames}
       myCommunities={myCommunities}
       badges={badges}
       integrations={integrations}
