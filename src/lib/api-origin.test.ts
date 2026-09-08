@@ -11,6 +11,7 @@ import {
   isLoopbackApiOrigin,
   shouldProxyApiPath,
 } from "./api-origin.ts";
+import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
 import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
 import { TOURNAMENT_PROXY_SOURCES } from "./tournaments/tournaments.ts";
@@ -158,6 +159,12 @@ describe("shouldProxyApiPath", () => {
       shouldProxyApiPath("/api/me/notifications/n-1/read"),
       true,
     );
+    assert.equal(shouldProxyApiPath("/api/roadmap/features"), true);
+    assert.equal(shouldProxyApiPath("/api/roadmap/features/abc/vote"), true);
+    assert.equal(shouldProxyApiPath("/api/roadmap/features/abc/notify"), true);
+    assert.equal(shouldProxyApiPath("/api/roadmap/unsubscribe"), true);
+    assert.equal(shouldProxyApiPath("/api/roadmap/preferences"), true);
+    assert.equal(shouldProxyApiPath("/api/roadmap/requests"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -509,6 +516,27 @@ describe("getApiProxyRewrites", () => {
           )?.destination,
           "https://api.example.test/api/me/notifications/:id/read",
         );
+        const roadmapSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/roadmap" || source.startsWith("/api/roadmap/"),
+        );
+        assert.deepEqual(roadmapSources, [...ROADMAP_PROXY_SOURCES]);
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/roadmap/features")
+            ?.destination,
+          "https://api.example.test/api/roadmap/features",
+        );
+        assert.equal(
+          rewrites.find(
+            (rule) => rule.source === "/api/roadmap/features/:id/vote",
+          )?.destination,
+          "https://api.example.test/api/roadmap/features/:id/vote",
+        );
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/roadmap/requests")
+            ?.destination,
+          "https://api.example.test/api/roadmap/requests",
+        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/venues/:cmsId")
             ?.destination,
@@ -617,6 +645,22 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/me/notifications/:id/read`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/roadmap/features`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/roadmap/requests`,
         ),
         true,
       );

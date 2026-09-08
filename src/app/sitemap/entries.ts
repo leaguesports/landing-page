@@ -69,6 +69,7 @@ const STATIC_PATHS: Array<{
   { path: "/athletes", changeFrequency: "weekly", priority: 0.85 },
   { path: "/guides", changeFrequency: "weekly", priority: 0.8 },
   { path: "/integrations", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/roadmap", changeFrequency: "weekly", priority: 0.7 },
 ];
 
 export function resolveSitemapOrigin(raw?: string | null): string {
