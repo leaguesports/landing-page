@@ -4,6 +4,7 @@ import { TournamentBracket } from "@/components/tournaments/TournamentBracket";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import {
+  canCreateChallenge,
   datetimeLocalToIso,
   isoToDatetimeLocal,
   searchTeams,
@@ -11,7 +12,6 @@ import {
   type PublicTeamRef,
 } from "@/lib/team-matches/team-matches";
 import {
-  canCreateChallenge,
   formatTeamSport,
   type PublicTeamSummary,
 } from "@/lib/teams/teams";
