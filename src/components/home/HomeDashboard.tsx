@@ -6,6 +6,7 @@ import { listMyCommunities } from "@/lib/communities/communities";
 import { listFriends } from "@/lib/friends/friends";
 import { listMyTeamMatches } from "@/lib/team-matches/team-matches";
 import { listTeams } from "@/lib/teams/teams";
+import { listMyTournaments } from "@/lib/tournaments/tournaments";
 import { listIntegrations } from "@/lib/integrations/integrations";
 import { listMyOrganisedGames } from "@/lib/organised-games/organised-games";
 import { lookupPlayerDartsHistory } from "@/lib/darts/lookup-history";
@@ -72,6 +73,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     friends,
     organisedGames,
     teamMatches,
+    tournaments,
     myCommunities,
     myTeams,
     badges,
@@ -93,6 +95,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
     listFriends({ cookie }),
     listMyOrganisedGames({ cookie }),
     listMyTeamMatches({ cookie }),
+    listMyTournaments({ cookie }),
     listMyCommunities({ cookie }),
     listTeams({ cookie }),
     listBadges({ cookie }),
@@ -142,6 +145,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       friends={friends}
       organisedGames={organisedGames}
       teamMatches={teamMatches}
+      tournaments={tournaments}
       myCommunities={myCommunities}
       myTeams={myTeams}
       badges={badges}

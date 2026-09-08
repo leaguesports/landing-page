@@ -21,6 +21,8 @@ import {
   HUB_TEAMS_NEW_HREF,
   HUB_TEAM_MATCHES_HREF,
   HUB_TEAM_MATCHES_NEW_HREF,
+  HUB_TOURNAMENTS_HREF,
+  HUB_TOURNAMENTS_NEW_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PLAY_CAPTURE_BY_SLUG,
   HUB_PLAY_HREF,
@@ -101,6 +103,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     assert.equal(HUB_TEAMS_NEW_HREF, "/teams/new");
     assert.equal(HUB_TEAM_MATCHES_HREF, "/team-matches");
     assert.equal(HUB_TEAM_MATCHES_NEW_HREF, "/team-matches/new");
+    assert.equal(HUB_TOURNAMENTS_HREF, "/tournaments");
+    assert.equal(HUB_TOURNAMENTS_NEW_HREF, "/tournaments/new");
   });
 
   it("keeps Start actions inside Play only — never sticky or on Home", () => {

@@ -13,6 +13,7 @@ import {
 } from "./api-origin.ts";
 import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
+import { TOURNAMENT_PROXY_SOURCES } from "./tournaments/tournaments.ts";
 
 const ORIGIN_ENV_KEYS = [
   "API_ORIGIN",
@@ -108,7 +109,14 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/teams/search"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/tournaments"), true);
     assert.equal(shouldProxyApiPath("/api/team-matches"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments/join"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments/mine"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments/c1"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments/c1/open-registration"), true);
+    assert.equal(shouldProxyApiPath("/api/tournaments/c1/fixtures/s1/start"), true);
     assert.equal(shouldProxyApiPath("/api/team-matches/join"), true);
     assert.equal(shouldProxyApiPath("/api/team-matches/mine"), true);
     assert.equal(shouldProxyApiPath("/api/team-matches/m1"), true);
@@ -434,6 +442,14 @@ describe("getApiProxyRewrites", () => {
           rewriteSources.indexOf("/api/team-matches/mine") <
             rewriteSources.indexOf("/api/team-matches/:id"),
         );
+        assert.ok(
+          rewriteSources.indexOf("/api/tournaments/join") <
+            rewriteSources.indexOf("/api/tournaments/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/tournaments/mine") <
+            rewriteSources.indexOf("/api/tournaments/:id"),
+        );
         const teamSources = API_PROXY_EXPLICIT_SOURCES.filter(
           (source) =>
             source === "/api/teams" || source.startsWith("/api/teams/"),
@@ -445,6 +461,15 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/team-matches/"),
         );
         assert.deepEqual(teamMatchSources, [...TEAM_MATCH_PROXY_SOURCES]);
+        const tournamentSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/tournaments" ||
+            source.startsWith("/api/tournaments/"),
+        );
+        assert.deepEqual(tournamentSources, [...TOURNAMENT_PROXY_SOURCES]);
+        assert.ok(
+          API_PROXY_EXPLICIT_SOURCES.includes("/api/teams/:id/tournaments"),
+        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/teams")?.destination,
           "https://api.example.test/api/teams",
