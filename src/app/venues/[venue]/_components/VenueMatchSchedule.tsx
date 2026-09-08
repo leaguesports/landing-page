@@ -23,6 +23,7 @@ function formatScreeningWhen(startsAt: string): string {
 export async function VenueMatchSchedule({
   venue,
   screenings = [],
+  manageHref,
 }: {
   venue?: {
     slug: string;
@@ -33,6 +34,7 @@ export async function VenueMatchSchedule({
       | null;
   } | null;
   screenings?: VenueScreeningDisplay[] | null;
+  manageHref?: string | null;
 }) {
   const items = mergeVenueUpcomingScreenings(
     venue ?? { slug: "", upcoming_screenings: screenings },
@@ -41,9 +43,19 @@ export async function VenueMatchSchedule({
 
   return (
     <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-      <h3 className="mb-5 font-display text-2xl tracking-wide text-white sm:text-3xl">
-        🏉 Upcoming Match Screenings
-      </h3>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <h3 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
+          🏉 Upcoming Match Screenings
+        </h3>
+        {manageHref ? (
+          <Link
+            href={manageHref}
+            className="text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300"
+          >
+            Manage screenings
+          </Link>
+        ) : null}
+      </div>
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 px-4 py-5 text-sm leading-relaxed text-zinc-400">
