@@ -67,7 +67,7 @@ describe("scorecardStartHref", () => {
     );
     assert.equal(
       scorecardStartHref({ venue: "padel & co" }),
-      `/padel/new?venue=${encodeURIComponent("padel & co")}`,
+      `/padel/new?${new URLSearchParams({ venue: "padel & co" }).toString()}`,
     );
   });
 
