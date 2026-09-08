@@ -13,6 +13,7 @@ import {
   HUB_GOLF_HISTORY_HREF,
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
+  HUB_LOBBY_HREF,
   HUB_ORGANISE_GOLF_HREF,
   HUB_ORGANISE_PADEL_HREF,
   HUB_ORGANISED_PREVIEW_LIMIT,
@@ -44,6 +45,7 @@ import {
   HUB_TABS,
   HUB_TRAINING_HREF,
   HUB_WATCH_HREF,
+  hubLobbyHref,
   hubOrganisedGameHref,
   hubOrganisedGameJoinHref,
   hubOwnsRecentLocks,
@@ -363,6 +365,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     assert.equal(hubOrganisedGameHref("  "), HUB_PLAY_HREF);
     assert.equal(hubOrganisedGameJoinHref(""), HUB_PLAY_HREF);
     assert.equal(HUB_ORGANISED_PREVIEW_LIMIT, 4);
+    assert.equal(HUB_LOBBY_HREF, "/lobby");
+    assert.equal(hubLobbyHref(), "/lobby");
   });
 
   it("omits Continue unless a live href is supplied — never from locked history", () => {

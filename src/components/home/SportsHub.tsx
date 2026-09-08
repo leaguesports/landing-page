@@ -63,6 +63,7 @@ import {
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
+  HUB_LOBBY_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
   HUB_PLAY_VERBS,
@@ -991,6 +992,27 @@ export function SportsHub({
                   </li>
                 ))}
               </ul>
+
+              <Link
+                href={HUB_LOBBY_HREF}
+                className="mt-4 flex w-full flex-col items-start gap-3 rounded-3xl border border-emerald-400/20 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-emerald-400/40 sm:px-6"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
+                  <Users className="h-4 w-4" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                    Find players
+                  </p>
+                  <h3 className="mt-1 font-display text-3xl tracking-wide text-white">
+                    Lobby
+                  </h3>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-400">
+                    Looking for a game, or looking for players. Convert into
+                    Organise when the lobby fills.
+                  </p>
+                </div>
+              </Link>
 
               <Link
                 href={TEAM_MATCHES_HREF}

@@ -23,6 +23,11 @@ describe("conversion event catalog", () => {
       "generate_lead",
       "roadmap_vote",
       "conversion_fallback",
+      "lobby_looking_on",
+      "lobby_post_open",
+      "lobby_join",
+      "lobby_propose_shown",
+      "lobby_propose_accept",
     ]);
   });
 
@@ -39,6 +44,7 @@ describe("conversion event catalog", () => {
     assert.equal(isConversionEvent("cta_click"), true);
     assert.equal(isConversionEvent("page_view"), false);
     assert.equal(isPageType("play_city_sport"), true);
+    assert.equal(isPageType("lobby"), true);
     assert.equal(isPageType("marketing"), false);
     assert.equal(isCtaSlot("hero"), true);
     assert.equal(isCtaSlot("footer"), false);

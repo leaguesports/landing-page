@@ -234,6 +234,14 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/roadmap/requests",
   "/api/intents/coverage",
   "/api/intents/coverage/unsubscribe",
+  "/api/lobby",
+  "/api/lobby/looking",
+  "/api/lobby/open-games",
+  "/api/lobby/open-games/:id/join",
+  "/api/lobby/open-games/:id/kick",
+  "/api/lobby/proposals",
+  "/api/lobby/proposals/:id/accept",
+  "/api/lobby/proposals/:id/pass",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */

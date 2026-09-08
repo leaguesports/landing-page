@@ -58,6 +58,11 @@ const nextConfig: NextConfig = {
         destination: "/athletes",
         permanent: true,
       },
+      {
+        source: "/play/lobby",
+        destination: "/lobby",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

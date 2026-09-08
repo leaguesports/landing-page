@@ -1,5 +1,6 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
+import { isLobbyInboxType, lobbyInboxHref } from "../lobby/lobby.ts";
 import { hubOrganisedGameHref } from "../sports/hub-ia.ts";
 
 export const INBOX_CHANGED_EVENT = "leaguesports-inbox-changed";
@@ -113,8 +114,13 @@ export function organisedGameInviteHref(
 export function inboxNotificationHref(
   notification: InboxNotification,
 ): string | null {
-  if (!isOrganisedGameInvite(notification)) return null;
-  return organisedGameInviteHref(notification.payload);
+  if (isOrganisedGameInvite(notification)) {
+    return organisedGameInviteHref(notification.payload);
+  }
+  if (isLobbyInboxType(notification.type)) {
+    return lobbyInboxHref(notification.payload);
+  }
+  return null;
 }
 
 /** Hub-header badge label. Null when nothing unread. Caps at 9+. */
@@ -145,6 +151,19 @@ export function inboxNotificationCopy(
 ): { title: string; body: string } {
   if (isOrganisedGameInvite(notification)) {
     return organisedGameInviteCopy(notification);
+  }
+  if (isLobbyInboxType(notification.type)) {
+    const title = notification.actor?.displayName.trim() || "Lobby";
+    if (notification.type === "lobby_proposal_ready") {
+      return { title, body: "proposed a game — Accept or Pass" };
+    }
+    if (notification.type === "lobby_open_game_filled") {
+      return { title, body: "filled an open game" };
+    }
+    if (notification.type === "lobby_open_game_joined") {
+      return { title, body: "joined your open game" };
+    }
+    return { title, body: "has an open game that fits" };
   }
   return unknownInboxCopy(notification);
 }

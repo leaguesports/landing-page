@@ -4,7 +4,12 @@ import { PostActionShare } from "@/components/conversion/PostActionShare";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/lib/analytics/track";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
+import {
+  isLobbySourceNote,
+  lobbyGameStartParams,
+} from "@/lib/lobby/lobby";
 import {
   buildStartOrganisedGolfOverrides,
   isGolfStartReady,
@@ -171,6 +176,10 @@ export function OrganisedGameDetail({
       return;
     }
     setGame(result.value.game);
+    if (isLobbySourceNote(game.notes)) {
+      const sport = game.sport === "golf" ? "golf" : "padel";
+      track("game_start", lobbyGameStartParams(sport));
+    }
     router.push(result.value.live.path);
   }
 
@@ -223,7 +232,7 @@ export function OrganisedGameDetail({
           )}
           {` · ${occupied}/${game.capacity} going`}
         </p>
-        {game.notes ? (
+        {game.notes && !isLobbySourceNote(game.notes) ? (
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
             {game.notes}
           </p>

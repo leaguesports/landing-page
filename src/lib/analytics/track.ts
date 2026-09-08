@@ -17,6 +17,11 @@ export const CONVERSION_EVENTS = [
   "generate_lead",
   "roadmap_vote",
   "conversion_fallback",
+  "lobby_looking_on",
+  "lobby_post_open",
+  "lobby_join",
+  "lobby_propose_shown",
+  "lobby_propose_accept",
 ] as const;
 
 export type ConversionEvent = (typeof CONVERSION_EVENTS)[number];
@@ -29,6 +34,7 @@ export const PAGE_TYPES = [
   "venue",
   "scorecard",
   "organise",
+  "lobby",
   "team",
   "roadmap",
   "other",
