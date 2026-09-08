@@ -38,7 +38,9 @@ import {
   listMyTeamMatchesWith,
   listTeamMatchesWith,
   parseMineSnapshot,
+  parseScorecard,
   parseTeamMatch,
+  parseTeamMatchPreview,
   partitionTeamMatches,
   scorecardNavigatePath,
   searchTeamsWith,
@@ -367,29 +369,21 @@ describe("team match proxy path order", () => {
     assert.equal(teamMatchNewHref(), TEAM_MATCHES_NEW_HREF);
     assert.equal(teamMatchJoinHref("abc"), "/team-matches/join/abc");
     assert.equal(TEAM_MATCHES_HREF, "/team-matches");
-    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1", path: "/padel/p1" }), "/padel/p1");
-    assert.equal(
-      scorecardNavigatePath({ sport: "padel", id: "p1", path: "//evil" }),
-      "/padel/p1",
-    );
-    assert.equal(
-      scorecardNavigatePath({
-        sport: "padel",
-        id: "p1",
-        path: "/login?returnTo=/",
-      }),
-      "/padel/p1",
-    );
-    assert.equal(
-      scorecardNavigatePath({ sport: "golf", id: "g_2", path: "/\\evil" }),
-      "/golf/g_2",
-    );
-    assert.equal(
-      scorecardNavigatePath({ sport: "padel", id: "../x", path: "/padel/x" }),
-      null,
-    );
-    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1 id", path: "/padel/p1" }), null);
+    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1" }), "/padel/p1");
+    assert.equal(scorecardNavigatePath({ sport: "golf", id: "g_2" }), "/golf/g_2");
+    assert.equal(scorecardNavigatePath({ sport: "darts", id: "d-3" }), "/darts/d-3");
+    assert.equal(scorecardNavigatePath({ sport: "padel", id: "../x" }), null);
+    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1 id" }), null);
     assert.equal(scorecardNavigatePath(null), null);
+    assert.deepEqual(parseScorecard({ sport: "padel", id: "p1" }), {
+      sport: "padel",
+      id: "p1",
+    });
+    assert.deepEqual(
+      parseScorecard({ sport: "padel", id: "p1", path: "/login?returnTo=/" }),
+      { sport: "padel", id: "p1" },
+    );
+    assert.equal(parseScorecard({ sport: "padel" }), null);
   });
 });
 
@@ -421,6 +415,30 @@ describe("team match parsers and datetime helpers", () => {
     assert.equal("challengeToken" in (mine.upcoming[0] ?? {}), false);
     assert.equal("lineups" in (mine.upcoming[0] ?? {}), false);
     assert.deepEqual(toTeamMatchPreview(parseTeamMatch(withToken)!).awayName, "Night Walls");
+    const brokenLineup = {
+      id: "m-preview",
+      sport: "padel",
+      status: "live",
+      startsAt: "2026-09-08T18:00:00.000Z",
+      homeTeam: { name: "Sunday Smash" },
+      awayTeam: { name: "Night Walls" },
+      lineups: { home: [{ id: 1 }], away: "nope" },
+      scorecard: { sport: "padel", id: "p1" },
+      viewer: { role: "not-a-role" },
+    };
+    assert.equal(parseTeamMatch(brokenLineup), null);
+    assert.deepEqual(parseTeamMatchPreview(brokenLineup), {
+      id: "m-preview",
+      sport: "padel",
+      status: "live",
+      startsAt: "2026-09-08T18:00:00.000Z",
+      homeName: "Sunday Smash",
+      awayName: "Night Walls",
+    });
+    assert.equal(
+      parseMineSnapshot({ upcoming: [brokenLineup], recent: [] }).upcoming[0]?.id,
+      "m-preview",
+    );
     assert.equal(TEAM_SEARCH_MIN_QUERY, 2);
     assert.equal(shouldSearchTeams(""), false);
     assert.equal(shouldSearchTeams("N"), false);
@@ -600,9 +618,9 @@ describe("team match HTTP client", () => {
           JSON.stringify({
             match: match({
               status: "live",
-              scorecard: { sport: "padel", id: "p1", path: "/login?returnTo=/" },
+              scorecard: { sport: "padel", id: "p1" },
             }),
-            scorecard: { sport: "padel", id: "p1", path: "/login?returnTo=/" },
+            scorecard: { sport: "padel", id: "p1" },
           }),
           { status: 200 },
         );
@@ -611,7 +629,7 @@ describe("team match HTTP client", () => {
     });
     assert.equal(started.ok, true);
     if (started.ok) {
-      assert.equal(started.value.scorecard.path, "/login?returnTo=/");
+      assert.deepEqual(started.value.scorecard, { sport: "padel", id: "p1" });
       assert.equal(scorecardNavigatePath(started.value.scorecard), "/padel/p1");
     }
   });

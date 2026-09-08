@@ -57,7 +57,6 @@ export type PublicTeamRef = {
 export type PublicScorecard = {
   sport: TeamMatchSport;
   id: string;
-  path: string;
 };
 
 export type PublicTeamMatchViewer = {
@@ -628,14 +627,10 @@ export function parseScorecard(value: unknown): PublicScorecard | null {
   if (value == null) return null;
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
-  if (
-    !isTeamMatchSport(row.sport) ||
-    typeof row.id !== "string" ||
-    typeof row.path !== "string"
-  ) {
+  if (!isTeamMatchSport(row.sport) || typeof row.id !== "string") {
     return null;
   }
-  return { sport: row.sport, id: row.id, path: row.path };
+  return { sport: row.sport, id: row.id };
 }
 
 export function parseViewer(value: unknown): PublicTeamMatchViewer | null {
@@ -725,14 +720,63 @@ export function parseTeamMatchList(value: unknown): PublicTeamMatch[] {
     .filter((item): item is PublicTeamMatch => !!item);
 }
 
+function parsePreviewTeamName(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const name = (value as { name?: unknown }).name;
+  return typeof name === "string" && name.trim() ? name : null;
+}
+
+/** List/hub/profile rows — id, sport, status, startsAt, names only. */
+export function parseTeamMatchPreview(value: unknown): TeamMatchPreview | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    !isTeamMatchSport(row.sport) ||
+    !isTeamMatchStatus(row.status)
+  ) {
+    return null;
+  }
+
+  const homeName =
+    typeof row.homeName === "string" && row.homeName.trim()
+      ? row.homeName
+      : parsePreviewTeamName(row.homeTeam);
+  if (!homeName) return null;
+
+  let awayName: string | null = null;
+  if (typeof row.awayName === "string" && row.awayName.trim()) {
+    awayName = row.awayName;
+  } else if (row.awayTeam != null) {
+    awayName = parsePreviewTeamName(row.awayTeam);
+    if (!awayName) return null;
+  }
+
+  return {
+    id: row.id,
+    sport: row.sport,
+    status: row.status,
+    startsAt: typeof row.startsAt === "string" ? row.startsAt : null,
+    homeName,
+    awayName,
+  };
+}
+
+export function parseTeamMatchPreviewList(value: unknown): TeamMatchPreview[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(parseTeamMatchPreview)
+    .filter((item): item is TeamMatchPreview => !!item);
+}
+
 export function parseMineSnapshot(body: unknown): TeamMatchesMineSnapshot {
   if (!body || typeof body !== "object") {
     return emptyMineSnapshot();
   }
   const row = body as Record<string, unknown>;
   return {
-    upcoming: parseTeamMatchList(row.upcoming).map(toTeamMatchPreview),
-    recent: parseTeamMatchList(row.recent).map(toTeamMatchPreview),
+    upcoming: parseTeamMatchPreviewList(row.upcoming),
+    recent: parseTeamMatchPreviewList(row.recent),
   };
 }
 
@@ -1070,11 +1114,11 @@ export async function listTeamMatchesWith(
         status: res.status,
       };
     }
-    const matches = parseTeamMatchList(
+    const matches = parseTeamMatchPreviewList(
       body && typeof body === "object"
         ? (body as { matches?: unknown }).matches
         : null,
-    ).map(toTeamMatchPreview);
+    );
     return { ok: true, value: matches };
   } catch {
     return { ok: false, error: "Could not reach team matches API", status: 0 };
