@@ -8,10 +8,8 @@ import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import { datetimeLocalToIso, toDatetimeLocalValue } from "@/lib/darts/api-match";
-import {
-  captureDartsMatch,
-  playersFromNames,
-} from "@/lib/darts/capture";
+import { captureDartsMatch, playersFromNames } from "@/lib/darts/capture";
+import { track } from "@/lib/analytics/track";
 import {
   evaluateVisit,
   emptyReplayState,
@@ -200,6 +198,7 @@ export function DartsCaptureForm({
         },
         venue ? toDartsMatchVenue(venue) : null,
       );
+      track("game_lock", { page_type: "scorecard", sport: "darts" });
       startTransition(() => {
         router.push(`/darts/${match.id}`);
       });

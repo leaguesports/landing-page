@@ -3,6 +3,7 @@ import Link from "next/link";
 import { OrganiseGameForm } from "@/components/play/OrganiseGameForm";
 import { listFriends } from "@/lib/friends/friends";
 import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
+import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
 import { getServerAuthState } from "@/lib/server-auth";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
@@ -20,10 +21,13 @@ export default async function OrganisePadelPage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const requestedSlug = venueQueryKey(params);
+  const cityPrefill = Array.isArray(params.city) ? params.city[0] : params.city;
   const cookie = (await cookies()).toString();
 
   const [padelCourts, requestedVenue, friends, auth] = await Promise.all([
@@ -43,15 +47,16 @@ export default async function OrganisePadelPage({
   const initialVenue =
     requestedOption && isPadelVenue(requestedOption) ? requestedOption : null;
 
+  const rankedCourts = rankVenuesByCity(padelCourts, cityPrefill);
   const venues = initialVenue
     ? [
         initialVenue,
-        ...padelCourts.filter(
+        ...rankedCourts.filter(
           (court) =>
             court.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
         ),
       ]
-    : padelCourts;
+    : rankedCourts;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">

@@ -232,6 +232,8 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/roadmap/unsubscribe",
   "/api/roadmap/preferences",
   "/api/roadmap/requests",
+  "/api/intents/coverage",
+  "/api/intents/coverage/unsubscribe",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */

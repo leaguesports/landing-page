@@ -20,6 +20,7 @@ export default async function ScorecardStartPage({
     venue?: string | string[];
     cmsId?: string | string[];
     sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
@@ -28,6 +29,7 @@ export default async function ScorecardStartPage({
       venue: params.venue,
       cmsId: params.cmsId,
       sport: params.sport,
+      city: params.city,
     }),
   );
 }

@@ -31,20 +31,20 @@ describe("scorecardStartHref", () => {
   it("defaults to the padel start flow with no venue", () => {
     assert.equal(scorecardStartHref(), "/padel/new");
     assert.equal(scorecardStartHref({}), "/padel/new");
-    assert.equal(scorecardStartHref({ sport: "padel" }), "/padel/new");
-    assert.equal(scorecardStartHref({ sport: "unknown" }), "/padel/new");
+    assert.equal(scorecardStartHref({ sport: "padel" }), "/padel/new?sport=padel");
+    assert.equal(scorecardStartHref({ sport: "unknown" }), "/padel/new?sport=unknown");
   });
 
   it("routes golf to /golf/new", () => {
-    assert.equal(scorecardStartHref({ sport: "golf" }), "/golf/new");
-    assert.equal(scorecardStartHref({ sport: "Golf" }), "/golf/new");
+    assert.equal(scorecardStartHref({ sport: "golf" }), "/golf/new?sport=golf");
+    assert.equal(scorecardStartHref({ sport: "Golf" }), "/golf/new?sport=golf");
   });
 
   it("routes darts to /darts/new", () => {
-    assert.equal(scorecardStartHref({ sport: "darts" }), "/darts/new");
+    assert.equal(scorecardStartHref({ sport: "darts" }), "/darts/new?sport=darts");
     assert.equal(
       scorecardStartHref({ sport: "darts", venue: "the-dartboard" }),
-      "/darts/new?venue=the-dartboard",
+      "/darts/new?venue=the-dartboard&sport=darts",
     );
   });
 
@@ -55,7 +55,11 @@ describe("scorecardStartHref", () => {
     );
     assert.equal(
       scorecardStartHref({ sport: "golf", venue: "glendower" }),
-      "/golf/new?venue=glendower",
+      "/golf/new?venue=glendower&sport=golf",
+    );
+    assert.equal(
+      scorecardStartHref({ sport: "padel", city: "cape-town" }),
+      "/padel/new?sport=padel&city=cape-town",
     );
     assert.equal(
       scorecardStartHref({ cmsId: "venue-abc" }),
@@ -69,6 +73,9 @@ describe("scorecardStartHref", () => {
 
   it("treats a blank venue as optional", () => {
     assert.equal(scorecardStartHref({ venue: "  " }), "/padel/new");
-    assert.equal(scorecardStartHref({ sport: "golf", cmsId: "" }), "/golf/new");
+    assert.equal(
+      scorecardStartHref({ sport: "golf", cmsId: "" }),
+      "/golf/new?sport=golf",
+    );
   });
 });

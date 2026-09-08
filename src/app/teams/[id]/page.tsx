@@ -1,4 +1,7 @@
 import { TeamProfile } from "@/components/teams/TeamProfile";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
+import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { listFriends } from "@/lib/friends/friends";
 import { listTeamMatches } from "@/lib/team-matches/team-matches";
 import { listTeamTournaments } from "@/lib/tournaments/tournaments";
@@ -23,8 +26,8 @@ export async function generateMetadata({
   const team = await getTeam(id, { cookie });
   if (!team) {
     return {
-      title: "Team",
-      description: "Team on LeagueSports.",
+      title: missingObjectOgTitle("team", id),
+      robots: { index: false, follow: false },
     };
   }
   return {
@@ -46,30 +49,14 @@ export default async function TeamDetailPage({ params }: TeamPageProps) {
   if (!team) {
     return (
       <div className="min-h-screen bg-[#0c0f0c] text-white">
-        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Teams
-          </p>
-          <h1 className="mt-2 font-display text-4xl tracking-wide text-white">
-            Team not found
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400">
-            This squad may have been removed, or you need to be a member to
-            view it.
-          </p>
-          <Link
-            href="/teams"
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-          >
-            Back to teams
-          </Link>
-        </div>
+        <DeepLinkRecovery kind="team" objectName={id} />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <DeepLinkLand pageType="team" slug={team.id} />
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <Link
           href="/teams"

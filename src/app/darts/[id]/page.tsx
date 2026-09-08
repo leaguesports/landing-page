@@ -12,7 +12,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `Darts 501 · ${id} | LeagueSports`,
+    title: `Darts game ${id}`,
     robots: { index: false, follow: false },
   };
 }

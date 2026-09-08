@@ -1,9 +1,10 @@
 "use client";
 
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { PadelScorecard } from "@/components/padel/PadelScorecard";
 import { fetchPadelMatch, readCachedMatch } from "@/lib/match-api";
 import type { PadelMatch } from "@/types/padel-match";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type LoadState =
@@ -63,20 +64,20 @@ export function PadelScorecardClientLoader({
 
   if (load.status === "missing") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#0c0f0c] px-6 text-center">
-        <p className="max-w-sm text-sm text-zinc-400">
-          This match was not found. It may not have been created on the match
-          API, or the share link is stale.
-        </p>
-        <Link
-          href="/padel/new"
-          className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950"
-        >
-          New padel match
-        </Link>
+      <div className="min-h-dvh bg-[#0c0f0c] text-white">
+        <DeepLinkRecovery
+          kind="scorecard"
+          objectName="Padel match"
+          startHref="/padel/new"
+        />
       </div>
     );
   }
 
-  return <PadelScorecard key={load.match.id} initialMatch={load.match} />;
+  return (
+    <>
+      <DeepLinkLand pageType="scorecard" sport="padel" slug={matchId} />
+      <PadelScorecard key={load.match.id} initialMatch={load.match} />
+    </>
+  );
 }

@@ -1,4 +1,6 @@
 import { OrganisedGameDetail } from "@/components/play/OrganisedGameDetail";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
+import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { getLoginPageHref } from "@/lib/auth-return-to";
 import { lookupGolfCourse } from "@/lib/golf/lookup-course";
 import { getOrganisedGameResult } from "@/lib/organised-games/organised-games";
@@ -20,12 +22,12 @@ export async function generateMetadata({
   const result = await getOrganisedGameResult(id, { cookie });
   if (!result.ok) {
     return {
-      title: "Organised game",
+      title: missingObjectOgTitle("organise", id),
       robots: { index: false, follow: false },
     };
   }
   return {
-    title: "Organised game | LeagueSports",
+    title: missingObjectOgTitle("organise", id),
     description: "View RSVPs and start or join this organised game.",
     robots: { index: false, follow: false },
   };
@@ -65,23 +67,7 @@ export default async function OrganisedGamePage({
   if (!result.ok) {
     return (
       <main className="min-h-dvh bg-[#0c0f0c] text-white">
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-20">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Organised game
-          </p>
-          <h1 className="mt-2 font-display text-4xl tracking-wide text-white">
-            Game not found
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400">
-            This link may be invalid, or you were not invited.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-          >
-            Back to hub
-          </Link>
-        </div>
+        <DeepLinkRecovery kind="organise" objectName={id} />
       </main>
     );
   }

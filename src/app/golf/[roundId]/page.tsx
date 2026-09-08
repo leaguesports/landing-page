@@ -13,7 +13,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { roundId } = await params;
   return {
-    title: `Golf round · ${roundId} | LeagueSports`,
+    title: `Golf round ${roundId}`,
     robots: { index: false, follow: false },
   };
 }

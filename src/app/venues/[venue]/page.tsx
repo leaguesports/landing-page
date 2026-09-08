@@ -2,6 +2,12 @@ import {
   VenueContactActions,
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
+import { ConversionKit } from "@/components/conversion/ConversionKit";
+import { CoverageNotify } from "@/components/conversion/CoverageNotify";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
+import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
+import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import {
   isRemoteVenuePhoto,
   sanityImageUrl,
@@ -15,7 +21,7 @@ import {
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { toGolfVenueOption } from "@/lib/golf/venue-options";
-import { isVenueClaimable } from "@/lib/venues/contact-cta";
+import { isVenueClaimable, hasVenueWhatsAppContact, resolveVenueWhatsAppCta } from "@/lib/venues/contact-cta";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
@@ -38,7 +44,6 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { after } from "next/server";
 
 const venueAboutPortableTextComponents = {
@@ -168,7 +173,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { venue: slug } = await params;
   const venue = await getVenueBySlug(slug);
-  if (!venue) return { title: "Venue Not Found" };
+  if (!venue) {
+    return {
+      title: missingObjectOgTitle("venue", slug),
+      robots: { index: false, follow: false },
+    };
+  }
   const title = `${venue.name}`;
   const canonicalPath = `/venues/${venue.slug}`;
   const baseUrl = getBaseUrl();
@@ -262,7 +272,13 @@ function SectionHeader({
 export default async function VenuePage({ params }: Props) {
   const { venue: venueSlug } = await params;
   const venue = await getVenueBySlug(venueSlug);
-  if (!venue) return notFound();
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-[#0c0f0c] text-white">
+        <DeepLinkRecovery kind="venue" objectName={venueSlug} />
+      </div>
+    );
+  }
 
   const cookie = (await cookies()).toString();
   after(() =>
@@ -294,16 +310,33 @@ export default async function VenuePage({ params }: Props) {
   );
   const primaryQuickStart = quickStartActivities[0];
   const navLinks = venueNavLinks(quickStartActivities.length > 0);
+  const citySlug = (venue.address.city || venue.address.suburb || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+  const whatsApp = resolveVenueWhatsAppCta(venue);
+  const matrix = selectCtaMatrix({
+    pageType: "venue",
+    sport: primaryQuickStart?.sportSlug ?? venue.sports[0]?.slug ?? null,
+    city: citySlug || null,
+    venueSlug: venue.slug,
+    hasScorecard: quickStartActivities.length > 0,
+    hasDirections: true,
+    directionsHref: mapsSearchUrl,
+    hasWhatsApp: hasVenueWhatsAppContact(venue) && whatsApp.kind === "whatsapp",
+    whatsAppHref: whatsApp.kind === "whatsapp" ? whatsApp.href : null,
+  });
 
   return (
     <div>
+      <DeepLinkLand pageType="venue" slug={venue.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <div
-        className={`min-h-screen bg-[#0c0f0c] text-white ${showClaimBar ? "pb-28" : ""}`}
+        className={`min-h-screen bg-[#0c0f0c] text-white ${showClaimBar ? "pb-28" : "pb-24"}`}
       >
         <nav className="sticky top-16 z-40 border-b border-white/6 bg-[#0c0f0c]/80 backdrop-blur-xl">
           <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 overflow-x-auto px-4 scrollbar-hide sm:px-6 lg:px-8">
@@ -381,6 +414,22 @@ export default async function VenuePage({ params }: Props) {
               <VenueUtilityBadges venue={venue} />
             </div>
 
+            <div className="mt-6">
+              <ConversionKit
+                matrix={matrix}
+                tone="play"
+                sport={primaryQuickStart?.sportSlug}
+                city={citySlug || null}
+                slug={venue.slug}
+                sourcePage={`/venues/${venue.slug}`}
+                pageKey={`venue:${venue.slug}`}
+                pageType="venue"
+                showSticky
+                showFallback={false}
+                stickyOffsetClassName={showClaimBar ? "bottom-28" : ""}
+              />
+            </div>
+
             <div className="mt-6 flex flex-wrap items-start gap-3">
               <VenueFollowButton
                 venueCmsId={venue._id}
@@ -392,18 +441,6 @@ export default async function VenuePage({ params }: Props) {
                 directionsUrl={mapsSearchUrl}
               />
             </div>
-
-            {primaryQuickStart ? (
-              <div className="mt-6">
-                <Link
-                  href={primaryQuickStart.href}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-                >
-                  <Zap className="h-4 w-4" aria-hidden />
-                  {primaryQuickStart.cta}
-                </Link>
-              </div>
-            ) : null}
           </div>
         </section>
 
@@ -477,9 +514,14 @@ export default async function VenuePage({ params }: Props) {
                     venue={venue}
                   />
                 ) : (
-                  <p className="text-sm text-zinc-500">
-                    Broadcast sports coming soon.
-                  </p>
+                  <CoverageNotify
+                    sport={null}
+                    city={citySlug || null}
+                    cityName={venue.address.city || venue.address.suburb}
+                    sourcePage={`/venues/${venue.slug}`}
+                    pageType="venue"
+                    showRoadmap
+                  />
                 )}
               </div>
               <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
@@ -509,9 +551,15 @@ export default async function VenuePage({ params }: Props) {
                     ) : null}
                   </>
                 ) : (
-                  <p className="text-sm text-zinc-500">
-                    Play options coming soon.
-                  </p>
+                  <CoverageNotify
+                    sport={null}
+                    city={citySlug || null}
+                    cityName={venue.address.city || venue.address.suburb}
+                    sourcePage={`/venues/${venue.slug}`}
+                    pageType="venue"
+                    showRoadmap
+                    trackFallbackOnView
+                  />
                 )}
               </div>
             </div>

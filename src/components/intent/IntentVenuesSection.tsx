@@ -1,4 +1,5 @@
 import { VenueDirectoryCard } from "@/app/venues/_components/VenueDirectoryCard";
+import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
 import { mergeVenueUpcomingScreenings } from "@/lib/sports/events-path";
@@ -17,6 +18,8 @@ type IntentVenuesSectionProps = {
   cityTitle?: string | null;
   related?: { slug: string; title: string }[];
   activitySlug: string;
+  locationSlug: string;
+  sourcePage: string;
 };
 
 export async function IntentVenuesSection({
@@ -29,6 +32,8 @@ export async function IntentVenuesSection({
   cityTitle,
   related = [],
   activitySlug,
+  locationSlug,
+  sourcePage,
 }: IntentVenuesSectionProps) {
   const accent = intent === "watch" ? "text-sky-400" : "text-emerald-400";
   const fallbackSuburb = suburbTitle ?? locationTitle;
@@ -92,18 +97,29 @@ export async function IntentVenuesSection({
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-12 text-center">
-            <MapPin className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
-            <p className="text-sm text-zinc-400">
-              No {intent} venues for {activityName} in {locationTitle} yet.
-            </p>
-            <Link
-              href={intentPath(intent, activitySlug)}
-              className={`mt-4 inline-flex items-center gap-1.5 text-sm font-medium ${accent}`}
-            >
-              Try another area
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-12 text-center">
+              <MapPin className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
+              <p className="text-sm text-zinc-400">
+                No {intent} venues for {activityName} in {locationTitle} yet.
+              </p>
+              <Link
+                href={intentPath(intent, activitySlug)}
+                className={`mt-4 inline-flex items-center gap-1.5 text-sm font-medium ${accent}`}
+              >
+                Try another area
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <CoverageNotify
+              sport={activitySlug}
+              sportName={activityName}
+              city={locationSlug}
+              cityName={locationTitle}
+              sourcePage={sourcePage}
+              pageType={intent === "watch" ? "watch_city_sport" : "play_city_sport"}
+              trackFallbackOnView
+            />
           </div>
         )}
 

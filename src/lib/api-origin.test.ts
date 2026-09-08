@@ -11,6 +11,7 @@ import {
   isLoopbackApiOrigin,
   shouldProxyApiPath,
 } from "./api-origin.ts";
+import { COVERAGE_PROXY_SOURCES } from "./conversion/coverage.ts";
 import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
 import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
@@ -165,6 +166,8 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/roadmap/unsubscribe"), true);
     assert.equal(shouldProxyApiPath("/api/roadmap/preferences"), true);
     assert.equal(shouldProxyApiPath("/api/roadmap/requests"), true);
+    assert.equal(shouldProxyApiPath("/api/intents/coverage"), true);
+    assert.equal(shouldProxyApiPath("/api/intents/coverage/unsubscribe"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -521,6 +524,23 @@ describe("getApiProxyRewrites", () => {
             source === "/api/roadmap" || source.startsWith("/api/roadmap/"),
         );
         assert.deepEqual(roadmapSources, [...ROADMAP_PROXY_SOURCES]);
+        const coverageSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/intents/coverage" ||
+            source.startsWith("/api/intents/coverage/"),
+        );
+        assert.deepEqual(coverageSources, [...COVERAGE_PROXY_SOURCES]);
+        assert.equal(
+          rewrites.find((rule) => rule.source === "/api/intents/coverage")
+            ?.destination,
+          "https://api.example.test/api/intents/coverage",
+        );
+        assert.equal(
+          rewrites.find(
+            (rule) => rule.source === "/api/intents/coverage/unsubscribe",
+          )?.destination,
+          "https://api.example.test/api/intents/coverage/unsubscribe",
+        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/roadmap/features")
             ?.destination,
@@ -661,6 +681,22 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/roadmap/requests`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/intents/coverage`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/intents/coverage/unsubscribe`,
         ),
         true,
       );

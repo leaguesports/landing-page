@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
@@ -20,7 +19,7 @@ function historyErrorMessage(error: unknown): string {
 export function PadelHistoryClient() {
   const searchParams = useSearchParams();
   const sharedId = searchParams.get("playerUserId")?.trim() || "";
-  const { isAuthenticated, user, isLoading, signIn } = useAuth();
+  const { isAuthenticated, user, isLoading, promptSoftWall } = useAuth();
   const playerUserId = sharedId || user?.id || "";
   const viewingOwn =
     Boolean(user?.id) && (!sharedId || sharedId === user?.id);
@@ -84,10 +83,16 @@ export function PadelHistoryClient() {
           </p>
           <button
             type="button"
-            onClick={() => signIn("/padel/history")}
+            onClick={() =>
+              promptSoftWall({
+                reason: "save_history",
+                returnTo: "/padel/history",
+                pageType: "scorecard",
+              })
+            }
             className="inline-flex min-h-12 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
           >
-            Sign in
+            Save to your account
           </button>
         </div>
       ) : error ? (
@@ -128,9 +133,19 @@ export function PadelHistoryClient() {
       {!isAuthenticated && sharedId ? (
         <p className="text-sm text-zinc-500">
           This is a shared player list.{" "}
-          <Link href="/login" className="text-emerald-300 hover:text-emerald-200">
-            Sign in
-          </Link>{" "}
+          <button
+            type="button"
+            onClick={() =>
+              promptSoftWall({
+                reason: "save_history",
+                returnTo: "/padel/history",
+                pageType: "scorecard",
+              })
+            }
+            className="text-emerald-300 hover:text-emerald-200"
+          >
+            Save to your account
+          </button>{" "}
           to see your own locked matches.
         </p>
       ) : null}

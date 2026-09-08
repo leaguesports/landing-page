@@ -1,11 +1,17 @@
 "use client";
 
 import {
+  AuthSoftWallSheet,
+  type SoftWallReason,
+  type SoftWallState,
+} from "@/components/conversion/AuthSoftWall";
+import {
   getAuthState,
   logout as apiLogout,
   type AuthState,
   type AuthUser,
 } from "@/lib/api-client";
+import type { PageType } from "@/lib/analytics/track";
 import {
   consumeAuthReturnTo,
   getLoginPageHref,
@@ -47,6 +53,12 @@ export type AuthContextValue = {
   authError: string | null;
   isLoading: boolean;
   signIn: (returnTo?: string) => void;
+  /** Bottom-sheet Google + Keep as guest. Never a full-page /login. */
+  promptSoftWall: (input: {
+    reason: SoftWallReason;
+    returnTo?: string;
+    pageType?: PageType;
+  }) => void;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -70,10 +82,11 @@ export type FriendsSessionValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 const FriendsContext = createContext<FriendsSessionValue | null>(null);
 
-function useProvideAuth(): AuthContextValue {
+function useProvideAuth(): AuthContextValue & { softWall: SoftWallState; dismissSoftWall: () => void } {
   const pathname = usePathname();
   const [auth, setAuth] = useState<AuthState>(INITIAL_AUTH);
   const [isLoading, setIsLoading] = useState(true);
+  const [softWall, setSoftWall] = useState<SoftWallState>(null);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -129,6 +142,26 @@ function useProvideAuth(): AuthContextValue {
     window.location.href = getLoginPageHref(returnTo);
   }, []);
 
+  const promptSoftWall = useCallback(
+    (input: {
+      reason: SoftWallReason;
+      returnTo?: string;
+      pageType?: PageType;
+    }) => {
+      if (auth.isAuthenticated) return;
+      setSoftWall({
+        reason: input.reason,
+        returnTo: input.returnTo ?? pathname ?? "/",
+        pageType: input.pageType,
+      });
+    },
+    [auth.isAuthenticated, pathname],
+  );
+
+  const dismissSoftWall = useCallback(() => {
+    setSoftWall(null);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await apiLogout();
@@ -153,8 +186,11 @@ function useProvideAuth(): AuthContextValue {
     authError: auth.error,
     isLoading,
     signIn,
+    promptSoftWall,
     signOut,
     refresh,
+    softWall,
+    dismissSoftWall,
   };
 }
 
@@ -260,13 +296,21 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const auth = useProvideAuth();
   const friends = useProvideFriends(auth.isAuthenticated, auth.isLoading);
 
-  const authValue = useMemo(() => auth, [auth]);
+  const authValue = useMemo(() => {
+    const { softWall: _softWall, dismissSoftWall: _dismissSoftWall, ...rest } =
+      auth;
+    return rest;
+  }, [auth]);
   const friendsValue = useMemo(() => friends, [friends]);
 
   return (
     <AuthContext.Provider value={authValue}>
       <FriendsContext.Provider value={friendsValue}>
         {children}
+        <AuthSoftWallSheet
+          state={auth.softWall}
+          onDismiss={auth.dismissSoftWall}
+        />
       </FriendsContext.Provider>
     </AuthContext.Provider>
   );
