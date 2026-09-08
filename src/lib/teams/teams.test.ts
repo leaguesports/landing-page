@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  TEAM_COMING_LATER,
+  TEAM_TOURNAMENTS_COMING_LATER,
   TEAM_LIST_SPORT_ALL,
   TEAM_OWNER_LEAVE_ERROR,
   TEAM_PROXY_SOURCES,
@@ -137,7 +137,7 @@ describe("teams parsers", () => {
     assert.equal(formatTeamRole("member"), "Member");
     assert.equal(formatMemberCount(1), "1 member");
     assert.equal(formatMemberCount(3), "3 members");
-    assert.equal(TEAM_COMING_LATER, "Team matches and tournaments — coming later");
+    assert.equal(TEAM_TOURNAMENTS_COMING_LATER, "Tournaments — coming later");
   });
 });
 
@@ -288,12 +288,14 @@ describe("teams proxy paths", () => {
     assert.deepEqual([...TEAM_PROXY_SOURCES], [
       "/api/teams",
       "/api/teams/join",
+      "/api/teams/search",
       "/api/teams/:id",
       "/api/teams/:id/invite",
       "/api/teams/:id/invite-link",
       "/api/teams/:id/leave",
       "/api/teams/:id/transfer-ownership",
       "/api/teams/:id/members/:userId",
+      "/api/teams/:id/matches",
     ]);
   });
 

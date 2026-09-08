@@ -39,6 +39,8 @@ export const HUB_BADGE_STRIP_LIMIT = 3;
 export const HUB_PEOPLE_PREVIEW_LIMIT = 5;
 export const HUB_TEAMS_HREF = "/teams" as const;
 export const HUB_TEAMS_NEW_HREF = "/teams/new" as const;
+export const HUB_TEAM_MATCHES_HREF = "/team-matches" as const;
+export const HUB_TEAM_MATCHES_NEW_HREF = "/team-matches/new" as const;
 /** People tab block order — Teams is third under Friends + Communities. */
 export const HUB_PEOPLE_BLOCKS = ["communities", "friends", "teams"] as const;
 /** Thin hosted/invited strip on Play — keep the verb grid the focus. */

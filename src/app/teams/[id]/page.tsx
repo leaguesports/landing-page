@@ -1,5 +1,6 @@
 import { TeamProfile } from "@/components/teams/TeamProfile";
 import { listFriends } from "@/lib/friends/friends";
+import { listTeamMatches } from "@/lib/team-matches/team-matches";
 import {
   formatMemberCount,
   formatTeamSport,
@@ -34,9 +35,10 @@ export async function generateMetadata({
 export default async function TeamDetailPage({ params }: TeamPageProps) {
   const { id } = await params;
   const cookie = (await cookies()).toString();
-  const [team, friends] = await Promise.all([
+  const [team, friends, matches] = await Promise.all([
     getTeam(id, { cookie }),
     listFriends({ cookie }),
+    listTeamMatches(id, { cookie }),
   ]);
 
   if (!team) {
@@ -87,7 +89,11 @@ export default async function TeamDetailPage({ params }: TeamPageProps) {
         </header>
 
         <div className="mt-8">
-          <TeamProfile team={team} friends={friends.friends} />
+          <TeamProfile
+            team={team}
+            friends={friends.friends}
+            matches={matches}
+          />
         </div>
       </div>
     </div>

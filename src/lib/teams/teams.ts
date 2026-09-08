@@ -15,8 +15,8 @@ export type TeamMemberStatus = (typeof TEAM_MEMBER_STATUSES)[number];
 export const TEAM_LIST_SPORT_ALL = "all" as const;
 export type TeamListSportFilter = typeof TEAM_LIST_SPORT_ALL | TeamSport;
 
-export const TEAM_COMING_LATER =
-  "Team matches and tournaments — coming later" as const;
+export const TEAM_TOURNAMENTS_COMING_LATER =
+  "Tournaments — coming later" as const;
 
 export const TEAM_OWNER_LEAVE_ERROR =
   "Owner must transfer ownership before leaving or changing role" as const;
@@ -357,12 +357,14 @@ export function buildTransferOwnershipPayload(userId: string): {
 export const TEAM_PROXY_SOURCES = [
   "/api/teams",
   "/api/teams/join",
+  "/api/teams/search",
   "/api/teams/:id",
   "/api/teams/:id/invite",
   "/api/teams/:id/invite-link",
   "/api/teams/:id/leave",
   "/api/teams/:id/transfer-ownership",
   "/api/teams/:id/members/:userId",
+  "/api/teams/:id/matches",
 ] as const;
 
 async function readJson(res: Response): Promise<unknown> {
