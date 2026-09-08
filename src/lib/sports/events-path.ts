@@ -40,7 +40,8 @@ function fixtureMatchesPublicSlug(
   if (fixture.slug === needle) return true;
   const { baseSlug } = parseFixtureSlug(fixture.slug);
   if (baseSlug === needle) return true;
-  return fixtureSlugFromTitle(fixture.title) === needle;
+  if (fixtureSlugFromTitle(fixture.title) === needle) return true;
+  return (fixture.cmsSlug ?? "").trim().toLowerCase() === needle;
 }
 
 /**
@@ -75,6 +76,8 @@ export function fixturePublicSlugs(fixture: UpcomingFixture): string[] {
   if (baseSlug) slugs.add(baseSlug);
   const titleSlug = fixtureSlugFromTitle(fixture.title);
   if (titleSlug) slugs.add(titleSlug);
+  const cms = (fixture.cmsSlug ?? "").trim().toLowerCase();
+  if (cms) slugs.add(cms);
   return [...slugs];
 }
 
@@ -139,7 +142,12 @@ export function mergeVenueUpcomingScreenings(
   venue: {
     slug: string;
     upcoming_screenings?:
-      | { title?: string | null; startsAt?: string | null; setupTags?: string[] }[]
+      | {
+          title?: string | null;
+          startsAt?: string | null;
+          setupTags?: string[];
+          fixtureSlug?: string | null;
+        }[]
       | null;
   },
   fixtures: UpcomingFixture[],
@@ -178,12 +186,18 @@ export function mergeVenueUpcomingScreenings(
     const title = (screening.title ?? "").trim();
     const startsAt = (screening.startsAt ?? "").trim();
     if (!title || !startsAt) continue;
+    const explicitSlug = (screening.fixtureSlug ?? "").trim().toLowerCase();
     const match = fixtureMatchingScreening(fixtures, title, asIso(startsAt));
+    const href = explicitSlug
+      ? `/events/${explicitSlug}`
+      : match
+        ? `/events/${match.slug}`
+        : null;
     upsert({
       title,
       startsAt,
       setupTags: screening.setupTags,
-      href: match ? `/events/${match.slug}` : null,
+      href,
     });
   }
 

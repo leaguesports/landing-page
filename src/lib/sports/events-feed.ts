@@ -74,6 +74,8 @@ export type UpcomingFixture = {
   seoTitle?: string | null;
   seoDescription?: string | null;
   updatedAt?: string | null;
+  /** CMS event `slug.current` when this row came from (or merged with) an event doc. */
+  cmsSlug?: string | null;
 };
 
 export type EventsScreeningVenueRow = {
@@ -82,7 +84,11 @@ export type EventsScreeningVenueRow = {
   city?: unknown;
   citySlug?: unknown;
   broadcasts?: Array<{ name?: unknown; slug?: unknown }> | null;
-  upcoming_screenings?: Array<{ title?: unknown; startsAt?: unknown }> | null;
+  upcoming_screenings?: Array<{
+    title?: unknown;
+    startsAt?: unknown;
+    fixtureSlug?: unknown;
+  }> | null;
 };
 
 export type EventsCmsEventRow = {
@@ -156,7 +162,7 @@ export const EVENTS_SCREENINGS_QUERY = `*[
   ].startsAt),
   "upcoming_screenings": upcoming_screenings[
     defined(startsAt) && startsAt >= $notBefore
-  ] | order(startsAt asc) [0...16]{ title, startsAt }
+  ] | order(startsAt asc) [0...16]{ title, startsAt, fixtureSlug }
 } | order(nextKickoff asc) [0...40]`;
 
 /**
@@ -188,7 +194,7 @@ export const EVENTS_SCREENINGS_ON_DAY_QUERY = `*[
   ].startsAt),
   "upcoming_screenings": upcoming_screenings[
     defined(startsAt) && startsAt >= $dayStart && startsAt < $dayEnd
-  ] | order(startsAt asc) [0...16]{ title, startsAt }
+  ] | order(startsAt asc) [0...16]{ title, startsAt, fixtureSlug }
 } | order(nextKickoff asc) [0...40]`;
 
 /** Day-scoped CMS events for /events/[slug] lookups. */
@@ -454,6 +460,7 @@ export function formatFixtureWhen(
 
 type MutableFixture = {
   slug: string;
+  slugIsExplicit: boolean;
   title: string;
   sportSlug: string | null;
   startsAt: string | null;
@@ -463,6 +470,7 @@ type MutableFixture = {
   hasScreening: boolean;
   hasEvent: boolean;
   featured: boolean;
+  cmsSlug: string | null;
 } & FixtureSeoFields;
 
 function toUpcoming(row: MutableFixture): UpcomingFixture {
@@ -497,6 +505,7 @@ function toUpcoming(row: MutableFixture): UpcomingFixture {
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
     updatedAt: row.updatedAt,
+    cmsSlug: row.cmsSlug,
   };
 }
 
@@ -546,6 +555,7 @@ export function groupScreeningsIntoFixtures(
 
       const key = normalizeFixtureKey(title, startsAt);
       const sportSlug = inferSportSlug(title, sports) ?? broadcastSport;
+      const explicitSlug = asString(screening.fixtureSlug).toLowerCase();
       const existing = byKey.get(key);
       if (existing) {
         existing.venues.set(
@@ -554,18 +564,25 @@ export function groupScreeningsIntoFixtures(
         );
         existing.hasScreening = true;
         if (!existing.sportSlug && sportSlug) existing.sportSlug = sportSlug;
+        if (explicitSlug && !existing.slugIsExplicit) {
+          existing.slug = explicitSlug;
+          existing.slugIsExplicit = true;
+        }
         // Same calendar-day key — keep the shared kickoff (prefer earlier).
         if (startsAt) {
           if (!existing.startsAt || startsAt < existing.startsAt) {
             existing.startsAt = startsAt;
-            existing.slug = fixtureSlugFromTitle(title, startsAt);
+            if (!existing.slugIsExplicit) {
+              existing.slug = fixtureSlugFromTitle(title, startsAt);
+            }
           }
         }
         continue;
       }
 
       byKey.set(key, {
-        slug: fixtureSlugFromTitle(title, startsAt),
+        slug: explicitSlug || fixtureSlugFromTitle(title, startsAt),
+        slugIsExplicit: Boolean(explicitSlug),
         title,
         sportSlug,
         startsAt,
@@ -577,6 +594,7 @@ export function groupScreeningsIntoFixtures(
         hasScreening: true,
         hasEvent: false,
         featured: false,
+        cmsSlug: null,
         ...EMPTY_SEO,
       });
     }
@@ -627,6 +645,7 @@ export function cmsEventsToFixtures(
       eventPageHref: eventHref(series, eventSlug || slugifyTitle(title)),
       kind: "event",
       featured: asFeatured(row.featured),
+      cmsSlug: eventSlug || null,
       ...seo,
     });
   }
@@ -650,6 +669,7 @@ export function mergeUpcomingFixtures(
     if (!existing) {
       const created: MutableFixture = {
         slug: item.slug,
+        slugIsExplicit: false,
         title: item.title,
         sportSlug: item.sportSlug,
         startsAt: item.startsAt,
@@ -659,6 +679,7 @@ export function mergeUpcomingFixtures(
         hasScreening: from === "screening" || item.kind === "both",
         hasEvent: from === "event" || item.kind === "both",
         featured: Boolean(item.featured),
+        cmsSlug: item.cmsSlug ?? null,
         ...EMPTY_SEO,
       };
       applySeo(created, {
@@ -697,6 +718,7 @@ export function mergeUpcomingFixtures(
     if (item.series) existing.series = item.series;
     if (item.eventPageHref) existing.eventPageHref = item.eventPageHref;
     if (item.featured) existing.featured = true;
+    if (item.cmsSlug) existing.cmsSlug = item.cmsSlug;
     applySeo(existing, {
       competition: item.competition ?? null,
       broadcastInfo: item.broadcastInfo ?? null,
@@ -752,6 +774,65 @@ export function sortUpcomingFixtures(
   });
 }
 
+/** Public slugs a screening `fixtureSlug` can attach to. */
+export function fixturePublicSlugSet(fixture: UpcomingFixture): Set<string> {
+  const slugs = new Set<string>();
+  const canonical = fixture.slug.trim().toLowerCase();
+  if (canonical) slugs.add(canonical);
+  const { baseSlug } = parseFixtureSlug(canonical);
+  if (baseSlug) slugs.add(baseSlug);
+  const titleSlug = fixtureSlugFromTitle(fixture.title);
+  if (titleSlug) slugs.add(titleSlug);
+  const cms = (fixture.cmsSlug ?? "").trim().toLowerCase();
+  if (cms) slugs.add(cms);
+  return slugs;
+}
+
+/**
+ * When a screening sets `fixtureSlug` to an event's public slug, put that
+ * venue on the fixture even if titles do not match.
+ */
+export function attachScreeningVenuesByFixtureSlug(
+  fixtures: UpcomingFixture[],
+  screeningVenues: EventsScreeningVenueRow[],
+): UpcomingFixture[] {
+  const attachments: Array<{ needle: string; venue: FixtureVenue }> = [];
+  for (const venue of screeningVenues) {
+    const venueName = asString(venue.name) || "Venue";
+    const venueSlug = asString(venue.slug);
+    if (!venueSlug) continue;
+    for (const screening of venue.upcoming_screenings ?? []) {
+      const needle = asString(screening.fixtureSlug).toLowerCase();
+      if (!needle) continue;
+      attachments.push({
+        needle,
+        venue: venueFromRow(venueName, venueSlug, venue),
+      });
+    }
+  }
+  if (attachments.length === 0) return fixtures;
+
+  return fixtures.map((fixture) => {
+    const aliases = fixturePublicSlugSet(fixture);
+    const have = new Set(fixture.venues.map((item) => item.slug));
+    const extra: FixtureVenue[] = [];
+    for (const { needle, venue } of attachments) {
+      if (!aliases.has(needle)) continue;
+      if (have.has(venue.slug)) continue;
+      have.add(venue.slug);
+      extra.push(venue);
+    }
+    if (extra.length === 0) return fixture;
+    return {
+      ...fixture,
+      venues: [...fixture.venues, ...extra].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      kind: fixture.kind === "event" ? "both" : fixture.kind,
+    };
+  });
+}
+
 export function buildUpcomingFixtures(
   screeningVenues: EventsScreeningVenueRow[],
   cmsEvents: EventsCmsEventRow[],
@@ -768,7 +849,8 @@ export function buildUpcomingFixtures(
     includePast: options.includePast,
   });
   const merged = mergeUpcomingFixtures(screenings, events);
-  const sorted = sortUpcomingFixtures(merged, now);
+  const attached = attachScreeningVenuesByFixtureSlug(merged, screeningVenues);
+  const sorted = sortUpcomingFixtures(attached, now);
   const limit = options.limit ?? 24;
   return sorted.slice(0, limit);
 }

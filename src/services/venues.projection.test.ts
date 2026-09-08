@@ -22,7 +22,9 @@ describe("VENUE_PROJECTION", () => {
       "contact.phone",
       "contactInfo.phone",
       "claim_status",
+      "claimedByUserId",
       "upcoming_screenings",
+      "fixtureSlug",
       "broadcasts",
       "sports",
       "isVerified",
@@ -252,6 +254,27 @@ describe("mapVenueRow", () => {
   it("normalizes missing portable-text description to an empty array", () => {
     const venue = mapVenueRow({ ...base, description: null });
     assert.deepEqual(venue?.description, []);
+  });
+
+  it("maps claimedByUserId and screening fixtureSlug", () => {
+    const venue = mapVenueRow({
+      ...base,
+      claimedByUserId: "user-1",
+      upcoming_screenings: [
+        {
+          title: "Springboks vs All Blacks",
+          startsAt: "2026-09-06T16:00:00.000Z",
+          fixtureSlug: "springboks-vs-all-blacks-2026-09-06",
+          setupTags: ["Big screen"],
+        },
+      ],
+    });
+    assert.equal(venue?.claimedByUserId, "user-1");
+    assert.equal(
+      venue?.upcoming_screenings?.[0]?.fixtureSlug,
+      "springboks-vs-all-blacks-2026-09-06",
+    );
+    assert.deepEqual(venue?.upcoming_screenings?.[0]?.setupTags, ["Big screen"]);
   });
 
   it("maps golfCourse when present", () => {

@@ -1,5 +1,7 @@
-import { createClient } from "next-sanity";
 import { NextResponse } from "next/server";
+import { getSanityReadClient, getSanityWriteClient } from "@/lib/sanity/write-client";
+import { getAuthStateFromCookieHeader } from "@/lib/server-auth";
+import { isEmptyOwnerId } from "@/lib/venues/screening-editor";
 
 type ClaimBody = {
   venueSlug?: unknown;
@@ -16,22 +18,6 @@ function asTrimmedString(value: unknown): string {
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function getWriteClient() {
-  const token = process.env.SANITY_API_TOKEN;
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
-
-  if (!token || !projectId || !dataset) return null;
-
-  return createClient({
-    projectId,
-    dataset,
-    apiVersion: "v2026-03-08",
-    useCdn: false,
-    token,
-  });
 }
 
 export async function POST(request: Request) {
@@ -69,32 +55,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
-
-  if (!projectId || !dataset) {
+  const readClient = getSanityReadClient();
+  if (!readClient) {
     return NextResponse.json(
       { error: "Venue claims are temporarily unavailable" },
       { status: 503 },
     );
   }
 
-  const readClient = createClient({
-    projectId,
-    dataset,
-    apiVersion: "v2026-03-08",
-    useCdn: false,
-  });
-
   const venue = await readClient.fetch<{
     _id: string;
     name: string;
     slug: string;
+    claimedByUserId?: string | null;
   } | null>(
     `*[_type == "venue" && slug.current == $slug][0]{
       _id,
       name,
-      "slug": slug.current
+      "slug": slug.current,
+      claimedByUserId
     }`,
     { slug: venueSlug },
   );
@@ -102,6 +81,9 @@ export async function POST(request: Request) {
   if (!venue) {
     return NextResponse.json({ error: "Venue not found" }, { status: 404 });
   }
+
+  const auth = await getAuthStateFromCookieHeader(request.headers.get("cookie"));
+  const sessionUserId = asTrimmedString(auth.user?.id);
 
   const claimPayload = {
     venueId: venue._id,
@@ -115,24 +97,37 @@ export async function POST(request: Request) {
     submittedAt: new Date().toISOString(),
   };
 
-  const writeClient = getWriteClient();
+  const writeClient = getSanityWriteClient();
 
   if (writeClient) {
     try {
-      await writeClient
-        .patch(venue._id)
-        .set({
-          claim_status: "claim_pending",
-          claim_request: {
-            fullName,
-            businessEmail,
-            contactNumber,
-            role: role || undefined,
-            notes: notes || undefined,
-            submittedAt: claimPayload.submittedAt,
-          },
-        })
-        .commit();
+      const patch: {
+        claim_status: "claim_pending";
+        claim_request: {
+          fullName: string;
+          businessEmail: string;
+          contactNumber: string;
+          role?: string;
+          notes?: string;
+          submittedAt: string;
+        };
+        claimedByUserId?: string;
+      } = {
+        claim_status: "claim_pending",
+        claim_request: {
+          fullName,
+          businessEmail,
+          contactNumber,
+          role: role || undefined,
+          notes: notes || undefined,
+          submittedAt: claimPayload.submittedAt,
+        },
+      };
+      // Stamp owner identity only when empty — never steal another owner's id.
+      if (sessionUserId && isEmptyOwnerId(venue.claimedByUserId)) {
+        patch.claimedByUserId = sessionUserId;
+      }
+      await writeClient.patch(venue._id).set(patch).commit();
     } catch (error) {
       console.error("[claim] Sanity patch failed", error);
       // Continue — webhook/email still notifies the team

@@ -32,11 +32,13 @@ describe("hub feed queries", () => {
     assert.match(HUB_EVENTS_QUERY, /_type == "event"/);
     assert.match(HUB_EVENTS_QUERY, /f1Details\.dateTime/);
     assert.match(HUB_SCREENINGS_QUERY, /upcoming_screenings/);
+    assert.match(HUB_SCREENINGS_QUERY, /fixtureSlug/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /slug\.current in \$slugs/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /count\(upcoming_screenings\) > 0/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /order\(_updatedAt desc\)/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /\[0\.\.\.24\]/);
     assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /upcoming_screenings\[0\.\.\.12\]/);
+    assert.match(HUB_FOLLOWED_SCREENINGS_QUERY, /fixtureSlug/);
     assert.match(HUB_GUIDES_QUERY, /_type == "guide"/);
     assert.doesNotMatch(HUB_EVENTS_QUERY, /Monaco|Verstappen/);
   });

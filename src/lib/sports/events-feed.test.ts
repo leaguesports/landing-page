@@ -34,11 +34,13 @@ describe("events feed queries", () => {
     assert.doesNotMatch(EVENTS_SCREENINGS_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->title/);
     assert.match(EVENTS_SCREENINGS_QUERY, /address\.city->slug\.current/);
+    assert.match(EVENTS_SCREENINGS_QUERY, /fixtureSlug/);
     assert.match(EVENTS_CMS_QUERY, /_type == "event"/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /\$dayStart/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(nextKickoff asc\)/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /math::min\(/);
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /address\.city->title/);
+    assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /fixtureSlug/);
     assert.doesNotMatch(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
   });
@@ -80,12 +82,10 @@ describe("events feed queries", () => {
 
 describe("fixtureCalendarDay + saDayBounds", () => {
   it("maps kickoffs to Africa/Johannesburg calendar days", () => {
-    // 16:00 UTC on 6 Sep = 18:00 SAST same day
     assert.equal(
       fixtureCalendarDay("2026-09-06T16:00:00.000Z"),
       "2026-09-06",
     );
-    // 22:00 UTC on 6 Sep = 00:00 SAST on 7 Sep
     assert.equal(
       fixtureCalendarDay("2026-09-06T22:00:00.000Z"),
       "2026-09-07",
@@ -266,6 +266,42 @@ describe("groupScreeningsIntoFixtures", () => {
             {
               title: "Springboks vs All-Blacks",
               startsAt: "2026-09-06T16:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+      { now },
+    );
+
+    assert.equal(fixtures.length, 1);
+    assert.equal(fixtures[0]?.slug, "springboks-vs-all-blacks-2026-09-06");
+    assert.equal(fixtures[0]?.venues.length, 2);
+  });
+
+  it("prefers an explicit fixtureSlug as the fixture slug while still grouping by title+day", () => {
+    const fixtures = groupScreeningsIntoFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All Blacks",
+              startsAt: "2026-09-06T16:00:00.000Z",
+              fixtureSlug: "springboks-vs-all-blacks-2026-09-06",
+            },
+          ],
+        },
+        {
+          name: "Fan Zone CPT",
+          slug: "fan-zone-cpt",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All Blacks",
+              startsAt: "2026-09-06T17:00:00.000Z",
             },
           ],
         },
@@ -464,6 +500,44 @@ describe("mergeUpcomingFixtures + buildUpcomingFixtures", () => {
 
     assert.equal(fixtures[0]?.title, "Boks vs All Blacks");
     assert.ok(fixtures[0]!.venues.length > 0);
+  });
+
+  it("attaches a venue to the CMS fixture when screening fixtureSlug matches the public slug", () => {
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Boks on the big screen",
+              startsAt: "2026-09-06T16:00:00.000Z",
+              fixtureSlug: "springboks-vs-all-blacks",
+            },
+          ],
+        },
+      ],
+      [
+        {
+          title: "Springboks vs All Blacks",
+          slug: "springboks-vs-all-blacks",
+          series: "rugby",
+          startsAt: "2026-09-06T15:00:00.000Z",
+        },
+      ],
+      SPORT_CATALOG,
+      { now, limit: 10 },
+    );
+
+    const eventRow = fixtures.find(
+      (item) => item.title === "Springboks vs All Blacks",
+    );
+    assert.ok(eventRow);
+    assert.equal(
+      eventRow?.venues.some((venue) => venue.slug === "the-local"),
+      true,
+    );
   });
 });
 

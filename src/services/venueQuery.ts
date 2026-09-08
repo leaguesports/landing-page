@@ -7,6 +7,8 @@ export type VenueScreening = {
   /** ISO datetime or free-form display string from CMS */
   startsAt: string;
   setupTags?: string[];
+  /** Public `/events/[slug]` when the owner attached this screening. */
+  fixtureSlug?: string;
 };
 
 export type Venue = {
@@ -47,6 +49,8 @@ export type Venue = {
   has_parking?: boolean | null;
   is_verified?: boolean | null;
   claim_status?: "unclaimed" | "claim_pending" | "claimed" | null;
+  /** Railway `/api/auth/me` user id of the listing owner. */
+  claimedByUserId?: string | null;
   rating?: number | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -78,6 +82,7 @@ export type VenueRow = {
   has_parking?: boolean | null;
   is_verified?: boolean | null;
   claim_status?: "unclaimed" | "claim_pending" | "claimed" | null;
+  claimedByUserId?: string | null;
   rating?: number | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -144,12 +149,14 @@ export const VENUE_PROJECTION = `
   "has_parking": coalesce(amenities.has_parking, has_parking),
   "is_verified": select(defined(is_verified) => is_verified, isVerified),
   claim_status,
+  claimedByUserId,
   rating,
   latitude,
   longitude,
   upcoming_screenings[]{
     title,
     startsAt,
+    fixtureSlug,
     setupTags
   },
   "address": {
@@ -280,15 +287,25 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
     has_parking: row.has_parking ?? null,
     is_verified: row.is_verified ?? false,
     claim_status: row.claim_status ?? null,
+    claimedByUserId: row.claimedByUserId?.trim() || null,
     rating: row.rating ?? null,
     latitude: row.latitude ?? null,
     longitude: row.longitude ?? null,
     // WhatsApp CTA uses `phone`; prefer the dedicated WhatsApp number when set.
     phone: row.whatsapp || row.phone || null,
     website: row.website ?? null,
-    upcoming_screenings: (row.upcoming_screenings ?? []).filter(
-      (s) => s?.title && s?.startsAt,
-    ),
+    upcoming_screenings: (row.upcoming_screenings ?? [])
+      .filter((s) => s?.title && s?.startsAt)
+      .map((s) => ({
+        title: s.title,
+        startsAt: s.startsAt,
+        ...(s.setupTags && s.setupTags.length > 0
+          ? { setupTags: s.setupTags }
+          : {}),
+        ...(s.fixtureSlug?.trim()
+          ? { fixtureSlug: s.fixtureSlug.trim() }
+          : {}),
+      })),
     golfCourse: mapGolfCourse(row.golfCourse),
   };
 }

@@ -15,7 +15,9 @@ import {
 } from "@/services/venues";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { toGolfVenueOption } from "@/lib/golf/venue-options";
+import { getServerAuthState } from "@/lib/server-auth";
 import { isVenueClaimable } from "@/lib/venues/contact-cta";
+import { canManageVenueScreenings } from "@/lib/venues/screening-editor";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
@@ -280,6 +282,12 @@ export default async function VenuePage({ params }: Props) {
     .filter(Boolean)
     .join(", ");
   const showClaimBar = isVenueClaimable(venue);
+  const auth = await getServerAuthState();
+  const canManageScreenings = canManageVenueScreenings({
+    claim_status: venue.claim_status,
+    claimedByUserId: venue.claimedByUserId,
+    sessionUserId: auth.user?.id,
+  });
   const addressLine = [
     venue.address.street,
     venue.address.suburb,
@@ -424,7 +432,14 @@ export default async function VenuePage({ params }: Props) {
               description="Screenings and who's heading down"
             />
             <div className="grid max-w-3xl gap-5">
-              <VenueMatchSchedule venue={venue} />
+              <VenueMatchSchedule
+                venue={venue}
+                manageHref={
+                  canManageScreenings
+                    ? `/venues/${venue.slug}/screenings`
+                    : undefined
+                }
+              />
               <VenueAttendanceCounter venueSlug={venue.slug} />
             </div>
           </div>

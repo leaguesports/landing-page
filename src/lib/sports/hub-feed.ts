@@ -40,7 +40,7 @@ export const HUB_SCREENINGS_QUERY = `*[_type == "venue" && count(upcoming_screen
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  upcoming_screenings[]{ title, startsAt }
+  upcoming_screenings[]{ title, startsAt, fixtureSlug }
 }`;
 
 /** Cap followed-venue GROQ params — keeps CDN query strings bounded. */
@@ -57,7 +57,7 @@ export const HUB_FOLLOWED_SCREENINGS_QUERY = `*[_type == "venue" && slug.current
   name,
   "slug": slug.current,
   "broadcasts": broadcasts[]->{ name, "slug": slug.current },
-  upcoming_screenings[0...12]{ title, startsAt }
+  upcoming_screenings[0...12]{ title, startsAt, fixtureSlug }
 }`;
 
 export const HUB_GUIDES_QUERY = `*[_type == "guide" && defined(slug.current) && slug.current != ""] | order(_createdAt desc) [0...6] {
@@ -82,7 +82,11 @@ export type HubScreeningVenueRow = {
   name?: unknown;
   slug?: unknown;
   broadcasts?: Array<{ name?: unknown; slug?: unknown }> | null;
-  upcoming_screenings?: Array<{ title?: unknown; startsAt?: unknown }> | null;
+  upcoming_screenings?: Array<{
+    title?: unknown;
+    startsAt?: unknown;
+    fixtureSlug?: unknown;
+  }> | null;
 };
 
 export type HubGuideRow = {

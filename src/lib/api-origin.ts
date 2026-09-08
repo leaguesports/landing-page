@@ -75,13 +75,15 @@ export function isFrontendOrigin(origin: string): boolean {
 
 function getApiProxySkipPattern(): string {
   // Match identity (POST/GET /api/matches, lock) is league-sports-api.
-  // Ably live-scoring, fixture social feed/live board, and venue claim stay on Next.
-  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)";
+  // Ably live-scoring, fixture social feed/live board, venue claim, and
+  // claimed-venue screening editor stay on Next. `/api/venues/:cmsId` still proxies.
+  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/[^/]+/screenings(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)";
 }
 
 /**
  * Paths served by this Next.js app. Everything else under `/api` is proxied
- * to Railway, including `/api/venues/:cmsId` (not `/api/venues/claim`).
+ * to Railway, including `/api/venues/:cmsId` (not `/api/venues/claim` or
+ * `/api/venues/:slug/screenings`).
  */
 const LOCAL_API_PATH = new RegExp(`^/api/(?:${getApiProxySkipPattern()})`);
 
