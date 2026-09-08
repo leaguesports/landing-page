@@ -7,13 +7,11 @@ import {
   acceptTeamMatch,
   canAcceptChallenge,
   canCancelMatch,
-  canCompleteMatch,
   canDeclineChallenge,
   canScheduleMatch,
   canSetLineup,
   canStartMatch,
   cancelTeamMatch,
-  completeTeamMatch,
   datetimeLocalToIso,
   declineTeamMatch,
   formatLineupRule,
@@ -21,6 +19,7 @@ import {
   formatTeamMatchStatus,
   formatTeamMatchVersus,
   isoToDatetimeLocal,
+  readStashedChallengeToken,
   scheduleTeamMatch,
   scorecardNavigatePath,
   setTeamMatchLineup,
@@ -31,18 +30,17 @@ import {
   type PublicTeamMatch,
   type PublicUser,
 } from "@/lib/team-matches/team-matches";
-import type { PublicTeam } from "@/lib/teams/teams";
 import { formatHubWhen } from "@/lib/sports/hub-feed";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 type VenueChoice = { id: string; name: string };
 
 type TeamMatchDetailProps = {
   match: PublicTeamMatch;
-  homeTeam: PublicTeam | null;
-  awayTeam: PublicTeam | null;
+  homeMembers: PublicUser[];
+  awayMembers: PublicUser[];
   venues: VenueChoice[];
 };
 
@@ -83,8 +81,8 @@ function LineupList({ players }: { players: PublicUser[] }) {
 
 export function TeamMatchDetail({
   match: initial,
-  homeTeam,
-  awayTeam,
+  homeMembers,
+  awayMembers,
   venues,
 }: TeamMatchDetailProps) {
   const router = useRouter();
@@ -101,17 +99,21 @@ export function TeamMatchDetail({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [challengeToken, setChallengeToken] = useState<string | null>(
+    initial.challengeToken,
+  );
   const [pending, startTransition] = useTransition();
 
+  useEffect(() => {
+    const stashed = readStashedChallengeToken(initial.id);
+    if (stashed) setChallengeToken(stashed);
+  }, [initial.id]);
+
   const roster = useMemo(() => {
-    if (current.viewer.role === "away_staff") {
-      return (awayTeam?.members ?? []).filter((member) => member.status === "active");
-    }
-    if (current.viewer.role === "home_staff") {
-      return (homeTeam?.members ?? []).filter((member) => member.status === "active");
-    }
+    if (current.viewer.role === "away_staff") return awayMembers;
+    if (current.viewer.role === "home_staff") return homeMembers;
     return [];
-  }, [awayTeam, current.viewer.role, homeTeam]);
+  }, [awayMembers, current.viewer.role, homeMembers]);
 
   const lineupTeamId =
     current.viewer.role === "away_staff"
@@ -215,7 +217,7 @@ export function TeamMatchDetail({
   }
 
   async function onCopyLink() {
-    const token = current.challengeToken;
+    const token = challengeToken;
     if (!token) return;
     try {
       await navigator.clipboard.writeText(challengeUrl(token));
@@ -273,7 +275,7 @@ export function TeamMatchDetail({
         ) : null}
       </header>
 
-      {current.challengeToken && current.viewer.role === "home_staff" ? (
+      {challengeToken && current.viewer.role === "home_staff" ? (
         <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
           <h2 className="font-display text-2xl tracking-wide text-white">
             Challenge link
@@ -284,7 +286,7 @@ export function TeamMatchDetail({
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               readOnly
-              value={challengeUrl(current.challengeToken)}
+              value={challengeUrl(challengeToken)}
               className="min-h-11 flex-1 rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-zinc-300"
             />
             <button
@@ -343,21 +345,6 @@ export function TeamMatchDetail({
             current.viewer.role === "away_staff") &&
           current.status === "scheduled" ? (
           <p className="text-sm text-zinc-500">{blocked}</p>
-        ) : null}
-        {canCompleteMatch(current) ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              runAction(
-                () => completeTeamMatch(current.id),
-                "Match marked complete.",
-              )
-            }
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-zinc-300 hover:text-white disabled:opacity-60"
-          >
-            Mark complete
-          </button>
         ) : null}
       </div>
 
