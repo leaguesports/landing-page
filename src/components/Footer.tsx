@@ -62,6 +62,14 @@ export default function Footer() {
                     About
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/roadmap"
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    Roadmap
+                  </Link>
+                </li>
               </ul>
             </div>
 

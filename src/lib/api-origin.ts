@@ -226,6 +226,12 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/me/notifications",
   "/api/me/notifications/read-all",
   "/api/me/notifications/:id/read",
+  "/api/roadmap/features",
+  "/api/roadmap/features/:id/vote",
+  "/api/roadmap/features/:id/notify",
+  "/api/roadmap/unsubscribe",
+  "/api/roadmap/preferences",
+  "/api/roadmap/requests",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */
