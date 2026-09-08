@@ -46,7 +46,7 @@ import { CITY_DIRECTORY } from "@/data/cities";
 import { Loader2, Minus, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Intent = "looking" | "open" | null;
 
@@ -112,7 +112,8 @@ export function LobbyClient({
   nowIso,
 }: LobbyClientProps) {
   const router = useRouter();
-  const { isAuthenticated, promptSoftWall } = useAuth();
+  const { isAuthenticated, isLoading, promptSoftWall } = useAuth();
+  const gatedDeepLink = useRef(false);
   const [snapshot, setSnapshot] = useState(initial);
   const [proposals, setProposals] = useState<PublicProposal[]>([]);
   const [sportFilter, setSportFilter] = useState(
@@ -153,6 +154,29 @@ export function LobbyClient({
       if (result.ok) setProposals(result.value.proposals);
     });
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!initialIntent || isLoading || gatedDeepLink.current) return;
+    if (isAuthenticated) return;
+    gatedDeepLink.current = true;
+    setIntent(null);
+    promptSoftWall({
+      reason: "lobby",
+      returnTo: hubLobbyHref({
+        sport: sportFilter,
+        city: cityFilter,
+        intent: initialIntent,
+      }),
+      pageType: "lobby",
+    });
+  }, [
+    initialIntent,
+    isAuthenticated,
+    isLoading,
+    promptSoftWall,
+    sportFilter,
+    cityFilter,
+  ]);
 
   useEffect(() => {
     const pending = proposals.filter((item) => item.status === "pending");

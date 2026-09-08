@@ -1,10 +1,7 @@
 import { LobbyClient } from "@/components/lobby/LobbyClient";
 import { emptyLobbySnapshot, listLobby, normalizeLobbyCity, normalizeLobbySport } from "@/lib/lobby/lobby";
-import { isPadelVenue, toVenueOption, type VenueOption } from "@/lib/padel/venue-options";
-import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
-import { isDartsVenue, toDartsVenueOption } from "@/lib/darts/venue-options";
+import type { VenueOption } from "@/lib/padel/venue-options";
 import { getServerAuthState } from "@/lib/server-auth";
-import { searchVenues } from "@/services/venues";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -39,28 +36,14 @@ export default async function LobbyPage({
   const proposal = first(params.proposal).trim();
   const cookie = (await cookies()).toString();
 
-  const [list, padelVenues, golfVenues, dartsVenues, auth] = await Promise.all([
+  const [list, venues, auth] = await Promise.all([
     listLobby(
       { sport: sport || undefined, city: city || undefined },
       { cookie },
     ),
-    searchVenues({ intent: "play", sportSlug: "padel" })
-      .then((venues) => venues.map(toVenueOption).filter(isPadelVenue))
-      .catch(() => [] as VenueOption[]),
-    searchVenues({ intent: "play", sportSlug: "golf" })
-      .then((venues) =>
-        venues.map(toGolfVenueOption).filter((venue) => isGolfVenue(venue)),
-      )
-      .catch(() => [] as VenueOption[]),
-    searchVenues({ intent: "play", sportSlug: "darts" })
-      .then((venues) =>
-        venues.map(toDartsVenueOption).filter((venue) => isDartsVenue(venue)),
-      )
-      .catch(() => [] as VenueOption[]),
+    loadLobbyVenues(),
     getServerAuthState(),
   ]);
-
-  const venues = dedupeVenues([...padelVenues, ...golfVenues, ...dartsVenues]);
   const snapshot = list.ok ? list.value : emptyLobbySnapshot();
 
   return (
@@ -94,6 +77,41 @@ export default async function LobbyPage({
       />
     </main>
   );
+}
+
+async function loadLobbyVenues(): Promise<VenueOption[]> {
+  if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) return [];
+  try {
+    const [
+      { searchVenues },
+      { isPadelVenue, toVenueOption },
+      { isGolfVenue, toGolfVenueOption },
+      { isDartsVenue, toDartsVenueOption },
+    ] = await Promise.all([
+      import("@/services/venues"),
+      import("@/lib/padel/venue-options"),
+      import("@/lib/golf/venue-options"),
+      import("@/lib/darts/venue-options"),
+    ]);
+    const [padelVenues, golfVenues, dartsVenues] = await Promise.all([
+      searchVenues({ intent: "play", sportSlug: "padel" })
+        .then((venues) => venues.map(toVenueOption).filter(isPadelVenue))
+        .catch(() => [] as VenueOption[]),
+      searchVenues({ intent: "play", sportSlug: "golf" })
+        .then((venues) =>
+          venues.map(toGolfVenueOption).filter((venue) => isGolfVenue(venue)),
+        )
+        .catch(() => [] as VenueOption[]),
+      searchVenues({ intent: "play", sportSlug: "darts" })
+        .then((venues) =>
+          venues.map(toDartsVenueOption).filter((venue) => isDartsVenue(venue)),
+        )
+        .catch(() => [] as VenueOption[]),
+    ]);
+    return dedupeVenues([...padelVenues, ...golfVenues, ...dartsVenues]);
+  } catch {
+    return [];
+  }
 }
 
 function dedupeVenues(venues: VenueOption[]): VenueOption[] {
