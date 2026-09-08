@@ -11,6 +11,7 @@ import {
   isLoopbackApiOrigin,
   shouldProxyApiPath,
 } from "./api-origin.ts";
+import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
 
 const ORIGIN_ENV_KEYS = [
@@ -104,7 +105,14 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);
     assert.equal(shouldProxyApiPath("/api/teams"), true);
     assert.equal(shouldProxyApiPath("/api/teams/join"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/search"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1"), true);
+    assert.equal(shouldProxyApiPath("/api/teams/t1/matches"), true);
+    assert.equal(shouldProxyApiPath("/api/team-matches"), true);
+    assert.equal(shouldProxyApiPath("/api/team-matches/join"), true);
+    assert.equal(shouldProxyApiPath("/api/team-matches/mine"), true);
+    assert.equal(shouldProxyApiPath("/api/team-matches/m1"), true);
+    assert.equal(shouldProxyApiPath("/api/team-matches/m1/start"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1/invite"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1/invite-link"), true);
     assert.equal(shouldProxyApiPath("/api/teams/t1/leave"), true);
@@ -414,10 +422,29 @@ describe("getApiProxyRewrites", () => {
           rewriteSources.indexOf("/api/teams/join") <
             rewriteSources.indexOf("/api/teams/:id"),
         );
-        const teamSources = API_PROXY_EXPLICIT_SOURCES.filter((source) =>
-          source.startsWith("/api/teams"),
+        assert.ok(
+          rewriteSources.indexOf("/api/teams/search") <
+            rewriteSources.indexOf("/api/teams/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/team-matches/join") <
+            rewriteSources.indexOf("/api/team-matches/:id"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/team-matches/mine") <
+            rewriteSources.indexOf("/api/team-matches/:id"),
+        );
+        const teamSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/teams" || source.startsWith("/api/teams/"),
         );
         assert.deepEqual(teamSources, [...TEAM_PROXY_SOURCES]);
+        const teamMatchSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/team-matches" ||
+            source.startsWith("/api/team-matches/"),
+        );
+        assert.deepEqual(teamMatchSources, [...TEAM_MATCH_PROXY_SOURCES]);
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/teams")?.destination,
           "https://api.example.test/api/teams",

@@ -4,8 +4,9 @@ import { TeamAvatar } from "@/components/teams/TeamAvatar";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import type { Friend } from "@/lib/friends/friends";
+import { TeamMatchesSection } from "@/components/team-matches/TeamMatchesSection";
+import type { PublicTeamMatch } from "@/lib/team-matches/team-matches";
 import {
-  TEAM_COMING_LATER,
   TEAM_SPORTS,
   canAppointCaptains,
   canDeleteTeam,
@@ -36,6 +37,7 @@ import { useMemo, useState, useTransition } from "react";
 type TeamProfileProps = {
   team: PublicTeam;
   friends: Friend[];
+  matches?: PublicTeamMatch[];
 };
 
 function sendToLogin(id: string) {
@@ -52,7 +54,7 @@ function inviteUrl(token: string): string {
   return `${window.location.origin}${path}`;
 }
 
-export function TeamProfile({ team, friends }: TeamProfileProps) {
+export function TeamProfile({ team, friends, matches = [] }: TeamProfileProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [current, setCurrent] = useState(team);
@@ -274,6 +276,8 @@ export function TeamProfile({ team, friends }: TeamProfileProps) {
 
   return (
     <div className="space-y-8">
+      <TeamMatchesSection team={current} matches={matches} />
+
       {canEditTeam(role) ? (
         <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
           <h2 className="font-display text-2xl tracking-wide text-white">
@@ -593,8 +597,6 @@ export function TeamProfile({ team, friends }: TeamProfileProps) {
           {message}
         </p>
       ) : null}
-
-      <p className="text-sm leading-relaxed text-zinc-500">{TEAM_COMING_LATER}</p>
     </div>
   );
 }

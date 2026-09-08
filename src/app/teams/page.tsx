@@ -9,7 +9,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Teams",
   description:
-    "Create a competitive squad, invite friends, and share a join link. Team matches come later.",
+    "Create a competitive squad, invite friends, and challenge another team to a live scorecard.",
 };
 
 export default async function TeamsPage() {
@@ -33,7 +33,7 @@ export default async function TeamsPage() {
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-400">
             Competitive teams with a roster, captains, and invite links.
-            Matches and tournaments come later.
+            Challenge another squad when you’re ready.
           </p>
         </div>
       </section>
