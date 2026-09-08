@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import type { Friend } from "@/lib/friends/friends";
 import { TeamMatchesSection } from "@/components/team-matches/TeamMatchesSection";
+import { TeamTournamentsSection } from "@/components/tournaments/TeamTournamentsSection";
 import type { PublicTeamMatch } from "@/lib/team-matches/team-matches";
+import type { PublicTournamentSummary } from "@/lib/tournaments/tournaments";
 import {
   TEAM_SPORTS,
   canAppointCaptains,
@@ -38,6 +40,7 @@ type TeamProfileProps = {
   team: PublicTeam;
   friends: Friend[];
   matches?: PublicTeamMatch[];
+  tournaments?: PublicTournamentSummary[];
 };
 
 function sendToLogin(id: string) {
@@ -54,7 +57,12 @@ function inviteUrl(token: string): string {
   return `${window.location.origin}${path}`;
 }
 
-export function TeamProfile({ team, friends, matches = [] }: TeamProfileProps) {
+export function TeamProfile({
+  team,
+  friends,
+  matches = [],
+  tournaments = [],
+}: TeamProfileProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [current, setCurrent] = useState(team);
@@ -277,6 +285,7 @@ export function TeamProfile({ team, friends, matches = [] }: TeamProfileProps) {
   return (
     <div className="space-y-8">
       <TeamMatchesSection team={current} matches={matches} />
+      <TeamTournamentsSection team={current} tournaments={tournaments} />
 
       {canEditTeam(role) ? (
         <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">

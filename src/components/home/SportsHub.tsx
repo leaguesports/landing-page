@@ -12,6 +12,7 @@ import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
 import { TeamMatchesStrip } from "@/components/home/TeamMatchesStrip";
+import { TournamentsStrip } from "@/components/home/TournamentsStrip";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -27,6 +28,11 @@ import {
   TEAM_MATCHES_HREF,
   type TeamMatchesMineSnapshot,
 } from "@/lib/team-matches/team-matches";
+import {
+  emptyMineSnapshot as emptyTournamentsSnapshot,
+  TOURNAMENTS_HREF,
+  type TournamentsMineSnapshot,
+} from "@/lib/tournaments/tournaments";
 import {
   emptyIntegrationsSnapshot,
   type IntegrationsSnapshot,
@@ -222,6 +228,8 @@ type SportsHubProps = {
   organisedGames?: OrganisedGamesSnapshot;
   /** Prefetched `GET /api/team-matches/mine` — empty on failure. */
   teamMatches?: TeamMatchesMineSnapshot;
+  /** Prefetched `GET /api/tournaments/mine` — empty on failure. */
+  tournaments?: TournamentsMineSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
   /** Prefetched `GET /api/teams` — empty on failure. */
@@ -628,6 +636,7 @@ export function SportsHub({
   friends = emptyFriendsSnapshot(),
   organisedGames = emptyOrganisedGamesSnapshot(),
   teamMatches = emptyMineSnapshot(),
+  tournaments = emptyTournamentsSnapshot(),
   myCommunities = [],
   myTeams = emptyTeamsSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
@@ -996,12 +1005,27 @@ export function SportsHub({
                 </p>
               </Link>
 
+              <Link
+                href={TOURNAMENTS_HREF}
+                className="mt-4 flex w-full flex-col items-start gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-white/16 sm:px-6"
+              >
+                <h3 className="font-display text-3xl tracking-wide text-white">
+                  Tournaments
+                </h3>
+                <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
+                  Run a 4, 8, or 16 team single-elim. Captains register, then
+                  start fixtures as team matches.
+                </p>
+              </Link>
+
               <OrganisedGamesStrip
                 snapshot={organisedGames}
                 nowIso={nowIso}
               />
 
               <TeamMatchesStrip snapshot={teamMatches} nowIso={nowIso} />
+
+              <TournamentsStrip snapshot={tournaments} />
 
               {playVerb ? (
                 <PlaySportModal

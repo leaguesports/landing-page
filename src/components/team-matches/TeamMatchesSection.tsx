@@ -6,7 +6,6 @@ import {
   type PublicTeamMatch,
 } from "@/lib/team-matches/team-matches";
 import type { PublicTeam } from "@/lib/teams/teams";
-import { TEAM_TOURNAMENTS_COMING_LATER } from "@/lib/teams/teams";
 import Link from "next/link";
 
 type TeamMatchesSectionProps = {
@@ -77,10 +76,6 @@ export function TeamMatchesSection({ team, matches }: TeamMatchesSectionProps) {
           ) : null}
         </div>
       )}
-
-      <p className="text-sm leading-relaxed text-zinc-500">
-        {TEAM_TOURNAMENTS_COMING_LATER}
-      </p>
     </section>
   );
 }
