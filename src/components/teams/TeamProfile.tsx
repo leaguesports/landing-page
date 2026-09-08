@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import type { Friend } from "@/lib/friends/friends";
 import { TeamMatchesSection } from "@/components/team-matches/TeamMatchesSection";
-import type { PublicTeamMatch } from "@/lib/team-matches/team-matches";
+import type { TeamMatchPreview } from "@/lib/team-matches/team-matches";
 import {
   TEAM_SPORTS,
   canAppointCaptains,
@@ -37,7 +37,7 @@ import { useMemo, useState, useTransition } from "react";
 type TeamProfileProps = {
   team: PublicTeam;
   friends: Friend[];
-  matches?: PublicTeamMatch[];
+  matches?: TeamMatchPreview[];
 };
 
 function sendToLogin(id: string) {
