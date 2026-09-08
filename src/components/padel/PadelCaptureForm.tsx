@@ -14,6 +14,7 @@ import { SwapTeamsButton, VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import { capturePadelMatch } from "@/lib/match-api";
+import { track } from "@/lib/analytics/track";
 import {
   datetimeLocalToIso,
   toDatetimeLocalValue,
@@ -203,6 +204,7 @@ export function PadelCaptureForm({
         { venue: toMatchVenue(venue)! },
       );
       writeLastPadelVenueSlug(venue.slug);
+      track("game_lock", { page_type: "scorecard", sport: "padel" });
       startTransition(() => {
         router.push(`/padel/${match.id}`);
       });

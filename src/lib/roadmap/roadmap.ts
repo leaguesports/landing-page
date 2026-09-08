@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
+import { track } from "../analytics/track.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
 
 export const ROADMAP_HREF = "/roadmap" as const;
@@ -909,7 +910,11 @@ export async function toggleRoadmapVote(
 ): Promise<RoadmapResult<RoadmapVoteResult>> {
   const deps = clientDeps();
   if (!deps) return { ok: false, error: "API is not configured", status: 0 };
-  return toggleRoadmapVoteWith(id, deps);
+  const result = await toggleRoadmapVoteWith(id, deps);
+  if (result.ok) {
+    track("roadmap_vote", { page_type: "roadmap" });
+  }
+  return result;
 }
 
 export async function notifyRoadmapFeature(

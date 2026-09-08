@@ -28,7 +28,24 @@ GOOGLE_REDIRECT_URI=https://leaguesports.co.za/api/auth/providers/google/callbac
 FRONTEND_URL=https://leaguesports.co.za
 ```
 
-Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway.
+Google Cloud Console authorized redirect URI must be that same callback URL. Local Next.js routes that are **not** proxied: `/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`. Match create/get/lock (`/api/matches`, `/api/matches/:id`, `/api/matches/:id/lock`) are proxied to Railway. Coverage notify (`/api/intents/coverage`, `/api/intents/coverage/unsubscribe`) is proxied to Railway.
+
+## GA4 conversions (#188)
+
+Client helper: `track(event, params)` in `src/lib/analytics/track.ts`. Fires via existing `gtag` from `@next/third-parties/google` when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set. Events are client-only (no SSR double-fire). No emails or names in event params.
+
+**Mark these as GA4 conversions (Brandon):**
+
+| Event | When |
+| --- | --- |
+| `game_start` | Live padel / golf / darts start |
+| `game_lock` | Scorecard lock or capture result |
+| `generate_lead` | Coverage notify submit (`POST /api/intents/coverage`) |
+| `share_click` | WhatsApp or copy-link after start / lock / organise |
+
+Other funnel events (not conversions): `cta_click`, `deep_link_land`, `auth_soft_wall`, `roadmap_vote`, `conversion_fallback`.
+
+Params include `page_type`, `cta_slot` (`hero` \| `sticky` \| `inline` \| `empty`), and sport/city/slug enums — never PII.
 
 ## Local development (padel match create)
 

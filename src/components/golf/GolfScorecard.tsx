@@ -1,10 +1,12 @@
 "use client";
 
+import { PostActionShare } from "@/components/conversion/PostActionShare";
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
 import { lockGolfRound } from "@/lib/golf/api-round";
+import { track } from "@/lib/analytics/track";
 import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
 import {
   clearGolfRoundLocal,
@@ -172,6 +174,7 @@ export function GolfScorecard({
       const lockedRound = await lockGolfRound(round.id, payload, round.venue);
       setRound(lockedRound);
       clearGolfRoundLocal(round.id);
+      track("game_lock", { page_type: "scorecard", sport: "golf" });
     } catch (err) {
       setLockError(
         err instanceof Error ? err.message : "Could not lock round",
@@ -209,6 +212,17 @@ export function GolfScorecard({
           History
         </Link>
       </header>
+
+      <div className="px-4 pt-4">
+        <PostActionShare
+          url={`/golf/${round.id}`}
+          text={`Golf round on LeagueSports\n{url}`}
+          pageType="scorecard"
+          sport="golf"
+          heading={locked ? "Share this round" : "Share this live round"}
+          compact={!locked}
+        />
+      </div>
 
       {locked ? (
         <div className="flex flex-1 flex-col px-4 py-5">

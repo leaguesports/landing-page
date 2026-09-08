@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/lib/analytics/track";
 import {
   createGolfRound,
   datetimeLocalToIso,
@@ -198,6 +199,7 @@ export function GolfQuickStart({
         toGolfRoundVenue(venue)!,
       );
       cacheGolfRoundSnapshot(round);
+      track("game_start", { page_type: "scorecard", sport: "golf" });
       startTransition(() => {
         router.push(`/golf/${round.id}`);
       });

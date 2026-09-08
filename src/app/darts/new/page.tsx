@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DartsQuickStart } from "@/components/darts/DartsQuickStart";
 import { isDartsVenue, toDartsVenueOption } from "@/lib/darts/venue-options";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
+import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
@@ -18,10 +19,13 @@ export default async function NewDartsGamePage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const requestedSlug = venueQueryKey(params);
+  const cityPrefill = Array.isArray(params.city) ? params.city[0] : params.city;
 
   const [dartsVenues, requestedVenue] = await Promise.all([
     searchVenues({ intent: "play", sportSlug: "darts" })
@@ -38,14 +42,15 @@ export default async function NewDartsGamePage({
   const initialVenue =
     requestedOption && isDartsVenue(requestedOption) ? requestedOption : null;
 
+  const ranked = rankVenuesByCity(dartsVenues, cityPrefill);
   const venues = initialVenue
     ? [
         initialVenue,
-        ...dartsVenues.filter(
+        ...ranked.filter(
           (item) => item.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
         ),
       ]
-    : dartsVenues;
+    : ranked;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">

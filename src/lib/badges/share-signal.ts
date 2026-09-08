@@ -1,4 +1,5 @@
 import { trackActivation } from "@/lib/analytics/activation";
+import { track } from "@/lib/analytics/track";
 
 const SHARE_STORAGE_KEY = "leaguesports.badge.scorecard_shared";
 
@@ -8,6 +9,11 @@ export function markScorecardShared(): void {
   try {
     const already = window.localStorage.getItem(SHARE_STORAGE_KEY) === "1";
     window.localStorage.setItem(SHARE_STORAGE_KEY, "1");
+    track("share_click", {
+      page_type: "scorecard",
+      sport: "padel",
+      cta_slot: "inline",
+    });
     if (!already) {
       trackActivation("padel_scorecard_share");
     }

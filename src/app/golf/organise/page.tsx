@@ -3,6 +3,7 @@ import Link from "next/link";
 import { OrganiseGameForm } from "@/components/play/OrganiseGameForm";
 import { listFriends } from "@/lib/friends/friends";
 import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
+import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
 import { getServerAuthState } from "@/lib/server-auth";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
@@ -20,10 +21,13 @@ export default async function OrganiseGolfPage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const requestedSlug = venueQueryKey(params);
+  const cityPrefill = Array.isArray(params.city) ? params.city[0] : params.city;
   const cookie = (await cookies()).toString();
 
   const [golfCourses, requestedVenue, friends, auth] = await Promise.all([
@@ -43,15 +47,16 @@ export default async function OrganiseGolfPage({
   const initialVenue =
     requestedOption && isGolfVenue(requestedOption) ? requestedOption : null;
 
+  const ranked = rankVenuesByCity(golfCourses, cityPrefill);
   const venues = initialVenue
     ? [
         initialVenue,
-        ...golfCourses.filter(
+        ...ranked.filter(
           (course) =>
             course.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
         ),
       ]
-    : golfCourses;
+    : ranked;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">

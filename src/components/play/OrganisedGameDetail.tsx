@@ -1,5 +1,7 @@
 "use client";
 
+import { PostActionShare } from "@/components/conversion/PostActionShare";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
@@ -21,7 +23,7 @@ import {
 import type { GolfCourseCms, GolfHolesPlayed } from "@/types/golf-round";
 import { formatHubWhen } from "@/lib/sports/hub-feed";
 import { hubOrganisedGameJoinHref } from "@/lib/sports/hub-ia";
-import { Check, Copy, Loader2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -87,7 +89,6 @@ export function OrganisedGameDetail({
   const { isAuthenticated } = useAuth();
   const [game, setGame] = useState(initial);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<"rsvp" | "start" | "cancel" | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [teeName, setTeeName] = useState("");
@@ -116,18 +117,6 @@ export function OrganisedGameDetail({
     window.location.href = getLoginPageHref(
       relativeAuthReturnTo() || `/play/organised/${game.id}`,
     );
-  }
-
-  async function copyShareLink() {
-    if (!shareHref) return;
-    const url = `${window.location.origin}${shareHref}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError("Could not copy the share link.");
-    }
   }
 
   async function onRsvp(rsvp: "accepted" | "declined") {
@@ -212,6 +201,7 @@ export function OrganisedGameDetail({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-2xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
+      <DeepLinkLand pageType="organise" sport={game.sport} slug={game.id} />
       <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
           {formatOrganisedGameSport(game.sport)} ·{" "}
@@ -241,26 +231,13 @@ export function OrganisedGameDetail({
       </header>
 
       {isHost && shareHref && isOpen ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-zinc-200">Share link</h2>
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3">
-            <p className="min-w-0 flex-1 truncate text-sm text-zinc-400">
-              {shareHref}
-            </p>
-            <button
-              type="button"
-              onClick={() => void copyShareLink()}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-medium text-white hover:bg-white/5"
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-emerald-300" aria-hidden />
-              ) : (
-                <Copy className="h-4 w-4" aria-hidden />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-        </section>
+        <PostActionShare
+          url={shareHref}
+          text={`Join this organised game\n{url}`}
+          pageType="organise"
+          sport={game.sport}
+          heading="Share this game"
+        />
       ) : null}
 
       <section className="space-y-3">

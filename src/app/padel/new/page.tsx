@@ -5,6 +5,7 @@ import type { AuthUser } from "@/lib/api-client";
 import type { QuickStartInitialSelf } from "@/lib/padel/quick-start-defaults";
 import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
+import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { getServerAuthState } from "@/lib/server-auth";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
@@ -32,10 +33,15 @@ export default async function NewPadelMatchPage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const requestedSlug = venueQueryKey(params);
+  const cityPrefill = Array.isArray(params.city)
+    ? params.city[0]
+    : params.city;
 
   const [padelCourts, requestedVenue, auth] = await Promise.all([
     searchVenues({ intent: "play", sportSlug: "padel" }).then((venues) =>
@@ -56,15 +62,16 @@ export default async function NewPadelMatchPage({
   const initialVenue =
     requestedOption && isPadelVenue(requestedOption) ? requestedOption : null;
 
+  const rankedCourts = rankVenuesByCity(padelCourts, cityPrefill);
   const venues = initialVenue
     ? [
         initialVenue,
-        ...padelCourts.filter(
+        ...rankedCourts.filter(
           (court) =>
             court.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
         ),
       ]
-    : padelCourts;
+    : rankedCourts;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">

@@ -1,3 +1,5 @@
+import { ConversionKit } from "@/components/conversion/ConversionKit";
+import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
 import type { IntentAmenityStat } from "@/lib/intent/enrichment";
 import type { IntentActivity } from "@/lib/intent/activity";
 import type { IntentKind } from "@/lib/intent/paths";
@@ -6,14 +8,13 @@ type IntentHeroProps = {
   intent: IntentKind;
   activity: IntentActivity;
   locationTitle: string;
+  locationSlug: string;
   heading: string;
   introParagraphs: string[];
   venueCount: number;
   amenityStats?: IntentAmenityStat[];
-  primaryHref: string;
-  primaryLabel: string;
-  secondaryHref: string;
-  secondaryLabel: string;
+  matrix: CtaMatrix;
+  sourcePage: string;
 };
 
 export function IntentHero({
@@ -24,10 +25,9 @@ export function IntentHero({
   introParagraphs,
   venueCount,
   amenityStats = [],
-  primaryHref,
-  primaryLabel,
-  secondaryHref,
-  secondaryLabel,
+  matrix,
+  locationSlug,
+  sourcePage,
 }: IntentHeroProps) {
   const accent = intent === "watch" ? "text-sky-400" : "text-emerald-400";
   const wash =
@@ -83,23 +83,20 @@ export function IntentHero({
           </ul>
         )}
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <a
-            href={primaryHref}
-            className={`inline-flex min-h-11 items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors ${
-              intent === "watch"
-                ? "bg-white hover:bg-sky-400 hover:text-white"
-                : "bg-emerald-400 hover:bg-emerald-300"
-            }`}
-          >
-            {primaryLabel}
-          </a>
-          <a
-            href={secondaryHref}
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-          >
-            {secondaryLabel}
-          </a>
+        <div className="mt-8">
+          <ConversionKit
+            matrix={matrix}
+            tone={intent === "watch" ? "watch" : "play"}
+            sport={activity.sportSlug || activity.slug}
+            sportName={activity.name}
+            city={locationSlug}
+            cityName={locationTitle}
+            sourcePage={sourcePage}
+            pageKey={`${intent}:${activity.slug}:${locationSlug}`}
+            pageType={intent === "watch" ? "watch_city_sport" : "play_city_sport"}
+            showSticky
+            showFallback={false}
+          />
         </div>
       </div>
     </section>

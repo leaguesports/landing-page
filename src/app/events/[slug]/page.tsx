@@ -1,3 +1,7 @@
+import { ConversionKit } from "@/components/conversion/ConversionKit";
+import { CoverageNotify } from "@/components/conversion/CoverageNotify";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
 import { FixtureVenueList } from "@/components/events/FixtureList";
 import { FixturePoolPanel } from "@/components/events/FixturePoolPanel";
@@ -11,6 +15,8 @@ import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
 import { fixtureSeoDescription, fixtureSeoTitle } from "@/lib/events/meta";
+import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
+import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { buildFixtureWhatsAppShare } from "@/lib/events/whatsapp-share";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import { getSiteBaseUrl } from "@/lib/site-url";
@@ -21,7 +27,6 @@ import { getFixtureBySlug, getUpcomingFixtures } from "@/services/events";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 export const revalidate = 300;
 
@@ -41,7 +46,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const fixture = await getFixtureBySlug(slug);
   if (!fixture) {
-    return { title: "Fixture not found", robots: { index: false, follow: false } };
+    const title = missingObjectOgTitle("event", slug);
+    return { title, robots: { index: false, follow: false } };
   }
 
   const indexable = isFixtureIndexable(fixture);
@@ -100,7 +106,13 @@ export default async function EventFixturePage({ params }: PageProps) {
     getFixtureBySlug(slug),
     getUpcomingFixtures({ limit: 24 }),
   ]);
-  if (!fixture) notFound();
+  if (!fixture) {
+    return (
+      <div className="min-h-screen bg-[#0c0f0c] text-white">
+        <DeepLinkRecovery kind="event" objectName={slug} />
+      </div>
+    );
+  }
 
   const when = formatFixtureWhen(fixture.startsAt);
   const sport = sportDisplayName(fixture.sportSlug);
@@ -146,10 +158,20 @@ export default async function EventFixturePage({ params }: PageProps) {
     venueCount,
   });
 
-  const primaryWatchHref = venueCount > 0 ? "#where-to-watch" : watchHref;
+  const matrix = selectCtaMatrix({
+    pageType: "event",
+    sport: fixture.sportSlug,
+    venueCount,
+    shareHref: share.href,
+  });
 
   return (
-    <div className="min-h-screen bg-[#0c0f0c] text-white">
+    <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
+      <DeepLinkLand
+        pageType="event"
+        sport={fixture.sportSlug}
+        slug={fixture.slug}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -208,54 +230,53 @@ export default async function EventFixturePage({ params }: PageProps) {
                 : `Follow the live feed, then pick a venue screening nearby when listings land.`)}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-start gap-3">
-            <Link
-              href={primaryWatchHref}
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
-            >
-              {venueCount > 0 ? "Find where to watch" : "Find screening venues"}
-            </Link>
-            <FixtureFollowButton slug={fixture.slug} variant="secondary" />
-            <a
-              href={share.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-            >
-              Share on WhatsApp
-            </a>
-            <Link
-              href="#live-feed"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-            >
-              Open live feed
-            </Link>
-            {fixture.relatedGuide?.slug ? (
+          <div className="mt-8 flex flex-col items-start gap-4">
+            <ConversionKit
+              matrix={matrix}
+              tone="watch"
+              sport={fixture.sportSlug}
+              slug={fixture.slug}
+              sourcePage={`/events/${fixture.slug}`}
+              pageKey={`event:${fixture.slug}`}
+              pageType="event"
+              showSticky
+              showFallback={false}
+            />
+            <div className="flex flex-wrap items-start gap-3">
+              <FixtureFollowButton slug={fixture.slug} variant="secondary" />
               <Link
-                href={`/guides/${fixture.relatedGuide.slug}`}
+                href="#live-feed"
                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
               >
-                Related guide
+                Open live feed
               </Link>
-            ) : null}
-            {fixture.hostVenue?.slug ? (
-              <Link
-                href={`/venues/${fixture.hostVenue.slug}`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-              >
-                {fixture.hostVenue.name}
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            ) : null}
-            {fixture.eventPageHref ? (
-              <Link
-                href={fixture.eventPageHref}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-              >
-                Event page
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            ) : null}
+              {fixture.relatedGuide?.slug ? (
+                <Link
+                  href={`/guides/${fixture.relatedGuide.slug}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  Related guide
+                </Link>
+              ) : null}
+              {fixture.hostVenue?.slug ? (
+                <Link
+                  href={`/venues/${fixture.hostVenue.slug}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  {fixture.hostVenue.name}
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+              {fixture.eventPageHref ? (
+                <Link
+                  href={fixture.eventPageHref}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  Event page
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
@@ -296,6 +317,17 @@ export default async function EventFixturePage({ params }: PageProps) {
               </h2>
             </div>
             <FixtureVenueList fixture={fixture} />
+            {venueCount === 0 ? (
+              <div className="mt-4">
+                <CoverageNotify
+                  sport={fixture.sportSlug}
+                  sourcePage={`/events/${fixture.slug}`}
+                  pageType="event"
+                  showRoadmap={false}
+                  trackFallbackOnView
+                />
+              </div>
+            ) : null}
           </aside>
         </div>
       </section>

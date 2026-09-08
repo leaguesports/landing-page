@@ -1,14 +1,40 @@
+import { ConversionKit } from "@/components/conversion/ConversionKit";
+import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import { getGuideFaqs, type GuideFaq } from "@/data/guides/faqs";
+import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
+import { guideConversionIntent } from "@/lib/conversion/deep-links";
 import { normalizeGuideContent } from "@/lib/guides/portableText";
 import { stripMatchingFaqBlocks } from "@/lib/guides/stripFaqBlocks";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
-import { Bell, Flag } from "lucide-react";
+import { Flag } from "lucide-react";
 import { PortableText } from "next-sanity";
 import Image from "next/image";
-import Link from "next/link";
 import type { Guide } from "../actions";
 import { guidePortableTextComponents } from "../textComponents";
 import { getGuideJsonLd } from "./guideJsonLd";
+
+const GUIDE_SPORTS = [
+  "padel",
+  "golf",
+  "darts",
+  "rugby",
+  "soccer",
+  "cricket",
+  "tennis",
+] as const;
+
+function guideSport(guide: Guide): string | null {
+  const haystack = [
+    guide.slug,
+    guide.title,
+    guide.description,
+    ...(guide.keywords ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return GUIDE_SPORTS.find((sport) => haystack.includes(sport)) ?? null;
+}
 
 function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
   if (faqs.length === 0) return null;
@@ -52,9 +78,17 @@ export function GuideDetail({ guide }: { guide: Guide }) {
       : (guide.content ?? []);
   const content = normalizeGuideContent(stripped);
   const imageUrl = safeSanityImageUrl(guide.mainImage);
+  const intent = guideConversionIntent(guide);
+  const sport = guideSport(guide);
+  const matrix = selectCtaMatrix({
+    pageType: "guide",
+    guideIntent: intent,
+    sport,
+    relatedHref: "/guides",
+  });
 
   return (
-    <div className="min-h-screen bg-[#0c0f0c] text-white">
+    <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -76,6 +110,19 @@ export function GuideDetail({ guide }: { guide: Guide }) {
               {guide.description}
             </p>
           ) : null}
+          <div className="mt-8">
+            <ConversionKit
+              matrix={matrix}
+              tone={intent === "watch" ? "watch" : "play"}
+              sport={sport}
+              sourcePage={`/guides/${guide.slug}`}
+              pageKey={`guide:${guide.slug}`}
+              pageType="guide"
+              slug={guide.slug}
+              showSticky
+              showFallback={false}
+            />
+          </div>
         </div>
       </section>
 
@@ -132,20 +179,12 @@ export function GuideDetail({ guide }: { guide: Guide }) {
               </p>
             </div>
 
-            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto">
-              <Link
-                href="/guides"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-              >
-                Browse all guides
-              </Link>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-              >
-                <Bell className="h-4 w-4" />
-                Guide alerts
-              </button>
+            <div className="w-full min-w-0 shrink-0 sm:max-w-md">
+              <CoverageNotify
+                sport={sport}
+                sourcePage={`/guides/${guide.slug}`}
+                pageType="guide"
+              />
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadGolfCourseByVenueCmsId } from "@/app/golf/actions";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { GolfScorecard } from "@/components/golf/GolfScorecard";
 import {
   fetchGolfRound,
@@ -93,26 +94,24 @@ export function GolfScorecardClientLoader({
 
   if (load.status === "missing") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#050705] px-6 text-center">
-        <p className="max-w-sm text-sm text-zinc-400">
-          This round was not found. It may not have been created on the golf
-          API, or the share link is stale.
-        </p>
-        <Link
-          href="/golf/new"
-          className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950"
-        >
-          New golf round
-        </Link>
+      <div className="min-h-dvh bg-[#050705] text-white">
+        <DeepLinkRecovery
+          kind="scorecard"
+          objectName="Golf round"
+          startHref="/golf/new"
+        />
       </div>
     );
   }
 
   return (
-    <GolfScorecard
-      key={load.round.id}
-      initialRound={load.round}
-      golfCourse={golfCourse}
-    />
+    <>
+      <DeepLinkLand pageType="scorecard" sport="golf" slug={roundId} />
+      <GolfScorecard
+        key={load.round.id}
+        initialRound={load.round}
+        golfCourse={golfCourse}
+      />
+    </>
   );
 }

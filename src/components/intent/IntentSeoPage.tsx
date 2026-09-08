@@ -1,3 +1,4 @@
+import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { IntentBrowseGrid } from "@/components/intent/IntentBrowseGrid";
 import { IntentFaqSection } from "@/components/intent/IntentFaqSection";
 import { IntentHero } from "@/components/intent/IntentHero";
@@ -48,19 +49,6 @@ function intentOgImageUrl(
   const source = resolveVenueImage(venue);
   if (!source) return null;
   return sanityImageUrl(source, { width: 1200, height: 630 }) ?? null;
-}
-
-function primaryCta(intent: IntentKind, activitySlug: string) {
-  if (intent === "play") {
-    if (activitySlug === "padel") {
-      return { href: "/padel/new", label: "Start a padel match" };
-    }
-    if (activitySlug === "golf") {
-      return { href: "/golf/new", label: "Start a golf round" };
-    }
-    return { href: "#venues", label: "See venues" };
-  }
-  return { href: "/events", label: "See fixtures" };
 }
 
 function metaDescriptionExtras(
@@ -397,14 +385,19 @@ export async function IntentSeoPage({
     siteUrl,
   });
 
-  const cta = primaryCta(intent, activity.slug);
+  const matrix = selectCtaMatrix({
+    pageType: intent === "watch" ? "watch_city_sport" : "play_city_sport",
+    sport: activity.sportSlug || activity.slug,
+    city: location.slug,
+    venueCount: results.venues.length,
+  });
   const related = nearby
     .filter((item) => item.slug !== location.slug)
     .slice(0, 8)
     .map((item) => ({ slug: item.slug, title: item.title }));
 
   return (
-    <div className="min-h-screen bg-[#0c0f0c] text-white">
+    <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -418,14 +411,13 @@ export async function IntentSeoPage({
         intent={intent}
         activity={activity}
         locationTitle={location.title}
+        locationSlug={location.slug}
         heading={heading}
         introParagraphs={introParagraphs}
         venueCount={results.venues.length}
         amenityStats={enrichment.amenityStats}
-        primaryHref={cta.href}
-        primaryLabel={cta.label}
-        secondaryHref="#venues"
-        secondaryLabel="Browse venues"
+        matrix={matrix}
+        sourcePage={intentPath(intent, activity.slug, location.slug)}
       />
       <IntentHighlights
         intent={intent}
@@ -443,6 +435,8 @@ export async function IntentSeoPage({
         suburbTitle={results.suburbTitle}
         cityTitle={results.cityTitle}
         related={related}
+        locationSlug={location.slug}
+        sourcePage={intentPath(intent, activity.slug, location.slug)}
       />
       <IntentFaqSection intent={intent} faqs={faqs} />
     </div>

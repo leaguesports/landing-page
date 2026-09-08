@@ -10,6 +10,7 @@ export type ScorecardStartParams = {
   venue?: string | string[] | null;
   cmsId?: string | string[] | null;
   sport?: string | string[] | null;
+  city?: string | string[] | null;
 };
 
 export function firstSearchParam(
@@ -42,7 +43,12 @@ function startPathForSport(
 export function scorecardStartHref(params: ScorecardStartParams = {}): string {
   const sport = firstSearchParam(params.sport).toLowerCase();
   const venue = venueQueryKey(params);
+  const city = firstSearchParam(params.city);
   const path = startPathForSport(sport);
-  if (!venue) return path;
-  return `${path}?venue=${encodeURIComponent(venue)}`;
+  const qs = new URLSearchParams();
+  if (venue) qs.set("venue", venue);
+  if (sport) qs.set("sport", sport);
+  if (city) qs.set("city", city);
+  const serialized = qs.toString();
+  return serialized ? `${path}?${serialized}` : path;
 }

@@ -14,6 +14,7 @@ import {
 } from "@/lib/golf/capture";
 import { toCourseSnapshot } from "@/lib/golf/course";
 import { isGolfStartReady } from "@/lib/golf/pre-round";
+import { track } from "@/lib/analytics/track";
 import {
   clampStrokes,
   formatToPar,
@@ -244,6 +245,7 @@ export function GolfCaptureForm({
         },
         toGolfRoundVenue(venue)!,
       );
+      track("game_lock", { page_type: "scorecard", sport: "golf" });
       startTransition(() => {
         router.push(`/golf/${round.id}`);
       });

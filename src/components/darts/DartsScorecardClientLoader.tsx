@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { DartsScorecard } from "@/components/darts/DartsScorecard";
 import { fetchDartsMatch } from "@/lib/darts/api-match";
 import type { DartsMatch } from "@/types/darts-match";
@@ -54,20 +55,20 @@ export function DartsScorecardClientLoader({
 
   if (load.status === "missing") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#050705] px-6 text-center">
-        <p className="max-w-sm text-sm text-zinc-400">
-          This game was not found. It may not have been created on the darts
-          API, or the share link is stale.
-        </p>
-        <Link
-          href="/darts/new"
-          className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950"
-        >
-          New darts game
-        </Link>
+      <div className="min-h-dvh bg-[#050705] text-white">
+        <DeepLinkRecovery
+          kind="scorecard"
+          objectName="Darts game"
+          startHref="/darts/new"
+        />
       </div>
     );
   }
 
-  return <DartsScorecard key={load.match.id} initialMatch={load.match} />;
+  return (
+    <>
+      <DeepLinkLand pageType="scorecard" sport="darts" slug={matchId} />
+      <DartsScorecard key={load.match.id} initialMatch={load.match} />
+    </>
+  );
 }

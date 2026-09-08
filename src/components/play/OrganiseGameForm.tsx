@@ -2,7 +2,6 @@
 
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
-import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import type { Friend } from "@/lib/friends/friends";
 import {
   buildCreateOrganisedGamePayload,
@@ -74,10 +73,7 @@ export function OrganiseGameForm({
   lockVenue = false,
 }: OrganiseGameFormProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const loginHref = getLoginPageHref(
-    sport === "golf" ? "/golf/organise" : "/padel/organise",
-  );
+  const { isAuthenticated, promptSoftWall } = useAuth();
   const [venue, setVenue] = useState<VenueOption | null>(() =>
     findVenueBySlug(venues, initialVenueSlug),
   );
@@ -106,10 +102,11 @@ export function OrganiseGameForm({
 
   async function handleCreate() {
     if (!isAuthenticated) {
-      window.location.href = getLoginPageHref(
-        relativeAuthReturnTo() ||
-          (sport === "golf" ? "/golf/organise" : "/padel/organise"),
-      );
+      promptSoftWall({
+        reason: "organise",
+        returnTo: sport === "golf" ? "/golf/organise" : "/padel/organise",
+        pageType: "organise",
+      });
       return;
     }
     if (!venue) {
@@ -163,12 +160,19 @@ export function OrganiseGameForm({
       {!isAuthenticated ? (
         <p className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
           Sign in to organise a game.{" "}
-          <Link
-            href={loginHref}
+          <button
+            type="button"
+            onClick={() =>
+              promptSoftWall({
+                reason: "organise",
+                returnTo: sport === "golf" ? "/golf/organise" : "/padel/organise",
+                pageType: "organise",
+              })
+            }
             className="font-medium text-emerald-300 hover:text-emerald-200"
           >
-            Sign in
-          </Link>
+            Save to your account
+          </button>
         </p>
       ) : null}
 

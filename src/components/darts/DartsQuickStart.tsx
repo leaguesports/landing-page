@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
+import { track } from "@/lib/analytics/track";
 import {
   createDartsMatch,
   datetimeLocalToIso,
@@ -157,6 +158,7 @@ export function DartsQuickStart({
         },
         venue ? toDartsMatchVenue(venue) : null,
       );
+      track("game_start", { page_type: "scorecard", sport: "darts" });
       startTransition(() => {
         router.push(`/darts/${match.id}`);
       });

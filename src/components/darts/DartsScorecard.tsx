@@ -1,5 +1,6 @@
 "use client";
 
+import { PostActionShare } from "@/components/conversion/PostActionShare";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/darts/rules";
 import type { DartsMatch, DartsPlayerSlot } from "@/types/darts-match";
 import { DARTS_MAX_TURN_SCORE } from "@/types/darts-match";
+import { track } from "@/lib/analytics/track";
 
 type DartsScorecardProps = {
   initialMatch: DartsMatch;
@@ -74,6 +76,9 @@ export function DartsScorecard({ initialMatch }: DartsScorecardProps) {
       setMatch(next);
       setScore("");
       setCheckout(false);
+      if (next.status === "locked" || next.lockedAt) {
+        track("game_lock", { page_type: "scorecard", sport: "darts" });
+      }
       if (next.nextSuggestedSlot) {
         setActiveSlot(next.nextSuggestedSlot);
       }
@@ -112,6 +117,17 @@ export function DartsScorecard({ initialMatch }: DartsScorecardProps) {
           History
         </Link>
       </header>
+
+      <div className="px-4 pt-4">
+        <PostActionShare
+          url={`/darts/${match.id}`}
+          text={`Darts 501 on LeagueSports\n{url}`}
+          pageType="scorecard"
+          sport="darts"
+          heading={locked ? "Share this game" : "Share this live game"}
+          compact={!locked}
+        />
+      </div>
 
       {locked ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-5 sm:px-6">

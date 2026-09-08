@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GolfQuickStart } from "@/components/golf/GolfQuickStart";
 import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
+import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 
 export const metadata: Metadata = {
@@ -18,10 +19,13 @@ export default async function NewGolfRoundPage({
   searchParams: Promise<{
     venue?: string | string[];
     cmsId?: string | string[];
+    sport?: string | string[];
+    city?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const requestedSlug = venueQueryKey(params);
+  const cityPrefill = Array.isArray(params.city) ? params.city[0] : params.city;
 
   const [golfCourses, requestedVenue] = await Promise.all([
     searchVenues({ intent: "play", sportSlug: "golf" }).then((venues) =>
@@ -36,15 +40,16 @@ export default async function NewGolfRoundPage({
   const initialVenue =
     requestedOption && isGolfVenue(requestedOption) ? requestedOption : null;
 
+  const ranked = rankVenuesByCity(golfCourses, cityPrefill);
   const venues = initialVenue
     ? [
         initialVenue,
-        ...golfCourses.filter(
+        ...ranked.filter(
           (course) =>
             course.slug.toLowerCase() !== initialVenue.slug.toLowerCase(),
         ),
       ]
-    : golfCourses;
+    : ranked;
 
   return (
     <main className="min-h-dvh bg-[#0c0f0c]">
