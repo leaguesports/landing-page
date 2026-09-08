@@ -7,8 +7,11 @@ import {
   createTeamMatch,
   formatTeamMatchSport,
   searchTeams,
+  shouldSearchTeams,
+  stashChallengeToken,
   teamMatchHref,
   TEAM_MATCHES_NEW_HREF,
+  TEAM_SEARCH_MIN_QUERY,
   type PublicTeamRef,
   type TeamMatchSport,
 } from "@/lib/team-matches/team-matches";
@@ -61,6 +64,11 @@ export function ChallengeForm({ teams, initialTeamId }: ChallengeFormProps) {
       return;
     }
     const trimmed = query.trim();
+    if (!shouldSearchTeams(trimmed)) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
     const handle = window.setTimeout(() => {
       setSearching(true);
       void searchTeams(sport, trimmed).then((result) => {
@@ -94,6 +102,9 @@ export function ChallengeForm({ teams, initialTeamId }: ChallengeFormProps) {
           }
           setError(result.error);
           return;
+        }
+        if (result.value.challengeToken) {
+          stashChallengeToken(result.value.id, result.value.challengeToken);
         }
         router.push(teamMatchHref(result.value.id));
         router.refresh();
@@ -200,6 +211,10 @@ export function ChallengeForm({ teams, initialTeamId }: ChallengeFormProps) {
           />
           {searching ? (
             <p className="text-sm text-zinc-500">Searching…</p>
+          ) : !shouldSearchTeams(query) ? (
+            <p className="text-sm text-zinc-500">
+              Type at least {TEAM_SEARCH_MIN_QUERY} characters to search.
+            </p>
           ) : results.length === 0 ? (
             <p className="text-sm text-zinc-500">
               No same-sport teams yet. Try another name or share a link.

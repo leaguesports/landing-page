@@ -42,6 +42,11 @@ import {
   partitionTeamMatches,
   scorecardNavigatePath,
   searchTeamsWith,
+  shouldSearchTeams,
+  CHALLENGE_TOKEN_STASH_PREFIX,
+  TEAM_SEARCH_MIN_QUERY,
+  challengeTokenStashKey,
+  toTeamMatchPreview,
   setTeamMatchLineupWith,
   startBlockedReason,
   startTeamMatchWith,
@@ -363,7 +368,28 @@ describe("team match proxy path order", () => {
     assert.equal(teamMatchJoinHref("abc"), "/team-matches/join/abc");
     assert.equal(TEAM_MATCHES_HREF, "/team-matches");
     assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1", path: "/padel/p1" }), "/padel/p1");
-    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1", path: "//evil" }), null);
+    assert.equal(
+      scorecardNavigatePath({ sport: "padel", id: "p1", path: "//evil" }),
+      "/padel/p1",
+    );
+    assert.equal(
+      scorecardNavigatePath({
+        sport: "padel",
+        id: "p1",
+        path: "/login?returnTo=/",
+      }),
+      "/padel/p1",
+    );
+    assert.equal(
+      scorecardNavigatePath({ sport: "golf", id: "g_2", path: "/\\evil" }),
+      "/golf/g_2",
+    );
+    assert.equal(
+      scorecardNavigatePath({ sport: "padel", id: "../x", path: "/padel/x" }),
+      null,
+    );
+    assert.equal(scorecardNavigatePath({ sport: "padel", id: "p1 id", path: "/padel/p1" }), null);
+    assert.equal(scorecardNavigatePath(null), null);
   });
 });
 
@@ -374,6 +400,35 @@ describe("team match parsers and datetime helpers", () => {
     assert.equal(parseTeamMatch({ ...match(), sport: "pool" }), null);
     assert.equal(parseTeamMatch({ ...match(), status: "open" }), null);
     assert.deepEqual(parseMineSnapshot({ upcoming: [match()], recent: [] }).upcoming[0]?.id, "m1");
+  });
+
+  it("drops challengeToken unless this is the POST create parse", () => {
+    const withToken = match({ challengeToken: "tok_create_1" });
+    assert.equal(parseTeamMatch(withToken)?.challengeToken, null);
+    assert.equal(
+      parseTeamMatch(withToken, { keepChallengeToken: true })?.challengeToken,
+      "tok_create_1",
+    );
+    const mine = parseMineSnapshot({ upcoming: [withToken], recent: [] });
+    assert.deepEqual(mine.upcoming[0], {
+      id: "m1",
+      sport: "padel",
+      status: "pending",
+      startsAt: null,
+      homeName: "Sunday Smash",
+      awayName: "Night Walls",
+    });
+    assert.equal("challengeToken" in (mine.upcoming[0] ?? {}), false);
+    assert.equal("lineups" in (mine.upcoming[0] ?? {}), false);
+    assert.deepEqual(toTeamMatchPreview(parseTeamMatch(withToken)!).awayName, "Night Walls");
+    assert.equal(TEAM_SEARCH_MIN_QUERY, 2);
+    assert.equal(shouldSearchTeams(""), false);
+    assert.equal(shouldSearchTeams("N"), false);
+    assert.equal(shouldSearchTeams("Ni"), true);
+    assert.equal(
+      challengeTokenStashKey("m1"),
+      `${CHALLENGE_TOKEN_STASH_PREFIX}m1`,
+    );
   });
 
   it("round-trips datetime-local values", () => {
@@ -399,12 +454,18 @@ describe("team match HTTP client", () => {
             String(init?.body),
             JSON.stringify({ homeTeamId: "t-home", awayTeamId: "t-away" }),
           );
-          return new Response(JSON.stringify({ match: match() }), { status: 201 });
+          return new Response(
+            JSON.stringify({
+              match: match({ challengeToken: "tok_create_1" }),
+            }),
+            { status: 201 },
+          );
         },
         baseUrl: "https://api.example.test",
       },
     );
     assert.equal(created.ok, true);
+    if (created.ok) assert.equal(created.value.challengeToken, "tok_create_1");
 
     const joined = await joinTeamMatchWith(
       { token: "ab".repeat(16), teamId: "t-away" },
@@ -430,14 +491,21 @@ describe("team match HTTP client", () => {
       fetch: async (url) => {
         assert.equal(String(url), "https://api.example.test/api/team-matches/mine");
         return new Response(
-          JSON.stringify({ upcoming: [match()], recent: [] }),
+          JSON.stringify({
+            upcoming: [match({ challengeToken: "tok_mine" })],
+            recent: [],
+          }),
           { status: 200 },
         );
       },
       baseUrl: "https://api.example.test",
     });
     assert.equal(mine.ok, true);
-    if (mine.ok) assert.equal(mine.value.upcoming.length, 1);
+    if (mine.ok) {
+      assert.equal(mine.value.upcoming.length, 1);
+      assert.equal("challengeToken" in mine.value.upcoming[0], false);
+      assert.equal(mine.value.upcoming[0]?.homeName, "Sunday Smash");
+    }
 
     const listed = await listTeamMatchesWith("t-home", {
       fetch: async (url) => {
@@ -445,20 +513,33 @@ describe("team match HTTP client", () => {
           String(url),
           "https://api.example.test/api/teams/t-home/matches",
         );
-        return new Response(JSON.stringify({ matches: [match()] }), { status: 200 });
+        return new Response(
+          JSON.stringify({
+            matches: [match({ challengeToken: "tok_list" })],
+          }),
+          { status: 200 },
+        );
       },
       baseUrl: "https://api.example.test",
     });
     assert.equal(listed.ok, true);
+    if (listed.ok) {
+      assert.equal("challengeToken" in listed.value[0], false);
+      assert.equal(listed.value[0]?.homeName, "Sunday Smash");
+    }
 
     const detail = await getTeamMatchWith("m1", {
       fetch: async (url) => {
         assert.equal(String(url), "https://api.example.test/api/team-matches/m1");
-        return new Response(JSON.stringify({ match: match() }), { status: 200 });
+        return new Response(
+          JSON.stringify({ match: match({ challengeToken: "tok_get" }) }),
+          { status: 200 },
+        );
       },
       baseUrl: "https://api.example.test",
     });
     assert.equal(detail.ok, true);
+    if (detail.ok) assert.equal(detail.value.challengeToken, null);
 
     const forbidden = await acceptTeamMatchWith("m1", {
       fetch: async () =>
@@ -488,7 +569,7 @@ describe("team match HTTP client", () => {
     if (!conflict.ok) assert.equal(conflict.status, 409);
   });
 
-  it("PUTs lineup and POSTs start with scorecard.path", async () => {
+  it("PUTs lineup and POSTs start; navigates from sport+id not API path", async () => {
     const lineup = await setTeamMatchLineupWith(
       "m1",
       { userIds: ["u1", "u2"] },
@@ -519,9 +600,9 @@ describe("team match HTTP client", () => {
           JSON.stringify({
             match: match({
               status: "live",
-              scorecard: { sport: "padel", id: "p1", path: "/padel/p1" },
+              scorecard: { sport: "padel", id: "p1", path: "/login?returnTo=/" },
             }),
-            scorecard: { sport: "padel", id: "p1", path: "/padel/p1" },
+            scorecard: { sport: "padel", id: "p1", path: "/login?returnTo=/" },
           }),
           { status: 200 },
         );
@@ -530,7 +611,7 @@ describe("team match HTTP client", () => {
     });
     assert.equal(started.ok, true);
     if (started.ok) {
-      assert.equal(started.value.scorecard.path, "/padel/p1");
+      assert.equal(started.value.scorecard.path, "/login?returnTo=/");
       assert.equal(scorecardNavigatePath(started.value.scorecard), "/padel/p1");
     }
   });
@@ -551,5 +632,17 @@ describe("team match HTTP client", () => {
     });
     assert.equal(result.ok, true);
     if (result.ok) assert.equal(result.value[0]?.name, "Night Walls");
+
+    let searched = false;
+    const skipped = await searchTeamsWith("padel", " ", {
+      fetch: async () => {
+        searched = true;
+        return new Response("{}", { status: 200 });
+      },
+      baseUrl: "https://api.example.test",
+    });
+    assert.equal(skipped.ok, true);
+    if (skipped.ok) assert.deepEqual(skipped.value, []);
+    assert.equal(searched, false);
   });
 });

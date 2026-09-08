@@ -3,7 +3,7 @@ import {
   canCreateChallenge,
   partitionTeamMatches,
   teamMatchNewHref,
-  type PublicTeamMatch,
+  type TeamMatchPreview,
 } from "@/lib/team-matches/team-matches";
 import type { PublicTeam } from "@/lib/teams/teams";
 import { TEAM_TOURNAMENTS_COMING_LATER } from "@/lib/teams/teams";
@@ -11,7 +11,7 @@ import Link from "next/link";
 
 type TeamMatchesSectionProps = {
   team: PublicTeam;
-  matches: PublicTeamMatch[];
+  matches: TeamMatchPreview[];
 };
 
 export function TeamMatchesSection({ team, matches }: TeamMatchesSectionProps) {

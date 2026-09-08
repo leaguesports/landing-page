@@ -1,10 +1,15 @@
 import { TeamMatchDetail } from "@/components/team-matches/TeamMatchDetail";
-import { TEAM_MATCHES_HREF, getTeamMatch } from "@/lib/team-matches/team-matches";
-import { getTeam } from "@/lib/teams/teams";
-import { isDartsVenue, toDartsVenueOption } from "@/lib/darts/venue-options";
-import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
-import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
-import { searchVenues } from "@/services/venues";
+import { isDartsSportLabel } from "@/lib/darts/venue-options";
+import { hasPlayableGolfCourse } from "@/lib/golf/course";
+import { isPadelSportLabel } from "@/lib/padel/venue-options";
+import {
+  TEAM_MATCH_VENUE_LIMIT,
+  TEAM_MATCHES_HREF,
+  getTeamMatch,
+  type PublicUser,
+} from "@/lib/team-matches/team-matches";
+import { getTeam, type PublicTeam } from "@/lib/teams/teams";
+import { searchVenues, type Venue } from "@/services/venues";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -13,41 +18,56 @@ type TeamMatchPageProps = {
   params: Promise<{ id: string }>;
 };
 
+function venueSportLabels(venue: Venue): string[] {
+  const labels = (venue.sports ?? []).flatMap((sport) => [
+    sport.name,
+    sport.slug ?? "",
+  ]);
+  return [...new Set(labels.map((s) => s.trim().toLowerCase()).filter(Boolean))];
+}
+
+function activeMembers(team: PublicTeam | null): PublicUser[] {
+  if (!team) return [];
+  return team.members
+    .filter((member) => member.status === "active")
+    .map((member) => ({
+      id: member.id,
+      displayName: member.displayName,
+      handle: member.handle,
+      avatarUrl: member.avatarUrl,
+    }));
+}
+
+async function venuesForSport(
+  sport: string,
+): Promise<Array<{ id: string; name: string }>> {
+  const venues = await searchVenues({ intent: "play", sportSlug: sport }).catch(
+    () => [],
+  );
+  const filtered = venues.filter((venue) => {
+    if (sport === "golf") return hasPlayableGolfCourse(venue.golfCourse);
+    const labels = venueSportLabels(venue);
+    if (sport === "darts") return labels.some(isDartsSportLabel);
+    return labels.some(isPadelSportLabel);
+  });
+  return filtered.slice(0, TEAM_MATCH_VENUE_LIMIT).map((venue) => ({
+    id: venue._id,
+    name: venue.name,
+  }));
+}
+
 export async function generateMetadata({
   params,
 }: TeamMatchPageProps): Promise<Metadata> {
   const { id } = await params;
   const cookie = (await cookies()).toString();
   const match = await getTeamMatch(id, { cookie });
-  if (!match) {
-    return { title: "Team match" };
-  }
   return {
-    title: `${match.homeTeam.name} vs ${match.awayTeam?.name ?? "opponent"}`,
+    title: match
+      ? `${match.homeTeam.name} vs ${match.awayTeam?.name ?? "opponent"}`
+      : "Team match",
     robots: { index: false, follow: false },
   };
-}
-
-async function venuesForSport(sport: string): Promise<Array<{ id: string; name: string }>> {
-  const venues = await searchVenues({ intent: "play", sportSlug: sport }).catch(
-    () => [],
-  );
-  if (sport === "golf") {
-    return venues
-      .map(toGolfVenueOption)
-      .filter(isGolfVenue)
-      .map((venue) => ({ id: venue.id, name: venue.name }));
-  }
-  if (sport === "darts") {
-    return venues
-      .map(toDartsVenueOption)
-      .filter(isDartsVenue)
-      .map((venue) => ({ id: venue.id, name: venue.name }));
-  }
-  return venues
-    .map(toVenueOption)
-    .filter(isPadelVenue)
-    .map((venue) => ({ id: venue.id, name: venue.name }));
 }
 
 export default async function TeamMatchPage({ params }: TeamMatchPageProps) {
@@ -82,7 +102,9 @@ export default async function TeamMatchPage({ params }: TeamMatchPageProps) {
 
   const [homeTeam, awayTeam, venues] = await Promise.all([
     getTeam(match.homeTeam.id, { cookie }),
-    match.awayTeam ? getTeam(match.awayTeam.id, { cookie }) : Promise.resolve(null),
+    match.awayTeam
+      ? getTeam(match.awayTeam.id, { cookie })
+      : Promise.resolve(null),
     venuesForSport(match.sport),
   ]);
 
@@ -98,8 +120,8 @@ export default async function TeamMatchPage({ params }: TeamMatchPageProps) {
         <div className="mt-6">
           <TeamMatchDetail
             match={match}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
+            homeMembers={activeMembers(homeTeam)}
+            awayMembers={activeMembers(awayTeam)}
             venues={venues}
           />
         </div>

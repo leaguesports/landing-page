@@ -34,6 +34,13 @@ export const LINEUP_RULES: Record<
 export const TEAM_MATCHES_HREF = "/team-matches" as const;
 export const TEAM_MATCHES_NEW_HREF = "/team-matches/new" as const;
 
+/** Opponent search is a 1-char `contains` on the API — never fire with empty/`q` < 2. */
+export const TEAM_SEARCH_MIN_QUERY = 2;
+export const TEAM_MATCH_VENUE_LIMIT = 24;
+export const CHALLENGE_TOKEN_STASH_PREFIX = "ls_team_match_challenge:" as const;
+const SCORECARD_ID_RE = /^[A-Za-z0-9_-]+$/;
+const STASHED_CHALLENGE_TOKEN_RE = /^[A-Za-z0-9_-]{8,256}$/;
+
 export type PublicUser = {
   id: string;
   displayName: string;
@@ -79,9 +86,24 @@ export type PublicTeamMatch = {
   viewer: PublicTeamMatchViewer;
 };
 
+/** List/hub/profile row — no tokens, lineups, or scorecard ids. */
+export type TeamMatchPreview = {
+  id: string;
+  sport: TeamMatchSport;
+  status: TeamMatchStatus;
+  startsAt: string | null;
+  homeName: string;
+  awayName: string | null;
+};
+
 export type TeamMatchesMineSnapshot = {
-  upcoming: PublicTeamMatch[];
-  recent: PublicTeamMatch[];
+  upcoming: TeamMatchPreview[];
+  recent: TeamMatchPreview[];
+};
+
+export type ParseTeamMatchOptions = {
+  /** Only the POST create response may keep the captain challenge token. */
+  keepChallengeToken?: boolean;
 };
 
 export type CreateTeamMatchInput = {
@@ -247,9 +269,59 @@ export function formatLineupRule(sport: TeamMatchSport): string {
   return `${rule.min}–${rule.max} per side, same size`;
 }
 
-export function formatTeamMatchVersus(match: PublicTeamMatch): string {
-  const away = match.awayTeam?.name.trim() || "Open challenge";
-  return `${match.homeTeam.name} vs ${away}`;
+export function formatTeamMatchVersus(
+  match: PublicTeamMatch | TeamMatchPreview,
+): string {
+  const home =
+    "homeName" in match ? match.homeName : match.homeTeam.name;
+  const awayRaw =
+    "homeName" in match ? match.awayName : match.awayTeam?.name;
+  const away = awayRaw?.trim() || "Open challenge";
+  return `${home} vs ${away}`;
+}
+
+export function shouldSearchTeams(query: string): boolean {
+  return query.trim().length >= TEAM_SEARCH_MIN_QUERY;
+}
+
+export function toTeamMatchPreview(match: PublicTeamMatch): TeamMatchPreview {
+  return {
+    id: match.id,
+    sport: match.sport,
+    status: match.status,
+    startsAt: match.startsAt,
+    homeName: match.homeTeam.name,
+    awayName: match.awayTeam?.name ?? null,
+  };
+}
+
+export function challengeTokenStashKey(matchId: string): string {
+  return `${CHALLENGE_TOKEN_STASH_PREFIX}${matchId}`;
+}
+
+export function stashChallengeToken(matchId: string, token: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  const id = matchId.trim();
+  const value = token.trim();
+  if (!id || !STASHED_CHALLENGE_TOKEN_RE.test(value)) return;
+  try {
+    sessionStorage.setItem(challengeTokenStashKey(id), value);
+  } catch {
+    // quota / private mode
+  }
+}
+
+export function readStashedChallengeToken(matchId: string): string | null {
+  if (typeof sessionStorage === "undefined") return null;
+  const id = matchId.trim();
+  if (!id) return null;
+  try {
+    const value = sessionStorage.getItem(challengeTokenStashKey(id));
+    if (!value || !STASHED_CHALLENGE_TOKEN_RE.test(value)) return null;
+    return value;
+  } catch {
+    return null;
+  }
 }
 
 export function isUpcomingStatus(status: TeamMatchStatus): boolean {
@@ -266,12 +338,14 @@ export function isTerminalStatus(status: TeamMatchStatus): boolean {
   );
 }
 
-export function partitionTeamMatches(matches: readonly PublicTeamMatch[]): {
-  upcoming: PublicTeamMatch[];
-  recent: PublicTeamMatch[];
+export function partitionTeamMatches<T extends { status: TeamMatchStatus }>(
+  matches: readonly T[],
+): {
+  upcoming: T[];
+  recent: T[];
 } {
-  const upcoming: PublicTeamMatch[] = [];
-  const recent: PublicTeamMatch[] = [];
+  const upcoming: T[] = [];
+  const recent: T[] = [];
   for (const match of matches) {
     if (isUpcomingStatus(match.status)) upcoming.push(match);
     else recent.push(match);
@@ -405,9 +479,10 @@ export function viewerTeamId(match: PublicTeamMatch): string | null {
 export function scorecardNavigatePath(
   scorecard: PublicScorecard | null,
 ): string | null {
-  const path = scorecard?.path.trim() ?? "";
-  if (!path.startsWith("/") || path.startsWith("//")) return null;
-  return path;
+  if (!scorecard) return null;
+  const id = scorecard.id.trim();
+  if (!SCORECARD_ID_RE.test(id)) return null;
+  return `/${scorecard.sport}/${id}`;
 }
 
 export function isoToDatetimeLocal(iso: string | null | undefined): string {
@@ -581,7 +656,10 @@ function parseUserList(value: unknown): PublicUser[] | null {
   return users.length === value.length ? users : null;
 }
 
-export function parseTeamMatch(value: unknown): PublicTeamMatch | null {
+export function parseTeamMatch(
+  value: unknown,
+  options: ParseTeamMatchOptions = {},
+): PublicTeamMatch | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
   const homeTeam = parseTeamRef(row.homeTeam);
@@ -618,6 +696,9 @@ export function parseTeamMatch(value: unknown): PublicTeamMatch | null {
     if (!scorecard) return null;
   }
 
+  const rawToken =
+    typeof row.challengeToken === "string" ? row.challengeToken : null;
+
   return {
     id: row.id,
     sport: row.sport,
@@ -626,8 +707,7 @@ export function parseTeamMatch(value: unknown): PublicTeamMatch | null {
     awayTeam,
     venueCmsId: typeof row.venueCmsId === "string" ? row.venueCmsId : null,
     startsAt: typeof row.startsAt === "string" ? row.startsAt : null,
-    challengeToken:
-      typeof row.challengeToken === "string" ? row.challengeToken : null,
+    challengeToken: options.keepChallengeToken ? rawToken : null,
     lineups: { home, away },
     scorecard,
     winnerTeamId: typeof row.winnerTeamId === "string" ? row.winnerTeamId : null,
@@ -641,7 +721,7 @@ export function parseTeamMatch(value: unknown): PublicTeamMatch | null {
 export function parseTeamMatchList(value: unknown): PublicTeamMatch[] {
   if (!Array.isArray(value)) return [];
   return value
-    .map(parseTeamMatch)
+    .map((item) => parseTeamMatch(item))
     .filter((item): item is PublicTeamMatch => !!item);
 }
 
@@ -651,8 +731,8 @@ export function parseMineSnapshot(body: unknown): TeamMatchesMineSnapshot {
   }
   const row = body as Record<string, unknown>;
   return {
-    upcoming: parseTeamMatchList(row.upcoming),
-    recent: parseTeamMatchList(row.recent),
+    upcoming: parseTeamMatchList(row.upcoming).map(toTeamMatchPreview),
+    recent: parseTeamMatchList(row.recent).map(toTeamMatchPreview),
   };
 }
 
@@ -660,9 +740,12 @@ export function emptyMineSnapshot(): TeamMatchesMineSnapshot {
   return { upcoming: [], recent: [] };
 }
 
-function matchFromBody(body: unknown): PublicTeamMatch | null {
+function matchFromBody(
+  body: unknown,
+  options: ParseTeamMatchOptions = {},
+): PublicTeamMatch | null {
   if (!body || typeof body !== "object") return null;
-  return parseTeamMatch((body as { match?: unknown }).match);
+  return parseTeamMatch((body as { match?: unknown }).match, options);
 }
 
 function browserBaseUrl(): string {
@@ -696,6 +779,7 @@ function errorFromBody(body: unknown, fallback: string): string {
 async function readMatchResponse(
   res: Response,
   fallback: string,
+  options: ParseTeamMatchOptions = {},
 ): Promise<TeamMatchesResult<PublicTeamMatch>> {
   const body = await readJson(res);
   if (!res.ok) {
@@ -705,7 +789,7 @@ async function readMatchResponse(
       status: res.status,
     };
   }
-  const match = matchFromBody(body);
+  const match = matchFromBody(body, options);
   if (!match) {
     return { ok: false, error: "Unexpected team match response", status: 500 };
   }
@@ -731,7 +815,9 @@ export async function createTeamMatchWith(
       body: JSON.stringify(built.payload),
       signal: deps.signal,
     });
-    return readMatchResponse(res, "Could not create challenge");
+    return readMatchResponse(res, "Could not create challenge", {
+      keepChallengeToken: true,
+    });
   } catch {
     return { ok: false, error: "Could not reach team matches API", status: 0 };
   }
@@ -958,7 +1044,7 @@ export async function startTeamMatchWith(
 export async function listTeamMatchesWith(
   teamId: string,
   deps: TeamMatchesDeps,
-): Promise<TeamMatchesResult<PublicTeamMatch[]>> {
+): Promise<TeamMatchesResult<TeamMatchPreview[]>> {
   const trimmed = teamId.trim();
   if (!trimmed || !deps.baseUrl) {
     return { ok: false, error: "Missing team id", status: 400 };
@@ -988,7 +1074,7 @@ export async function listTeamMatchesWith(
       body && typeof body === "object"
         ? (body as { matches?: unknown }).matches
         : null,
-    );
+    ).map(toTeamMatchPreview);
     return { ok: true, value: matches };
   } catch {
     return { ok: false, error: "Could not reach team matches API", status: 0 };
@@ -1031,6 +1117,9 @@ export async function searchTeamsWith(
 ): Promise<TeamMatchesResult<PublicTeamRef[]>> {
   const trimmedSport = sport.trim();
   if (!trimmedSport) return { ok: false, error: "Sport is required", status: 400 };
+  if (!shouldSearchTeams(query)) {
+    return { ok: true, value: [] };
+  }
   if (!deps.baseUrl) {
     return { ok: false, error: "API is not configured", status: 0 };
   }
@@ -1080,7 +1169,7 @@ function browserDeps(timeoutMs: number, cookie?: string): TeamMatchesDeps {
 export async function listTeamMatches(
   teamId: string,
   options: { cookie?: string } = {},
-): Promise<PublicTeamMatch[]> {
+): Promise<TeamMatchPreview[]> {
   if (!isApiConfigured()) return [];
   const result = await listTeamMatchesWith(teamId, browserDeps(8000, options.cookie));
   return result.ok ? result.value : [];

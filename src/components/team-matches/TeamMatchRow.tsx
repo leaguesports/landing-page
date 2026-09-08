@@ -3,14 +3,14 @@ import {
   formatTeamMatchStatus,
   formatTeamMatchVersus,
   teamMatchHref,
-  type PublicTeamMatch,
+  type TeamMatchPreview,
 } from "@/lib/team-matches/team-matches";
 import { formatHubWhen } from "@/lib/sports/hub-feed";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 type TeamMatchRowProps = {
-  match: PublicTeamMatch;
+  match: TeamMatchPreview;
   now?: Date;
 };
 
