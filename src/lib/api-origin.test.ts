@@ -170,6 +170,11 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim/extra"), false);
+    assert.equal(shouldProxyApiPath("/api/venues/the-local/screenings"), false);
+    assert.equal(
+      shouldProxyApiPath("/api/venues/the-local/screenings/"),
+      false,
+    );
   });
 
   it("does not treat non-api paths as proxy targets", () => {
@@ -369,7 +374,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/[^/]+/screenings(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -390,7 +395,7 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/[^/]+/screenings(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
         assert.equal(
