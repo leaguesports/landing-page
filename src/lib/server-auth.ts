@@ -3,10 +3,12 @@ import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
 import type { AuthState, AuthUser } from "@/lib/api-client";
 
 /**
- * Server-side session check for RSC (home dashboard gate).
- * Forwards the request cookie jar to Railway `/api/auth/me`.
+ * Forward a Cookie header to Railway `/api/auth/me`.
+ * Used by RSC (`getServerAuthState`) and Next API routes that stay on this app.
  */
-export async function getServerAuthState(): Promise<AuthState> {
+export async function getAuthStateFromCookieHeader(
+  cookieHeader: string | null | undefined,
+): Promise<AuthState> {
   if (!isApiConfigured()) {
     return {
       isAuthenticated: false,
@@ -20,9 +22,9 @@ export async function getServerAuthState(): Promise<AuthState> {
     return { isAuthenticated: false, user: null, error: null };
   }
 
+  const cookie = (cookieHeader ?? "").trim();
+
   try {
-    const cookieStore = await cookies();
-    const cookie = cookieStore.toString();
     const res = await fetch(`${origin}/api/auth/me`, {
       headers: cookie ? { cookie } : {},
       cache: "no-store",
@@ -56,4 +58,13 @@ export async function getServerAuthState(): Promise<AuthState> {
       error: "Could not reach the API",
     };
   }
+}
+
+/**
+ * Server-side session check for RSC (home dashboard gate).
+ * Forwards the request cookie jar to Railway `/api/auth/me`.
+ */
+export async function getServerAuthState(): Promise<AuthState> {
+  const cookieStore = await cookies();
+  return getAuthStateFromCookieHeader(cookieStore.toString());
 }
