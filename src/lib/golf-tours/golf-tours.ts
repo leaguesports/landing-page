@@ -345,7 +345,7 @@ export function isGolfTourFormat(value: unknown): value is GolfTourFormat {
   );
 }
 
-export function isIsoDay(value: unknown): value is string {
+export function isIsoDay(value: unknown): boolean {
   if (typeof value !== "string") return false;
   const trimmed = value.trim();
   const match = trimmed.match(ISO_DAY);
