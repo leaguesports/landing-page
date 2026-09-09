@@ -14,9 +14,16 @@ import {
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
   HUB_LOBBY_HREF,
+  HUB_ORGANISE_ALIAS_HREF,
   HUB_ORGANISE_GOLF_HREF,
+  HUB_ORGANISE_HUB_HREF,
+  HUB_ORGANISE_HUB_SUBTITLE,
+  HUB_ORGANISE_HUB_TITLE,
   HUB_ORGANISE_PADEL_HREF,
+  HUB_ORGANISE_ROW_IDS,
+  HUB_ORGANISE_ROWS,
   HUB_ORGANISED_PREVIEW_LIMIT,
+  HUB_PLAY_DEEP_LINK_REDIRECTS,
   HUB_PEOPLE_BLOCKS,
   HUB_TEAMS_HREF,
   HUB_TEAMS_NEW_HREF,
@@ -48,7 +55,11 @@ import {
   hubLobbyHref,
   hubOrganisedGameHref,
   hubOrganisedGameJoinHref,
+  hubOrganiseHubHref,
+  hubOrganiseRowBadge,
   hubOwnsRecentLocks,
+  hubPlayVerbHref,
+  hubPlayVerbOpensModal,
   hubPlayCaptureHref,
   hubPlayContinueHref,
   hubPlayEmptyNearbyHref,
@@ -67,6 +78,7 @@ import {
   hubPlayableSports,
   isHubPlayableSport,
   isHubPlayVerbId,
+  pendingLobbyProposalCount,
   hubSearchHref,
   hubShowsSportControl,
   hubShowsStartActions,
@@ -77,7 +89,7 @@ import {
 } from "./hub-ia.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
 
-describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
+describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192)", () => {
   it("exposes exactly four bottom-nav tabs in locked order", () => {
     assert.deepEqual(HUB_TAB_IDS, ["home", "play", "people", "you"]);
     assert.deepEqual(
@@ -183,26 +195,90 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157)", () => {
     assert.deepEqual(HUB_PLAY_VERB_IDS, ["start", "capture", "organise"]);
     assert.deepEqual(
       HUB_PLAY_VERBS.map((verb) => verb.label),
-      ["Start game", "Capture results", "Organise game"],
+      ["Start game", "Capture results", "Organise"],
     );
+    assert.equal(HUB_PLAY_VERBS.length, 3);
     assert.equal(isHubPlayVerbId("start"), true);
     assert.equal(isHubPlayVerbId("capture"), true);
     assert.equal(isHubPlayVerbId("organise"), true);
     assert.equal(isHubPlayVerbId("quick"), false);
+    assert.equal(isHubPlayVerbId("lobby"), false);
     assert.doesNotMatch(
       HUB_PLAY_VERBS.map((verb) => verb.label).join(" "),
-      /quick play/i,
+      /quick play|lobby|team matches|tournaments/i,
     );
+    assert.equal(hubPlayVerbHref(HUB_PLAY_VERBS[0]), null);
+    assert.equal(hubPlayVerbOpensModal(HUB_PLAY_VERBS[0]), true);
+    assert.equal(hubPlayVerbHref(HUB_PLAY_VERBS[2]), HUB_ORGANISE_HUB_HREF);
+    assert.equal(hubPlayVerbOpensModal(HUB_PLAY_VERBS[2]), false);
     assert.equal(HUB_QUICK_START.href, HUB_QUICK_START_HREF);
     assert.match(HUB_QUICK_START.label, /quick start/i);
     assert.match(HUB_QUICK_START.description, /location/i);
+  });
+
+  it("puts Lobby, Team matches, and Tournaments under the Organise hub", () => {
+    assert.equal(HUB_ORGANISE_HUB_HREF, "/play/organise");
+    assert.equal(HUB_ORGANISE_ALIAS_HREF, "/organise");
+    assert.equal(HUB_ORGANISE_HUB_TITLE, "Organise");
+    assert.equal(
+      HUB_ORGANISE_HUB_SUBTITLE,
+      "Find players, team fixtures, tournaments.",
+    );
+    assert.equal(hubOrganiseHubHref(), HUB_ORGANISE_HUB_HREF);
+    assert.deepEqual(HUB_ORGANISE_ROW_IDS, [
+      "game",
+      "lobby",
+      "team-matches",
+      "tournaments",
+    ]);
+    assert.deepEqual(
+      HUB_ORGANISE_ROWS.map((row) => [row.id, row.title, row.href]),
+      [
+        ["game", "Organise a game", null],
+        ["lobby", "Lobby", HUB_LOBBY_HREF],
+        ["team-matches", "Team matches", HUB_TEAM_MATCHES_HREF],
+        ["tournaments", "Tournaments", HUB_TOURNAMENTS_HREF],
+      ],
+    );
+    assert.deepEqual(
+      HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => [row.source, row.destination]),
+      [
+        ["/organise", "/play/organise"],
+        ["/play/lobby", "/lobby"],
+        ["/play/team-matches", "/team-matches"],
+        ["/play/team-matches/:path*", "/team-matches/:path*"],
+        ["/play/tournaments", "/tournaments"],
+        ["/play/tournaments/:path*", "/tournaments/:path*"],
+      ],
+    );
+    assert.equal(pendingLobbyProposalCount([]), 0);
+    assert.equal(
+      pendingLobbyProposalCount([
+        { status: "pending" },
+        { status: "accepted" },
+        { status: "pending" },
+      ]),
+      2,
+    );
+    assert.equal(hubOrganiseRowBadge("game"), null);
+    assert.equal(hubOrganiseRowBadge("lobby", { lobby: 0 }), null);
+    assert.equal(hubOrganiseRowBadge("lobby", { lobby: 1 }), "1 propose");
+    assert.equal(hubOrganiseRowBadge("lobby", { lobby: 3 }), "3 proposes");
+    assert.equal(
+      hubOrganiseRowBadge("team-matches", { teamMatches: 1 }),
+      "1 upcoming",
+    );
+    assert.equal(
+      hubOrganiseRowBadge("tournaments", { tournaments: 4 }),
+      "4 upcoming",
+    );
   });
 
   it("picks the sport in a modal — not inline game blocks", () => {
     assert.equal(HUB_PLAY_SPORT_PICK, "modal");
     assert.equal(hubPlayModalTitle("start"), "Start game");
     assert.equal(hubPlayModalTitle("capture"), "Capture results");
-    assert.equal(hubPlayModalTitle("organise"), "Organise game");
+    assert.equal(hubPlayModalTitle("organise"), "Organise a game");
     assert.match(hubPlayModalDescription("start"), /live scorecard/i);
     assert.match(hubPlayModalDescription("capture"), /finished score/i);
     assert.match(hubPlayModalDescription("organise"), /venue/i);

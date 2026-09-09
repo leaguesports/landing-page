@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { getApiProxyRewrites } from "./src/lib/api-origin";
 import { getSecurityHeaders } from "./src/lib/security-headers";
+import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./src/lib/sports/hub-redirects";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -58,11 +59,11 @@ const nextConfig: NextConfig = {
         destination: "/athletes",
         permanent: true,
       },
-      {
-        source: "/play/lobby",
-        destination: "/lobby",
+      ...HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => ({
+        source: row.source,
+        destination: row.destination,
         permanent: false,
-      },
+      })),
     ];
   },
   async rewrites() {
