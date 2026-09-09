@@ -38,9 +38,10 @@ export default async function GolfToursPage() {
             Camps. Courses. Fourballs.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-400">
-            Multi-day friend events across golf courses. Start each fourball on
-            the live scorecard. The leaderboard is average gross on locked
-            cards — no scramble or handicaps in v1.
+            Multi-day friend events across golf courses. Add a roster and
+            standing fourballs once, then start each group on the live
+            scorecard. The leaderboard is average gross on locked, non-sit-out
+            cards.
           </p>
           <Link
             href={GOLF_TOURS_NEW_HREF}

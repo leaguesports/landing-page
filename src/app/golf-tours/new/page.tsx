@@ -6,7 +6,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "New golf tour",
   description:
-    "Create a multi-day golf tour with Camp A and Camp B, then add rounds and fourballs.",
+    "Create a multi-day golf tour with Camp A and Camp B, then add a roster, standing fourballs, and rounds.",
   robots: { index: false, follow: false },
 };
 
@@ -29,7 +29,7 @@ export default function NewGolfTourPage() {
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
             Name the event and pick dates. Two camps (teams) are created for
-            you — rename them, add courses, then add fourballs.
+            you — add a roster, standing fourballs, then rounds.
           </p>
         </header>
         <CreateGolfTourForm />

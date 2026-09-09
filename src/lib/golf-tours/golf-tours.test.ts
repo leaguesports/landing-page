@@ -3,45 +3,67 @@ import { describe, it } from "node:test";
 
 import {
   GOLF_TOUR_DEFAULT_CAMP_NAMES,
+  GOLF_TOUR_HOW_IT_WORKS_KEY,
   GOLF_TOUR_PROXY_SOURCES,
   GOLF_TOURS_HREF,
   GOLF_TOURS_NEW_HREF,
   addDaysIso,
   addGolfTourCampWith,
   addGolfTourFourballWith,
+  addGolfTourRosterMemberWith,
   addGolfTourRoundWith,
+  addGolfTourStandingFourballWith,
+  absoluteAppUrl,
   buildCreateGolfTourPayload,
+  buildPlayerSitOutsPayload,
+  buildStandingFourballPayload,
   buildStartFourballPayload,
   canMutateTour,
   canStartFourball,
   compareIsoDays,
+  copyGolfTourRoundFromWith,
+  dismissGolfTourHowItWorks,
   formatAvgGross,
   formatIsoDayLabel,
+  fourballSharePath,
   fourballStartNavigateHref,
   golfRoundScorecardHref,
+  golfTourCampRosterMemberUrl,
+  golfTourCampRosterUrl,
   golfTourCampUrl,
   golfTourCompleteUrl,
   golfTourFourballStartUrl,
   golfTourHref,
   golfTourHostNextStep,
+  golfTourHostNextStepAction,
   golfTourLeaderboardUrl,
   golfTourMineUrl,
+  golfTourRoundCopyFromUrl,
   golfTourRoundFourballsUrl,
+  golfTourRoundPrepareUrl,
+  golfTourStandingFourballsUrl,
   golfTourUrl,
   golfToursRootUrl,
+  isGolfTourHowItWorksDismissed,
   isHost,
   isIsoDay,
   nextCampPlaceholder,
   parseGolfTour,
   parseGolfTourCamp,
+  parseGolfTourFourball,
   parseGolfTourLeaderboard,
   parseGolfTourRound,
   parseIsoDay,
   parseLeaderboardPlayer,
   partitionMineTours,
+  prepareGolfTourRoundWith,
+  previousRound,
+  roundNeedsPrepare,
   shouldShowHostRoundComposer,
   startGolfTourFourballWith,
   todayIsoDay,
+  tourRosterCount,
+  updateGolfTourFourballWith,
   type PublicGolfTour,
   type PublicGolfTourFourball,
   type PublicGolfTourSummary,
@@ -76,12 +98,15 @@ function fourball(
     status: "pending",
     golfRoundId: null,
     path: null,
+    standingFourballId: null,
+    sitOut: false,
     players: [
       {
         slot: 1,
         userId: "player-1",
         displayName: "Alex",
         isGuest: false,
+        sitOut: false,
       },
     ],
     ...overrides,
@@ -98,8 +123,8 @@ function tour(overrides: Partial<PublicGolfTour> = {}): PublicGolfTour {
     hostUserId: "host-1",
     viewer: { role: "host" },
     camps: [
-      { id: "camp-a", name: "Camp A", color: null, sortOrder: 0 },
-      { id: "camp-b", name: "Camp B", color: null, sortOrder: 1 },
+      { id: "camp-a", name: "Camp A", color: null, sortOrder: 0, roster: [] },
+      { id: "camp-b", name: "Camp B", color: null, sortOrder: 1, roster: [] },
     ],
     rounds: [
       {
@@ -110,6 +135,7 @@ function tour(overrides: Partial<PublicGolfTour> = {}): PublicGolfTour {
         format: "stroke",
       },
     ],
+    standingFourballs: [],
     fourballs: [fourball()],
     createdAt: "2026-09-09T10:00:00.000Z",
     updatedAt: "2026-09-09T10:00:00.000Z",
@@ -163,7 +189,7 @@ describe("golf tour date YYYY-MM-DD helpers", () => {
 });
 
 describe("golf tour proxy path order", () => {
-  it("lists mine before :id, then nested camps/rounds/fourballs/leaderboard", () => {
+  it("lists mine before :id, nests roster under camps, standing before rounds, prepare+copy-from under rounds", () => {
     const mineIdx = GOLF_TOUR_PROXY_SOURCES.indexOf("/api/golf-tours/mine");
     const idIdx = GOLF_TOUR_PROXY_SOURCES.indexOf("/api/golf-tours/:id");
     assert.ok(mineIdx >= 0 && mineIdx < idIdx);
@@ -174,13 +200,41 @@ describe("golf tour proxy path order", () => {
       "/api/golf-tours/:id/complete",
       "/api/golf-tours/:id/camps",
       "/api/golf-tours/:id/camps/:campId",
+      "/api/golf-tours/:id/camps/:campId/roster",
+      "/api/golf-tours/:id/camps/:campId/roster/:memberId",
+      "/api/golf-tours/:id/standing-fourballs",
+      "/api/golf-tours/:id/standing-fourballs/:templateId",
       "/api/golf-tours/:id/rounds",
       "/api/golf-tours/:id/rounds/:roundId",
+      "/api/golf-tours/:id/rounds/:roundId/prepare",
+      "/api/golf-tours/:id/rounds/:roundId/copy-from/:sourceRoundId",
       "/api/golf-tours/:id/rounds/:roundId/fourballs",
       "/api/golf-tours/:id/fourballs/:fourballId",
       "/api/golf-tours/:id/fourballs/:fourballId/start",
       "/api/golf-tours/:id/leaderboard",
     ]);
+    const campIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/camps/:campId",
+    );
+    const rosterIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/camps/:campId/roster",
+    );
+    const standingIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/standing-fourballs",
+    );
+    const roundsIdx = GOLF_TOUR_PROXY_SOURCES.indexOf("/api/golf-tours/:id/rounds");
+    const roundIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/rounds/:roundId",
+    );
+    const prepareIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/rounds/:roundId/prepare",
+    );
+    const copyIdx = GOLF_TOUR_PROXY_SOURCES.indexOf(
+      "/api/golf-tours/:id/rounds/:roundId/copy-from/:sourceRoundId",
+    );
+    assert.ok(campIdx < rosterIdx);
+    assert.ok(standingIdx < roundsIdx);
+    assert.ok(roundIdx < prepareIdx && prepareIdx < copyIdx);
     const origin = "https://api.example.test";
     assert.equal(golfToursRootUrl(origin), "https://api.example.test/api/golf-tours");
     assert.equal(
@@ -198,6 +252,26 @@ describe("golf tour proxy path order", () => {
     assert.equal(
       golfTourCampUrl(origin, "t1", "c1"),
       "https://api.example.test/api/golf-tours/t1/camps/c1",
+    );
+    assert.equal(
+      golfTourCampRosterUrl(origin, "t1", "c1"),
+      "https://api.example.test/api/golf-tours/t1/camps/c1/roster",
+    );
+    assert.equal(
+      golfTourCampRosterMemberUrl(origin, "t1", "c1", "m1"),
+      "https://api.example.test/api/golf-tours/t1/camps/c1/roster/m1",
+    );
+    assert.equal(
+      golfTourStandingFourballsUrl(origin, "t1"),
+      "https://api.example.test/api/golf-tours/t1/standing-fourballs",
+    );
+    assert.equal(
+      golfTourRoundPrepareUrl(origin, "t1", "r1"),
+      "https://api.example.test/api/golf-tours/t1/rounds/r1/prepare",
+    );
+    assert.equal(
+      golfTourRoundCopyFromUrl(origin, "t1", "r2", "r1"),
+      "https://api.example.test/api/golf-tours/t1/rounds/r2/copy-from/r1",
     );
     assert.equal(
       golfTourRoundFourballsUrl(origin, "t1", "r1"),
@@ -441,21 +515,24 @@ describe("golf tour mine lists and parsers", () => {
 });
 
 describe("golf tour host setup path", () => {
-  it("keeps host controls available and names the next empty-state step", () => {
-    const draft = tour({
+  it("names the next empty-state step roster → standing → round → play", () => {
+    const empty = tour({
       rounds: [],
       fourballs: [],
+      standingFourballs: [],
     });
-    assert.equal(golfTourHostNextStep(draft), "rounds");
-    assert.equal(shouldShowHostRoundComposer(true, 0, false), true);
-    assert.equal(shouldShowHostRoundComposer(true, 1, false), false);
-    assert.equal(shouldShowHostRoundComposer(true, 1, true), true);
-    assert.equal(shouldShowHostRoundComposer(false, 0, true), false);
-    assert.equal(nextCampPlaceholder(draft.camps), "Camp C");
-    assert.equal(canMutateTour(draft), true);
+    assert.equal(golfTourHostNextStep(empty), "roster");
+    assert.equal(golfTourHostNextStepAction("roster"), "Add players");
+    assert.equal(tourRosterCount(empty), 0);
+    assert.equal(shouldShowHostRoundComposer(true, false, "roster"), false);
+    assert.equal(shouldShowHostRoundComposer(true, true, "roster"), true);
+    assert.equal(shouldShowHostRoundComposer(true, false, "rounds"), true);
+    assert.equal(shouldShowHostRoundComposer(false, true, "rounds"), false);
+    assert.equal(nextCampPlaceholder(empty.camps), "Camp C");
+    assert.equal(canMutateTour(empty), true);
     assert.equal(
       canMutateTour({
-        ...draft,
+        ...empty,
         viewer: { role: "player" },
       }),
       false,
@@ -463,7 +540,7 @@ describe("golf tour host setup path", () => {
     assert.equal(
       canMutateTour(
         {
-          ...draft,
+          ...empty,
           viewer: { role: "player" },
         },
         "host-1",
@@ -474,14 +551,82 @@ describe("golf tour host setup path", () => {
       isHost({ viewer: { role: "player" }, hostUserId: "host-1" }, "host-1"),
       true,
     );
-    assert.equal(canMutateTour({ ...draft, status: "completed" }), false);
+    assert.equal(canMutateTour({ ...empty, status: "completed" }), false);
 
-    const withRound = tour({ fourballs: [] });
-    assert.equal(golfTourHostNextStep(withRound), "fourballs");
+    const withRoster = tour({
+      rounds: [],
+      fourballs: [],
+      standingFourballs: [],
+      camps: [
+        {
+          id: "camp-a",
+          name: "Camp A",
+          color: null,
+          sortOrder: 0,
+          roster: [
+            {
+              id: "mem-1",
+              campId: "camp-a",
+              userId: "player-1",
+              displayName: "Alex",
+              isGuest: false,
+            },
+          ],
+        },
+        { id: "camp-b", name: "Camp B", color: null, sortOrder: 1, roster: [] },
+      ],
+    });
+    assert.equal(golfTourHostNextStep(withRoster), "standing");
+    assert.equal(golfTourHostNextStepAction("standing"), "Build standing fourballs");
+
+    const withStanding = tour({
+      rounds: [],
+      fourballs: [],
+      standingFourballs: [
+        {
+          id: "st-1",
+          campId: "camp-a",
+          name: "Morning group",
+          sortOrder: 0,
+          players: [
+            {
+              slot: 1,
+              userId: "player-1",
+              displayName: "Alex",
+              isGuest: false,
+              sitOut: false,
+            },
+          ],
+        },
+      ],
+      camps: withRoster.camps,
+    });
+    assert.equal(golfTourHostNextStep(withStanding), "rounds");
+    assert.equal(golfTourHostNextStepAction("rounds"), "Add round");
+
+    const unprepared = tour({
+      fourballs: [],
+      standingFourballs: withStanding.standingFourballs,
+      camps: withRoster.camps,
+    });
+    assert.equal(golfTourHostNextStep(unprepared), "prepare");
+    assert.equal(roundNeedsPrepare(unprepared, "round-1"), true);
     assert.equal(golfTourHostNextStep(tour()), "start");
     assert.equal(
       golfTourHostNextStep(tour({ status: "completed" })),
       "done",
+    );
+    assert.equal(
+      golfTourHostNextStep(
+        tour({
+          fourballs: [fourball({ sitOut: true })],
+        }),
+      ),
+      "start",
+    );
+    assert.equal(
+      canStartFourball(tour(), fourball({ sitOut: true })),
+      false,
     );
   });
 
@@ -490,7 +635,7 @@ describe("golf tour host setup path", () => {
     const afterCamp = tour({
       camps: [
         ...tour().camps,
-        { id: "camp-c", name: "Camp C", color: null, sortOrder: 2 },
+        { id: "camp-c", name: "Camp C", color: null, sortOrder: 2, roster: [] },
       ],
     });
     const campResult = await addGolfTourCampWith(
@@ -584,6 +729,275 @@ describe("golf tour host setup path", () => {
       },
     );
     assert.equal(fourballResult.ok, true);
+  });
+});
+
+describe("golf tour v2 roster / standing / prepare / sit-out clients", () => {
+  const origin = "https://api.example.test";
+
+  it("parses roster, standing templates, sit-out, and share paths", () => {
+    const parsed = parseGolfTour(
+      tour({
+        camps: [
+          {
+            id: "camp-a",
+            name: "Camp A",
+            color: null,
+            sortOrder: 0,
+            roster: [
+              {
+                id: "mem-1",
+                campId: "camp-a",
+                userId: "player-1",
+                displayName: "Alex",
+                isGuest: false,
+              },
+            ],
+          },
+          { id: "camp-b", name: "Camp B", color: null, sortOrder: 1, roster: [] },
+        ],
+        standingFourballs: [
+          {
+            id: "st-1",
+            campId: "camp-a",
+            name: "Morning group",
+            sortOrder: 0,
+            players: [
+              {
+                slot: 1,
+                userId: "player-1",
+                displayName: "Alex",
+                isGuest: false,
+                sitOut: false,
+              },
+            ],
+          },
+        ],
+        fourballs: [
+          fourball({
+            standingFourballId: "st-1",
+            sitOut: false,
+            players: [
+              {
+                slot: 1,
+                userId: "player-1",
+                displayName: "Alex",
+                isGuest: false,
+                sitOut: true,
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    assert.ok(parsed);
+    assert.equal(parsed.camps[0]?.roster[0]?.displayName, "Alex");
+    assert.equal(parsed.standingFourballs[0]?.name, "Morning group");
+    assert.equal(parsed.fourballs[0]?.standingFourballId, "st-1");
+    assert.equal(parsed.fourballs[0]?.players[0]?.sitOut, true);
+    assert.equal(
+      parseGolfTourFourball(fourball({ sitOut: true }))?.sitOut,
+      true,
+    );
+    assert.equal(
+      parseGolfTourCamp({ id: "c1", name: "Camp A" })?.roster.length,
+      0,
+    );
+
+    const built = buildStandingFourballPayload({
+      campId: "camp-a",
+      name: " Morning group ",
+      players: [{ slot: 1, rosterMemberId: "mem-1" }],
+    });
+    assert.equal(built.ok, true);
+    if (built.ok) {
+      assert.equal(built.payload.campId, "camp-a");
+      assert.equal(built.payload.name, "Morning group");
+      assert.deepEqual(built.payload.players, [
+        { slot: 1, rosterMemberId: "mem-1" },
+      ]);
+    }
+    assert.deepEqual(
+      buildPlayerSitOutsPayload([{ slot: 2, sitOut: true }]),
+      { ok: true, playerSitOuts: [{ slot: 2, sitOut: true }] },
+    );
+    assert.equal(buildPlayerSitOutsPayload([]).ok, false);
+
+    const live = fourball({
+      status: "live",
+      golfRoundId: "round-9",
+      path: "/golf/round-9",
+    });
+    assert.equal(fourballSharePath(live), "/golf/round-9");
+    assert.equal(
+      absoluteAppUrl("/golf/round-9", "https://leaguesports.co.za"),
+      "https://leaguesports.co.za/golf/round-9",
+    );
+    assert.equal(
+      previousRound(
+        [
+          { id: "r1", date: "2026-09-12", venueCmsId: "c", label: null, format: "stroke" },
+          { id: "r2", date: "2026-09-13", venueCmsId: "c", label: null, format: "stroke" },
+        ],
+        "r2",
+      )?.id,
+      "r1",
+    );
+  });
+
+  it("posts roster, standing templates, prepare, copy-from, and sitOut shapes", async () => {
+    const rosterResult = await addGolfTourRosterMemberWith(
+      "tour-1",
+      "camp-a",
+      { displayName: "Pat", isGuest: true },
+      {
+        fetch: async (url, init) => {
+          assert.equal(String(url), `${origin}/api/golf-tours/tour-1/camps/camp-a/roster`);
+          assert.equal(init?.method, "POST");
+          assert.equal(init?.credentials, "include");
+          const body = JSON.parse(String(init?.body));
+          assert.equal(body.displayName, "Pat");
+          assert.equal(body.isGuest, true);
+          return new Response(JSON.stringify({ tour: tour() }), { status: 201 });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(rosterResult.ok, true);
+
+    const standingResult = await addGolfTourStandingFourballWith(
+      "tour-1",
+      {
+        campId: "camp-a",
+        name: "Morning group",
+        players: [{ slot: 1, rosterMemberId: "mem-1" }],
+      },
+      {
+        fetch: async (url, init) => {
+          assert.equal(
+            String(url),
+            `${origin}/api/golf-tours/tour-1/standing-fourballs`,
+          );
+          assert.equal(init?.method, "POST");
+          const body = JSON.parse(String(init?.body));
+          assert.equal(body.campId, "camp-a");
+          assert.equal(body.players[0].rosterMemberId, "mem-1");
+          return new Response(JSON.stringify({ tour: tour() }), { status: 201 });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(standingResult.ok, true);
+
+    const prepareResult = await prepareGolfTourRoundWith("tour-1", "round-1", {
+      fetch: async (url, init) => {
+        assert.equal(
+          String(url),
+          `${origin}/api/golf-tours/tour-1/rounds/round-1/prepare`,
+        );
+        assert.equal(init?.method, "POST");
+        assert.equal(init?.body, undefined);
+        return new Response(JSON.stringify({ tour: tour() }), { status: 200 });
+      },
+      baseUrl: origin,
+    });
+    assert.equal(prepareResult.ok, true);
+
+    const copyResult = await copyGolfTourRoundFromWith(
+      "tour-1",
+      "round-2",
+      "round-1",
+      {
+        fetch: async (url, init) => {
+          assert.equal(
+            String(url),
+            `${origin}/api/golf-tours/tour-1/rounds/round-2/copy-from/round-1`,
+          );
+          assert.equal(init?.method, "POST");
+          return new Response(JSON.stringify({ tour: tour() }), { status: 200 });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(copyResult.ok, true);
+
+    const sitOutResult = await updateGolfTourFourballWith(
+      "tour-1",
+      "fb-1",
+      { sitOut: true, playerSitOuts: [{ slot: 1, sitOut: true }] },
+      {
+        fetch: async (url, init) => {
+          assert.equal(
+            String(url),
+            `${origin}/api/golf-tours/tour-1/fourballs/fb-1`,
+          );
+          assert.equal(init?.method, "PATCH");
+          const body = JSON.parse(String(init?.body));
+          assert.equal(body.sitOut, true);
+          assert.deepEqual(body.playerSitOuts, [{ slot: 1, sitOut: true }]);
+          return new Response(
+            JSON.stringify({ tour: tour({ fourballs: [fourball({ sitOut: true })] }) }),
+            { status: 200 },
+          );
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(sitOutResult.ok, true);
+  });
+
+  it("dismisses first-run How it works copy once", () => {
+    const store = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+    };
+    assert.equal(isGolfTourHowItWorksDismissed(storage), false);
+    dismissGolfTourHowItWorks(storage);
+    assert.equal(isGolfTourHowItWorksDismissed(storage), true);
+    assert.equal(store.get(GOLF_TOUR_HOW_IT_WORKS_KEY), "1");
+  });
+});
+
+describe("golf tour share buttons (no naked URL-only)", () => {
+  it("uses Share buttons in hub and share control, not a naked URL as the only control", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const hub = readFileSync(
+      join(here, "../../components/golf-tours/GolfTourHub.tsx"),
+      "utf8",
+    );
+    const share = readFileSync(
+      join(here, "../../components/golf-tours/GolfTourShareButton.tsx"),
+      "utf8",
+    );
+    const row = readFileSync(
+      join(here, "../../components/golf-tours/GolfTourRow.tsx"),
+      "utf8",
+    );
+    assert.match(hub, /GolfTourShareButton/);
+    assert.match(hub, /Open scorecard/);
+    assert.match(hub, /Start scorecard/);
+    assert.match(hub, /Add players/);
+    assert.match(hub, /Build standing fourballs/);
+    assert.match(hub, /Add round/);
+    assert.match(hub, /Prepare round/);
+    assert.match(hub, /Sit out group/);
+    assert.doesNotMatch(hub, /<a[^>]+href=\{[^}]*sharePath/);
+    assert.doesNotMatch(hub, />\{sharePath\}</);
+    assert.doesNotMatch(hub, />\{openHref\}</);
+    assert.match(share, /type="button"/);
+    assert.match(share, /\{copied \? "Copied" : label\}/);
+    assert.match(share, /navigator\.share/);
+    assert.match(share, /clipboard\.writeText/);
+    assert.doesNotMatch(share, /<a[^>]+href=\{url\}[^>]*>\{url\}/);
+    assert.doesNotMatch(share, />\{path\}</);
+    assert.match(row, /\bOpen\b/);
+    assert.match(row, /golfTourHref/);
   });
 });
 

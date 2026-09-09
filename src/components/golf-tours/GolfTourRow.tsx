@@ -32,7 +32,10 @@ export function GolfTourRow({ tour }: GolfTourRowProps) {
             {formatTourDateRange(tour.startDate, tour.endDate)}
           </span>
         </span>
-        <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-600" aria-hidden />
+        <span className="mt-1 flex shrink-0 items-center gap-1 self-center rounded-full border border-white/12 px-3 py-2 text-xs font-medium text-zinc-200">
+          Open
+          <ArrowUpRight className="h-4 w-4 text-zinc-500" aria-hidden />
+        </span>
       </Link>
     </li>
   );

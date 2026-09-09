@@ -33,6 +33,24 @@ export function golfTourFieldClass(): string {
   return "box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none [color-scheme:dark] focus:border-emerald-400/40";
 }
 
+export function golfTourPrimaryButtonClass(extra = ""): string {
+  return [
+    "inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60",
+    extra,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function golfTourOutlineButtonClass(extra = ""): string {
+  return [
+    "inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-4 text-sm font-medium text-zinc-200 hover:border-white/20 disabled:opacity-50",
+    extra,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function GolfTourPlayerSlots({
   slots,
   friends,
