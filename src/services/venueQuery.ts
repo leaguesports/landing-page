@@ -112,6 +112,8 @@ export const GOLF_COURSE_PROJECTION = `
       color,
       courseRating,
       slope,
+      "slopeRating": coalesce(slopeRating, slope),
+      par,
       totalMeters
     },
     holes[]{
@@ -302,7 +304,12 @@ export function mapGolfCourse(
     holesTotal: value.holesTotal ?? null,
     parTotal: value.parTotal ?? null,
     notes: value.notes ?? null,
-    tees: Array.isArray(value.tees) ? value.tees : null,
+    tees: Array.isArray(value.tees)
+      ? value.tees.map((tee) => ({
+          ...tee,
+          slopeRating: tee.slopeRating ?? tee.slope ?? null,
+        }))
+      : null,
     holes: Array.isArray(value.holes) ? value.holes : null,
   };
 }

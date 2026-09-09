@@ -102,6 +102,11 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /totalMeters/);
     assert.match(VENUE_PROJECTION, /distances\[\]/);
     assert.match(VENUE_PROJECTION, /teeName/);
+    assert.match(VENUE_PROJECTION, /courseRating/);
+    assert.match(
+      VENUE_PROJECTION,
+      /"slopeRating": coalesce\(slopeRating, slope\),\s*par,/,
+    );
   });
 
   it("reuses GOLF_COURSE_PROJECTION for a cmsId-only course fetch", () => {
@@ -269,11 +274,13 @@ describe("mapVenueRow", () => {
             distances: [{ teeName: "White", meters: 338 }],
           },
         ],
-        tees: [{ name: "Club" }],
+        tees: [{ name: "Club", slope: 128, par: 72 }],
       },
     });
     assert.equal(venue?.golfCourse?.courseName, "East");
     assert.equal(venue?.golfCourse?.holes?.[0]?.strokeIndex, 7);
     assert.equal(venue?.golfCourse?.holes?.[0]?.distances?.[0]?.meters, 338);
+    assert.equal(venue?.golfCourse?.tees?.[0]?.slopeRating, 128);
+    assert.equal(venue?.golfCourse?.tees?.[0]?.par, 72);
   });
 });
