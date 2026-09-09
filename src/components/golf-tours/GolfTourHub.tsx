@@ -471,7 +471,7 @@ export function GolfTourHub({
       {message ? <p className="text-sm text-emerald-200">{message}</p> : null}
 
       {host ? (
-        <section className="min-w-0 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+        <section className="min-w-0 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
           <h2 className="font-display text-2xl tracking-wide text-white">Details</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="min-w-0 sm:col-span-2">
@@ -587,7 +587,7 @@ export function GolfTourHub({
         </div>
 
         {addingRound && host ? (
-          <div className="min-w-0 space-y-4 rounded-3xl border border-white/8 bg-[#141814] p-5">
+          <div className="min-w-0 space-y-4 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5">
             <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Date

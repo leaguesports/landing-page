@@ -66,7 +66,7 @@ export function CreateGolfTourForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="min-w-0 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      className="min-w-0 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
     >
       <h2 className="font-display text-2xl tracking-wide text-white">
         Create a golf tour
