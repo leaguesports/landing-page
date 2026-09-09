@@ -10,7 +10,7 @@ import {
   hubPlayModalSportOptions,
   type HubOrganiseBadgeCounts,
 } from "@/lib/sports/hub-ia";
-import { ArrowUpRight, Calendar, Medal, Trophy, Users } from "lucide-react";
+import { ArrowUpRight, Calendar, Flag, Medal, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -23,6 +23,7 @@ function RowIcon({ id }: { id: (typeof HUB_ORGANISE_ROWS)[number]["id"] }) {
   if (id === "lobby") return <Users className="h-4 w-4" aria-hidden />;
   if (id === "team-matches") return <Trophy className="h-4 w-4" aria-hidden />;
   if (id === "tournaments") return <Medal className="h-4 w-4" aria-hidden />;
+  if (id === "golf-tours") return <Flag className="h-4 w-4" aria-hidden />;
   return <Calendar className="h-4 w-4" aria-hidden />;
 }
 

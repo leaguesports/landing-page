@@ -56,6 +56,8 @@ export const HUB_TEAM_MATCHES_HREF = "/team-matches" as const;
 export const HUB_TEAM_MATCHES_NEW_HREF = "/team-matches/new" as const;
 export const HUB_TOURNAMENTS_HREF = "/tournaments" as const;
 export const HUB_TOURNAMENTS_NEW_HREF = "/tournaments/new" as const;
+export const HUB_GOLF_TOURS_HREF = "/golf-tours" as const;
+export const HUB_GOLF_TOURS_NEW_HREF = "/golf-tours/new" as const;
 /** People tab block order — Teams is third under Friends + Communities. */
 export const HUB_PEOPLE_BLOCKS = ["communities", "friends", "teams"] as const;
 /** Thin hosted/invited strip on Play — keep the verb grid the focus. */
@@ -143,6 +145,7 @@ export const HUB_ORGANISE_ROW_IDS = [
   "lobby",
   "team-matches",
   "tournaments",
+  "golf-tours",
 ] as const;
 
 export type HubOrganiseRowId = (typeof HUB_ORGANISE_ROW_IDS)[number];
@@ -179,6 +182,12 @@ export const HUB_ORGANISE_ROWS: readonly HubOrganiseRow[] = [
     title: "Tournaments",
     description: "Run a single-elim draw and start fixtures as team matches.",
     href: HUB_TOURNAMENTS_HREF,
+  },
+  {
+    id: "golf-tours",
+    title: "Golf tours",
+    description: "Multi-day camp events across courses, with fourballs and a leaderboard.",
+    href: HUB_GOLF_TOURS_HREF,
   },
 ];
 
