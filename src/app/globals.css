@@ -53,10 +53,11 @@ body {
 }
 
 /*
-  Native datetime-local controls keep a large intrinsic min-width based on
-  the locale-formatted value. Without an explicit max, they widen the page
-  on mobile (padel/golf start forms).
+  Native date / datetime-local controls keep a large intrinsic min-width based
+  on the locale-formatted value. Without an explicit max, they widen the page
+  on mobile (golf tours, padel/golf start forms).
 */
+input[type="date"],
 input[type="datetime-local"] {
   box-sizing: border-box;
   width: 100%;
@@ -64,6 +65,8 @@ input[type="datetime-local"] {
   min-width: 0;
 }
 
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 input[type="datetime-local"]::-webkit-datetime-edit,
 input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
   min-width: 0;

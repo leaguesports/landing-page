@@ -66,7 +66,7 @@ export function CreateGolfTourForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      className="min-w-0 rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
     >
       <h2 className="font-display text-2xl tracking-wide text-white">
         Create a golf tour
@@ -77,7 +77,7 @@ export function CreateGolfTourForm() {
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="sm:col-span-2">
+        <div className="min-w-0 sm:col-span-2">
           <label
             htmlFor="golf-tour-name"
             className="mb-1.5 block text-xs font-medium text-zinc-400"
@@ -93,41 +93,45 @@ export function CreateGolfTourForm() {
             required
             autoComplete="off"
             placeholder="Friends Cup"
-            className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-400/40"
+            className="box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-400/40"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label
             htmlFor="golf-tour-start"
-            className="mb-1.5 block text-xs font-medium text-zinc-400"
+            className="relative block w-full min-w-0 max-w-full overflow-hidden"
           >
-            Start date
+            <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+              Start date
+            </span>
+            <input
+              id="golf-tour-start"
+              type="date"
+              required
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+              className="box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+            />
           </label>
-          <input
-            id="golf-tour-start"
-            type="date"
-            required
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-            className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40"
-          />
         </div>
-        <div>
+        <div className="min-w-0">
           <label
             htmlFor="golf-tour-end"
-            className="mb-1.5 block text-xs font-medium text-zinc-400"
+            className="relative block w-full min-w-0 max-w-full overflow-hidden"
           >
-            End date
+            <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+              End date
+            </span>
+            <input
+              id="golf-tour-end"
+              type="date"
+              required
+              value={endDate}
+              min={startDate}
+              onChange={(event) => setEndDate(event.target.value)}
+              className="box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+            />
           </label>
-          <input
-            id="golf-tour-end"
-            type="date"
-            required
-            value={endDate}
-            min={startDate}
-            onChange={(event) => setEndDate(event.target.value)}
-            className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40"
-          />
         </div>
       </div>
 

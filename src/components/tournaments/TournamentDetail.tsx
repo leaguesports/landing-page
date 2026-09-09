@@ -338,20 +338,22 @@ export function TournamentDetail({
                 ))}
               </select>
             </div>
-            <div className="sm:col-span-2">
+            <div className="min-w-0 sm:col-span-2">
               <label
                 htmlFor="edit-tournament-starts"
                 className="mb-1.5 block text-xs font-medium text-zinc-400"
               >
                 Starts
               </label>
-              <input
-                id="edit-tournament-starts"
-                type="datetime-local"
-                value={startsAt}
-                onChange={(event) => setStartsAt(event.target.value)}
-                className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-              />
+              <div className="relative w-full min-w-0 max-w-full overflow-hidden">
+                <input
+                  id="edit-tournament-starts"
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(event) => setStartsAt(event.target.value)}
+                  className="box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+                />
+              </div>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
