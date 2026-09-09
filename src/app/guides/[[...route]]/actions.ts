@@ -31,14 +31,29 @@ const GUIDE_CARD_PROJECTION = `{
   keywords,
 }`;
 
+const GUIDE_IMAGE_PROJECTION = `{
+  ...,
+  hotspot,
+  crop,
+  alt,
+  asset->{
+    _id,
+    url,
+    metadata { lqip, dimensions { width, height } }
+  }
+}`;
+
 const GUIDE_DETAIL_PROJECTION = `{
   _id,
   title,
   _createdAt,
-  mainImage,
+  mainImage ${GUIDE_IMAGE_PROJECTION},
   "slug": slug.current,
   description,
-  content,
+  content[]{
+    ...,
+    _type == "image" => ${GUIDE_IMAGE_PROJECTION}
+  },
   keywords,
 }`;
 
