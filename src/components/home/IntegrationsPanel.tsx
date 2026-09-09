@@ -75,8 +75,8 @@ function SyncForm({
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
         Import a session
       </p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="block text-xs text-zinc-400">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block min-w-0 text-xs text-zinc-400">
           Sport
           <select
             value={sport}
@@ -92,14 +92,14 @@ function SyncForm({
             ))}
           </select>
         </label>
-        <label className="block text-xs text-zinc-400">
+        <label className="relative block min-w-0 overflow-hidden text-xs text-zinc-400">
           Played at
           <input
             type="datetime-local"
             value={playedAt}
             onChange={(event) => setPlayedAt(event.target.value)}
             required
-            className="mt-1 min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-3 text-sm text-white outline-none focus:border-emerald-400/40"
+            className="mt-1 box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
           />
         </label>
       </div>

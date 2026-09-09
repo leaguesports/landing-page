@@ -30,7 +30,7 @@ export function emptyGolfTourSlots(seed?: {
 }
 
 export function golfTourFieldClass(): string {
-  return "min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none [color-scheme:dark] focus:border-emerald-400/40";
+  return "box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none [color-scheme:dark] focus:border-emerald-400/40";
 }
 
 export function GolfTourPlayerSlots({

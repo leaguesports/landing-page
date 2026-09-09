@@ -108,6 +108,11 @@ function campDraftMap(camps: PublicGolfTour["camps"]): Record<string, string> {
   return Object.fromEntries(camps.map((camp) => [camp.id, camp.name]));
 }
 
+/** Native date inputs need overflow clipping + webkit edit min-width resets. */
+function dateFieldClass() {
+  return `${golfTourFieldClass()} [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
+}
+
 export function GolfTourHub({
   tour,
   venues,
@@ -421,7 +426,7 @@ export function GolfTourHub({
   const fieldClass = golfTourFieldClass();
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-8">
       <header className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
           Golf tour · {formatGolfTourStatus(current.status)}
@@ -478,10 +483,10 @@ export function GolfTourHub({
       {message ? <p className="text-sm text-emerald-200">{message}</p> : null}
 
       {host ? (
-        <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+        <section className="min-w-0 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
           <h2 className="font-display text-2xl tracking-wide text-white">Details</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
+            <div className="min-w-0 sm:col-span-2">
               <label className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Name
               </label>
@@ -493,28 +498,32 @@ export function GolfTourHub({
                 className={fieldClass}
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">
-                Start date
+            <div className="min-w-0">
+              <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                  Start date
+                </span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(event) => setStartDate(event.target.value)}
+                  className={dateFieldClass()}
+                />
               </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                className={fieldClass}
-              />
             </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">
-                End date
+            <div className="min-w-0">
+              <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
+                <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                  End date
+                </span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  className={dateFieldClass()}
+                />
               </label>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                className={fieldClass}
-              />
             </div>
           </div>
           <button
@@ -620,13 +629,13 @@ export function GolfTourHub({
         </div>
 
         {showRoundComposer ? (
-          <div className="rounded-3xl border border-emerald-400/20 bg-[#141814] p-5 space-y-4">
+          <div className="min-w-0 space-y-4 overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#141814] p-5">
             <h3 className="text-lg font-medium text-white">Add a round</h3>
             <p className="text-sm leading-relaxed text-zinc-500">
               Pick a date in the tour window and a golf course. Fourballs on
               this round use that venue.
             </p>
-            <label className="block">
+            <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Date
               </span>
@@ -636,10 +645,10 @@ export function GolfTourHub({
                 min={current.startDate}
                 max={current.endDate}
                 onChange={(event) => setRoundDate(event.target.value)}
-                className={fieldClass}
+                className={dateFieldClass()}
               />
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Label (optional)
               </span>
@@ -725,7 +734,7 @@ export function GolfTourHub({
                 </div>
 
                 {host ? (
-                  <label className="mt-3 block max-w-xs">
+                  <label className="relative mt-3 block w-full min-w-0 max-w-xs overflow-hidden">
                     <span className="mb-1 block text-xs text-zinc-500">
                       Move date
                     </span>
@@ -746,7 +755,7 @@ export function GolfTourHub({
                           );
                         }
                       }}
-                      className={fieldClass}
+                      className={dateFieldClass()}
                     />
                   </label>
                 ) : null}

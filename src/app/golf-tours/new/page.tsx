@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function NewGolfTourPage() {
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto min-w-0 max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <Link
           href={GOLF_TOURS_HREF}
           className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"

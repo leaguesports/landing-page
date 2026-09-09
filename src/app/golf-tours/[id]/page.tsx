@@ -81,14 +81,14 @@ export default async function GolfTourPage({ params }: GolfTourPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto min-w-0 max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <Link
           href={GOLF_TOURS_HREF}
           className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
         >
           ← Golf tours
         </Link>
-        <div className="mt-6">
+        <div className="mt-6 min-w-0">
           <GolfTourHub
             tour={tour}
             venues={golfCourses}

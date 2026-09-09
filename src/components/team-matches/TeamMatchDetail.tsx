@@ -367,22 +367,24 @@ export function TeamMatchDetail({
             Schedule
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
+            <div className="min-w-0">
               <label
                 htmlFor="match-starts-at"
                 className="mb-1.5 block text-xs font-medium text-zinc-400"
               >
                 Starts
               </label>
-              <input
-                id="match-starts-at"
-                type="datetime-local"
-                value={startsAt}
-                onChange={(event) => setStartsAt(event.target.value)}
-                className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-              />
+              <div className="relative w-full min-w-0 max-w-full overflow-hidden">
+                <input
+                  id="match-starts-at"
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(event) => setStartsAt(event.target.value)}
+                  className="box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white outline-none [color-scheme:dark] focus:border-emerald-400/40 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+                />
+              </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <label
                 htmlFor="match-venue"
                 className="mb-1.5 block text-xs font-medium text-zinc-400"
