@@ -5,8 +5,11 @@ import {
   getGolfTour,
   getGolfTourLeaderboard,
 } from "@/lib/golf-tours/golf-tours";
-import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
-import { searchVenues } from "@/services/venues";
+import {
+  isGolfVenue,
+  toGolfVenueOption,
+  type GolfVenueOption,
+} from "@/lib/golf/venue-options";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -14,6 +17,16 @@ import Link from "next/link";
 type GolfTourPageProps = {
   params: Promise<{ id: string }>;
 };
+
+async function loadGolfVenues(): Promise<GolfVenueOption[]> {
+  try {
+    const { searchVenues } = await import("@/services/venues");
+    const venues = await searchVenues({ intent: "play", sportSlug: "golf" });
+    return venues.map(toGolfVenueOption).filter(isGolfVenue);
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -33,14 +46,7 @@ export async function generateMetadata({
 export default async function GolfTourPage({ params }: GolfTourPageProps) {
   const { id } = await params;
   const cookie = (await cookies()).toString();
-  const [tour, friends, golfCourses, leaderboard] = await Promise.all([
-    getGolfTour(id, { cookie }),
-    listFriends({ cookie }),
-    searchVenues({ intent: "play", sportSlug: "golf" })
-      .then((venues) => venues.map(toGolfVenueOption).filter(isGolfVenue))
-      .catch(() => []),
-    getGolfTourLeaderboard(id, { cookie }),
-  ]);
+  const tour = await getGolfTour(id, { cookie });
 
   if (!tour) {
     return (
@@ -66,6 +72,12 @@ export default async function GolfTourPage({ params }: GolfTourPageProps) {
       </div>
     );
   }
+
+  const [friends, golfCourses, leaderboard] = await Promise.all([
+    listFriends({ cookie }),
+    loadGolfVenues(),
+    getGolfTourLeaderboard(id, { cookie }),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
