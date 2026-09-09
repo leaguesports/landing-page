@@ -2,14 +2,20 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { collectIndexedIntentPairs } from "../../lib/intent/indexed-pairs.ts";
 import {
+  buildSitemapBucket,
   buildSitemapEntries,
+  buildSitemapIndexXml,
   fixtureSitemapRoutes,
   guideSitemapRoutes,
   intentSitemapRoutes,
   isSitemapSlug,
+  listSitemapModules,
+  parseSitemapBucketId,
   resolveSitemapOrigin,
   sitemapAbsoluteUrl,
   sitemapEntry,
+  sitemapIndexUrl,
+  SITEMAP_BUCKET_IDS,
   SITEMAP_FALLBACK_ORIGIN,
   staticSitemapRoutes,
   toSitemapDate,
@@ -312,6 +318,181 @@ describe("buildSitemapEntries", () => {
       false,
     );
     assert.match(xml, /^<\?xml /);
+  });
+});
+
+describe("modular sitemap buckets", () => {
+  const source = {
+    getVenues: async () => [
+      { slug: "the-baron-sandton", updatedAt: "2026-09-01T00:00:00.000Z" },
+    ],
+    getGuides: async () => [
+      { slug: "best-sports-bars-cape-town", updatedAt: "2026-08-20T00:00:00.000Z" },
+    ],
+    getIntentPairs: async (intent: "watch" | "play") =>
+      intent === "watch"
+        ? [
+            {
+              activitySlug: "f1",
+              locationSlug: "midrand",
+              updatedAt: "2026-09-02T00:00:00.000Z",
+            },
+          ]
+        : [
+            {
+              activitySlug: "padel",
+              locationSlug: "fourways",
+              updatedAt: "2026-09-03T00:00:00.000Z",
+            },
+          ],
+    getFixtures: async () => [
+      {
+        slug: "springboks-vs-all-blacks-2026-09-06",
+        startsAt: "2026-09-06T16:00:00.000Z",
+        updatedAt: "2026-09-01T12:00:00.000Z",
+      },
+    ],
+  };
+
+  it("exposes the six named module ids used by generateSitemaps", () => {
+    assert.deepEqual(
+      listSitemapModules().map((row) => row.id),
+      [
+        "static",
+        "venues",
+        "events",
+        "guides",
+        "play-cities",
+        "watch-cities",
+      ],
+    );
+    assert.equal(parseSitemapBucketId("play-cities.xml"), "play-cities");
+    assert.equal(parseSitemapBucketId("venues"), "venues");
+    assert.equal(parseSitemapBucketId("unknown"), null);
+  });
+
+  it("index XML lists only the six module files and robots can point at it", () => {
+    const xml = buildSitemapIndexXml(ORIGIN);
+    assert.match(xml, /^<\?xml /);
+    assert.equal(xml.includes("&"), false);
+    assert.equal(sitemapIndexUrl(ORIGIN), `${ORIGIN}/sitemap-index.xml`);
+    for (const id of SITEMAP_BUCKET_IDS) {
+      assert.ok(xml.includes(`<loc>${ORIGIN}/sitemap/${id}.xml</loc>`));
+    }
+    assert.equal((xml.match(/<sitemap>/g) ?? []).length, 6);
+  });
+
+  it("each bucket emits its route family and preserves lastmod", async () => {
+    const options = { baseUrl: ORIGIN, now: NOW, source };
+
+    const staticUrls = (await buildSitemapBucket("static", options)).map(
+      (row) => row.url,
+    );
+    assert.ok(staticUrls.includes(ORIGIN));
+    assert.ok(staticUrls.includes(`${ORIGIN}/athletes`));
+    assert.ok(staticUrls.includes(`${ORIGIN}/roadmap`));
+    assert.ok(staticUrls.includes(`${ORIGIN}/venues`));
+    assert.ok(staticUrls.includes(`${ORIGIN}/events`));
+    assert.ok(staticUrls.includes(`${ORIGIN}/play`));
+    assert.ok(staticUrls.includes(`${ORIGIN}/watch`));
+    assert.equal(staticUrls.some((url) => url.includes("/venues/")), false);
+    assert.equal(staticUrls.some((url) => /\/events\/.+/.test(url)), false);
+    assert.equal(staticUrls.some((url) => /\/guides\/.+/.test(url)), false);
+    assert.equal(staticUrls.some((url) => /\/play\/.+\/.+/.test(url)), false);
+    assert.equal(staticUrls.some((url) => /\/watch\/.+\/.+/.test(url)), false);
+
+    const venues = await buildSitemapBucket("venues", options);
+    assert.deepEqual(
+      venues.map((row) => ({
+        url: row.url,
+        lastModified: row.lastModified.toISOString(),
+      })),
+      [
+        {
+          url: `${ORIGIN}/venues/the-baron-sandton`,
+          lastModified: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+    );
+
+    const events = await buildSitemapBucket("events", options);
+    assert.deepEqual(
+      events.map((row) => ({
+        url: row.url,
+        lastModified: row.lastModified.toISOString(),
+      })),
+      [
+        {
+          url: `${ORIGIN}/events/springboks-vs-all-blacks-2026-09-06`,
+          lastModified: "2026-09-01T12:00:00.000Z",
+        },
+      ],
+    );
+
+    const guides = await buildSitemapBucket("guides", options);
+    assert.deepEqual(
+      guides.map((row) => ({
+        url: row.url,
+        lastModified: row.lastModified.toISOString(),
+      })),
+      [
+        {
+          url: `${ORIGIN}/guides/best-sports-bars-cape-town`,
+          lastModified: "2026-08-20T00:00:00.000Z",
+        },
+      ],
+    );
+
+    const play = await buildSitemapBucket("play-cities", options);
+    assert.deepEqual(
+      play.map((row) => ({
+        url: row.url,
+        lastModified: row.lastModified.toISOString(),
+      })),
+      [
+        {
+          url: `${ORIGIN}/play/padel/fourways`,
+          lastModified: "2026-09-03T00:00:00.000Z",
+        },
+      ],
+    );
+
+    const watch = await buildSitemapBucket("watch-cities", options);
+    assert.deepEqual(
+      watch.map((row) => ({
+        url: row.url,
+        lastModified: row.lastModified.toISOString(),
+      })),
+      [
+        {
+          url: `${ORIGIN}/watch/f1/midrand`,
+          lastModified: "2026-09-02T00:00:00.000Z",
+        },
+      ],
+    );
+  });
+
+  it("union of buckets matches the previous combined sitemap URL set", async () => {
+    const options = { baseUrl: ORIGIN, now: NOW, source };
+    const combined = await buildSitemapEntries(options);
+    const fromBuckets = (
+      await Promise.all(
+        SITEMAP_BUCKET_IDS.map((id) => buildSitemapBucket(id, options)),
+      )
+    ).flat();
+
+    const combinedUrls = combined.map((row) => row.url).sort();
+    const bucketUrls = fromBuckets.map((row) => row.url).sort();
+    assert.deepEqual(bucketUrls, combinedUrls);
+
+    for (const entry of combined) {
+      const match = fromBuckets.find((row) => row.url === entry.url);
+      assert.ok(match);
+      assert.equal(
+        match.lastModified.toISOString(),
+        entry.lastModified.toISOString(),
+      );
+    }
   });
 });
 
