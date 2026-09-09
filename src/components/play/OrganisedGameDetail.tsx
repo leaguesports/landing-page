@@ -2,8 +2,11 @@
 
 import { PostActionShare } from "@/components/conversion/PostActionShare";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { GolfPreRoundHandicap } from "@/components/golf/GolfPreRoundHandicap";
 import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
 import { useAuth } from "@/hooks/useAuth";
+import { teeRatingsFromCms } from "@/lib/golf/handicap";
+import { withRoundHandicapOverride } from "@/lib/golf/profile";
 import { track } from "@/lib/analytics/track";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import {
@@ -91,7 +94,7 @@ export function OrganisedGameDetail({
   golfCourse = null,
 }: OrganisedGameDetailProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [game, setGame] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"rsvp" | "start" | "cancel" | null>(null);
@@ -99,6 +102,16 @@ export function OrganisedGameDetail({
   const [teeName, setTeeName] = useState("");
   const [startingHole, setStartingHole] = useState(1);
   const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(18);
+  const [roundHi, setRoundHi] = useState<number | null>(null);
+  const profileHi = user?.golfHandicapIndex ?? null;
+  const teeRatings = useMemo(
+    () => teeRatingsFromCms(golfCourse, teeName),
+    [golfCourse, teeName],
+  );
+
+  useEffect(() => {
+    setRoundHi(user?.golfHandicapIndex ?? null);
+  }, [user?.golfHandicapIndex]);
   const golfStartReady =
     game.sport !== "golf" ||
     isGolfStartReady({ teeName, startingHole, holesPlayed });
@@ -165,22 +178,31 @@ export function OrganisedGameDetail({
       startOverrides = built.overrides;
     }
     setBusy("start");
-    const result = await startOrganisedGame(game.id, startOverrides);
-    setBusy(null);
-    if (!result.ok) {
-      if (result.status === 401) {
-        sendToLogin();
+    try {
+      const result = await withRoundHandicapOverride(
+        profileHi,
+        isAuthenticated ? roundHi : profileHi,
+        () => startOrganisedGame(game.id, startOverrides),
+      );
+      setBusy(null);
+      if (!result.ok) {
+        if (result.status === 401) {
+          sendToLogin();
+          return;
+        }
+        setError(result.error);
         return;
       }
-      setError(result.error);
-      return;
+      setGame(result.value.game);
+      if (isLobbySourceNote(game.notes)) {
+        const sport = game.sport === "golf" ? "golf" : "padel";
+        track("game_start", lobbyGameStartParams(sport));
+      }
+      router.push(result.value.live.path);
+    } catch (err) {
+      setBusy(null);
+      setError(err instanceof Error ? err.message : "Could not start game");
     }
-    setGame(result.value.game);
-    if (isLobbySourceNote(game.notes)) {
-      const sport = game.sport === "golf" ? "golf" : "padel";
-      track("game_start", lobbyGameStartParams(sport));
-    }
-    router.push(result.value.live.path);
   }
 
   async function onCancel() {
@@ -314,15 +336,24 @@ export function OrganisedGameDetail({
       {isHost && isOpen ? (
         <div className="space-y-3">
           {game.sport === "golf" ? (
-            <GolfPreRoundSetup
-              golfCourse={golfCourse}
-              teeName={teeName}
-              onTeeNameChange={setTeeName}
-              startingHole={startingHole}
-              onStartingHoleChange={setStartingHole}
-              holesPlayed={holesPlayed}
-              onHolesPlayedChange={setHolesPlayed}
-            />
+            <>
+              <GolfPreRoundSetup
+                golfCourse={golfCourse}
+                teeName={teeName}
+                onTeeNameChange={setTeeName}
+                startingHole={startingHole}
+                onStartingHoleChange={setStartingHole}
+                holesPlayed={holesPlayed}
+                onHolesPlayedChange={setHolesPlayed}
+              />
+              <GolfPreRoundHandicap
+                profileHi={profileHi}
+                signedIn={Boolean(isAuthenticated && user?.id)}
+                ratings={teeRatings}
+                roundHi={roundHi}
+                onRoundHiChange={setRoundHi}
+              />
+            </>
           ) : null}
           {game.sport === "golf" && !golfStartReady ? (
             <p className="text-center text-xs text-zinc-500">

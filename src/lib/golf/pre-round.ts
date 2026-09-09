@@ -2,16 +2,14 @@ import type {
   GolfCourseCms,
   GolfHolesPlayed,
 } from "../../types/golf-round.ts";
+import { cmsTeeOptions, type GolfCmsTeeOption } from "./handicap.ts";
 
 export const TEE_NAME_MIN = 1;
 export const TEE_NAME_MAX = 40;
 export const STARTING_HOLE_MIN = 1;
 export const STARTING_HOLE_MAX = 18;
 
-export type GolfTeeOption = {
-  name: string;
-  color: string | null;
-};
+export type GolfTeeOption = GolfCmsTeeOption;
 
 export function isHolesPlayed(value: unknown): value is GolfHolesPlayed {
   return value === 9 || value === 18;
@@ -45,20 +43,7 @@ export function isValidTeeName(value: string | null | undefined): boolean {
 export function teeOptionsFromGolfCourse(
   course: GolfCourseCms | null | undefined,
 ): GolfTeeOption[] {
-  const options: GolfTeeOption[] = [];
-  const seen = new Set<string>();
-  for (const tee of course?.tees ?? []) {
-    const name = tee?.name?.trim();
-    if (!name) continue;
-    const key = name.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    options.push({
-      name,
-      color: tee.color?.trim() || null,
-    });
-  }
-  return options;
+  return cmsTeeOptions(course);
 }
 
 /**

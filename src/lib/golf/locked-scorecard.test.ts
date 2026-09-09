@@ -133,6 +133,31 @@ describe("buildGolfLockedScorecard", () => {
     assert.equal(card.players[0]?.cells[tot]?.rel, null);
   });
 
+  it("shows hole net and SI strokes when PH + SI are present", () => {
+    const withPh: GolfPlayer[] = [
+      {
+        slot: 1,
+        displayName: "Alex",
+        isGuest: false,
+        userId: "u1",
+        playingHandicap: 2,
+        courseHandicap: 2,
+        handicapIndexUsed: 2,
+        grossTotal: 72,
+        netTotal: 70,
+      },
+    ];
+    const card = buildGolfLockedScorecard(withPh, strokes, holes);
+    const hole1 = card.columns.findIndex(
+      (column) => column.kind === "hole" && column.hole?.number === 1,
+    );
+    assert.equal(card.players[0]?.cells[hole1]?.strokes, 4);
+    assert.equal(card.players[0]?.cells[hole1]?.net, 3);
+    assert.equal(card.players[0]?.cells[hole1]?.strokesReceived, 1);
+    assert.equal(card.players[0]?.gross, 72);
+    assert.equal(card.players[0]?.net, 70);
+  });
+
   it("shows a dash when a hole has no strokes", () => {
     const partial: GolfLiveStrokes = { 1: { "1": 5 } };
     const nine = holes.slice(0, 9);

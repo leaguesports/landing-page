@@ -77,6 +77,19 @@ describe("toCaptureGolfRoundBody", () => {
     assert.equal(body.players[1]?.userId, "user-1");
     assert.equal(body.score.holes.length, 9);
     assert.deepEqual(body.score.holes[0]?.strokes, { "1": 4, "2": 5 });
+    assert.deepEqual(body.tee, {});
+  });
+
+  it("includes Sanity tee ratings on capture when present", () => {
+    const body = toCaptureGolfRoundBody({
+      ...captureInput,
+      courseRating: 71.2,
+      slopeRating: 129,
+      teePar: 36,
+    });
+    assert.equal(body.tee?.courseRating, 71.2);
+    assert.equal(body.slopeRating, 129);
+    assert.equal(body.teePar, 36);
   });
 
   it("prefers startsAt when both times are sent", () => {

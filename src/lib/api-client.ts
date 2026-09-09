@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
+import { parseOptionalGolfHandicapIndex } from "@/lib/golf/handicap";
 import { getSiteBaseUrl } from "@/lib/site-url";
 
 class ApiError extends Error {
@@ -78,6 +79,23 @@ export interface AuthUser {
   name?: string;
   handle?: string;
   avatarUrl?: string | null;
+  /** WHS Handicap Index (−10.0…54.0). Null when cleared / never set. */
+  golfHandicapIndex?: number | null;
+}
+
+export function parseAuthUser(value: unknown): AuthUser | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== "string" || !row.id.trim()) return null;
+  return {
+    id: row.id.trim(),
+    displayName: typeof row.displayName === "string" ? row.displayName : undefined,
+    email: typeof row.email === "string" ? row.email : undefined,
+    name: typeof row.name === "string" ? row.name : undefined,
+    handle: typeof row.handle === "string" ? row.handle : undefined,
+    avatarUrl: typeof row.avatarUrl === "string" ? row.avatarUrl : row.avatarUrl === null ? null : undefined,
+    golfHandicapIndex: parseOptionalGolfHandicapIndex(row.golfHandicapIndex) ?? null,
+  };
 }
 
 export interface AuthState {
@@ -110,7 +128,7 @@ export async function getAuthState(): Promise<AuthState> {
 
     if (res.ok) {
       try {
-        const user = (await res.json()) as AuthUser;
+        const user = parseAuthUser(await res.json());
         return { isAuthenticated: true, user, error: null };
       } catch {
         return { isAuthenticated: true, user: null, error: null };

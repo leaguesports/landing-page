@@ -4,7 +4,15 @@ import { PostActionShare } from "@/components/conversion/PostActionShare";
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  GolfRoundHandicapBanner,
+  GolfStrokeDots,
+} from "@/components/golf/GolfHandicapBanners";
 import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
+import {
+  handicapSnapshotLabel,
+  resolveHoleNet,
+} from "@/lib/golf/handicap";
 import { lockGolfRound } from "@/lib/golf/api-round";
 import { track } from "@/lib/analytics/track";
 import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
@@ -244,6 +252,9 @@ export function GolfScorecard({
           <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
             {golfLayoutLabel(round)}
           </p>
+          <div className="mx-auto mt-3 max-w-md text-left">
+            <GolfRoundHandicapBanner round={round} players={round.players} />
+          </div>
         </div>
       )}
 
@@ -290,6 +301,16 @@ export function GolfScorecard({
               const value =
                 strokes[hole.number]?.[key] ?? clampStrokes(hole.par);
               const toPar = value - hole.par;
+              const holeNet = resolveHoleNet({
+                gross: value,
+                playingHandicap: player.playingHandicap,
+                holeNumber: hole.number,
+                holes,
+                apiNetStrokes:
+                  round.score?.holes.find((row) => row.number === hole.number)
+                    ?.netStrokes?.[key] ?? null,
+              });
+              const hcpLabel = handicapSnapshotLabel(player);
               return (
                 <li
                   key={player.slot}
@@ -301,7 +322,13 @@ export function GolfScorecard({
                     </p>
                     <p className="text-xs text-zinc-500">
                       {formatToPar(toPar)} this hole
+                      {holeNet.net != null ? ` · net ${holeNet.net}` : ""}
                     </p>
+                    {hcpLabel ? (
+                      <p className="mt-0.5 text-[11px] text-zinc-500">
+                        {hcpLabel}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -313,8 +340,11 @@ export function GolfScorecard({
                     >
                       <Minus className="h-4 w-4" aria-hidden />
                     </button>
-                    <span className="w-10 text-center font-display text-3xl tabular-nums text-white">
-                      {value}
+                    <span className="flex w-10 flex-col items-center">
+                      <span className="text-center font-display text-3xl tabular-nums text-white">
+                        {value}
+                      </span>
+                      <GolfStrokeDots count={holeNet.strokesReceived} />
                     </span>
                     <button
                       type="button"
@@ -344,8 +374,13 @@ export function GolfScorecard({
                   <span className="truncate text-sm text-zinc-300">
                     {total.displayName}
                   </span>
-                  <span className="text-sm tabular-nums text-white">
+                  <span className="text-right text-sm tabular-nums text-white">
                     {total.gross}
+                    {total.net != null ? (
+                      <span className="ml-2 text-emerald-300">
+                        net {total.net}
+                      </span>
+                    ) : null}
                     <span className="ml-2 text-zinc-500">
                       {formatToPar(total.toPar)}
                     </span>

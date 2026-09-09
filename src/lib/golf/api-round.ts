@@ -16,6 +16,11 @@ import type {
   LockGolfRoundBody,
 } from "../../types/golf-round.ts";
 import {
+  mergeTeeRatingsInput,
+  parseOptionalGolfHandicapIndex,
+  toGolfTeeRatingsPayload,
+} from "./handicap.ts";
+import {
   isStartingHole,
   isValidTeeName,
   normalizeTeeName,
@@ -177,6 +182,9 @@ function parsePlayer(value: unknown, index: number): GolfPlayer | null {
       : "";
   if (!displayName) return null;
   const isGuest = Boolean(row.isGuest) || !row.userId;
+  const handicapIndexUsed = parseOptionalGolfHandicapIndex(
+    row.handicapIndexUsed,
+  );
   return {
     slot,
     displayName,
@@ -185,7 +193,22 @@ function parsePlayer(value: unknown, index: number): GolfPlayer | null {
       typeof row.userId === "string" && row.userId.trim()
         ? row.userId.trim()
         : null,
+    handicapIndexUsed: handicapIndexUsed === undefined ? null : handicapIndexUsed,
+    courseHandicap: optionalFiniteNumber(row.courseHandicap),
+    playingHandicap: optionalFiniteNumber(row.playingHandicap),
+    grossTotal: optionalFiniteNumber(row.grossTotal),
+    netTotal: optionalFiniteNumber(row.netTotal),
   };
+}
+
+function optionalFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function optionalTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function parseCourse(value: unknown): GolfCourseSnapshot | null {
@@ -227,7 +250,11 @@ function parseScore(value: unknown): GolfScore | null {
   const holes = [];
   for (const raw of row.holes) {
     if (!raw || typeof raw !== "object") return null;
-    const hole = raw as { number?: unknown; strokes?: unknown };
+    const hole = raw as {
+      number?: unknown;
+      strokes?: unknown;
+      netStrokes?: unknown;
+    };
     if (typeof hole.number !== "number") return null;
     if (!hole.strokes || typeof hole.strokes !== "object") return null;
     const strokes: Record<string, number> = {};
@@ -236,7 +263,19 @@ function parseScore(value: unknown): GolfScore | null {
     )) {
       if (typeof stroke === "number") strokes[key] = stroke;
     }
-    holes.push({ number: hole.number, strokes });
+    const netStrokes: Record<string, number> = {};
+    if (hole.netStrokes && typeof hole.netStrokes === "object") {
+      for (const [key, stroke] of Object.entries(
+        hole.netStrokes as Record<string, unknown>,
+      )) {
+        if (typeof stroke === "number") netStrokes[key] = stroke;
+      }
+    }
+    holes.push({
+      number: hole.number,
+      strokes,
+      ...(Object.keys(netStrokes).length > 0 ? { netStrokes } : {}),
+    });
   }
   return { holes };
 }
@@ -299,6 +338,11 @@ export function parseApiGolfRound(
       typeof row.teeName === "string" && row.teeName.trim()
         ? row.teeName.trim()
         : null,
+    teeId: optionalTrimmedString(row.teeId),
+    courseRating: optionalFiniteNumber(row.courseRating),
+    slopeRating: optionalFiniteNumber(row.slopeRating),
+    teePar: optionalFiniteNumber(row.teePar),
+    handicapDisclaimer: optionalTrimmedString(row.handicapDisclaimer),
     course,
     players,
     score: parseScore(row.score),
@@ -362,6 +406,11 @@ export function parseGolfHistoryItem(value: unknown): GolfHistoryItem | null {
       typeof row.teeName === "string" && row.teeName.trim()
         ? row.teeName.trim()
         : null,
+    teeId: optionalTrimmedString(row.teeId),
+    courseRating: optionalFiniteNumber(row.courseRating),
+    slopeRating: optionalFiniteNumber(row.slopeRating),
+    teePar: optionalFiniteNumber(row.teePar),
+    handicapDisclaimer: optionalTrimmedString(row.handicapDisclaimer),
     course,
     players,
     score: parseScore(row.score),
@@ -393,6 +442,7 @@ export function toCreateGolfRoundBody(input: CreateGolfRoundInput) {
     holesPlayed: input.holesPlayed,
     startingHole,
     teeName: normalizeTeeName(input.teeName),
+    ...toGolfTeeRatingsPayload(mergeTeeRatingsInput(input)),
     course: {
       name: input.course.name ?? null,
       holes: input.course.holes.map((hole) => ({

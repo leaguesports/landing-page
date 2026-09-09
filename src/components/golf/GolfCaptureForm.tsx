@@ -3,7 +3,7 @@
 import { Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
@@ -12,8 +12,10 @@ import {
   captureGolfRound,
   playersFromNames,
 } from "@/lib/golf/capture";
-import { toCourseSnapshot } from "@/lib/golf/course";
+import { courseParTotal, toCourseSnapshot } from "@/lib/golf/course";
+import { teeRatingsFromCms } from "@/lib/golf/handicap";
 import { isGolfStartReady } from "@/lib/golf/pre-round";
+import { withRoundHandicapOverride } from "@/lib/golf/profile";
 import { track } from "@/lib/analytics/track";
 import {
   clampStrokes,
@@ -31,6 +33,7 @@ import type {
   GolfLiveStrokes,
   GolfPlayerSlot,
 } from "@/types/golf-round";
+import { GolfPreRoundHandicap } from "./GolfPreRoundHandicap";
 import { GolfPreRoundSetup } from "./GolfPreRoundSetup";
 
 type GolfCaptureFormProps = {
@@ -82,6 +85,7 @@ export function GolfCaptureForm({
   const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(18);
   const [startingHole, setStartingHole] = useState(1);
   const [teeName, setTeeName] = useState("");
+  const [roundHi, setRoundHi] = useState<number | null>(null);
   const [playerCount, setPlayerCount] = useState(1);
   const [names, setNames] = useState<string[]>(["", "", "", ""]);
   const [strokes, setStrokes] = useState<GolfLiveStrokes>({});
@@ -99,6 +103,22 @@ export function GolfCaptureForm({
     }
     return "";
   }, [isAuthenticated, user, displayName]);
+
+  const profileHi = user?.golfHandicapIndex ?? null;
+
+  useEffect(() => {
+    setRoundHi(user?.golfHandicapIndex ?? null);
+  }, [user?.golfHandicapIndex]);
+
+  const teeRatings = useMemo(
+    () =>
+      teeRatingsFromCms(
+        venue?.golfCourse,
+        teeName,
+        course ? courseParTotal(course.holes) : null,
+      ),
+    [venue, teeName, course],
+  );
 
   const resolvedNames = useMemo(() => {
     if (!selfName || names[0]?.trim()) return names;
@@ -226,24 +246,34 @@ export function GolfCaptureForm({
     setError(null);
     setSaving(true);
 
+    const seatedSelf = Boolean(
+      players[0] && !players[0].isGuest && players[0].userId,
+    );
+
     try {
-      const round = await captureGolfRound(
-        {
-          venueCmsId: venue.id,
-          playedAt: playedAtIso,
-          holesPlayed,
-          startingHole,
-          teeName: teeName.trim(),
-          course,
-          players,
-          score: {
-            holes: course.holes.map((hole) => ({
-              number: hole.number,
-              strokes: seeded[hole.number] ?? {},
-            })),
-          },
-        },
-        toGolfRoundVenue(venue)!,
+      const round = await withRoundHandicapOverride(
+        profileHi,
+        seatedSelf ? roundHi : profileHi,
+        () =>
+          captureGolfRound(
+            {
+              venueCmsId: venue.id,
+              playedAt: playedAtIso,
+              holesPlayed,
+              startingHole,
+              teeName: teeName.trim(),
+              course,
+              players,
+              score: {
+                holes: course.holes.map((hole) => ({
+                  number: hole.number,
+                  strokes: seeded[hole.number] ?? {},
+                })),
+              },
+              ...teeRatings,
+            },
+            toGolfRoundVenue(venue)!,
+          ),
       );
       track("game_lock", { page_type: "scorecard", sport: "golf" });
       startTransition(() => {
@@ -343,6 +373,14 @@ export function GolfCaptureForm({
         onStartingHoleChange={handleStartingHole}
         holesPlayed={holesPlayed}
         onHolesPlayedChange={handleHolesPlayed}
+      />
+
+      <GolfPreRoundHandicap
+        profileHi={profileHi}
+        signedIn={Boolean(isAuthenticated && user?.id)}
+        ratings={teeRatings}
+        roundHi={roundHi}
+        onRoundHiChange={setRoundHi}
       />
 
       <section className="space-y-3">

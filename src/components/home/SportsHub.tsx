@@ -8,6 +8,7 @@ import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { TeamsPanel } from "@/components/home/TeamsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
+import { GolfHandicapIndexField } from "@/components/golf/GolfHandicapIndexField";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
@@ -1034,6 +1035,10 @@ export function SportsHub({
                         <p className="text-sm text-zinc-500">Your hub</p>
                       )}
                     </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <GolfHandicapIndexField />
                   </div>
 
                   <div className="mb-8">

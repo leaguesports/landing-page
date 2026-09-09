@@ -1,4 +1,9 @@
+import {
+  GolfRoundHandicapBanner,
+  GolfStrokeDots,
+} from "@/components/golf/GolfHandicapBanners";
 import { formatGolfHistoryDate } from "@/lib/golf/history";
+import { handicapSnapshotLabel } from "@/lib/golf/handicap";
 import {
   buildGolfLockedScorecard,
   formatToPar,
@@ -50,14 +55,30 @@ function ScoreCell({
 }) {
   if (!marked || cell.rel == null || cell.rel === "par") {
     return (
-      <span className="tabular-nums text-white">{cell.display || "—"}</span>
+      <span className="inline-flex flex-col items-center">
+        <span className="tabular-nums text-white">{cell.display || "—"}</span>
+        {cell.net != null && cell.net !== cell.strokes ? (
+          <span className="text-[10px] tabular-nums text-emerald-300">
+            {cell.net}
+          </span>
+        ) : null}
+        <GolfStrokeDots count={cell.strokesReceived} />
+      </span>
     );
   }
   const label = relLabel(cell.rel);
   return (
-    <span className={relClass(cell.rel)}>
-      {cell.display}
-      {label ? <span className="sr-only"> {label}</span> : null}
+    <span className="inline-flex flex-col items-center">
+      <span className={relClass(cell.rel)}>
+        {cell.display}
+        {label ? <span className="sr-only"> {label}</span> : null}
+      </span>
+      {cell.net != null && cell.net !== cell.strokes ? (
+        <span className="text-[10px] tabular-nums text-emerald-300">
+          {cell.net}
+        </span>
+      ) : null}
+      <GolfStrokeDots count={cell.strokesReceived} />
     </span>
   );
 }
@@ -71,6 +92,7 @@ export function GolfLockedScorecard({
     round.players,
     strokes,
     holes ?? round.course.holes,
+    round.score?.holes,
   );
   const dateLabel = formatGolfHistoryDate(round.startsAt);
   const courseName =
@@ -185,6 +207,11 @@ export function GolfLockedScorecard({
                   ].join(" ")}
                 >
                   {player.displayName}
+                  {player.playingHandicap != null ? (
+                    <span className="mt-0.5 block truncate text-[10px] font-normal normal-case tracking-normal text-zinc-500">
+                      PH {player.playingHandicap}
+                    </span>
+                  ) : null}
                 </th>
                 {player.cells.map((cell, index) => {
                   const column = card.columns[index];
@@ -227,9 +254,23 @@ export function GolfLockedScorecard({
                   Low
                 </span>
               ) : null}
+              {handicapSnapshotLabel(
+                round.players.find((row) => row.slot === player.slot) ??
+                  round.players[0]!,
+              ) ? (
+                <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+                  {handicapSnapshotLabel(
+                    round.players.find((row) => row.slot === player.slot) ??
+                      round.players[0]!,
+                  )}
+                </span>
+              ) : null}
             </span>
-            <span className="text-sm tabular-nums text-white">
+            <span className="text-right text-sm tabular-nums text-white">
               {player.gross}
+              {player.net != null ? (
+                <span className="ml-2 text-emerald-300">net {player.net}</span>
+              ) : null}
               <span className="ml-2 text-zinc-500">
                 {formatToPar(player.toPar)}
               </span>
@@ -238,9 +279,13 @@ export function GolfLockedScorecard({
         ))}
       </ul>
 
-      <p className="px-4 py-2 text-[10px] leading-relaxed text-zinc-500">
-        Circle is birdie or better. Square is bogey or worse.
-      </p>
+      <div className="space-y-2 px-4 py-3">
+        <GolfRoundHandicapBanner round={round} players={round.players} />
+        <p className="text-[10px] leading-relaxed text-zinc-500">
+          Circle is birdie or better. Square is bogey or worse. Green hole
+          figures are net when a playing handicap was snapshotted.
+        </p>
+      </div>
     </div>
   );
 }

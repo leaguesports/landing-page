@@ -32,10 +32,22 @@ export function formatGolfHistoryScore(item: GolfHistoryItem): string {
     gross: playerGross(strokes, player.slot),
     toPar: playerToPar(strokes, player.slot, holes),
   }));
+  const first = item.players[0];
   if (totals.length === 1) {
+    if (typeof first?.netTotal === "number") {
+      return `${first.grossTotal ?? totals[0].gross} / ${first.netTotal} (${formatToPar(totals[0].toPar)})`;
+    }
     return `${totals[0].gross} (${formatToPar(totals[0].toPar)})`;
   }
-  return totals.map((t) => t.gross).join(" · ");
+  return item.players
+    .map((player, index) => {
+      const gross = player.grossTotal ?? totals[index]?.gross;
+      if (typeof player.netTotal === "number") {
+        return `${gross}/${player.netTotal}`;
+      }
+      return String(gross);
+    })
+    .join(" · ");
 }
 
 export function golfPlayerHistoryPath(playerUserId: string): string {
