@@ -26,7 +26,7 @@ export default async function TournamentsPage() {
         <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <Link
             href={HUB_ORGANISE_HUB_HREF}
-            className="mb-5 inline-block text-sm text-zinc-400 transition-colors hover:text-white"
+            className="mb-5 block w-fit text-sm text-zinc-400 transition-colors hover:text-white"
           >
             ← Organise
           </Link>
