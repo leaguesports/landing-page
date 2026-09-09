@@ -16,4 +16,9 @@ export const HUB_PLAY_DEEP_LINK_REDIRECTS = [
     source: "/play/tournaments/:path*",
     destination: "/tournaments/:path*",
   },
+  { source: "/play/golf-tours", destination: "/golf-tours" },
+  {
+    source: "/play/golf-tours/:path*",
+    destination: "/golf-tours/:path*",
+  },
 ] as const;

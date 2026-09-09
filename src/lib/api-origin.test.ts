@@ -17,6 +17,7 @@ import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
 import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
 import { TOURNAMENT_PROXY_SOURCES } from "./tournaments/tournaments.ts";
+import { GOLF_TOUR_PROXY_SOURCES } from "./golf-tours/golf-tours.ts";
 
 const ORIGIN_ENV_KEYS = [
   "API_ORIGIN",
@@ -486,6 +487,16 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/tournaments/"),
         );
         assert.deepEqual(tournamentSources, [...TOURNAMENT_PROXY_SOURCES]);
+        const golfTourSources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/golf-tours" ||
+            source.startsWith("/api/golf-tours/"),
+        );
+        assert.deepEqual(golfTourSources, [...GOLF_TOUR_PROXY_SOURCES]);
+        assert.ok(
+          rewriteSources.indexOf("/api/golf-tours/mine") <
+            rewriteSources.indexOf("/api/golf-tours/:id"),
+        );
         const lobbySources = API_PROXY_EXPLICIT_SOURCES.filter(
           (source) =>
             source === "/api/lobby" || source.startsWith("/api/lobby/"),

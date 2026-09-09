@@ -13,6 +13,8 @@ describe("Play deep-link redirects (#192)", () => {
         ["/play/team-matches/:path*", "/team-matches/:path*"],
         ["/play/tournaments", "/tournaments"],
         ["/play/tournaments/:path*", "/tournaments/:path*"],
+        ["/play/golf-tours", "/golf-tours"],
+        ["/play/golf-tours/:path*", "/golf-tours/:path*"],
       ],
     );
   });

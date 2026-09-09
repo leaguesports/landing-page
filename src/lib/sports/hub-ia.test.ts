@@ -14,6 +14,8 @@ import {
   HUB_HISTORY_OWNER_TAB,
   HUB_INTEGRATIONS_HREF,
   HUB_LOBBY_HREF,
+  HUB_GOLF_TOURS_HREF,
+  HUB_GOLF_TOURS_NEW_HREF,
   HUB_ORGANISE_ALIAS_HREF,
   HUB_ORGANISE_GOLF_HREF,
   HUB_ORGANISE_HUB_HREF,
@@ -119,6 +121,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192)", () => {
     assert.equal(HUB_TEAM_MATCHES_NEW_HREF, "/team-matches/new");
     assert.equal(HUB_TOURNAMENTS_HREF, "/tournaments");
     assert.equal(HUB_TOURNAMENTS_NEW_HREF, "/tournaments/new");
+    assert.equal(HUB_GOLF_TOURS_HREF, "/golf-tours");
+    assert.equal(HUB_GOLF_TOURS_NEW_HREF, "/golf-tours/new");
   });
 
   it("keeps Start actions inside Play only — never sticky or on Home", () => {
@@ -230,6 +234,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192)", () => {
       "lobby",
       "team-matches",
       "tournaments",
+      "golf-tours",
     ]);
     assert.deepEqual(
       HUB_ORGANISE_ROWS.map((row) => [row.id, row.title, row.href]),
@@ -238,7 +243,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192)", () => {
         ["lobby", "Lobby", HUB_LOBBY_HREF],
         ["team-matches", "Team matches", HUB_TEAM_MATCHES_HREF],
         ["tournaments", "Tournaments", HUB_TOURNAMENTS_HREF],
+        ["golf-tours", "Golf tours", HUB_GOLF_TOURS_HREF],
       ],
+    );
+    assert.equal(
+      HUB_ORGANISE_ROWS.find((row) => row.id === "golf-tours")?.href,
+      "/golf-tours",
     );
     assert.deepEqual(
       HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => [row.source, row.destination]),
@@ -249,6 +259,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192)", () => {
         ["/play/team-matches/:path*", "/team-matches/:path*"],
         ["/play/tournaments", "/tournaments"],
         ["/play/tournaments/:path*", "/tournaments/:path*"],
+        ["/play/golf-tours", "/golf-tours"],
+        ["/play/golf-tours/:path*", "/golf-tours/:path*"],
       ],
     );
     assert.equal(pendingLobbyProposalCount([]), 0);
