@@ -104,7 +104,11 @@ export function GolfHandicapIndexField({
         className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-        {saving ? "Saving…" : parsed.value == null ? "Clear handicap" : "Save handicap"}
+        {saving
+          ? "Saving…"
+          : parsed.ok && parsed.value == null
+            ? "Clear handicap"
+            : "Save handicap"}
       </button>
     </div>
   );

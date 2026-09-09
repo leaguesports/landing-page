@@ -7,6 +7,8 @@ import type {
   GolfTeeRatingsInput,
 } from "../../types/golf-round.ts";
 
+export type { GolfTeeRatings, GolfTeeRatingsInput };
+
 /** UI disclaimer — issue #207. API also returns `handicapDisclaimer`. */
 export const GOLF_HANDICAP_UI_DISCLAIMER =
   "Estimated course handicap (WHS-style)";

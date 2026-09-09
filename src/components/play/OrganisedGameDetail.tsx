@@ -336,22 +336,24 @@ export function OrganisedGameDetail({
       {isHost && isOpen ? (
         <div className="space-y-3">
           {game.sport === "golf" ? (
-            <GolfPreRoundSetup
-              golfCourse={golfCourse}
-              teeName={teeName}
-              onTeeNameChange={setTeeName}
-              startingHole={startingHole}
-              onStartingHoleChange={setStartingHole}
-              holesPlayed={holesPlayed}
-              onHolesPlayedChange={setHolesPlayed}
-            />
-            <GolfPreRoundHandicap
-              profileHi={profileHi}
-              signedIn={Boolean(isAuthenticated && user?.id)}
-              ratings={teeRatings}
-              roundHi={roundHi}
-              onRoundHiChange={setRoundHi}
-            />
+            <>
+              <GolfPreRoundSetup
+                golfCourse={golfCourse}
+                teeName={teeName}
+                onTeeNameChange={setTeeName}
+                startingHole={startingHole}
+                onStartingHoleChange={setStartingHole}
+                holesPlayed={holesPlayed}
+                onHolesPlayedChange={setHolesPlayed}
+              />
+              <GolfPreRoundHandicap
+                profileHi={profileHi}
+                signedIn={Boolean(isAuthenticated && user?.id)}
+                ratings={teeRatings}
+                roundHi={roundHi}
+                onRoundHiChange={setRoundHi}
+              />
+            </>
           ) : null}
           {game.sport === "golf" && !golfStartReady ? (
             <p className="text-center text-xs text-zinc-500">
