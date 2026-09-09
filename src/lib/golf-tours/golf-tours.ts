@@ -360,7 +360,10 @@ export function isIsoDay(value: unknown): value is string {
 export function parseIsoDay(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  return isIsoDay(trimmed) ? trimmed : null;
+  if (isIsoDay(trimmed)) return trimmed;
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})T/);
+  if (match && isIsoDay(match[1])) return match[1];
+  return null;
 }
 
 /** Local calendar date as YYYY-MM-DD (matches `<input type="date">`). */
@@ -420,8 +423,13 @@ export function formatTourDateRange(startDate: string, endDate: string): string 
   return `${start} – ${end}`;
 }
 
-export function isHost(tour: Pick<PublicGolfTourSummary, "viewer">): boolean {
-  return tour.viewer.role === "host";
+export function isHost(
+  tour: Pick<PublicGolfTourSummary, "viewer" | "hostUserId">,
+  userId?: string | null,
+): boolean {
+  if (tour.viewer.role === "host") return true;
+  const trimmed = userId?.trim() ?? "";
+  return trimmed.length > 0 && tour.hostUserId === trimmed;
 }
 
 export function isCompletedStatus(status: GolfTourStatus): boolean {
@@ -429,15 +437,88 @@ export function isCompletedStatus(status: GolfTourStatus): boolean {
 }
 
 export function canMutateTour(
-  tour: Pick<PublicGolfTourSummary, "status" | "viewer">,
+  tour: Pick<PublicGolfTourSummary, "status" | "viewer" | "hostUserId">,
+  userId?: string | null,
 ): boolean {
-  return isHost(tour) && !isCompletedStatus(tour.status);
+  return isHost(tour, userId) && !isCompletedStatus(tour.status);
 }
 
 export function canCompleteTour(
-  tour: Pick<PublicGolfTourSummary, "status" | "viewer">,
+  tour: Pick<PublicGolfTourSummary, "status" | "viewer" | "hostUserId">,
+  userId?: string | null,
 ): boolean {
-  return isHost(tour) && !isCompletedStatus(tour.status);
+  return isHost(tour, userId) && !isCompletedStatus(tour.status);
+}
+
+export type GolfTourHostNextStep =
+  | "camps"
+  | "rounds"
+  | "fourballs"
+  | "start"
+  | "complete"
+  | "done";
+
+/**
+ * After create the API already seeded 2 camps, so the host's first
+ * blocking step is adding a round (then fourballs, then start).
+ */
+export function golfTourHostNextStep(
+  tour: Pick<PublicGolfTour, "status" | "camps" | "rounds" | "fourballs">,
+): GolfTourHostNextStep {
+  if (isCompletedStatus(tour.status)) return "done";
+  if (tour.camps.length < 2) return "camps";
+  if (tour.rounds.length === 0) return "rounds";
+  const playable = tour.fourballs.filter(
+    (fourball) => fourball.status !== "cancelled",
+  );
+  if (playable.length === 0) return "fourballs";
+  const canStart = playable.some(
+    (fourball) => fourball.status === "pending" && fourball.players.length >= 1,
+  );
+  if (canStart) return "start";
+  const inPlay = playable.some(
+    (fourball) => fourball.status === "live" || fourball.status === "locked",
+  );
+  return inPlay ? "complete" : "fourballs";
+}
+
+export function golfTourHostNextStepCopy(step: GolfTourHostNextStep): string {
+  if (step === "camps") {
+    return "Add at least two camps (teams), then add a round.";
+  }
+  if (step === "rounds") {
+    return "Rename the camps if you want, then add a round — date, golf course, optional label.";
+  }
+  if (step === "fourballs") {
+    return "Add a fourball to a round: assign a camp and 1–4 players.";
+  }
+  if (step === "start") {
+    return "Start a fourball to open the live golf scorecard.";
+  }
+  if (step === "complete") {
+    return "Fourballs are underway. Refresh the leaderboard, then complete the tour when you are done.";
+  }
+  return "";
+}
+
+/** Host round composer stays open after create so the hub is not a dead empty state. */
+export function shouldShowHostRoundComposer(
+  host: boolean,
+  roundCount: number,
+  addingRound: boolean,
+): boolean {
+  return host && (addingRound || roundCount === 0);
+}
+
+export function nextCampPlaceholder(
+  camps: readonly Pick<PublicGolfTourCamp, "name">[],
+): string {
+  const used = new Set(camps.map((camp) => camp.name.trim().toLowerCase()));
+  for (let index = 0; index < 26; index += 1) {
+    const name = `Camp ${String.fromCharCode(65 + index)}`;
+    if (!used.has(name.toLowerCase())) return name;
+  }
+  return `Camp ${camps.length + 1}`;
 }
 
 export function isSeatedRegisteredPlayer(
@@ -797,19 +878,21 @@ export function parseGolfTourFourball(
 export function parseGolfTourCamp(value: unknown): PublicGolfTourCamp | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
-  if (
-    typeof row.id !== "string" ||
-    typeof row.name !== "string" ||
-    typeof row.sortOrder !== "number" ||
-    !Number.isFinite(row.sortOrder)
-  ) {
+  if (typeof row.id !== "string" || typeof row.name !== "string") {
     return null;
+  }
+  let sortOrder = 0;
+  if (typeof row.sortOrder === "number" && Number.isFinite(row.sortOrder)) {
+    sortOrder = row.sortOrder;
+  } else if (typeof row.sortOrder === "string" && row.sortOrder.trim()) {
+    const parsed = Number(row.sortOrder);
+    if (Number.isFinite(parsed)) sortOrder = parsed;
   }
   return {
     id: row.id,
     name: row.name,
     color: typeof row.color === "string" ? row.color : null,
-    sortOrder: row.sortOrder,
+    sortOrder,
   };
 }
 
@@ -821,8 +904,7 @@ export function parseGolfTourRound(value: unknown): PublicGolfTourRound | null {
     typeof row.id !== "string" ||
     !date ||
     typeof row.venueCmsId !== "string" ||
-    !row.venueCmsId.trim() ||
-    !isGolfTourFormat(row.format)
+    !row.venueCmsId.trim()
   ) {
     return null;
   }
@@ -831,7 +913,7 @@ export function parseGolfTourRound(value: unknown): PublicGolfTourRound | null {
     date,
     venueCmsId: row.venueCmsId,
     label: typeof row.label === "string" ? row.label : null,
-    format: row.format,
+    format: isGolfTourFormat(row.format) ? row.format : "stroke",
   };
 }
 
