@@ -2,6 +2,12 @@
 
 import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
 import { GolfTourLeaderboard } from "@/components/golf-tours/GolfTourLeaderboard";
+import {
+  GolfTourPlayerSlots,
+  emptyGolfTourSlots,
+  golfTourFieldClass,
+  type GolfTourSlotDraft,
+} from "@/components/golf-tours/GolfTourPlayerSlots";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
@@ -26,6 +32,10 @@ import {
   fourballsForRound,
   getGolfTourLeaderboard,
   golfTourHref,
+  golfTourHostNextStep,
+  golfTourHostNextStepCopy,
+  nextCampPlaceholder,
+  shouldShowHostRoundComposer,
   startGolfTourFourball,
   updateGolfTour,
   updateGolfTourCamp,
@@ -48,18 +58,6 @@ type GolfTourHubProps = {
   initialLeaderboard: PublicGolfTourLeaderboard | null;
 };
 
-type SlotDraft = {
-  displayName: string;
-  userId: string | null;
-};
-
-const EMPTY_SLOTS: SlotDraft[] = [
-  { displayName: "", userId: null },
-  { displayName: "", userId: null },
-  { displayName: "", userId: null },
-  { displayName: "", userId: null },
-];
-
 function sendToLogin(id: string) {
   const returnTo =
     typeof window === "undefined"
@@ -68,7 +66,7 @@ function sendToLogin(id: string) {
   window.location.href = getLoginPageHref(returnTo);
 }
 
-function playersFromSlots(slots: SlotDraft[]): GolfTourPlayerInput[] {
+function playersFromSlots(slots: GolfTourSlotDraft[]): GolfTourPlayerInput[] {
   return slots.flatMap((slot, index) => {
     const displayName = slot.displayName.trim();
     if (!displayName) return [];
@@ -84,8 +82,10 @@ function playersFromSlots(slots: SlotDraft[]): GolfTourPlayerInput[] {
   });
 }
 
-function slotsFromPlayers(players: PublicGolfTourFourball["players"]): SlotDraft[] {
-  const next = EMPTY_SLOTS.map((slot) => ({ ...slot }));
+function slotsFromPlayers(
+  players: PublicGolfTourFourball["players"],
+): GolfTourSlotDraft[] {
+  const next = emptyGolfTourSlots();
   for (const player of players) {
     const index = player.slot - 1;
     if (index < 0 || index > 3) continue;
@@ -104,86 +104,13 @@ function venueForCmsId(
   return venues.find((venue) => venue.id === cmsId) ?? null;
 }
 
-function fieldClass() {
-  return "box-border min-h-11 w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none [color-scheme:dark] focus:border-emerald-400/40";
+function campDraftMap(camps: PublicGolfTour["camps"]): Record<string, string> {
+  return Object.fromEntries(camps.map((camp) => [camp.id, camp.name]));
 }
 
 /** Native date inputs need overflow clipping + webkit edit min-width resets. */
 function dateFieldClass() {
-  return `${fieldClass()} [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
-}
-
-function PlayerSlots({
-  slots,
-  friends,
-  onChange,
-  disabled,
-}: {
-  slots: SlotDraft[];
-  friends: Friend[];
-  onChange: (slots: SlotDraft[]) => void;
-  disabled?: boolean;
-}) {
-  function setSlot(index: number, patch: Partial<SlotDraft>) {
-    onChange(
-      slots.map((slot, slotIndex) =>
-        slotIndex === index ? { ...slot, ...patch } : slot,
-      ),
-    );
-  }
-
-  function fillFromFriend(friend: Friend) {
-    const taken = new Set(
-      slots.map((slot) => slot.userId).filter((id): id is string => Boolean(id)),
-    );
-    if (taken.has(friend.id)) return;
-    const emptyIndex = slots.findIndex((slot) => !slot.displayName.trim());
-    if (emptyIndex < 0) return;
-    setSlot(emptyIndex, {
-      displayName: friend.displayName,
-      userId: friend.id,
-    });
-  }
-
-  return (
-    <div className="space-y-2">
-      {friends.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {friends.slice(0, 8).map((friend) => (
-            <button
-              key={friend.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => fillFromFriend(friend)}
-              className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300 hover:border-white/20 disabled:opacity-50"
-            >
-              {friend.displayName}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {slots.map((slot, index) => (
-        <label key={index} className="block">
-          <span className="mb-1 block text-xs text-zinc-500">
-            Player {index + 1}
-          </span>
-          <input
-            type="text"
-            value={slot.displayName}
-            disabled={disabled}
-            placeholder={index === 0 ? "Required to start" : "Optional guest or friend"}
-            onChange={(event) =>
-              setSlot(index, {
-                displayName: event.target.value,
-                userId: null,
-              })
-            }
-            className={fieldClass()}
-          />
-        </label>
-      ))}
-    </div>
-  );
+  return `${golfTourFieldClass()} [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
 }
 
 export function GolfTourHub({
@@ -193,7 +120,8 @@ export function GolfTourHub({
   initialLeaderboard,
 }: GolfTourHubProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user, displayName } =
+    useAuth();
   const [current, setCurrent] = useState(tour);
   const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
@@ -201,16 +129,25 @@ export function GolfTourHub({
   const [name, setName] = useState(tour.name);
   const [startDate, setStartDate] = useState(tour.startDate);
   const [endDate, setEndDate] = useState(tour.endDate);
+  const [campDrafts, setCampDrafts] = useState(() => campDraftMap(tour.camps));
   const [campName, setCampName] = useState("");
   const [roundDate, setRoundDate] = useState(tour.startDate);
   const [roundLabel, setRoundLabel] = useState("");
   const [roundVenue, setRoundVenue] = useState<GolfVenueOption | null>(null);
-  const [addingRound, setAddingRound] = useState(false);
-  const [addingFourballFor, setAddingFourballFor] = useState<string | null>(null);
+  const [addingRound, setAddingRound] = useState(tour.rounds.length === 0);
+  const [addingFourballFor, setAddingFourballFor] = useState<string | null>(
+    null,
+  );
   const [fourballCampId, setFourballCampId] = useState(tour.camps[0]?.id ?? "");
-  const [fourballSlots, setFourballSlots] = useState<SlotDraft[]>(EMPTY_SLOTS);
-  const [editingFourballId, setEditingFourballId] = useState<string | null>(null);
-  const [startingFourballId, setStartingFourballId] = useState<string | null>(null);
+  const [fourballSlots, setFourballSlots] = useState<GolfTourSlotDraft[]>(() =>
+    emptyGolfTourSlots(),
+  );
+  const [editingFourballId, setEditingFourballId] = useState<string | null>(
+    null,
+  );
+  const [startingFourballId, setStartingFourballId] = useState<string | null>(
+    null,
+  );
   const [teeName, setTeeName] = useState("");
   const [startingHole, setStartingHole] = useState(1);
   const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(9);
@@ -218,7 +155,20 @@ export function GolfTourHub({
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const host = canMutateTour(current);
+  const host = canMutateTour(current, user?.id);
+  const nextStep = golfTourHostNextStep(current);
+  const nextStepCopy = golfTourHostNextStepCopy(nextStep);
+  const showRoundComposer = shouldShowHostRoundComposer(
+    host,
+    current.rounds.length,
+    addingRound,
+  );
+  const campPlaceholder = nextCampPlaceholder(current.camps);
+  const playerSeed = {
+    displayName: displayName || user?.displayName || user?.name || "",
+    userId: user?.id ?? null,
+  };
+
   const sortedCamps = useMemo(
     () =>
       [...current.camps].sort(
@@ -236,6 +186,7 @@ export function GolfTourHub({
     setName(next.name);
     setStartDate(next.startDate);
     setEndDate(next.endDate);
+    setCampDrafts(campDraftMap(next.camps));
     if (!fourballCampId && next.camps[0]) setFourballCampId(next.camps[0].id);
     router.refresh();
   }
@@ -253,7 +204,7 @@ export function GolfTourHub({
       | { ok: true; value: PublicGolfTour }
       | { ok: false; error: string; status: number }
     >,
-    success?: string,
+    options?: { success?: string; onSuccess?: () => void },
   ) {
     setError(null);
     setMessage(null);
@@ -265,7 +216,8 @@ export function GolfTourHub({
           return;
         }
         apply(result.value);
-        if (success) setMessage(success);
+        if (options?.success) setMessage(options.success);
+        options?.onSuccess?.();
       });
     });
   }
@@ -292,12 +244,12 @@ export function GolfTourHub({
           startDate,
           endDate,
         }),
-      "Tour updated.",
+      { success: "Tour updated." },
     );
   }
 
   function onComplete() {
-    if (!canCompleteTour(current)) return;
+    if (!canCompleteTour(current, user?.id)) return;
     const confirmed =
       typeof window === "undefined"
         ? true
@@ -305,18 +257,33 @@ export function GolfTourHub({
             `Complete ${current.name}? Fourballs can still finish, but the tour can no longer be edited.`,
           );
     if (!confirmed) return;
-    runTourAction(() => completeGolfTour(current.id), "Tour completed.");
+    runTourAction(() => completeGolfTour(current.id), {
+      success: "Tour completed.",
+    });
   }
 
   function onAddCamp() {
-    runTourAction(() => addGolfTourCamp(current.id, { name: campName }), "Camp added.");
-    setCampName("");
+    const nextName = campName.trim() || campPlaceholder;
+    runTourAction(
+      () => addGolfTourCamp(current.id, { name: nextName }),
+      {
+        success: "Camp added.",
+        onSuccess: () => setCampName(""),
+      },
+    );
   }
 
-  function onRenameCamp(campId: string, nextName: string) {
+  function onRenameCamp(campId: string) {
+    const nextName = (campDrafts[campId] ?? "").trim();
+    if (!nextName) {
+      setError("Camp name is required");
+      return;
+    }
+    const currentName = campById(current, campId)?.name;
+    if (nextName === currentName) return;
     runTourAction(
       () => updateGolfTourCamp(current.id, campId, { name: nextName }),
-      "Camp updated.",
+      { success: "Camp updated." },
     );
   }
 
@@ -333,36 +300,68 @@ export function GolfTourHub({
           label: roundLabel || null,
           venue: { name: roundVenue.name, slug: roundVenue.slug },
         }),
-      "Round added.",
+      {
+        success: "Round added. Add a fourball next.",
+        onSuccess: () => {
+          setAddingRound(false);
+          setRoundLabel("");
+          setRoundVenue(null);
+        },
+      },
     );
-    setAddingRound(false);
-    setRoundLabel("");
-    setRoundVenue(null);
+  }
+
+  function openAddFourball(roundId: string) {
+    const opening = addingFourballFor !== roundId;
+    setAddingFourballFor(opening ? roundId : null);
+    setEditingFourballId(null);
+    setFourballCampId(current.camps[0]?.id ?? "");
+    setFourballSlots(emptyGolfTourSlots(playerSeed));
   }
 
   function onAddFourball(roundId: string) {
+    const players = playersFromSlots(fourballSlots);
+    if (players.length < 1) {
+      setError("Add at least one player to this fourball");
+      return;
+    }
+    if (!fourballCampId) {
+      setError("Pick a camp for this fourball");
+      return;
+    }
     runTourAction(
       () =>
         addGolfTourFourball(current.id, roundId, {
           campId: fourballCampId,
-          players: playersFromSlots(fourballSlots),
+          players,
         }),
-      "Fourball added.",
+      {
+        success: "Fourball added. Start it when the group is ready.",
+        onSuccess: () => {
+          setAddingFourballFor(null);
+          setFourballSlots(emptyGolfTourSlots(playerSeed));
+        },
+      },
     );
-    setAddingFourballFor(null);
-    setFourballSlots(EMPTY_SLOTS.map((slot) => ({ ...slot })));
   }
 
   function onSaveFourball(fourballId: string) {
+    const players = playersFromSlots(fourballSlots);
+    if (players.length < 1) {
+      setError("Add at least one player to this fourball");
+      return;
+    }
     runTourAction(
       () =>
         updateGolfTourFourball(current.id, fourballId, {
           campId: fourballCampId,
-          players: playersFromSlots(fourballSlots),
+          players,
         }),
-      "Fourball updated.",
+      {
+        success: "Fourball updated.",
+        onSuccess: () => setEditingFourballId(null),
+      },
     );
-    setEditingFourballId(null);
   }
 
   function onCancelFourball(fourballId: string) {
@@ -374,7 +373,7 @@ export function GolfTourHub({
     runTourAction(
       () =>
         updateGolfTourFourball(current.id, fourballId, { status: "cancelled" }),
-      "Fourball cancelled.",
+      { success: "Fourball cancelled." },
     );
   }
 
@@ -424,20 +423,7 @@ export function GolfTourHub({
     });
   }
 
-  if (!isAuthenticated && !authLoading) {
-    return (
-      <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
-        <p className="text-sm text-zinc-400">Sign in to view this golf tour.</p>
-        <button
-          type="button"
-          onClick={() => sendToLogin(current.id)}
-          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-        >
-          Sign in
-        </button>
-      </div>
-    );
-  }
+  const fieldClass = golfTourFieldClass();
 
   return (
     <div className="min-w-0 space-y-8">
@@ -451,7 +437,7 @@ export function GolfTourHub({
         <p className="text-sm text-zinc-400">
           {formatTourDateRange(current.startDate, current.endDate)}
         </p>
-        {canCompleteTour(current) ? (
+        {canCompleteTour(current, user?.id) ? (
           <button
             type="button"
             disabled={pending}
@@ -462,6 +448,32 @@ export function GolfTourHub({
           </button>
         ) : null}
       </header>
+
+      {!isAuthenticated && !authLoading ? (
+        <div className="rounded-3xl border border-amber-400/20 bg-amber-400/5 px-5 py-4">
+          <p className="text-sm text-amber-100">
+            Sign in to edit this tour or start a fourball.
+          </p>
+          <button
+            type="button"
+            onClick={() => sendToLogin(current.id)}
+            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+          >
+            Sign in
+          </button>
+        </div>
+      ) : null}
+
+      {host && nextStepCopy ? (
+        <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">
+            Continue setup
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-emerald-50">
+            {nextStepCopy}
+          </p>
+        </div>
+      ) : null}
 
       {error ? (
         <p className="text-sm text-red-300" role="alert">
@@ -483,7 +495,7 @@ export function GolfTourHub({
                 value={name}
                 maxLength={80}
                 onChange={(event) => setName(event.target.value)}
-                className={fieldClass()}
+                className={fieldClass}
               />
             </div>
             <div className="min-w-0">
@@ -527,23 +539,48 @@ export function GolfTourHub({
 
       <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
         <h2 className="font-display text-2xl tracking-wide text-white">Camps</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+          Camps are the teams. The tour starts with Camp A and Camp B — rename
+          them or add another.
+        </p>
         <ul className="mt-4 space-y-2">
           {sortedCamps.map((camp) => (
             <li
               key={camp.id}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 px-4 py-3"
+              className="flex flex-col gap-2 rounded-2xl border border-white/8 px-4 py-3 sm:flex-row sm:items-center"
             >
               {host ? (
-                <input
-                  type="text"
-                  defaultValue={camp.name}
-                  maxLength={40}
-                  onBlur={(event) => {
-                    const next = event.target.value.trim();
-                    if (next && next !== camp.name) onRenameCamp(camp.id, next);
-                  }}
-                  className="min-h-9 w-full rounded-xl border border-transparent bg-transparent px-0 text-sm text-white outline-none focus:border-emerald-400/40 focus:px-3"
-                />
+                <>
+                  <label className="block min-w-0 flex-1">
+                    <span className="mb-1 block text-xs text-zinc-500">
+                      Camp name
+                    </span>
+                    <input
+                      type="text"
+                      value={campDrafts[camp.id] ?? camp.name}
+                      maxLength={40}
+                      onChange={(event) =>
+                        setCampDrafts((drafts) => ({
+                          ...drafts,
+                          [camp.id]: event.target.value,
+                        }))
+                      }
+                      className={fieldClass}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={
+                      pending ||
+                      (campDrafts[camp.id] ?? camp.name).trim() === camp.name ||
+                      !(campDrafts[camp.id] ?? "").trim()
+                    }
+                    onClick={() => onRenameCamp(camp.id)}
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-white/12 px-4 text-sm font-medium text-zinc-200 hover:border-white/20 disabled:opacity-50"
+                  >
+                    Save name
+                  </button>
+                </>
               ) : (
                 <span className="text-sm text-white">{camp.name}</span>
               )}
@@ -552,19 +589,24 @@ export function GolfTourHub({
         </ul>
         {host ? (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              value={campName}
-              maxLength={40}
-              placeholder="Camp C"
-              onChange={(event) => setCampName(event.target.value)}
-              className={fieldClass()}
-            />
+            <label className="block min-w-0 flex-1">
+              <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                New camp
+              </span>
+              <input
+                type="text"
+                value={campName}
+                maxLength={40}
+                placeholder={campPlaceholder}
+                onChange={(event) => setCampName(event.target.value)}
+                className={fieldClass}
+              />
+            </label>
             <button
               type="button"
-              disabled={pending || !campName.trim()}
+              disabled={pending}
               onClick={onAddCamp}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
+              className="mt-0 inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60 sm:mt-6"
             >
               Add camp
             </button>
@@ -575,19 +617,24 @@ export function GolfTourHub({
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl tracking-wide text-white">Rounds</h2>
-          {host ? (
+          {host && sortedRounds.length > 0 ? (
             <button
               type="button"
               onClick={() => setAddingRound((open) => !open)}
-              className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+              className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
             >
               {addingRound ? "Cancel" : "Add round"}
             </button>
           ) : null}
         </div>
 
-        {addingRound && host ? (
-          <div className="min-w-0 space-y-4 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5">
+        {showRoundComposer ? (
+          <div className="min-w-0 space-y-4 overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#141814] p-5">
+            <h3 className="text-lg font-medium text-white">Add a round</h3>
+            <p className="text-sm leading-relaxed text-zinc-500">
+              Pick a date in the tour window and a golf course. Fourballs on
+              this round use that venue.
+            </p>
             <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Date
@@ -610,14 +657,15 @@ export function GolfTourHub({
                 value={roundLabel}
                 placeholder="Saturday AM"
                 onChange={(event) => setRoundLabel(event.target.value)}
-                className={fieldClass()}
+                className={fieldClass}
               />
             </label>
             <div>
               <p className="mb-2 text-xs font-medium text-zinc-400">Golf course</p>
               {venues.length === 0 ? (
                 <p className="text-sm text-zinc-500">
-                  No golf courses with scorecard data yet.
+                  No golf courses with scorecard data yet. Add hole data in CMS
+                  before creating a round.
                 </p>
               ) : (
                 <VenuePicker
@@ -632,7 +680,7 @@ export function GolfTourHub({
             </div>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || venues.length === 0}
               onClick={onAddRound}
               className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
             >
@@ -641,15 +689,16 @@ export function GolfTourHub({
           </div>
         ) : null}
 
-        {sortedRounds.length === 0 ? (
+        {sortedRounds.length === 0 && !host ? (
           <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
             <p className="text-sm leading-relaxed text-zinc-400">
-              No rounds yet. Add a date and golf venue so fourballs have a
-              course to play.
+              No rounds yet. The host adds a date and golf venue so fourballs
+              have a course to play.
             </p>
           </div>
-        ) : (
-          sortedRounds.map((round) => {
+        ) : null}
+
+        {sortedRounds.map((round) => {
             const venue = venueForCmsId(venues, round.venueCmsId);
             const roundFourballs = fourballsForRound(current, round.id);
             return (
@@ -676,14 +725,8 @@ export function GolfTourHub({
                   {host ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        setAddingFourballFor(
-                          addingFourballFor === round.id ? null : round.id,
-                        );
-                        setFourballCampId(current.camps[0]?.id ?? "");
-                        setFourballSlots(EMPTY_SLOTS.map((slot) => ({ ...slot })));
-                      }}
-                      className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+                      onClick={() => openAddFourball(round.id)}
+                      className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
                     >
                       {addingFourballFor === round.id ? "Cancel" : "Add fourball"}
                     </button>
@@ -708,7 +751,7 @@ export function GolfTourHub({
                               updateGolfTourRound(current.id, round.id, {
                                 date: next,
                               }),
-                            "Round updated.",
+                            { success: "Round updated." },
                           );
                         }
                       }}
@@ -718,7 +761,10 @@ export function GolfTourHub({
                 ) : null}
 
                 {addingFourballFor === round.id && host ? (
-                  <div className="mt-4 space-y-3 rounded-2xl border border-white/8 p-4">
+                  <div className="mt-4 space-y-3 rounded-2xl border border-emerald-400/20 p-4">
+                    <h4 className="text-sm font-medium text-white">
+                      New fourball
+                    </h4>
                     <label className="block">
                       <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                         Camp
@@ -726,7 +772,7 @@ export function GolfTourHub({
                       <select
                         value={fourballCampId}
                         onChange={(event) => setFourballCampId(event.target.value)}
-                        className={fieldClass()}
+                        className={fieldClass}
                       >
                         {sortedCamps.map((camp) => (
                           <option key={camp.id} value={camp.id}>
@@ -735,7 +781,7 @@ export function GolfTourHub({
                         ))}
                       </select>
                     </label>
-                    <PlayerSlots
+                    <GolfTourPlayerSlots
                       slots={fourballSlots}
                       friends={friends}
                       onChange={setFourballSlots}
@@ -753,9 +799,23 @@ export function GolfTourHub({
                 ) : null}
 
                 {roundFourballs.length === 0 ? (
-                  <p className="mt-4 text-sm text-zinc-500">
-                    No fourballs on this round yet.
-                  </p>
+                  <div className="mt-4 rounded-2xl border border-dashed border-white/12 px-4 py-4">
+                    <p className="text-sm text-zinc-500">
+                      No fourballs on this round yet.
+                      {host
+                        ? " Assign a camp and 1–4 players, then start when the group is ready."
+                        : ""}
+                    </p>
+                    {host && addingFourballFor !== round.id ? (
+                      <button
+                        type="button"
+                        onClick={() => openAddFourball(round.id)}
+                        className="mt-3 inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                      >
+                        Add fourball
+                      </button>
+                    ) : null}
+                  </div>
                 ) : (
                   <ul className="mt-4 space-y-3">
                     {roundFourballs.map((row) => {
@@ -816,6 +876,7 @@ export function GolfTourHub({
                                     type="button"
                                     onClick={() => {
                                       setEditingFourballId(editing ? null : row.id);
+                                      setAddingFourballFor(null);
                                       setFourballCampId(row.campId);
                                       setFourballSlots(slotsFromPlayers(row.players));
                                     }}
@@ -842,7 +903,7 @@ export function GolfTourHub({
                                 onChange={(event) =>
                                   setFourballCampId(event.target.value)
                                 }
-                                className={fieldClass()}
+                                className={fieldClass}
                               >
                                 {sortedCamps.map((item) => (
                                   <option key={item.id} value={item.id}>
@@ -850,7 +911,7 @@ export function GolfTourHub({
                                   </option>
                                 ))}
                               </select>
-                              <PlayerSlots
+                              <GolfTourPlayerSlots
                                 slots={fourballSlots}
                                 friends={friends}
                                 onChange={setFourballSlots}
@@ -895,8 +956,7 @@ export function GolfTourHub({
                 )}
               </article>
             );
-          })
-        )}
+          })}
       </section>
 
       <GolfTourLeaderboard

@@ -7,8 +7,12 @@ import {
   GOLF_TOURS_HREF,
   GOLF_TOURS_NEW_HREF,
   addDaysIso,
+  addGolfTourCampWith,
+  addGolfTourFourballWith,
+  addGolfTourRoundWith,
   buildCreateGolfTourPayload,
   buildStartFourballPayload,
+  canMutateTour,
   canStartFourball,
   compareIsoDays,
   formatAvgGross,
@@ -19,17 +23,23 @@ import {
   golfTourCompleteUrl,
   golfTourFourballStartUrl,
   golfTourHref,
+  golfTourHostNextStep,
   golfTourLeaderboardUrl,
   golfTourMineUrl,
   golfTourRoundFourballsUrl,
   golfTourUrl,
   golfToursRootUrl,
+  isHost,
   isIsoDay,
+  nextCampPlaceholder,
   parseGolfTour,
+  parseGolfTourCamp,
   parseGolfTourLeaderboard,
+  parseGolfTourRound,
   parseIsoDay,
   parseLeaderboardPlayer,
   partitionMineTours,
+  shouldShowHostRoundComposer,
   startGolfTourFourballWith,
   todayIsoDay,
   type PublicGolfTour,
@@ -116,6 +126,7 @@ describe("golf tour date YYYY-MM-DD helpers", () => {
     assert.equal(isIsoDay("2026-02-31"), false);
     assert.equal(isIsoDay("09/12/2026"), false);
     assert.equal(parseIsoDay("2026-09-12"), "2026-09-12");
+    assert.equal(parseIsoDay("2026-09-12T00:00:00.000Z"), "2026-09-12");
     assert.equal(parseIsoDay("nope"), null);
     assert.equal(todayIsoDay(new Date(2026, 8, 9)), "2026-09-09");
     assert.equal(addDaysIso("2026-09-12", 2), "2026-09-14");
@@ -414,5 +425,165 @@ describe("golf tour mine lists and parsers", () => {
       parseGolfTour(tour({ startDate: "not-a-day" as unknown as string })),
       null,
     );
+    assert.equal(
+      parseGolfTourCamp({ id: "c1", name: "Camp A" })?.sortOrder,
+      0,
+    );
+    assert.equal(
+      parseGolfTourRound({
+        id: "r1",
+        date: "2026-09-12T08:00:00.000Z",
+        venueCmsId: "cms-1",
+      })?.format,
+      "stroke",
+    );
   });
 });
+
+describe("golf tour host setup path", () => {
+  it("keeps host controls available and names the next empty-state step", () => {
+    const draft = tour({
+      rounds: [],
+      fourballs: [],
+    });
+    assert.equal(golfTourHostNextStep(draft), "rounds");
+    assert.equal(shouldShowHostRoundComposer(true, 0, false), true);
+    assert.equal(shouldShowHostRoundComposer(true, 1, false), false);
+    assert.equal(shouldShowHostRoundComposer(true, 1, true), true);
+    assert.equal(shouldShowHostRoundComposer(false, 0, true), false);
+    assert.equal(nextCampPlaceholder(draft.camps), "Camp C");
+    assert.equal(canMutateTour(draft), true);
+    assert.equal(
+      canMutateTour({
+        ...draft,
+        viewer: { role: "player" },
+      }),
+      false,
+    );
+    assert.equal(
+      canMutateTour(
+        {
+          ...draft,
+          viewer: { role: "player" },
+        },
+        "host-1",
+      ),
+      true,
+    );
+    assert.equal(
+      isHost({ viewer: { role: "player" }, hostUserId: "host-1" }, "host-1"),
+      true,
+    );
+    assert.equal(canMutateTour({ ...draft, status: "completed" }), false);
+
+    const withRound = tour({ fourballs: [] });
+    assert.equal(golfTourHostNextStep(withRound), "fourballs");
+    assert.equal(golfTourHostNextStep(tour()), "start");
+    assert.equal(
+      golfTourHostNextStep(tour({ status: "completed" })),
+      "done",
+    );
+  });
+
+  it("posts camps, rounds, and fourballs and returns the nested tour", async () => {
+    const origin = "https://api.example.test";
+    const afterCamp = tour({
+      camps: [
+        ...tour().camps,
+        { id: "camp-c", name: "Camp C", color: null, sortOrder: 2 },
+      ],
+    });
+    const campResult = await addGolfTourCampWith(
+      "tour-1",
+      { name: "Camp C" },
+      {
+        fetch: async (url, init) => {
+          assert.equal(String(url), `${origin}/api/golf-tours/tour-1/camps`);
+          assert.equal(init?.method, "POST");
+          assert.equal(init?.credentials, "include");
+          assert.equal(JSON.parse(String(init?.body)).name, "Camp C");
+          return new Response(JSON.stringify({ tour: afterCamp }), {
+            status: 201,
+          });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(campResult.ok, true);
+    if (campResult.ok) {
+      assert.equal(campResult.value.camps.at(-1)?.name, "Camp C");
+    }
+
+    const afterRound = tour();
+    const roundResult = await addGolfTourRoundWith(
+      "tour-1",
+      {
+        date: "2026-09-13",
+        venueCmsId: "sanity-course-1",
+        label: "Sunday AM",
+        venue: { name: "Test Links", slug: "test-links" },
+      },
+      {
+        fetch: async (url, init) => {
+          const href = String(url);
+          if (href.includes("/api/venues/")) {
+            return new Response(
+              JSON.stringify({
+                id: "v1",
+                cmsId: "sanity-course-1",
+                name: "Test Links",
+                slug: "test-links",
+              }),
+              { status: 200 },
+            );
+          }
+          assert.equal(href, `${origin}/api/golf-tours/tour-1/rounds`);
+          assert.equal(init?.method, "POST");
+          const body = JSON.parse(String(init?.body));
+          assert.equal(body.date, "2026-09-13");
+          assert.equal(body.venueCmsId, "sanity-course-1");
+          assert.equal(body.label, "Sunday AM");
+          return new Response(JSON.stringify({ tour: afterRound }), {
+            status: 201,
+          });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(roundResult.ok, true);
+
+    const fourballResult = await addGolfTourFourballWith(
+      "tour-1",
+      "round-1",
+      {
+        campId: "camp-a",
+        players: [
+          {
+            slot: 1,
+            displayName: "Alex",
+            isGuest: false,
+            userId: "player-1",
+          },
+        ],
+      },
+      {
+        fetch: async (url, init) => {
+          assert.equal(
+            String(url),
+            `${origin}/api/golf-tours/tour-1/rounds/round-1/fourballs`,
+          );
+          assert.equal(init?.method, "POST");
+          const body = JSON.parse(String(init?.body));
+          assert.equal(body.campId, "camp-a");
+          assert.equal(body.players[0].displayName, "Alex");
+          return new Response(JSON.stringify({ tour: tour() }), {
+            status: 201,
+          });
+        },
+        baseUrl: origin,
+      },
+    );
+    assert.equal(fourballResult.ok, true);
+  });
+});
+

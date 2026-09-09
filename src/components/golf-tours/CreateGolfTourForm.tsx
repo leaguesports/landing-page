@@ -72,8 +72,9 @@ export function CreateGolfTourForm() {
         Create a golf tour
       </h2>
       <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-        Multi-day, multi-course camps. Defaults to Camp A and Camp B — add
-        rounds and fourballs on the next screen. Stroke play only for v1.
+        Multi-day, multi-course camps. Defaults to two teams (Camp A and Camp
+        B). On the next screen you can rename camps, add rounds, then add
+        fourballs. Stroke play only for v1.
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
