@@ -33,8 +33,8 @@ export function GolfTourLeaderboard({
             Leaderboard
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-            Average gross on locked fourball scorecards. Live cards do not
-            count until they are locked.
+            Average gross on locked, non-sit-out fourball scorecards. Live
+            cards and sit-outs do not count until they are locked and playing.
           </p>
         </div>
         {onRefresh ? (
@@ -58,7 +58,7 @@ export function GolfTourLeaderboard({
       {!hasRows ? (
         <p className="mt-4 text-sm text-zinc-500">
           No locked scores yet. Start a fourball, play the card, then lock it
-          to appear here.
+          to appear here. Sit-outs are excluded.
         </p>
       ) : (
         <div className="mt-5 space-y-6">

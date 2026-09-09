@@ -1,13 +1,17 @@
 "use client";
 
 import { GolfPreRoundSetup } from "@/components/golf/GolfPreRoundSetup";
+import { GolfTourHowItWorks } from "@/components/golf-tours/GolfTourHowItWorks";
 import { GolfTourLeaderboard } from "@/components/golf-tours/GolfTourLeaderboard";
 import {
   GolfTourPlayerSlots,
   emptyGolfTourSlots,
   golfTourFieldClass,
+  golfTourOutlineButtonClass,
+  golfTourPrimaryButtonClass,
   type GolfTourSlotDraft,
 } from "@/components/golf-tours/GolfTourPlayerSlots";
+import { GolfTourShareButton } from "@/components/golf-tours/GolfTourShareButton";
 import { VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
@@ -18,12 +22,16 @@ import type { Friend } from "@/lib/friends/friends";
 import {
   addGolfTourCamp,
   addGolfTourFourball,
+  addGolfTourRosterMember,
   addGolfTourRound,
+  addGolfTourStandingFourball,
   canCompleteTour,
   canMutateTour,
   canStartFourball,
   campById,
   completeGolfTour,
+  copyGolfTourRoundFrom,
+  fourballSharePath,
   formatFourballStatus,
   formatGolfTourStatus,
   formatIsoDayLabel,
@@ -33,19 +41,31 @@ import {
   getGolfTourLeaderboard,
   golfTourHref,
   golfTourHostNextStep,
+  golfTourHostNextStepAction,
   golfTourHostNextStepCopy,
+  golfTourHostNextStepHref,
   nextCampPlaceholder,
+  prepareGolfTourRound,
+  previousRound,
+  removeGolfTourRosterMember,
+  removeGolfTourStandingFourball,
+  roundNeedsPrepare,
+  scoringPlayers,
   shouldShowHostRoundComposer,
   startGolfTourFourball,
   updateGolfTour,
   updateGolfTourCamp,
   updateGolfTourFourball,
   updateGolfTourRound,
+  updateGolfTourStandingFourball,
   type GolfTourPlayerInput,
+  type GolfTourStandingPlayerInput,
   type PublicGolfTour,
   type PublicGolfTourFourball,
   type PublicGolfTourLeaderboard,
+  type PublicGolfTourRosterMember,
   type PublicGolfTourRound,
+  type PublicGolfTourStandingFourball,
 } from "@/lib/golf-tours/golf-tours";
 import type { GolfHolesPlayed, GolfPlayerSlot } from "@/types/golf-round";
 import { useRouter } from "next/navigation";
@@ -108,9 +128,13 @@ function campDraftMap(camps: PublicGolfTour["camps"]): Record<string, string> {
   return Object.fromEntries(camps.map((camp) => [camp.id, camp.name]));
 }
 
-/** Native date inputs need overflow clipping + webkit edit min-width resets. */
-function dateFieldClass() {
-  return `${golfTourFieldClass()} [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0`;
+function standingPlayersFromRoster(
+  members: PublicGolfTourRosterMember[],
+): GolfTourStandingPlayerInput[] {
+  return members.slice(0, 4).map((member, index) => ({
+    slot: (index + 1) as GolfPlayerSlot,
+    rosterMemberId: member.id,
+  }));
 }
 
 export function GolfTourHub({
@@ -131,10 +155,19 @@ export function GolfTourHub({
   const [endDate, setEndDate] = useState(tour.endDate);
   const [campDrafts, setCampDrafts] = useState(() => campDraftMap(tour.camps));
   const [campName, setCampName] = useState("");
+  const [addingPlayersFor, setAddingPlayersFor] = useState<string | null>(null);
+  const [rosterGuestName, setRosterGuestName] = useState("");
   const [roundDate, setRoundDate] = useState(tour.startDate);
   const [roundLabel, setRoundLabel] = useState("");
   const [roundVenue, setRoundVenue] = useState<GolfVenueOption | null>(null);
-  const [addingRound, setAddingRound] = useState(tour.rounds.length === 0);
+  const [addingRound, setAddingRound] = useState(false);
+  const [addingStanding, setAddingStanding] = useState(false);
+  const [editingStandingId, setEditingStandingId] = useState<string | null>(
+    null,
+  );
+  const [standingCampId, setStandingCampId] = useState(tour.camps[0]?.id ?? "");
+  const [standingName, setStandingName] = useState("");
+  const [standingMemberIds, setStandingMemberIds] = useState<string[]>([]);
   const [addingFourballFor, setAddingFourballFor] = useState<string | null>(
     null,
   );
@@ -158,10 +191,11 @@ export function GolfTourHub({
   const host = canMutateTour(current, user?.id);
   const nextStep = golfTourHostNextStep(current);
   const nextStepCopy = golfTourHostNextStepCopy(nextStep);
+  const nextStepAction = golfTourHostNextStepAction(nextStep);
   const showRoundComposer = shouldShowHostRoundComposer(
     host,
-    current.rounds.length,
     addingRound,
+    nextStep,
   );
   const campPlaceholder = nextCampPlaceholder(current.camps);
   const playerSeed = {
@@ -180,6 +214,18 @@ export function GolfTourHub({
     () => [...current.rounds].sort((a, b) => a.date.localeCompare(b.date)),
     [current.rounds],
   );
+  const sortedStanding = useMemo(
+    () =>
+      [...current.standingFourballs].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+      ),
+    [current.standingFourballs],
+  );
+  const standingRoster = useMemo(
+    () =>
+      sortedCamps.find((camp) => camp.id === standingCampId)?.roster ?? [],
+    [sortedCamps, standingCampId],
+  );
 
   function apply(next: PublicGolfTour) {
     setCurrent(next);
@@ -188,6 +234,7 @@ export function GolfTourHub({
     setEndDate(next.endDate);
     setCampDrafts(campDraftMap(next.camps));
     if (!fourballCampId && next.camps[0]) setFourballCampId(next.camps[0].id);
+    if (!standingCampId && next.camps[0]) setStandingCampId(next.camps[0].id);
     router.refresh();
   }
 
@@ -287,6 +334,137 @@ export function GolfTourHub({
     );
   }
 
+  function onAddRosterMember(
+    campId: string,
+    input: { displayName: string; isGuest: boolean; userId?: string | null },
+  ) {
+    if (!input.displayName.trim()) {
+      setError("Player name is required");
+      return;
+    }
+    runTourAction(
+      () => addGolfTourRosterMember(current.id, campId, input),
+      {
+        success: "Player added to roster.",
+        onSuccess: () => setRosterGuestName(""),
+      },
+    );
+  }
+
+  function onRemoveRosterMember(campId: string, memberId: string) {
+    runTourAction(
+      () => removeGolfTourRosterMember(current.id, campId, memberId),
+      { success: "Player removed from roster." },
+    );
+  }
+
+  function toggleStandingMember(memberId: string) {
+    setStandingMemberIds((currentIds) => {
+      if (currentIds.includes(memberId)) {
+        return currentIds.filter((id) => id !== memberId);
+      }
+      if (currentIds.length >= 4) return currentIds;
+      return [...currentIds, memberId];
+    });
+  }
+
+  function standingPlayersFromSelection(): GolfTourStandingPlayerInput[] {
+    const selected = standingMemberIds
+      .map((id) => standingRoster.find((member) => member.id === id))
+      .filter((member): member is PublicGolfTourRosterMember => Boolean(member));
+    return standingPlayersFromRoster(selected);
+  }
+
+  function openStandingComposer(template?: PublicGolfTourStandingFourball) {
+    if (template) {
+      const editing = editingStandingId !== template.id;
+      setEditingStandingId(editing ? template.id : null);
+      setAddingStanding(false);
+      setStandingCampId(template.campId);
+      setStandingName(template.name ?? "");
+      const camp = campById(current, template.campId);
+      const ids = template.players.flatMap((player) => {
+        const match = camp?.roster.find((member) => {
+          if (player.userId) return member.userId === player.userId;
+          return (
+            member.isGuest &&
+            member.displayName.trim().toLowerCase() ===
+              player.displayName.trim().toLowerCase()
+          );
+        });
+        return match ? [match.id] : [];
+      });
+      setStandingMemberIds(ids);
+      return;
+    }
+    setAddingStanding((open) => !open);
+    setEditingStandingId(null);
+    setStandingCampId(current.camps[0]?.id ?? "");
+    setStandingName("");
+    setStandingMemberIds([]);
+  }
+
+  function onSaveStanding(templateId?: string) {
+    const players = standingPlayersFromSelection();
+    if (players.length < 1) {
+      setError("Pick at least one roster player for this fourball");
+      return;
+    }
+    if (!standingCampId) {
+      setError("Pick a camp for this fourball");
+      return;
+    }
+    if (templateId) {
+      runTourAction(
+        () =>
+          updateGolfTourStandingFourball(current.id, templateId, {
+            campId: standingCampId,
+            name: standingName || null,
+            players,
+          }),
+        {
+          success: "Standing fourball updated.",
+          onSuccess: () => {
+            setEditingStandingId(null);
+            setStandingName("");
+            setStandingMemberIds([]);
+          },
+        },
+      );
+      return;
+    }
+    runTourAction(
+      () =>
+        addGolfTourStandingFourball(current.id, {
+          campId: standingCampId,
+          name: standingName || null,
+          players,
+        }),
+      {
+        success: "Standing fourball added. Add a round to prepare instances.",
+        onSuccess: () => {
+          setAddingStanding(false);
+          setStandingName("");
+          setStandingMemberIds([]);
+        },
+      },
+    );
+  }
+
+  function onRemoveStanding(templateId: string) {
+    const confirmed =
+      typeof window === "undefined"
+        ? true
+        : window.confirm(
+            "Remove this standing fourball? Existing round instances stay, but will no longer follow the template.",
+          );
+    if (!confirmed) return;
+    runTourAction(
+      () => removeGolfTourStandingFourball(current.id, templateId),
+      { success: "Standing fourball removed." },
+    );
+  }
+
   function onAddRound() {
     if (!roundVenue) {
       setError("Pick a golf course");
@@ -301,13 +479,29 @@ export function GolfTourHub({
           venue: { name: roundVenue.name, slug: roundVenue.slug },
         }),
       {
-        success: "Round added. Add a fourball next.",
+        success:
+          current.standingFourballs.length > 0
+            ? "Round added. Standing fourballs were prepared."
+            : "Round added. Build standing fourballs, then prepare.",
         onSuccess: () => {
           setAddingRound(false);
           setRoundLabel("");
           setRoundVenue(null);
         },
       },
+    );
+  }
+
+  function onPrepareRound(roundId: string) {
+    runTourAction(() => prepareGolfTourRound(current.id, roundId), {
+      success: "Round prepared from standing fourballs.",
+    });
+  }
+
+  function onCopyFromPrevious(roundId: string, sourceRoundId: string) {
+    runTourAction(
+      () => copyGolfTourRoundFrom(current.id, roundId, sourceRoundId),
+      { success: "Copied groups from the previous round." },
     );
   }
 
@@ -336,7 +530,7 @@ export function GolfTourHub({
           players,
         }),
       {
-        success: "Fourball added. Start it when the group is ready.",
+        success: "One-off fourball added for this round.",
         onSuccess: () => {
           setAddingFourballFor(null);
           setFourballSlots(emptyGolfTourSlots(playerSeed));
@@ -358,7 +552,7 @@ export function GolfTourHub({
           players,
         }),
       {
-        success: "Fourball updated.",
+        success: "This-round players updated. Standing template unchanged.",
         onSuccess: () => setEditingFourballId(null),
       },
     );
@@ -377,13 +571,41 @@ export function GolfTourHub({
     );
   }
 
+  function onSitOutGroup(row: PublicGolfTourFourball, sitOut: boolean) {
+    runTourAction(
+      () => updateGolfTourFourball(current.id, row.id, { sitOut }),
+      { success: sitOut ? "Group sitting out this round." : "Group is playing." },
+    );
+  }
+
+  function onSitOutPlayer(
+    row: PublicGolfTourFourball,
+    slot: GolfPlayerSlot,
+    sitOut: boolean,
+  ) {
+    runTourAction(
+      () =>
+        updateGolfTourFourball(current.id, row.id, {
+          playerSitOuts: [{ slot, sitOut }],
+        }),
+      {
+        success: sitOut
+          ? "Player sitting out this round."
+          : "Player is scoring this round.",
+      },
+    );
+  }
+
   function openScorecard(row: PublicGolfTourFourball) {
     const href = fourballStartNavigateHref(row);
     if (!href) return;
     router.push(href);
   }
 
-  function onStartFourball(row: PublicGolfTourFourball, round: PublicGolfTourRound) {
+  function onStartFourball(
+    row: PublicGolfTourFourball,
+    round: PublicGolfTourRound,
+  ) {
     const href = fourballStartNavigateHref(row);
     if (row.status === "live" || row.status === "locked") {
       if (href) router.push(href);
@@ -423,10 +645,63 @@ export function GolfTourHub({
     });
   }
 
+  function onNextStepAction() {
+    if (nextStep === "complete") {
+      onComplete();
+      return;
+    }
+    if (nextStep === "camps") {
+      document.getElementById("golf-tour-camps")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    if (nextStep === "roster") {
+      setAddingPlayersFor(sortedCamps[0]?.id ?? null);
+      document.getElementById("golf-tour-camps")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    if (nextStep === "standing") {
+      if (!addingStanding) openStandingComposer();
+      document.getElementById("golf-tour-standing")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    if (nextStep === "rounds") {
+      setAddingRound(true);
+      document.getElementById("golf-tour-rounds")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    if (nextStep === "prepare") {
+      const round = sortedRounds.find((item) =>
+        roundNeedsPrepare(current, item.id),
+      );
+      if (round) onPrepareRound(round.id);
+      document.getElementById("golf-tour-rounds")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    document.getElementById("golf-tour-rounds")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   const fieldClass = golfTourFieldClass();
 
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="space-y-8">
       <header className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
           Golf tour · {formatGolfTourStatus(current.status)}
@@ -437,16 +712,23 @@ export function GolfTourHub({
         <p className="text-sm text-zinc-400">
           {formatTourDateRange(current.startDate, current.endDate)}
         </p>
-        {canCompleteTour(current, user?.id) ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onComplete}
-            className="inline-flex min-h-11 items-center rounded-full border border-white/12 px-4 text-sm font-medium text-zinc-200 hover:border-white/20 disabled:opacity-60"
-          >
-            Complete tour
-          </button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {canCompleteTour(current, user?.id) ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onComplete}
+              className={golfTourOutlineButtonClass()}
+            >
+              Complete tour
+            </button>
+          ) : null}
+          <GolfTourShareButton
+            path={golfTourHref(current.id)}
+            title={current.name}
+            label="Share tour"
+          />
+        </div>
       </header>
 
       {!isAuthenticated && !authLoading ? (
@@ -457,12 +739,14 @@ export function GolfTourHub({
           <button
             type="button"
             onClick={() => sendToLogin(current.id)}
-            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+            className={`mt-3 ${golfTourPrimaryButtonClass()}`}
           >
             Sign in
           </button>
         </div>
       ) : null}
+
+      {host ? <GolfTourHowItWorks /> : null}
 
       {host && nextStepCopy ? (
         <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-4">
@@ -472,6 +756,19 @@ export function GolfTourHub({
           <p className="mt-1.5 text-sm leading-relaxed text-emerald-50">
             {nextStepCopy}
           </p>
+          {nextStepAction ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onNextStepAction}
+              className={`mt-3 ${golfTourPrimaryButtonClass()}`}
+            >
+              {nextStepAction}
+            </button>
+          ) : null}
+          <a href={golfTourHostNextStepHref(nextStep)} className="sr-only">
+            {nextStepAction || "Continue setup"}
+          </a>
         </div>
       ) : null}
 
@@ -483,10 +780,10 @@ export function GolfTourHub({
       {message ? <p className="text-sm text-emerald-200">{message}</p> : null}
 
       {host ? (
-        <section className="min-w-0 overflow-hidden rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+        <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
           <h2 className="font-display text-2xl tracking-wide text-white">Details</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="min-w-0 sm:col-span-2">
+            <div className="sm:col-span-2">
               <label className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Name
               </label>
@@ -498,59 +795,60 @@ export function GolfTourHub({
                 className={fieldClass}
               />
             </div>
-            <div className="min-w-0">
-              <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
-                <span className="mb-1.5 block text-xs font-medium text-zinc-400">
-                  Start date
-                </span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                  className={dateFieldClass()}
-                />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                Start date
               </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className={fieldClass}
+              />
             </div>
-            <div className="min-w-0">
-              <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
-                <span className="mb-1.5 block text-xs font-medium text-zinc-400">
-                  End date
-                </span>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  className={dateFieldClass()}
-                />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                End date
               </label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className={fieldClass}
+              />
             </div>
           </div>
           <button
             type="button"
             disabled={pending}
             onClick={onSaveDetails}
-            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
+            className={`mt-4 ${golfTourPrimaryButtonClass()}`}
           >
             Save details
           </button>
         </section>
       ) : null}
 
-      <section className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-        <h2 className="font-display text-2xl tracking-wide text-white">Camps</h2>
+      <section
+        id="golf-tour-camps"
+        className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      >
+        <h2 className="font-display text-2xl tracking-wide text-white">
+          Camps + roster
+        </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
-          Camps are the teams. The tour starts with Camp A and Camp B — rename
-          them or add another.
+          Camps are the teams. Add registered or guest players once — standing
+          fourballs pick from this roster.
         </p>
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 space-y-4">
           {sortedCamps.map((camp) => (
             <li
               key={camp.id}
-              className="flex flex-col gap-2 rounded-2xl border border-white/8 px-4 py-3 sm:flex-row sm:items-center"
+              className="rounded-2xl border border-white/8 px-4 py-4"
             >
               {host ? (
-                <>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <label className="block min-w-0 flex-1">
                     <span className="mb-1 block text-xs text-zinc-500">
                       Camp name
@@ -576,14 +874,143 @@ export function GolfTourHub({
                       !(campDrafts[camp.id] ?? "").trim()
                     }
                     onClick={() => onRenameCamp(camp.id)}
-                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-white/12 px-4 text-sm font-medium text-zinc-200 hover:border-white/20 disabled:opacity-50"
+                    className={golfTourOutlineButtonClass("shrink-0")}
                   >
                     Save name
                   </button>
-                </>
+                </div>
               ) : (
-                <span className="text-sm text-white">{camp.name}</span>
+                <p className="text-sm font-medium text-white">{camp.name}</p>
               )}
+
+              {camp.roster.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-500">
+                  No players on this roster yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {camp.roster.map((member) => (
+                    <li
+                      key={member.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 px-3 py-2"
+                    >
+                      <span className="text-sm text-white">
+                        {member.displayName}
+                        {member.isGuest ? (
+                          <span className="ml-2 text-[11px] uppercase tracking-wide text-zinc-500">
+                            Guest
+                          </span>
+                        ) : null}
+                      </span>
+                      {host ? (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => onRemoveRosterMember(camp.id, member.id)}
+                          className={golfTourOutlineButtonClass("min-h-9 px-3 text-xs")}
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {host ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAddingPlayersFor((open) =>
+                        open === camp.id ? null : camp.id,
+                      )
+                    }
+                    className={golfTourPrimaryButtonClass()}
+                  >
+                    {addingPlayersFor === camp.id ? "Close" : "Add players"}
+                  </button>
+                  {addingPlayersFor === camp.id ? (
+                    <div className="mt-3 space-y-3 rounded-2xl border border-emerald-400/20 p-4">
+                      {friends.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {friends.slice(0, 8).map((friend) => {
+                            const already = camp.roster.some(
+                              (member) => member.userId === friend.id,
+                            );
+                            return (
+                              <button
+                                key={friend.id}
+                                type="button"
+                                disabled={pending || already}
+                                onClick={() =>
+                                  onAddRosterMember(camp.id, {
+                                    displayName: friend.displayName,
+                                    isGuest: false,
+                                    userId: friend.id,
+                                  })
+                                }
+                                className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300 hover:border-white/20 disabled:opacity-50"
+                              >
+                                {friend.displayName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                      {playerSeed.displayName && playerSeed.userId ? (
+                        <button
+                          type="button"
+                          disabled={
+                            pending ||
+                            camp.roster.some(
+                              (member) => member.userId === playerSeed.userId,
+                            )
+                          }
+                          onClick={() =>
+                            onAddRosterMember(camp.id, {
+                              displayName: playerSeed.displayName,
+                              isGuest: false,
+                              userId: playerSeed.userId,
+                            })
+                          }
+                          className={golfTourOutlineButtonClass()}
+                        >
+                          Add me
+                        </button>
+                      ) : null}
+                      <label className="block">
+                        <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                          Guest name
+                        </span>
+                        <input
+                          type="text"
+                          value={rosterGuestName}
+                          maxLength={80}
+                          placeholder="Pat"
+                          onChange={(event) =>
+                            setRosterGuestName(event.target.value)
+                          }
+                          className={fieldClass}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={pending || !rosterGuestName.trim()}
+                        onClick={() =>
+                          onAddRosterMember(camp.id, {
+                            displayName: rosterGuestName,
+                            isGuest: true,
+                          })
+                        }
+                        className={golfTourPrimaryButtonClass()}
+                      >
+                        Add players
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -606,7 +1033,7 @@ export function GolfTourHub({
               type="button"
               disabled={pending}
               onClick={onAddCamp}
-              className="mt-0 inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60 sm:mt-6"
+              className={`${golfTourPrimaryButtonClass("shrink-0 sm:mt-6")}`}
             >
               Add camp
             </button>
@@ -614,14 +1041,235 @@ export function GolfTourHub({
         ) : null}
       </section>
 
-      <section className="space-y-4">
+      <section
+        id="golf-tour-standing"
+        className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl tracking-wide text-white">
+              Standing fourballs
+            </h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+              Tour-level groups of up to 4, tagged to a camp. New rounds spawn
+              instances from these templates.
+            </p>
+          </div>
+          {host ? (
+            <button
+              type="button"
+              onClick={() => openStandingComposer()}
+              className={golfTourPrimaryButtonClass()}
+            >
+              {addingStanding ? "Cancel" : "Build standing fourballs"}
+            </button>
+          ) : null}
+        </div>
+
+        {addingStanding && host ? (
+          <div className="mt-4 space-y-3 rounded-2xl border border-emerald-400/20 p-4">
+            <h3 className="text-sm font-medium text-white">New standing fourball</h3>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                Camp
+              </span>
+              <select
+                value={standingCampId}
+                onChange={(event) => {
+                  setStandingCampId(event.target.value);
+                  setStandingMemberIds([]);
+                }}
+                className={fieldClass}
+              >
+                {sortedCamps.map((camp) => (
+                  <option key={camp.id} value={camp.id}>
+                    {camp.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                Name (optional)
+              </span>
+              <input
+                type="text"
+                value={standingName}
+                maxLength={40}
+                placeholder="Morning group"
+                onChange={(event) => setStandingName(event.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            {standingRoster.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                Add players to this camp roster first.
+              </p>
+            ) : (
+              <fieldset>
+                <legend className="mb-2 text-xs font-medium text-zinc-400">
+                  Players (up to 4)
+                </legend>
+                <div className="space-y-2">
+                  {standingRoster.map((member) => {
+                    const checked = standingMemberIds.includes(member.id);
+                    const disabled =
+                      pending || (!checked && standingMemberIds.length >= 4);
+                    return (
+                      <label
+                        key={member.id}
+                        className="flex min-h-11 items-center gap-3 rounded-xl border border-white/8 px-3"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => toggleStandingMember(member.id)}
+                        />
+                        <span className="text-sm text-white">
+                          {member.displayName}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            )}
+            <button
+              type="button"
+              disabled={pending || standingMemberIds.length < 1}
+              onClick={() => onSaveStanding()}
+              className={golfTourPrimaryButtonClass()}
+            >
+              Save standing fourball
+            </button>
+          </div>
+        ) : null}
+
+        {sortedStanding.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            No standing fourballs yet.
+            {host
+              ? " Build them from the camp roster so you do not rebuild pairings every round."
+              : ""}
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {sortedStanding.map((template) => {
+              const camp = campById(current, template.campId);
+              const names = template.players
+                .map((player) => player.displayName)
+                .join(", ");
+              const editing = editingStandingId === template.id;
+              return (
+                <li
+                  key={template.id}
+                  className="rounded-2xl border border-white/8 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                        {camp?.name ?? "Camp"}
+                      </p>
+                      <p className="mt-1 text-sm text-white">
+                        {template.name || names || "Untitled fourball"}
+                      </p>
+                      {template.name && names ? (
+                        <p className="mt-0.5 text-xs text-zinc-500">{names}</p>
+                      ) : null}
+                    </div>
+                    {host ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openStandingComposer(template)}
+                          className={golfTourOutlineButtonClass()}
+                        >
+                          {editing ? "Close" : "Edit"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => onRemoveStanding(template.id)}
+                          className={golfTourOutlineButtonClass()}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  {editing && host ? (
+                    <div className="mt-3 space-y-3">
+                      <select
+                        value={standingCampId}
+                        onChange={(event) => {
+                          setStandingCampId(event.target.value);
+                          setStandingMemberIds([]);
+                        }}
+                        className={fieldClass}
+                      >
+                        {sortedCamps.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={standingName}
+                        maxLength={40}
+                        onChange={(event) => setStandingName(event.target.value)}
+                        className={fieldClass}
+                      />
+                      <div className="space-y-2">
+                        {standingRoster.map((member) => {
+                          const checked = standingMemberIds.includes(member.id);
+                          const disabled =
+                            pending ||
+                            (!checked && standingMemberIds.length >= 4);
+                          return (
+                            <label
+                              key={member.id}
+                              className="flex min-h-11 items-center gap-3 rounded-xl border border-white/8 px-3"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={() => toggleStandingMember(member.id)}
+                              />
+                              <span className="text-sm text-white">
+                                {member.displayName}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={pending || standingMemberIds.length < 1}
+                        onClick={() => onSaveStanding(template.id)}
+                        className={golfTourPrimaryButtonClass()}
+                      >
+                        Save standing fourball
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section id="golf-tour-rounds" className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl tracking-wide text-white">Rounds</h2>
           {host && sortedRounds.length > 0 ? (
             <button
               type="button"
               onClick={() => setAddingRound((open) => !open)}
-              className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+              className={golfTourPrimaryButtonClass()}
             >
               {addingRound ? "Cancel" : "Add round"}
             </button>
@@ -629,13 +1277,13 @@ export function GolfTourHub({
         </div>
 
         {showRoundComposer ? (
-          <div className="min-w-0 space-y-4 overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#141814] p-5">
+          <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-[#141814] p-5">
             <h3 className="text-lg font-medium text-white">Add a round</h3>
             <p className="text-sm leading-relaxed text-zinc-500">
-              Pick a date in the tour window and a golf course. Fourballs on
-              this round use that venue.
+              Pick a date in the tour window and a golf course. Standing
+              fourballs are prepared automatically.
             </p>
-            <label className="relative block w-full min-w-0 max-w-full overflow-hidden">
+            <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Date
               </span>
@@ -645,10 +1293,10 @@ export function GolfTourHub({
                 min={current.startDate}
                 max={current.endDate}
                 onChange={(event) => setRoundDate(event.target.value)}
-                className={dateFieldClass()}
+                className={fieldClass}
               />
             </label>
-            <label className="block min-w-0">
+            <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-zinc-400">
                 Label (optional)
               </span>
@@ -682,9 +1330,9 @@ export function GolfTourHub({
               type="button"
               disabled={pending || venues.length === 0}
               onClick={onAddRound}
-              className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
+              className={golfTourPrimaryButtonClass()}
             >
-              Save round
+              Add round
             </button>
           </div>
         ) : null}
@@ -698,265 +1346,375 @@ export function GolfTourHub({
           </div>
         ) : null}
 
+        {host && sortedRounds.length === 0 && !showRoundComposer ? (
+          <div className="rounded-3xl border border-dashed border-white/12 bg-[#141814] px-5 py-6">
+            <p className="text-sm text-zinc-500">
+              Add players and standing fourballs first, then add a round.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAddingRound(true)}
+              className={`mt-3 ${golfTourOutlineButtonClass()}`}
+            >
+              Add round
+            </button>
+          </div>
+        ) : null}
+
         {sortedRounds.map((round) => {
-            const venue = venueForCmsId(venues, round.venueCmsId);
-            const roundFourballs = fourballsForRound(current, round.id);
-            return (
-              <article
-                key={round.id}
-                className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
-                      {formatIsoDayLabel(round.date)}
-                    </p>
-                    <h3 className="mt-1 text-lg font-medium text-white">
-                      {round.label || venue?.name || "Golf round"}
-                    </h3>
-                    <p className="mt-0.5 text-sm text-zinc-500">
-                      {venue
-                        ? [venue.name, venue.suburb, venue.city]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : "Golf course"}
-                    </p>
-                  </div>
-                  {host ? (
+          const venue = venueForCmsId(venues, round.venueCmsId);
+          const roundFourballs = fourballsForRound(current, round.id).filter(
+            (row) => row.status !== "cancelled",
+          );
+          const needsPrepare = roundNeedsPrepare(current, round.id);
+          const source = previousRound(current.rounds, round.id);
+          return (
+            <article
+              key={round.id}
+              className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                    {formatIsoDayLabel(round.date)}
+                  </p>
+                  <h3 className="mt-1 text-lg font-medium text-white">
+                    {round.label || venue?.name || "Golf round"}
+                  </h3>
+                  <p className="mt-0.5 text-sm text-zinc-500">
+                    {venue
+                      ? [venue.name, venue.suburb, venue.city]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : "Golf course"}
+                  </p>
+                </div>
+                {host ? (
+                  <div className="flex flex-wrap gap-2">
+                    {needsPrepare ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onPrepareRound(round.id)}
+                        className={golfTourPrimaryButtonClass()}
+                      >
+                        Prepare round
+                      </button>
+                    ) : null}
+                    {source ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onCopyFromPrevious(round.id, source.id)}
+                        className={golfTourOutlineButtonClass()}
+                      >
+                        Copy from previous
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => openAddFourball(round.id)}
-                      className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+                      className={golfTourOutlineButtonClass()}
                     >
-                      {addingFourballFor === round.id ? "Cancel" : "Add fourball"}
+                      {addingFourballFor === round.id
+                        ? "Cancel"
+                        : "Add one-off fourball"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              {host ? (
+                <label className="mt-3 block max-w-xs">
+                  <span className="mb-1 block text-xs text-zinc-500">
+                    Move date
+                  </span>
+                  <input
+                    type="date"
+                    defaultValue={round.date}
+                    min={current.startDate}
+                    max={current.endDate}
+                    onBlur={(event) => {
+                      const next = event.target.value;
+                      if (next && next !== round.date) {
+                        runTourAction(
+                          () =>
+                            updateGolfTourRound(current.id, round.id, {
+                              date: next,
+                            }),
+                          { success: "Round updated." },
+                        );
+                      }
+                    }}
+                    className={fieldClass}
+                  />
+                </label>
+              ) : null}
+
+              {addingFourballFor === round.id && host ? (
+                <div className="mt-4 space-y-3 rounded-2xl border border-white/12 p-4">
+                  <h4 className="text-sm font-medium text-white">
+                    One-off fourball
+                  </h4>
+                  <p className="text-xs text-zinc-500">
+                    Escape hatch for a group that is not on the standing list.
+                    It will not write back to standing fourballs.
+                  </p>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                      Camp
+                    </span>
+                    <select
+                      value={fourballCampId}
+                      onChange={(event) => setFourballCampId(event.target.value)}
+                      className={fieldClass}
+                    >
+                      {sortedCamps.map((camp) => (
+                        <option key={camp.id} value={camp.id}>
+                          {camp.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <GolfTourPlayerSlots
+                    slots={fourballSlots}
+                    friends={friends}
+                    onChange={setFourballSlots}
+                    disabled={pending}
+                  />
+                  <button
+                    type="button"
+                    disabled={pending || !fourballCampId}
+                    onClick={() => onAddFourball(round.id)}
+                    className={golfTourPrimaryButtonClass()}
+                  >
+                    Save fourball
+                  </button>
+                </div>
+              ) : null}
+
+              {roundFourballs.length === 0 ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-white/12 px-4 py-4">
+                  <p className="text-sm text-zinc-500">
+                    No fourballs on this round yet.
+                    {host && current.standingFourballs.length > 0
+                      ? " Prepare the round to spawn standing groups."
+                      : host
+                        ? " Build standing fourballs, then prepare — or add a one-off group."
+                        : ""}
+                  </p>
+                  {host && needsPrepare ? (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => onPrepareRound(round.id)}
+                      className={`mt-3 ${golfTourPrimaryButtonClass()}`}
+                    >
+                      Prepare round
                     </button>
                   ) : null}
                 </div>
-
-                {host ? (
-                  <label className="relative mt-3 block w-full min-w-0 max-w-xs overflow-hidden">
-                    <span className="mb-1 block text-xs text-zinc-500">
-                      Move date
-                    </span>
-                    <input
-                      type="date"
-                      defaultValue={round.date}
-                      min={current.startDate}
-                      max={current.endDate}
-                      onBlur={(event) => {
-                        const next = event.target.value;
-                        if (next && next !== round.date) {
-                          runTourAction(
-                            () =>
-                              updateGolfTourRound(current.id, round.id, {
-                                date: next,
-                              }),
-                            { success: "Round updated." },
-                          );
-                        }
-                      }}
-                      className={dateFieldClass()}
-                    />
-                  </label>
-                ) : null}
-
-                {addingFourballFor === round.id && host ? (
-                  <div className="mt-4 space-y-3 rounded-2xl border border-emerald-400/20 p-4">
-                    <h4 className="text-sm font-medium text-white">
-                      New fourball
-                    </h4>
-                    <label className="block">
-                      <span className="mb-1.5 block text-xs font-medium text-zinc-400">
-                        Camp
-                      </span>
-                      <select
-                        value={fourballCampId}
-                        onChange={(event) => setFourballCampId(event.target.value)}
-                        className={fieldClass}
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {roundFourballs.map((row) => {
+                    const camp = campById(current, row.campId);
+                    const names = row.players
+                      .map((player) => player.displayName)
+                      .join(", ");
+                    const startable = canStartFourball(current, row, user?.id);
+                    const sharePath = fourballSharePath(row);
+                    const starting = startingFourballId === row.id;
+                    const editing = editingFourballId === row.id;
+                    const scoring = scoringPlayers(row);
+                    return (
+                      <li
+                        key={row.id}
+                        className="rounded-2xl border border-white/8 px-4 py-3"
                       >
-                        {sortedCamps.map((camp) => (
-                          <option key={camp.id} value={camp.id}>
-                            {camp.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <GolfTourPlayerSlots
-                      slots={fourballSlots}
-                      friends={friends}
-                      onChange={setFourballSlots}
-                      disabled={pending}
-                    />
-                    <button
-                      type="button"
-                      disabled={pending || !fourballCampId}
-                      onClick={() => onAddFourball(round.id)}
-                      className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
-                    >
-                      Save fourball
-                    </button>
-                  </div>
-                ) : null}
-
-                {roundFourballs.length === 0 ? (
-                  <div className="mt-4 rounded-2xl border border-dashed border-white/12 px-4 py-4">
-                    <p className="text-sm text-zinc-500">
-                      No fourballs on this round yet.
-                      {host
-                        ? " Assign a camp and 1–4 players, then start when the group is ready."
-                        : ""}
-                    </p>
-                    {host && addingFourballFor !== round.id ? (
-                      <button
-                        type="button"
-                        onClick={() => openAddFourball(round.id)}
-                        className="mt-3 inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
-                      >
-                        Add fourball
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <ul className="mt-4 space-y-3">
-                    {roundFourballs.map((row) => {
-                      const camp = campById(current, row.campId);
-                      const names = row.players
-                        .map((player) => player.displayName)
-                        .join(", ");
-                      const startable = canStartFourball(current, row, user?.id);
-                      const openHref = fourballStartNavigateHref(row);
-                      const starting = startingFourballId === row.id;
-                      const editing = editingFourballId === row.id;
-                      return (
-                        <li
-                          key={row.id}
-                          className="rounded-2xl border border-white/8 px-4 py-3"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
-                                {camp?.name ?? "Camp"} · {formatFourballStatus(row.status)}
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                              {camp?.name ?? "Camp"} · {formatFourballStatus(row.status)}
+                              {row.sitOut ? " · Sitting out" : ""}
+                            </p>
+                            <p className="mt-1 text-sm text-white">
+                              {names || "No players assigned"}
+                            </p>
+                            {row.standingFourballId ? (
+                              <p className="mt-0.5 text-xs text-zinc-500">
+                                Standing fourball
                               </p>
-                              <p className="mt-1 text-sm text-white">
-                                {names || "No players assigned"}
+                            ) : (
+                              <p className="mt-0.5 text-xs text-zinc-500">
+                                One-off this round
                               </p>
-                              {host && row.status === "pending" && row.players.length === 0 ? (
-                                <p className="mt-1 text-xs text-zinc-500">
-                                  Assign at least one player to start this fourball.
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {openHref && row.status !== "pending" ? (
+                            )}
+                            {host &&
+                            row.status === "pending" &&
+                            scoring.length === 0 ? (
+                              <p className="mt-1 text-xs text-zinc-500">
+                                Assign at least one scoring player to start.
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {sharePath && row.status !== "pending" ? (
+                              <>
                                 <button
                                   type="button"
                                   onClick={() => openScorecard(row)}
-                                  className="inline-flex min-h-9 items-center rounded-full bg-emerald-400 px-3 text-xs font-semibold text-zinc-950 hover:bg-emerald-300"
+                                  className={golfTourPrimaryButtonClass()}
                                 >
                                   Open scorecard
                                 </button>
-                              ) : null}
-                              {startable && row.status === "pending" ? (
+                                <GolfTourShareButton
+                                  path={sharePath}
+                                  title={`${current.name} scorecard`}
+                                />
+                              </>
+                            ) : null}
+                            {startable && row.status === "pending" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStartingFourballId(
+                                    starting ? null : row.id,
+                                  );
+                                  setTeeName("");
+                                }}
+                                className={golfTourPrimaryButtonClass()}
+                              >
+                                {starting ? "Cancel start" : "Start scorecard"}
+                              </button>
+                            ) : null}
+                            {host && row.status !== "cancelled" ? (
+                              <button
+                                type="button"
+                                disabled={pending}
+                                onClick={() => onSitOutGroup(row, !row.sitOut)}
+                                className={golfTourOutlineButtonClass()}
+                              >
+                                {row.sitOut ? "Play this round" : "Sit out group"}
+                              </button>
+                            ) : null}
+                            {host && row.status === "pending" ? (
+                              <>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setStartingFourballId(
-                                      starting ? null : row.id,
+                                    setEditingFourballId(
+                                      editing ? null : row.id,
                                     );
-                                    setTeeName("");
+                                    setAddingFourballFor(null);
+                                    setFourballCampId(row.campId);
+                                    setFourballSlots(
+                                      slotsFromPlayers(row.players),
+                                    );
                                   }}
-                                  className="inline-flex min-h-9 items-center rounded-full bg-emerald-400 px-3 text-xs font-semibold text-zinc-950 hover:bg-emerald-300"
+                                  className={golfTourOutlineButtonClass()}
                                 >
-                                  {starting ? "Cancel start" : "Start fourball"}
+                                  {editing ? "Close" : "Custom this round"}
                                 </button>
-                              ) : null}
-                              {host && row.status === "pending" ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingFourballId(editing ? null : row.id);
-                                      setAddingFourballFor(null);
-                                      setFourballCampId(row.campId);
-                                      setFourballSlots(slotsFromPlayers(row.players));
-                                    }}
-                                    className="inline-flex min-h-9 items-center rounded-full border border-white/12 px-3 text-xs font-medium text-zinc-300"
-                                  >
-                                    {editing ? "Close" : "Edit"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => onCancelFourball(row.id)}
-                                    className="inline-flex min-h-9 items-center rounded-full border border-white/12 px-3 text-xs font-medium text-zinc-400"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : null}
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={() => onCancelFourball(row.id)}
+                                  className={golfTourOutlineButtonClass()}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : null}
                           </div>
+                        </div>
 
-                          {editing && host ? (
-                            <div className="mt-3 space-y-3">
-                              <select
-                                value={fourballCampId}
-                                onChange={(event) =>
-                                  setFourballCampId(event.target.value)
+                        {host && row.players.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {row.players.map((player) => (
+                              <button
+                                key={`${row.id}-${player.slot}`}
+                                type="button"
+                                disabled={pending || row.status === "cancelled"}
+                                onClick={() =>
+                                  onSitOutPlayer(
+                                    row,
+                                    player.slot,
+                                    !player.sitOut,
+                                  )
                                 }
-                                className={fieldClass}
+                                className={golfTourOutlineButtonClass(
+                                  player.sitOut
+                                    ? "border-amber-400/30 text-amber-100"
+                                    : "",
+                                )}
                               >
-                                {sortedCamps.map((item) => (
-                                  <option key={item.id} value={item.id}>
-                                    {item.name}
-                                  </option>
-                                ))}
-                              </select>
-                              <GolfTourPlayerSlots
-                                slots={fourballSlots}
-                                friends={friends}
-                                onChange={setFourballSlots}
-                                disabled={pending}
-                              />
-                              <button
-                                type="button"
-                                disabled={pending}
-                                onClick={() => onSaveFourball(row.id)}
-                                className="inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
-                              >
-                                Save players
+                                {player.displayName}
+                                {player.sitOut ? " · sitting out" : " · play"}
                               </button>
-                            </div>
-                          ) : null}
+                            ))}
+                          </div>
+                        ) : null}
 
-                          {starting ? (
-                            <div className="mt-3 space-y-4">
-                              <GolfPreRoundSetup
-                                golfCourse={venue?.golfCourse}
-                                teeName={teeName}
-                                onTeeNameChange={setTeeName}
-                                startingHole={startingHole}
-                                onStartingHoleChange={setStartingHole}
-                                holesPlayed={holesPlayed}
-                                onHolesPlayedChange={setHolesPlayed}
-                              />
-                              <button
-                                type="button"
-                                disabled={pending}
-                                onClick={() => onStartFourball(row, round)}
-                                className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-60"
-                              >
-                                Open golf scorecard
-                              </button>
-                            </div>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </article>
-            );
-          })}
+                        {editing && host ? (
+                          <div className="mt-3 space-y-3">
+                            <select
+                              value={fourballCampId}
+                              onChange={(event) =>
+                                setFourballCampId(event.target.value)
+                              }
+                              className={fieldClass}
+                            >
+                              {sortedCamps.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                            <GolfTourPlayerSlots
+                              slots={fourballSlots}
+                              friends={friends}
+                              onChange={setFourballSlots}
+                              disabled={pending}
+                            />
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => onSaveFourball(row.id)}
+                              className={golfTourPrimaryButtonClass()}
+                            >
+                              Save this-round players
+                            </button>
+                          </div>
+                        ) : null}
+
+                        {starting ? (
+                          <div className="mt-3 space-y-4">
+                            <GolfPreRoundSetup
+                              golfCourse={venue?.golfCourse}
+                              teeName={teeName}
+                              onTeeNameChange={setTeeName}
+                              startingHole={startingHole}
+                              onStartingHoleChange={setStartingHole}
+                              holesPlayed={holesPlayed}
+                              onHolesPlayedChange={setHolesPlayed}
+                            />
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => onStartFourball(row, round)}
+                              className={`${golfTourPrimaryButtonClass("w-full")}`}
+                            >
+                              Open scorecard
+                            </button>
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </article>
+          );
+        })}
       </section>
 
       <GolfTourLeaderboard

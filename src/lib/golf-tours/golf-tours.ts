@@ -13,7 +13,10 @@ export const GOLF_TOURS_NEW_HREF = "/golf-tours/new" as const;
 
 export const GOLF_TOUR_NAME_MAX = 80;
 export const GOLF_TOUR_CAMP_NAME_MAX = 40;
+export const GOLF_TOUR_STANDING_NAME_MAX = 40;
+export const GOLF_TOUR_ROSTER_NAME_MAX = 80;
 export const GOLF_TOUR_DEFAULT_CAMP_NAMES = ["Camp A", "Camp B"] as const;
+export const GOLF_TOUR_HOW_IT_WORKS_KEY = "golf-tour-how-it-works-v2" as const;
 
 export const GOLF_TOUR_STATUSES = ["draft", "active", "completed"] as const;
 export type GolfTourStatus = (typeof GOLF_TOUR_STATUSES)[number];
@@ -35,7 +38,8 @@ export type GolfTourFormat = (typeof GOLF_TOUR_FORMATS)[number];
 
 /**
  * Static sources — `mine` must precede `:id` so that segment is not an id.
- * Nested camps / rounds / fourballs / leaderboard / complete stay explicit.
+ * Nest roster under camps, standing-fourballs before/alongside other nested
+ * routes, prepare + copy-from under rounds.
  */
 export const GOLF_TOUR_PROXY_SOURCES = [
   "/api/golf-tours",
@@ -44,8 +48,14 @@ export const GOLF_TOUR_PROXY_SOURCES = [
   "/api/golf-tours/:id/complete",
   "/api/golf-tours/:id/camps",
   "/api/golf-tours/:id/camps/:campId",
+  "/api/golf-tours/:id/camps/:campId/roster",
+  "/api/golf-tours/:id/camps/:campId/roster/:memberId",
+  "/api/golf-tours/:id/standing-fourballs",
+  "/api/golf-tours/:id/standing-fourballs/:templateId",
   "/api/golf-tours/:id/rounds",
   "/api/golf-tours/:id/rounds/:roundId",
+  "/api/golf-tours/:id/rounds/:roundId/prepare",
+  "/api/golf-tours/:id/rounds/:roundId/copy-from/:sourceRoundId",
   "/api/golf-tours/:id/rounds/:roundId/fourballs",
   "/api/golf-tours/:id/fourballs/:fourballId",
   "/api/golf-tours/:id/fourballs/:fourballId/start",
@@ -57,6 +67,23 @@ export type PublicGolfTourPlayer = {
   userId: string | null;
   displayName: string;
   isGuest: boolean;
+  sitOut: boolean;
+};
+
+export type PublicGolfTourRosterMember = {
+  id: string;
+  campId: string;
+  userId: string | null;
+  displayName: string;
+  isGuest: boolean;
+};
+
+export type PublicGolfTourStandingFourball = {
+  id: string;
+  campId: string;
+  name: string | null;
+  sortOrder: number;
+  players: PublicGolfTourPlayer[];
 };
 
 export type PublicGolfTourFourball = {
@@ -66,6 +93,8 @@ export type PublicGolfTourFourball = {
   status: GolfTourFourballStatus;
   golfRoundId: string | null;
   path: string | null;
+  standingFourballId: string | null;
+  sitOut: boolean;
   players: PublicGolfTourPlayer[];
 };
 
@@ -74,6 +103,7 @@ export type PublicGolfTourCamp = {
   name: string;
   color: string | null;
   sortOrder: number;
+  roster: PublicGolfTourRosterMember[];
 };
 
 export type PublicGolfTourRound = {
@@ -112,6 +142,7 @@ export type PublicGolfTour = {
   viewer: PublicGolfTourViewer;
   camps: PublicGolfTourCamp[];
   rounds: PublicGolfTourRound[];
+  standingFourballs: PublicGolfTourStandingFourball[];
   fourballs: PublicGolfTourFourball[];
   createdAt: string;
   updatedAt: string;
@@ -185,6 +216,47 @@ export type GolfTourPlayerInput = {
   displayName: string;
   isGuest: boolean;
   userId?: string | null;
+  sitOut?: boolean;
+};
+
+export type GolfTourRosterMemberInput = {
+  displayName: string;
+  isGuest: boolean;
+  userId?: string | null;
+};
+
+export type GolfTourStandingPlayerInput = {
+  slot: GolfPlayerSlot;
+  rosterMemberId?: string;
+  displayName?: string;
+  isGuest?: boolean;
+  userId?: string | null;
+};
+
+export type GolfTourPlayerSitOutInput = {
+  slot: GolfPlayerSlot;
+  sitOut: boolean;
+};
+
+export type UpdateGolfTourFourballInput = {
+  players?: GolfTourPlayerInput[];
+  campId?: string;
+  status?: "cancelled";
+  sitOut?: boolean;
+  playerSitOuts?: GolfTourPlayerSitOutInput[];
+};
+
+export type AddGolfTourStandingFourballInput = {
+  campId: string;
+  name?: string | null;
+  players?: GolfTourStandingPlayerInput[];
+  sortOrder?: number;
+};
+
+export type UpdateGolfTourStandingFourballInput = {
+  campId?: string;
+  name?: string | null;
+  players?: GolfTourStandingPlayerInput[];
 };
 
 export type StartGolfTourFourballInput = {
@@ -250,6 +322,35 @@ export function golfTourCampUrl(
   return `${golfTourCampsUrl(baseUrl, id)}/${encodeURIComponent(campId)}`;
 }
 
+export function golfTourCampRosterUrl(
+  baseUrl: string,
+  id: string,
+  campId: string,
+): string {
+  return `${golfTourCampUrl(baseUrl, id, campId)}/roster`;
+}
+
+export function golfTourCampRosterMemberUrl(
+  baseUrl: string,
+  id: string,
+  campId: string,
+  memberId: string,
+): string {
+  return `${golfTourCampRosterUrl(baseUrl, id, campId)}/${encodeURIComponent(memberId)}`;
+}
+
+export function golfTourStandingFourballsUrl(baseUrl: string, id: string): string {
+  return `${golfTourUrl(baseUrl, id)}/standing-fourballs`;
+}
+
+export function golfTourStandingFourballUrl(
+  baseUrl: string,
+  id: string,
+  templateId: string,
+): string {
+  return `${golfTourStandingFourballsUrl(baseUrl, id)}/${encodeURIComponent(templateId)}`;
+}
+
 export function golfTourRoundsUrl(baseUrl: string, id: string): string {
   return `${golfTourUrl(baseUrl, id)}/rounds`;
 }
@@ -260,6 +361,23 @@ export function golfTourRoundUrl(
   roundId: string,
 ): string {
   return `${golfTourRoundsUrl(baseUrl, id)}/${encodeURIComponent(roundId)}`;
+}
+
+export function golfTourRoundPrepareUrl(
+  baseUrl: string,
+  id: string,
+  roundId: string,
+): string {
+  return `${golfTourRoundUrl(baseUrl, id, roundId)}/prepare`;
+}
+
+export function golfTourRoundCopyFromUrl(
+  baseUrl: string,
+  id: string,
+  roundId: string,
+  sourceRoundId: string,
+): string {
+  return `${golfTourRoundUrl(baseUrl, id, roundId)}/copy-from/${encodeURIComponent(sourceRoundId)}`;
 }
 
 export function golfTourRoundFourballsUrl(
@@ -452,48 +570,125 @@ export function canCompleteTour(
 
 export type GolfTourHostNextStep =
   | "camps"
+  | "roster"
+  | "standing"
   | "rounds"
-  | "fourballs"
+  | "prepare"
   | "start"
   | "complete"
   | "done";
 
+export function tourRosterCount(
+  tour: Pick<PublicGolfTour, "camps">,
+): number {
+  return tour.camps.reduce((sum, camp) => sum + (camp.roster?.length ?? 0), 0);
+}
+
+export function standingFourballsForCamp(
+  tour: Pick<PublicGolfTour, "standingFourballs">,
+  campId: string,
+): PublicGolfTourStandingFourball[] {
+  return (tour.standingFourballs ?? []).filter(
+    (template) => template.campId === campId,
+  );
+}
+
+export function scoringPlayers(
+  fourball: Pick<PublicGolfTourFourball, "sitOut" | "players">,
+): PublicGolfTourPlayer[] {
+  if (fourball.sitOut) return [];
+  return fourball.players.filter((player) => !player.sitOut);
+}
+
+export function roundNeedsPrepare(
+  tour: Pick<PublicGolfTour, "standingFourballs" | "fourballs">,
+  roundId: string,
+): boolean {
+  const templates = tour.standingFourballs ?? [];
+  if (templates.length === 0) return false;
+  const instances = fourballsForRound(tour, roundId).filter(
+    (fourball) => fourball.status !== "cancelled",
+  );
+  return templates.some(
+    (template) =>
+      !instances.some((fourball) => fourball.standingFourballId === template.id),
+  );
+}
+
+export function previousRound(
+  rounds: readonly PublicGolfTourRound[],
+  roundId: string,
+): PublicGolfTourRound | null {
+  const sorted = [...rounds].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
+  );
+  const index = sorted.findIndex((round) => round.id === roundId);
+  return index > 0 ? (sorted[index - 1] ?? null) : null;
+}
+
 /**
- * After create the API already seeded 2 camps, so the host's first
- * blocking step is adding a round (then fourballs, then start).
+ * Roster-first + standing fourballs. After create the API seeds 2 camps,
+ * so the host's first blocking step is adding players.
  */
 export function golfTourHostNextStep(
-  tour: Pick<PublicGolfTour, "status" | "camps" | "rounds" | "fourballs">,
+  tour: Pick<
+    PublicGolfTour,
+    "status" | "camps" | "rounds" | "standingFourballs" | "fourballs"
+  >,
 ): GolfTourHostNextStep {
   if (isCompletedStatus(tour.status)) return "done";
   if (tour.camps.length < 2) return "camps";
-  if (tour.rounds.length === 0) return "rounds";
+
   const playable = tour.fourballs.filter(
     (fourball) => fourball.status !== "cancelled",
   );
-  if (playable.length === 0) return "fourballs";
-  const canStart = playable.some(
-    (fourball) => fourball.status === "pending" && fourball.players.length >= 1,
+  const startable = playable.some(
+    (fourball) =>
+      fourball.status === "pending" && scoringPlayers(fourball).length >= 1,
   );
-  if (canStart) return "start";
   const inPlay = playable.some(
     (fourball) => fourball.status === "live" || fourball.status === "locked",
   );
-  return inPlay ? "complete" : "fourballs";
+
+  if (tourRosterCount(tour) === 0 && playable.length === 0) return "roster";
+  if (
+    (tour.standingFourballs ?? []).length === 0 &&
+    playable.length === 0
+  ) {
+    return "standing";
+  }
+  if (tour.rounds.length === 0) return "rounds";
+  if ((tour.standingFourballs ?? []).length > 0) {
+    const needsPrepare = tour.rounds.some((round) =>
+      roundNeedsPrepare(tour, round.id),
+    );
+    if (needsPrepare) return "prepare";
+  }
+  if (startable) return "start";
+  if (inPlay) return "complete";
+  if (playable.some((fourball) => fourball.status === "pending")) return "start";
+  if (playable.length === 0) return "standing";
+  return "complete";
 }
 
 export function golfTourHostNextStepCopy(step: GolfTourHostNextStep): string {
   if (step === "camps") {
-    return "Add at least two camps (teams), then add a round.";
+    return "Add at least two camps (teams), then add players to each roster.";
+  }
+  if (step === "roster") {
+    return "Add players to each camp roster. Standing fourballs use this list.";
+  }
+  if (step === "standing") {
+    return "Build standing fourballs (up to 4 players, tagged to a camp). They repeat each round.";
   }
   if (step === "rounds") {
-    return "Rename the camps if you want, then add a round — date, golf course, optional label.";
+    return "Add a round — date and golf course. Standing groups are prepared automatically.";
   }
-  if (step === "fourballs") {
-    return "Add a fourball to a round: assign a camp and 1–4 players.";
+  if (step === "prepare") {
+    return "Prepare the round to spawn standing fourball instances.";
   }
   if (step === "start") {
-    return "Start a fourball to open the live golf scorecard.";
+    return "Open a scorecard when the group is ready. Sit someone out without rebuilding pairings.";
   }
   if (step === "complete") {
     return "Fourballs are underway. Refresh the leaderboard, then complete the tour when you are done.";
@@ -501,13 +696,71 @@ export function golfTourHostNextStepCopy(step: GolfTourHostNextStep): string {
   return "";
 }
 
-/** Host round composer stays open after create so the hub is not a dead empty state. */
+export function golfTourHostNextStepAction(step: GolfTourHostNextStep): string {
+  if (step === "camps") return "Add camp";
+  if (step === "roster") return "Add players";
+  if (step === "standing") return "Build standing fourballs";
+  if (step === "rounds") return "Add round";
+  if (step === "prepare") return "Prepare round";
+  if (step === "start") return "Start scorecard";
+  if (step === "complete") return "Complete tour";
+  return "";
+}
+
+export function golfTourHostNextStepHref(step: GolfTourHostNextStep): string {
+  if (step === "camps" || step === "roster") return "#golf-tour-camps";
+  if (step === "standing") return "#golf-tour-standing";
+  if (step === "rounds" || step === "prepare" || step === "start") {
+    return "#golf-tour-rounds";
+  }
+  return "#golf-tour-leaderboard";
+}
+
+/** Round composer opens when the host is ready for a course + day. */
 export function shouldShowHostRoundComposer(
   host: boolean,
-  roundCount: number,
   addingRound: boolean,
+  nextStep: GolfTourHostNextStep,
 ): boolean {
-  return host && (addingRound || roundCount === 0);
+  return host && (addingRound || nextStep === "rounds");
+}
+
+export function isGolfTourHowItWorksDismissed(
+  storage?: Pick<Storage, "getItem"> | null,
+): boolean {
+  const store = storage ?? (typeof window === "undefined" ? null : window.localStorage);
+  if (!store) return false;
+  try {
+    return store.getItem(GOLF_TOUR_HOW_IT_WORKS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function dismissGolfTourHowItWorks(
+  storage?: Pick<Storage, "setItem"> | null,
+): void {
+  const store = storage ?? (typeof window === "undefined" ? null : window.localStorage);
+  if (!store) return;
+  try {
+    store.setItem(GOLF_TOUR_HOW_IT_WORKS_KEY, "1");
+  } catch {
+    // ignore quota / private-mode failures
+  }
+}
+
+export function fourballSharePath(fourball: {
+  path?: string | null;
+  golfRoundId?: string | null;
+}): string | null {
+  return fourballStartNavigateHref(fourball);
+}
+
+export function absoluteAppUrl(path: string, origin: string): string {
+  const trimmed = path.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const root = origin.replace(/\/$/, "");
+  return `${root}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
 }
 
 export function nextCampPlaceholder(
@@ -543,7 +796,8 @@ export function canStartFourball(
     return fourballStartNavigateHref(fourball) !== null;
   }
   if (fourball.status !== "pending") return false;
-  if (fourball.players.length < 1) return false;
+  if (fourball.sitOut) return false;
+  if (scoringPlayers(fourball).length < 1) return false;
   if (tour.viewer.role === "host") return true;
   return isSeatedRegisteredPlayer(fourball, userId);
 }
@@ -778,9 +1032,131 @@ export function buildPlayersPayload(
       displayName,
       isGuest,
       userId: isGuest ? null : userId,
+      ...(player.sitOut ? { sitOut: true } : {}),
     });
   }
   return { ok: true, players: next };
+}
+
+export function buildRosterPayload(input: GolfTourRosterMemberInput):
+  | { ok: true; payload: GolfTourRosterMemberInput }
+  | { ok: false; error: string } {
+  const displayName = trimName(
+    input.displayName,
+    GOLF_TOUR_ROSTER_NAME_MAX,
+    "Player name",
+  );
+  if (!displayName.ok) return displayName;
+  const userId = input.userId?.trim() || null;
+  const isGuest = input.isGuest || !userId;
+  return {
+    ok: true,
+    payload: {
+      displayName: displayName.value,
+      isGuest,
+      userId: isGuest ? null : userId,
+    },
+  };
+}
+
+export function buildStandingPlayersPayload(
+  players: readonly GolfTourStandingPlayerInput[] | undefined,
+):
+  | { ok: true; players: GolfTourStandingPlayerInput[] }
+  | { ok: false; error: string } {
+  if (!players) return { ok: true, players: [] };
+  const next: GolfTourStandingPlayerInput[] = [];
+  const seen = new Set<GolfPlayerSlot>();
+  for (const player of players) {
+    if (seen.has(player.slot)) {
+      return { ok: false, error: "Each player slot must be unique" };
+    }
+    seen.add(player.slot);
+    const rosterMemberId = player.rosterMemberId?.trim() || "";
+    if (rosterMemberId) {
+      next.push({ slot: player.slot, rosterMemberId });
+      continue;
+    }
+    const displayName = player.displayName?.trim() ?? "";
+    if (!displayName) continue;
+    const userId = player.userId?.trim() || null;
+    const isGuest = player.isGuest || !userId;
+    next.push({
+      slot: player.slot,
+      displayName,
+      isGuest,
+      userId: isGuest ? null : userId,
+    });
+  }
+  return { ok: true, players: next };
+}
+
+export function buildStandingFourballPayload(
+  input: AddGolfTourStandingFourballInput,
+):
+  | {
+      ok: true;
+      payload: {
+        campId: string;
+        name?: string | null;
+        players?: GolfTourStandingPlayerInput[];
+        sortOrder?: number;
+      };
+    }
+  | { ok: false; error: string } {
+  const campId = input.campId.trim();
+  if (!campId) return { ok: false, error: "Pick a camp for this fourball" };
+  const payload: {
+    campId: string;
+    name?: string | null;
+    players?: GolfTourStandingPlayerInput[];
+    sortOrder?: number;
+  } = { campId };
+  if (input.name !== undefined) {
+    const name = input.name?.trim() ?? "";
+    if (name.length > GOLF_TOUR_STANDING_NAME_MAX) {
+      return {
+        ok: false,
+        error: `Name must be ${GOLF_TOUR_STANDING_NAME_MAX} characters or fewer`,
+      };
+    }
+    payload.name = name || null;
+  }
+  if (input.players) {
+    const players = buildStandingPlayersPayload(input.players);
+    if (!players.ok) return players;
+    if (players.players.length > 4) {
+      return { ok: false, error: "Standing fourballs can have at most 4 players" };
+    }
+    if (players.players.length > 0) payload.players = players.players;
+  }
+  if (input.sortOrder !== undefined) {
+    if (!Number.isFinite(input.sortOrder)) {
+      return { ok: false, error: "sortOrder must be a number" };
+    }
+    payload.sortOrder = input.sortOrder;
+  }
+  return { ok: true, payload };
+}
+
+export function buildPlayerSitOutsPayload(
+  updates: readonly GolfTourPlayerSitOutInput[] | undefined,
+):
+  | { ok: true; playerSitOuts: GolfTourPlayerSitOutInput[] }
+  | { ok: false; error: string } {
+  if (!updates || updates.length === 0) {
+    return { ok: false, error: "playerSitOuts must be a non-empty array" };
+  }
+  const seen = new Set<GolfPlayerSlot>();
+  const next: GolfTourPlayerSitOutInput[] = [];
+  for (const row of updates) {
+    if (seen.has(row.slot)) {
+      return { ok: false, error: "Each player slot must be unique" };
+    }
+    seen.add(row.slot);
+    next.push({ slot: row.slot, sitOut: Boolean(row.sitOut) });
+  }
+  return { ok: true, playerSitOuts: next };
 }
 
 export function buildStartFourballPayload(input: StartGolfTourFourballInput):
@@ -844,6 +1220,55 @@ export function parseGolfTourPlayer(value: unknown): PublicGolfTourPlayer | null
     displayName: row.displayName,
     isGuest: Boolean(row.isGuest) || !row.userId,
     userId: typeof row.userId === "string" && row.userId.trim() ? row.userId : null,
+    sitOut: Boolean(row.sitOut),
+  };
+}
+
+export function parseGolfTourRosterMember(
+  value: unknown,
+): PublicGolfTourRosterMember | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.campId !== "string" ||
+    typeof row.displayName !== "string" ||
+    !row.displayName.trim()
+  ) {
+    return null;
+  }
+  return {
+    id: row.id,
+    campId: row.campId,
+    displayName: row.displayName,
+    isGuest: Boolean(row.isGuest) || !row.userId,
+    userId: typeof row.userId === "string" && row.userId.trim() ? row.userId : null,
+  };
+}
+
+export function parseGolfTourStandingFourball(
+  value: unknown,
+): PublicGolfTourStandingFourball | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== "string" || typeof row.campId !== "string") {
+    return null;
+  }
+  const players = Array.isArray(row.players)
+    ? row.players
+        .map(parseGolfTourPlayer)
+        .filter((item): item is PublicGolfTourPlayer => !!item)
+    : [];
+  let sortOrder = 0;
+  if (typeof row.sortOrder === "number" && Number.isFinite(row.sortOrder)) {
+    sortOrder = row.sortOrder;
+  }
+  return {
+    id: row.id,
+    campId: row.campId,
+    name: typeof row.name === "string" && row.name.trim() ? row.name : null,
+    sortOrder,
+    players,
   };
 }
 
@@ -871,6 +1296,9 @@ export function parseGolfTourFourball(
     status: row.status,
     golfRoundId: typeof row.golfRoundId === "string" ? row.golfRoundId : null,
     path: typeof row.path === "string" ? row.path : null,
+    standingFourballId:
+      typeof row.standingFourballId === "string" ? row.standingFourballId : null,
+    sitOut: Boolean(row.sitOut),
     players,
   };
 }
@@ -888,11 +1316,17 @@ export function parseGolfTourCamp(value: unknown): PublicGolfTourCamp | null {
     const parsed = Number(row.sortOrder);
     if (Number.isFinite(parsed)) sortOrder = parsed;
   }
+  const roster = Array.isArray(row.roster)
+    ? row.roster
+        .map(parseGolfTourRosterMember)
+        .filter((item): item is PublicGolfTourRosterMember => !!item)
+    : [];
   return {
     id: row.id,
     name: row.name,
     color: typeof row.color === "string" ? row.color : null,
     sortOrder,
+    roster,
   };
 }
 
@@ -994,10 +1428,17 @@ export function parseGolfTour(value: unknown): PublicGolfTour | null {
   const fourballs = row.fourballs
     .map(parseGolfTourFourball)
     .filter((item): item is PublicGolfTourFourball => !!item);
+  const standingSource = Array.isArray(row.standingFourballs)
+    ? row.standingFourballs
+    : [];
+  const standingFourballs = standingSource
+    .map(parseGolfTourStandingFourball)
+    .filter((item): item is PublicGolfTourStandingFourball => !!item);
   if (
     camps.length !== row.camps.length ||
     rounds.length !== row.rounds.length ||
-    fourballs.length !== row.fourballs.length
+    fourballs.length !== row.fourballs.length ||
+    standingFourballs.length !== standingSource.length
   ) {
     return null;
   }
@@ -1011,6 +1452,7 @@ export function parseGolfTour(value: unknown): PublicGolfTour | null {
     viewer,
     camps,
     rounds,
+    standingFourballs,
     fourballs,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -1496,14 +1938,354 @@ export async function addGolfTourFourballWith(
   }
 }
 
+export async function listGolfTourRosterWith(
+  id: string,
+  campId: string,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTourRosterMember[]>> {
+  const trimmed = id.trim();
+  const trimmedCamp = campId.trim();
+  if (!trimmed || !trimmedCamp || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or camp id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourCampRosterUrl(deps.baseUrl, trimmed, trimmedCamp),
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    const body = await readJson(res);
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: errorFromBody(body, "Could not load roster"),
+        status: res.status,
+      };
+    }
+    const rows =
+      body && typeof body === "object"
+        ? (body as { roster?: unknown }).roster
+        : null;
+    const roster = Array.isArray(rows)
+      ? rows
+          .map(parseGolfTourRosterMember)
+          .filter((item): item is PublicGolfTourRosterMember => !!item)
+      : [];
+    return { ok: true, value: roster };
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function addGolfTourRosterMemberWith(
+  id: string,
+  campId: string,
+  input: GolfTourRosterMemberInput,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedCamp = campId.trim();
+  const built = buildRosterPayload(input);
+  if (!built.ok) return { ok: false, error: built.error, status: 400 };
+  if (!trimmed || !trimmedCamp || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or camp id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourCampRosterUrl(deps.baseUrl, trimmed, trimmedCamp),
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie, true),
+        body: JSON.stringify(built.payload),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not add player");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function updateGolfTourRosterMemberWith(
+  id: string,
+  campId: string,
+  memberId: string,
+  input: Partial<GolfTourRosterMemberInput>,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedCamp = campId.trim();
+  const trimmedMember = memberId.trim();
+  if (!trimmed || !trimmedCamp || !trimmedMember || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour, camp, or member id", status: 400 };
+  }
+  const payload: {
+    displayName?: string;
+    isGuest?: boolean;
+    userId?: string | null;
+  } = {};
+  if (input.displayName !== undefined) {
+    const name = trimName(
+      input.displayName,
+      GOLF_TOUR_ROSTER_NAME_MAX,
+      "Player name",
+    );
+    if (!name.ok) return { ok: false, error: name.error, status: 400 };
+    payload.displayName = name.value;
+  }
+  if (input.isGuest !== undefined) payload.isGuest = input.isGuest;
+  if (input.userId !== undefined) {
+    payload.userId = input.userId?.trim() || null;
+  }
+  if (Object.keys(payload).length === 0) {
+    return { ok: false, error: "Nothing to update", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourCampRosterMemberUrl(deps.baseUrl, trimmed, trimmedCamp, trimmedMember),
+      {
+        method: "PATCH",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie, true),
+        body: JSON.stringify(payload),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not update player");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function removeGolfTourRosterMemberWith(
+  id: string,
+  campId: string,
+  memberId: string,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedCamp = campId.trim();
+  const trimmedMember = memberId.trim();
+  if (!trimmed || !trimmedCamp || !trimmedMember || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour, camp, or member id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourCampRosterMemberUrl(deps.baseUrl, trimmed, trimmedCamp, trimmedMember),
+      {
+        method: "DELETE",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not remove player");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function addGolfTourStandingFourballWith(
+  id: string,
+  input: AddGolfTourStandingFourballInput,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const built = buildStandingFourballPayload(input);
+  if (!built.ok) return { ok: false, error: built.error, status: 400 };
+  if (!trimmed || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourStandingFourballsUrl(deps.baseUrl, trimmed),
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie, true),
+        body: JSON.stringify(built.payload),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not add standing fourball");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function updateGolfTourStandingFourballWith(
+  id: string,
+  templateId: string,
+  input: UpdateGolfTourStandingFourballInput,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedTemplate = templateId.trim();
+  if (!trimmed || !trimmedTemplate || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or template id", status: 400 };
+  }
+  const payload: {
+    campId?: string;
+    name?: string | null;
+    players?: GolfTourStandingPlayerInput[];
+  } = {};
+  if (input.campId !== undefined) {
+    const campId = input.campId.trim();
+    if (!campId) return { ok: false, error: "Pick a camp", status: 400 };
+    payload.campId = campId;
+  }
+  if (input.name !== undefined) {
+    const name = input.name?.trim() ?? "";
+    if (name.length > GOLF_TOUR_STANDING_NAME_MAX) {
+      return {
+        ok: false,
+        error: `Name must be ${GOLF_TOUR_STANDING_NAME_MAX} characters or fewer`,
+        status: 400,
+      };
+    }
+    payload.name = name || null;
+  }
+  if (input.players !== undefined) {
+    const players = buildStandingPlayersPayload(input.players);
+    if (!players.ok) return { ok: false, error: players.error, status: 400 };
+    payload.players = players.players;
+  }
+  if (Object.keys(payload).length === 0) {
+    return { ok: false, error: "Nothing to update", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourStandingFourballUrl(deps.baseUrl, trimmed, trimmedTemplate),
+      {
+        method: "PATCH",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie, true),
+        body: JSON.stringify(payload),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not update standing fourball");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function removeGolfTourStandingFourballWith(
+  id: string,
+  templateId: string,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedTemplate = templateId.trim();
+  if (!trimmed || !trimmedTemplate || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or template id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourStandingFourballUrl(deps.baseUrl, trimmed, trimmedTemplate),
+      {
+        method: "DELETE",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not remove standing fourball");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function prepareGolfTourRoundWith(
+  id: string,
+  roundId: string,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedRound = roundId.trim();
+  if (!trimmed || !trimmedRound || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or round id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourRoundPrepareUrl(deps.baseUrl, trimmed, trimmedRound),
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not prepare round");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
+export async function copyGolfTourRoundFromWith(
+  id: string,
+  roundId: string,
+  sourceRoundId: string,
+  deps: GolfToursDeps,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  const trimmed = id.trim();
+  const trimmedRound = roundId.trim();
+  const trimmedSource = sourceRoundId.trim();
+  if (!trimmed || !trimmedRound || !trimmedSource || !deps.baseUrl) {
+    return { ok: false, error: "Missing golf tour or round id", status: 400 };
+  }
+
+  try {
+    const res = await invokeFetch(
+      deps.fetch,
+      golfTourRoundCopyFromUrl(deps.baseUrl, trimmed, trimmedRound, trimmedSource),
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: requestHeaders(deps.cookie),
+        signal: deps.signal,
+      },
+    );
+    return readTourResponse(res, "Could not copy from previous round");
+  } catch {
+    return { ok: false, error: "Could not reach golf tours API", status: 0 };
+  }
+}
+
 export async function updateGolfTourFourballWith(
   id: string,
   fourballId: string,
-  input: {
-    players?: GolfTourPlayerInput[];
-    campId?: string;
-    status?: "cancelled";
-  },
+  input: UpdateGolfTourFourballInput,
   deps: GolfToursDeps,
 ): Promise<GolfToursResult<PublicGolfTour>> {
   const trimmed = id.trim();
@@ -1511,11 +2293,7 @@ export async function updateGolfTourFourballWith(
   if (!trimmed || !trimmedFourball || !deps.baseUrl) {
     return { ok: false, error: "Missing golf tour or fourball id", status: 400 };
   }
-  const payload: {
-    players?: GolfTourPlayerInput[];
-    campId?: string;
-    status?: "cancelled";
-  } = {};
+  const payload: UpdateGolfTourFourballInput = {};
   if (input.players !== undefined) {
     const players = buildPlayersPayload(input.players);
     if (!players.ok) return { ok: false, error: players.error, status: 400 };
@@ -1531,6 +2309,14 @@ export async function updateGolfTourFourballWith(
       return { ok: false, error: "status can only be set to cancelled", status: 400 };
     }
     payload.status = "cancelled";
+  }
+  if (input.sitOut !== undefined) {
+    payload.sitOut = Boolean(input.sitOut);
+  }
+  if (input.playerSitOuts !== undefined) {
+    const sitOuts = buildPlayerSitOutsPayload(input.playerSitOuts);
+    if (!sitOuts.ok) return { ok: false, error: sitOuts.error, status: 400 };
+    payload.playerSitOuts = sitOuts.playerSitOuts;
   }
   if (Object.keys(payload).length === 0) {
     return { ok: false, error: "Nothing to update", status: 400 };
@@ -1822,11 +2608,7 @@ export async function addGolfTourFourball(
 export async function updateGolfTourFourball(
   id: string,
   fourballId: string,
-  input: {
-    players?: GolfTourPlayerInput[];
-    campId?: string;
-    status?: "cancelled";
-  },
+  input: UpdateGolfTourFourballInput,
 ): Promise<GolfToursResult<PublicGolfTour>> {
   if (!isApiConfigured()) {
     return { ok: false, error: "API is not configured", status: 0 };
@@ -1843,4 +2625,116 @@ export async function startGolfTourFourball(
     return { ok: false, error: "API is not configured", status: 0 };
   }
   return startGolfTourFourballWith(id, fourballId, input, browserDeps(15000));
+}
+
+export async function listGolfTourRoster(
+  id: string,
+  campId: string,
+): Promise<GolfToursResult<PublicGolfTourRosterMember[]>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return listGolfTourRosterWith(id, campId, browserDeps(8000));
+}
+
+export async function addGolfTourRosterMember(
+  id: string,
+  campId: string,
+  input: GolfTourRosterMemberInput,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return addGolfTourRosterMemberWith(id, campId, input, browserDeps(10000));
+}
+
+export async function updateGolfTourRosterMember(
+  id: string,
+  campId: string,
+  memberId: string,
+  input: Partial<GolfTourRosterMemberInput>,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return updateGolfTourRosterMemberWith(
+    id,
+    campId,
+    memberId,
+    input,
+    browserDeps(10000),
+  );
+}
+
+export async function removeGolfTourRosterMember(
+  id: string,
+  campId: string,
+  memberId: string,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return removeGolfTourRosterMemberWith(id, campId, memberId, browserDeps(10000));
+}
+
+export async function addGolfTourStandingFourball(
+  id: string,
+  input: AddGolfTourStandingFourballInput,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return addGolfTourStandingFourballWith(id, input, browserDeps(10000));
+}
+
+export async function updateGolfTourStandingFourball(
+  id: string,
+  templateId: string,
+  input: UpdateGolfTourStandingFourballInput,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return updateGolfTourStandingFourballWith(
+    id,
+    templateId,
+    input,
+    browserDeps(10000),
+  );
+}
+
+export async function removeGolfTourStandingFourball(
+  id: string,
+  templateId: string,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return removeGolfTourStandingFourballWith(id, templateId, browserDeps(10000));
+}
+
+export async function prepareGolfTourRound(
+  id: string,
+  roundId: string,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return prepareGolfTourRoundWith(id, roundId, browserDeps(10000));
+}
+
+export async function copyGolfTourRoundFrom(
+  id: string,
+  roundId: string,
+  sourceRoundId: string,
+): Promise<GolfToursResult<PublicGolfTour>> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: "API is not configured", status: 0 };
+  }
+  return copyGolfTourRoundFromWith(
+    id,
+    roundId,
+    sourceRoundId,
+    browserDeps(10000),
+  );
 }
