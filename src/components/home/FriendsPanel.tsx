@@ -8,6 +8,7 @@ import {
   type FriendRequest,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
+import { HUB_LOBBY_HREF } from "@/lib/sports/hub-ia";
 import {
   dispatchFriendsChanged,
   FRIENDS_CHANGED_EVENT,
@@ -197,13 +198,30 @@ export function FriendsPanel({
   return (
     <div className={className}>
       {showHeading ? (
-        <div className="mb-3 flex items-center gap-2">
-          <Users className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Friends
-          </p>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              Friends
+            </p>
+          </div>
+          <Link
+            href={HUB_LOBBY_HREF}
+            className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+          >
+            Looking for a game?
+          </Link>
         </div>
-      ) : null}
+      ) : (
+        <p className="mb-3">
+          <Link
+            href={HUB_LOBBY_HREF}
+            className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+          >
+            Looking for a game?
+          </Link>
+        </p>
+      )}
 
       <form
         onSubmit={onAdd}
@@ -249,12 +267,20 @@ export function FriendsPanel({
             No friends yet. Add someone by their @handle — you can still play
             with guests and WhatsApp share without being friends.
           </p>
-          <Link
-            href="/padel/new"
-            className="mt-4 inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
-          >
-            Challenge a friend to padel
-          </Link>
+          <div className="mt-4 flex flex-col gap-2">
+            <Link
+              href={HUB_LOBBY_HREF}
+              className="inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              Looking for a game?
+            </Link>
+            <Link
+              href="/padel/new"
+              className="inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              Challenge a friend to padel
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

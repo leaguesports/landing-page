@@ -103,6 +103,42 @@ describe("organisedGameInviteHref", () => {
     assert.equal(organisedGameInviteHref({ organisedGameId: "  " }), HUB_PLAY_HREF);
   });
 
+  it("deep-links lobby proposal and organise fill notifications", () => {
+    assert.equal(
+      inboxNotificationHref({
+        id: "n-lobby",
+        type: "lobby_proposal_ready",
+        actor: ACTOR,
+        payload: { proposalId: "prop-1", sport: "padel" },
+        readAt: null,
+        createdAt: INVITE.createdAt,
+      }),
+      "/lobby?proposal=prop-1",
+    );
+    assert.equal(
+      inboxNotificationHref({
+        id: "n-fill",
+        type: "lobby_open_game_filled",
+        actor: ACTOR,
+        payload: { organiseGameId: "org-3", openGameId: "og-1" },
+        readAt: null,
+        createdAt: INVITE.createdAt,
+      }),
+      "/play/organised/org-3",
+    );
+    assert.equal(
+      inboxNotificationCopy({
+        id: "n-lobby",
+        type: "lobby_proposal_ready",
+        actor: ACTOR,
+        payload: { proposalId: "prop-1" },
+        readAt: null,
+        createdAt: INVITE.createdAt,
+      }).body,
+      "proposed a game — Accept or Pass",
+    );
+  });
+
   it("returns null for unknown types", () => {
     assert.equal(
       inboxNotificationHref({

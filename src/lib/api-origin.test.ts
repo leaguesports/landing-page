@@ -12,6 +12,7 @@ import {
   shouldProxyApiPath,
 } from "./api-origin.ts";
 import { COVERAGE_PROXY_SOURCES } from "./conversion/coverage.ts";
+import { LOBBY_PROXY_SOURCES } from "./lobby/lobby.ts";
 import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
 import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
@@ -154,6 +155,14 @@ describe("shouldProxyApiPath", () => {
       true,
     );
     assert.equal(shouldProxyApiPath("/api/me/organised-games"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/looking"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/open-games"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/open-games/og-1/join"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/open-games/og-1/kick"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/proposals"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/proposals/p-1/accept"), true);
+    assert.equal(shouldProxyApiPath("/api/lobby/proposals/p-1/pass"), true);
     assert.equal(shouldProxyApiPath("/api/me/notifications"), true);
     assert.equal(shouldProxyApiPath("/api/me/notifications/read-all"), true);
     assert.equal(
@@ -477,6 +486,23 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/tournaments/"),
         );
         assert.deepEqual(tournamentSources, [...TOURNAMENT_PROXY_SOURCES]);
+        const lobbySources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/lobby" || source.startsWith("/api/lobby/"),
+        );
+        assert.deepEqual(lobbySources, [...LOBBY_PROXY_SOURCES]);
+        assert.ok(
+          rewriteSources.indexOf("/api/lobby/looking") <
+            rewriteSources.indexOf("/api/lobby/open-games/:id/join"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/lobby/open-games") <
+            rewriteSources.indexOf("/api/lobby/open-games/:id/join"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/lobby/proposals") <
+            rewriteSources.indexOf("/api/lobby/proposals/:id/accept"),
+        );
         assert.ok(
           API_PROXY_EXPLICIT_SOURCES.includes("/api/teams/:id/tournaments"),
         );

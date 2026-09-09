@@ -26,6 +26,7 @@ export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
+export const HUB_LOBBY_HREF = "/lobby" as const;
 export const HUB_WATCH_HREF = "/watch" as const;
 export const HUB_GUIDES_HREF = "/guides" as const;
 export const HUB_TRAINING_HREF = "/training" as const;
@@ -290,6 +291,11 @@ export function hubOrganisedGameHref(id: string): string {
 export function hubOrganisedGameJoinHref(token: string): string {
   const trimmed = token.trim();
   return trimmed ? `/play/join/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
+}
+
+/** Find players — Looking + open games. */
+export function hubLobbyHref(): string {
+  return HUB_LOBBY_HREF;
 }
 
 export function isHubPlayableSport(sport: SportDefinition): boolean {
