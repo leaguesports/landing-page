@@ -28,8 +28,8 @@ export default function NewGolfTourPage() {
             New golf tour
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
-            Name the event and pick dates. Two camps are created for you. Add
-            courses and fourballs next.
+            Name the event and pick dates. Two camps (teams) are created for
+            you — rename them, add courses, then add fourballs.
           </p>
         </header>
         <CreateGolfTourForm />
