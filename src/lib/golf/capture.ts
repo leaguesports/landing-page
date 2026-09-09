@@ -15,6 +15,10 @@ import {
   type CreateGolfRoundDeps,
 } from "./api-round.ts";
 import {
+  mergeTeeRatingsInput,
+  toGolfTeeRatingsPayload,
+} from "./handicap.ts";
+import {
   isHolesPlayed,
   isStartingHole,
   isValidTeeName,
@@ -45,6 +49,15 @@ export type CaptureGolfRoundBody = {
     userId: string | null;
   }>;
   score: GolfScore;
+  tee?: {
+    id?: string;
+    courseRating?: number;
+    slopeRating?: number;
+    par?: number;
+  };
+  courseRating?: number;
+  slopeRating?: number;
+  teePar?: number;
 };
 
 function isSlot(value: unknown): value is GolfPlayerSlot {
@@ -144,6 +157,7 @@ export function toCaptureGolfRoundBody(
     holesPlayed: input.holesPlayed,
     startingHole,
     teeName: normalizeTeeName(input.teeName),
+    ...toGolfTeeRatingsPayload(mergeTeeRatingsInput(input)),
     course: {
       name: input.course.name ?? null,
       holes: holes.map((hole) => ({

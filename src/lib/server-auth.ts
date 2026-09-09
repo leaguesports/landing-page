@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { getRailwayApiOrigin, isApiConfigured } from "@/lib/api-origin";
-import type { AuthState, AuthUser } from "@/lib/api-client";
+import { parseAuthUser, type AuthState } from "@/lib/api-client";
 
 /**
  * Server-side session check for RSC (home dashboard gate).
@@ -37,7 +37,7 @@ export async function getServerAuthState(): Promise<AuthState> {
     }
 
     if (res.ok) {
-      const user = (await res.json()) as AuthUser;
+      const user = parseAuthUser(await res.json());
       if (user?.id) {
         return { isAuthenticated: true, user, error: null };
       }

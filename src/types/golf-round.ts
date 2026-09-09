@@ -11,6 +11,13 @@ export type GolfPlayer = {
   displayName: string;
   isGuest: boolean;
   userId?: string | null;
+  /** HI used at create/capture snapshot. */
+  handicapIndexUsed?: number | null;
+  courseHandicap?: number | null;
+  playingHandicap?: number | null;
+  /** Present after lock / capture. Prefer API values over local sums. */
+  grossTotal?: number | null;
+  netTotal?: number | null;
 };
 
 export type GolfCourseHole = {
@@ -71,6 +78,29 @@ export type GolfHoleScore = {
   number: number;
   /** Slot string keys ("1"…"4") → strokes. */
   strokes: Record<string, number>;
+  /** Slot string keys → net when PH and stroke indexes were snapshotted. */
+  netStrokes?: Record<string, number>;
+};
+
+/** Client-supplied Sanity tee ratings. All optional — missing means gross-only. */
+export type GolfTeeRatings = {
+  teeId?: string | null;
+  courseRating?: number | null;
+  slopeRating?: number | null;
+  teePar?: number | null;
+};
+
+export type GolfNestedTee = {
+  id?: string | null;
+  teeId?: string | null;
+  courseRating?: number | null;
+  slopeRating?: number | null;
+  par?: number | null;
+  teePar?: number | null;
+};
+
+export type GolfTeeRatingsInput = GolfTeeRatings & {
+  tee?: GolfNestedTee | null;
 };
 
 export type GolfScore = {
@@ -96,6 +126,11 @@ export type GolfRound = {
   holesPlayed: GolfHolesPlayed;
   startingHole: number;
   teeName: string | null;
+  teeId?: string | null;
+  courseRating?: number | null;
+  slopeRating?: number | null;
+  teePar?: number | null;
+  handicapDisclaimer?: string | null;
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
   score: GolfScore | null;
@@ -117,7 +152,7 @@ export type CreateGolfRoundInput = {
   teeName: string;
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
-};
+} & GolfTeeRatingsInput;
 
 /** POST /api/golf-rounds/capture — finished round, no live scorecard. */
 export type CaptureGolfRoundInput = {
@@ -130,7 +165,7 @@ export type CaptureGolfRoundInput = {
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
   score: GolfScore;
-};
+} & GolfTeeRatingsInput;
 
 /** Locked history row from GET /api/golf-rounds?playerUserId=. */
 export type GolfHistoryItem = {
@@ -142,6 +177,11 @@ export type GolfHistoryItem = {
   holesPlayed: GolfHolesPlayed | number;
   startingHole: number;
   teeName: string | null;
+  teeId?: string | null;
+  courseRating?: number | null;
+  slopeRating?: number | null;
+  teePar?: number | null;
+  handicapDisclaimer?: string | null;
   course: GolfCourseSnapshot;
   players: GolfPlayer[];
   score: GolfScore | null;

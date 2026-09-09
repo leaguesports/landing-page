@@ -12,8 +12,10 @@ import {
   datetimeLocalToIso,
   toDatetimeLocalValue,
 } from "@/lib/golf/api-round";
-import { toCourseSnapshot } from "@/lib/golf/course";
+import { courseParTotal, toCourseSnapshot } from "@/lib/golf/course";
+import { teeRatingsFromCms } from "@/lib/golf/handicap";
 import { isGolfStartReady } from "@/lib/golf/pre-round";
+import { withRoundHandicapOverride } from "@/lib/golf/profile";
 import { cacheGolfRoundSnapshot } from "@/lib/golf/round-store";
 import {
   isGolfVenue,
@@ -26,6 +28,7 @@ import type {
   GolfPlayer,
   GolfPlayerSlot,
 } from "@/types/golf-round";
+import { GolfPreRoundHandicap } from "./GolfPreRoundHandicap";
 import { GolfPreRoundSetup } from "./GolfPreRoundSetup";
 
 type GolfQuickStartProps = {
@@ -69,6 +72,7 @@ export function GolfQuickStart({
   const [holesPlayed, setHolesPlayed] = useState<GolfHolesPlayed>(18);
   const [startingHole, setStartingHole] = useState(1);
   const [teeName, setTeeName] = useState("");
+  const [roundHi, setRoundHi] = useState<number | null>(null);
   const [playerCount, setPlayerCount] = useState(1);
   const [names, setNames] = useState<string[]>(["", "", "", ""]);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +100,12 @@ export function GolfQuickStart({
     return "";
   }, [isAuthenticated, user, displayName]);
 
+  const profileHi = user?.golfHandicapIndex ?? null;
+
+  useEffect(() => {
+    setRoundHi(user?.golfHandicapIndex ?? null);
+  }, [user?.golfHandicapIndex]);
+
   // Prefill slot 1 with signed-in user when empty.
   const resolvedNames = useMemo(() => {
     if (!selfName || names[0]?.trim()) return names;
@@ -117,6 +127,17 @@ export function GolfQuickStart({
     preRoundReady &&
     !starting &&
     !isPending;
+
+  const teeRatings = useMemo(() => {
+    const holes = venue
+      ? toCourseSnapshot(venue.golfCourse, holesPlayed, startingHole)?.holes
+      : null;
+    return teeRatingsFromCms(
+      venue?.golfCourse,
+      teeName,
+      holes ? courseParTotal(holes) : null,
+    );
+  }, [venue, teeName, holesPlayed, startingHole]);
 
   function setNameAt(index: number, value: string) {
     setNames((prev) => {
@@ -185,18 +206,28 @@ export function GolfQuickStart({
       return makeGuest(trimmed, slot);
     });
 
+    const seatedSelf = Boolean(
+      players[0] && !players[0].isGuest && players[0].userId,
+    );
+
     try {
-      const round = await createGolfRound(
-        {
-          venueCmsId: venue.id,
-          startsAt: startsAtIso,
-          holesPlayed,
-          startingHole,
-          teeName: teeName.trim(),
-          course,
-          players,
-        },
-        toGolfRoundVenue(venue)!,
+      const round = await withRoundHandicapOverride(
+        profileHi,
+        seatedSelf ? roundHi : profileHi,
+        () =>
+          createGolfRound(
+            {
+              venueCmsId: venue.id,
+              startsAt: startsAtIso,
+              holesPlayed,
+              startingHole,
+              teeName: teeName.trim(),
+              course,
+              players,
+              ...teeRatings,
+            },
+            toGolfRoundVenue(venue)!,
+          ),
       );
       cacheGolfRoundSnapshot(round);
       track("game_start", { page_type: "scorecard", sport: "golf" });
@@ -286,6 +317,14 @@ export function GolfQuickStart({
         onStartingHoleChange={setStartingHole}
         holesPlayed={holesPlayed}
         onHolesPlayedChange={setHolesPlayed}
+      />
+
+      <GolfPreRoundHandicap
+        profileHi={profileHi}
+        signedIn={Boolean(isAuthenticated && user?.id)}
+        ratings={teeRatings}
+        roundHi={roundHi}
+        onRoundHiChange={setRoundHi}
       />
 
       <section className="space-y-3">

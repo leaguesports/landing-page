@@ -47,6 +47,7 @@ export function GolfPreRoundSetup({
   onHolesPlayedChange,
 }: GolfPreRoundSetupProps) {
   const tees = teeOptionsFromGolfCourse(golfCourse);
+  const selectedTee = tees.find((tee) => tee.name === teeName) ?? null;
   const holeRange = formatHoleRangeLabel(holesPlayed, startingHole);
   const teeReady = isValidTeeName(teeName);
 
@@ -106,6 +107,18 @@ export function GolfPreRoundSetup({
               ? "Required. Pick a tee to start."
               : "Required. This course has no listed tees — type a name."}
         </p>
+        {selectedTee &&
+        selectedTee.courseRating != null &&
+        selectedTee.slopeRating != null ? (
+          <p className="text-xs text-zinc-500">
+            CR {selectedTee.courseRating} · Slope {selectedTee.slopeRating}
+            {selectedTee.par != null ? ` · Par ${selectedTee.par}` : ""}
+          </p>
+        ) : teeReady ? (
+          <p className="text-xs text-amber-200/90">
+            No course or slope rating on this tee — net scoring stays off.
+          </p>
+        ) : null}
       </section>
 
       <section className="space-y-3">

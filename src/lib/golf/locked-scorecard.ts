@@ -1,10 +1,15 @@
 import type {
   GolfCourseHole,
+  GolfHoleScore,
   GolfLiveStrokes,
   GolfPlayer,
   GolfPlayerSlot,
   GolfRound,
 } from "../../types/golf-round.ts";
+import {
+  playerHasPlayingHandicap,
+  resolveHoleNet,
+} from "./handicap.ts";
 import { formatHoleRangeLabel } from "./pre-round.ts";
 import { formatToPar, playerGross, playerToPar } from "./scoring.ts";
 
@@ -23,6 +28,8 @@ export type GolfScorecardColumn = {
 export type GolfScorecardCell = {
   display: string;
   strokes: number | null;
+  net: number | null;
+  strokesReceived: number;
   toPar: number | null;
   rel: GolfScoreRel | null;
 };
@@ -32,6 +39,9 @@ export type GolfScorecardPlayerRow = {
   displayName: string;
   cells: GolfScorecardCell[];
   gross: number;
+  net: number | null;
+  courseHandicap: number | null;
+  playingHandicap: number | null;
   toPar: number;
   isLeader: boolean;
 };
@@ -148,6 +158,8 @@ function parCell(
     return {
       display: String(column.hole.par),
       strokes: column.hole.par,
+      net: null,
+      strokesReceived: 0,
       toPar: 0,
       rel: null,
     };
@@ -156,6 +168,8 @@ function parCell(
   return {
     display: String(par),
     strokes: par,
+    net: null,
+    strokesReceived: 0,
     toPar: 0,
     rel: null,
   };
@@ -166,27 +180,57 @@ function siCell(column: GolfScorecardColumn): GolfScorecardCell {
     return {
       display: String(column.hole.strokeIndex),
       strokes: column.hole.strokeIndex,
+      net: null,
+      strokesReceived: 0,
       toPar: null,
       rel: null,
     };
   }
-  return { display: "", strokes: null, toPar: null, rel: null };
+  return {
+    display: "",
+    strokes: null,
+    net: null,
+    strokesReceived: 0,
+    toPar: null,
+    rel: null,
+  };
 }
 
 function playerCell(
   column: GolfScorecardColumn,
   holes: GolfCourseHole[],
   strokes: GolfLiveStrokes,
-  slot: GolfPlayerSlot,
+  player: GolfPlayer,
+  scoreHoles?: GolfHoleScore[] | null,
 ): GolfScorecardCell {
+  const slot = player.slot;
   if (column.kind === "hole" && column.hole) {
     const value = holeStrokes(strokes, column.hole.number, slot);
     if (value == null) {
-      return { display: "—", strokes: null, toPar: null, rel: null };
+      return {
+        display: "—",
+        strokes: null,
+        net: null,
+        strokesReceived: 0,
+        toPar: null,
+        rel: null,
+      };
     }
+    const apiNet = scoreHoles?.find(
+      (hole) => hole.number === column.hole?.number,
+    )?.netStrokes?.[slotKey(slot)];
+    const resolved = resolveHoleNet({
+      gross: value,
+      playingHandicap: player.playingHandicap,
+      holeNumber: column.hole.number,
+      holes,
+      apiNetStrokes: typeof apiNet === "number" ? apiNet : null,
+    });
     return {
       display: String(value),
       strokes: value,
+      net: resolved.net,
+      strokesReceived: resolved.strokesReceived,
       toPar: value - column.hole.par,
       rel: scoreRel(value, column.hole.par),
     };
@@ -195,11 +239,48 @@ function playerCell(
   const value = sumStrokes(holes, column.holeIndexes, strokes, slot);
   const par = sumPar(holes, column.holeIndexes);
   if (value == null) {
-    return { display: "—", strokes: null, toPar: null, rel: null };
+    return {
+      display: "—",
+      strokes: null,
+      net: null,
+      strokesReceived: 0,
+      toPar: null,
+      rel: null,
+    };
+  }
+  let net: number | null = null;
+  if (playerHasPlayingHandicap(player)) {
+    let holeNetSum = 0;
+    let counted = 0;
+    for (const index of column.holeIndexes) {
+      const hole = holes[index];
+      if (!hole) continue;
+      const gross = holeStrokes(strokes, hole.number, slot);
+      if (gross == null) continue;
+      const apiNet = scoreHoles?.find((row) => row.number === hole.number)
+        ?.netStrokes?.[slotKey(slot)];
+      const resolved = resolveHoleNet({
+        gross,
+        playingHandicap: player.playingHandicap,
+        holeNumber: hole.number,
+        holes,
+        apiNetStrokes: typeof apiNet === "number" ? apiNet : null,
+      });
+      if (resolved.net == null) {
+        holeNetSum = 0;
+        counted = 0;
+        break;
+      }
+      holeNetSum += resolved.net;
+      counted += 1;
+    }
+    if (counted > 0) net = holeNetSum;
   }
   return {
     display: String(value),
     strokes: value,
+    net,
+    strokesReceived: 0,
     toPar: value - par,
     rel: null,
   };
@@ -221,26 +302,46 @@ export function buildGolfLockedScorecard(
   players: GolfPlayer[],
   strokes: GolfLiveStrokes,
   holes: GolfCourseHole[],
+  scoreHoles?: GolfHoleScore[] | null,
 ): GolfLockedScorecardModel {
   const columns = golfScorecardColumns(holes);
-  const rows: GolfScorecardPlayerRow[] = players.map((player) => ({
-    slot: player.slot,
-    displayName: player.displayName,
-    cells: columns.map((column) =>
-      playerCell(column, holes, strokes, player.slot),
-    ),
-    gross: playerGross(strokes, player.slot),
-    toPar: playerToPar(strokes, player.slot, holes),
-    isLeader: false,
-  }));
+  const rows: GolfScorecardPlayerRow[] = players.map((player) => {
+    const gross =
+      typeof player.grossTotal === "number"
+        ? player.grossTotal
+        : playerGross(strokes, player.slot);
+    const net =
+      typeof player.netTotal === "number" ? player.netTotal : null;
+    return {
+      slot: player.slot,
+      displayName: player.displayName,
+      cells: columns.map((column) =>
+        playerCell(column, holes, strokes, player, scoreHoles),
+      ),
+      gross,
+      net,
+      courseHandicap:
+        typeof player.courseHandicap === "number" ? player.courseHandicap : null,
+      playingHandicap:
+        typeof player.playingHandicap === "number"
+          ? player.playingHandicap
+          : null,
+      toPar: playerToPar(strokes, player.slot, holes),
+      isLeader: false,
+    };
+  });
 
   const scored = rows.filter((row) =>
     row.cells.some((cell) => cell.strokes != null),
   );
   if (scored.length > 1) {
-    const low = Math.min(...scored.map((row) => row.gross));
+    const useNet = scored.every((row) => row.net != null);
+    const low = Math.min(
+      ...scored.map((row) => (useNet ? (row.net as number) : row.gross)),
+    );
     for (const row of rows) {
-      if (row.gross === low && row.cells.some((cell) => cell.strokes != null)) {
+      const value = useNet ? row.net : row.gross;
+      if (value === low && row.cells.some((cell) => cell.strokes != null)) {
         row.isLeader = true;
       }
     }

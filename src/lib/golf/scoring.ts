@@ -7,13 +7,21 @@ import type {
   GolfScore,
   LockGolfRoundBody,
 } from "../../types/golf-round.ts";
+import {
+  holesHaveStrokeIndexes,
+  playerHasPlayingHandicap,
+  resolveHoleNet,
+} from "./handicap.ts";
 
 export type PlayerRunningTotal = {
   slot: GolfPlayerSlot;
   displayName: string;
   gross: number;
+  net: number | null;
   toPar: number;
   holesScored: number;
+  courseHandicap: number | null;
+  playingHandicap: number | null;
 };
 
 function slotKey(slot: GolfPlayerSlot | number): string {
@@ -73,12 +81,53 @@ export function runningTotals(
         holesScored += 1;
       }
     }
+    const gross =
+      typeof player.grossTotal === "number"
+        ? player.grossTotal
+        : playerGross(strokes, player.slot);
+    let net: number | null =
+      typeof player.netTotal === "number" ? player.netTotal : null;
+    if (
+      net == null &&
+      playerHasPlayingHandicap(player) &&
+      holesHaveStrokeIndexes(holes)
+    ) {
+      let holeNetSum = 0;
+      let counted = 0;
+      for (const hole of holes) {
+        const value = strokes[hole.number]?.[key];
+        if (typeof value !== "number" || !Number.isFinite(value)) continue;
+        const resolved = resolveHoleNet({
+          gross: value,
+          playingHandicap: player.playingHandicap,
+          holeNumber: hole.number,
+          holes,
+        });
+        if (resolved.net == null) continue;
+        holeNetSum += resolved.net;
+        counted += 1;
+      }
+      if (counted > 0) net = holeNetSum;
+    } else if (
+      net == null &&
+      playerHasPlayingHandicap(player) &&
+      holesScored === holes.length
+    ) {
+      net = gross - (player.playingHandicap as number);
+    }
     return {
       slot: player.slot,
       displayName: player.displayName,
-      gross: playerGross(strokes, player.slot),
+      gross,
+      net,
       toPar: playerToPar(strokes, player.slot, holes),
       holesScored,
+      courseHandicap:
+        typeof player.courseHandicap === "number" ? player.courseHandicap : null,
+      playingHandicap:
+        typeof player.playingHandicap === "number"
+          ? player.playingHandicap
+          : null,
     };
   });
 }

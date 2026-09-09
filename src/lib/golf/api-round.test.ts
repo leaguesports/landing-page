@@ -63,6 +63,38 @@ describe("parseApiGolfRound", () => {
     const round = parseApiGolfRound({ ...liveRound, teeName: "Yellow" });
     assert.equal(round?.teeName, "Yellow");
   });
+
+  it("maps handicap snapshots and hole netStrokes from the live API", () => {
+    const round = parseApiGolfRound({
+      ...liveRound,
+      courseRating: 71.2,
+      slopeRating: 129,
+      teePar: 36,
+      handicapDisclaimer: "Estimated WHS-style Course Handicap. Not official WHS certified.",
+      players: [
+        {
+          slot: 1,
+          displayName: "Alex",
+          isGuest: false,
+          userId: "user-1",
+          handicapIndexUsed: 10.4,
+          courseHandicap: 11,
+          playingHandicap: 11,
+          grossTotal: 40,
+          netTotal: 29,
+        },
+      ],
+      score: {
+        holes: [
+          { number: 10, strokes: { "1": 5 }, netStrokes: { "1": 4 } },
+        ],
+      },
+    });
+    assert.equal(round?.players[0]?.playingHandicap, 11);
+    assert.equal(round?.players[0]?.netTotal, 29);
+    assert.equal(round?.score?.holes[0]?.netStrokes?.["1"], 4);
+    assert.equal(round?.courseRating, 71.2);
+  });
 });
 
 describe("parseGolfHistoryItem", () => {
@@ -88,6 +120,34 @@ describe("toCreateGolfRoundBody", () => {
       body.course.holes.map((hole) => hole.number),
       [10, 11, 12, 13, 14, 15, 16, 17, 18],
     );
+  });
+
+  it("sends nested tee ratings when CR / slope / par are present", () => {
+    const body = toCreateGolfRoundBody({
+      ...createInput,
+      tee: {
+        id: "tee-white",
+        courseRating: 71.2,
+        slopeRating: 129,
+        par: 72,
+      },
+    });
+    assert.deepEqual(body.tee, {
+      id: "tee-white",
+      courseRating: 71.2,
+      slopeRating: 129,
+      par: 72,
+    });
+    assert.equal(body.courseRating, 71.2);
+    assert.equal(body.slopeRating, 129);
+    assert.equal(body.teePar, 72);
+  });
+
+  it("omits invented ratings when the tee is incomplete", () => {
+    const body = toCreateGolfRoundBody(createInput);
+    assert.deepEqual(body.tee, {});
+    assert.equal("courseRating" in body, false);
+    assert.equal("slopeRating" in body, false);
   });
 
   it("rejects a missing teeName so Start cannot post null", () => {

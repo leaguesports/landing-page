@@ -61,6 +61,24 @@ describe("gross / toPar / running totals", () => {
     assert.equal(totals[0]?.toPar, 0);
     assert.equal(totals[0]?.holesScored, 3);
     assert.equal(totals[1]?.toPar, 1);
+    assert.equal(totals[0]?.net, null);
+  });
+
+  it("adds running net when a playing handicap and SI are present", () => {
+    const withPh: GolfPlayer[] = [
+      {
+        slot: 1,
+        displayName: "Alex",
+        isGuest: false,
+        userId: "u1",
+        playingHandicap: 2,
+        courseHandicap: 2,
+      },
+    ];
+    const totals = runningTotals(withPh, strokes, holes);
+    assert.equal(totals[0]?.gross, 12);
+    assert.equal(totals[0]?.net, 10);
+    assert.equal(totals[0]?.playingHandicap, 2);
   });
 });
 
