@@ -2,6 +2,7 @@ import { LobbyClient } from "@/components/lobby/LobbyClient";
 import { emptyLobbySnapshot, listLobby, normalizeLobbyCity, normalizeLobbySport } from "@/lib/lobby/lobby";
 import type { VenueOption } from "@/lib/padel/venue-options";
 import { getServerAuthState } from "@/lib/server-auth";
+import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -51,10 +52,10 @@ export default async function LobbyPage({
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
           <Link
-            href={auth.isAuthenticated ? "/" : "/play"}
+            href={HUB_ORGANISE_HUB_HREF}
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            ← Play
+            ← Organise
           </Link>
           {auth.isAuthenticated ? (
             <Link

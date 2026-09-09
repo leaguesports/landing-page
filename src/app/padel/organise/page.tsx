@@ -6,6 +6,7 @@ import { isPadelVenue, toVenueOption } from "@/lib/padel/venue-options";
 import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
 import { getServerAuthState } from "@/lib/server-auth";
+import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 import { cookies } from "next/headers";
 
@@ -64,11 +65,11 @@ export default async function OrganisePadelPage({
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
           <Link
             href={
-              initialVenue ? `/venues/${initialVenue.slug}` : "/play/padel"
+              initialVenue ? `/venues/${initialVenue.slug}` : HUB_ORGANISE_HUB_HREF
             }
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            {initialVenue ? "← Venue" : "← Play padel"}
+            {initialVenue ? "← Venue" : "← Organise"}
           </Link>
           {auth.isAuthenticated ? (
             <Link

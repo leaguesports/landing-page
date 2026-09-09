@@ -1,7 +1,9 @@
 /**
- * Signed-in hub information architecture (#145 / #150 / #153 / #155 / #157).
+ * Signed-in hub information architecture (#145 / #150 / #153 / #155 / #157 / #192).
  * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
- * Play = verb first (Start / Capture / Organise), then sport pick in a modal.
+ * Play = three verbs (Start / Capture / Organise). Organise opens the hub
+ * at `/play/organise`; sport pick for Start / Capture / organise-a-game
+ * stays a modal.
  */
 
 import {
@@ -12,6 +14,9 @@ import { intentPath } from "../intent/paths.ts";
 import { parseVenueSearch } from "../search/venueSearch.ts";
 import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
 import { HUB_QUICK_START_HREF } from "../play/quick-start.ts";
+import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./hub-redirects.ts";
+
+export { HUB_PLAY_DEEP_LINK_REDIRECTS };
 
 export { HUB_QUICK_START_HREF };
 
@@ -26,6 +31,13 @@ export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
+/** Organise hub — Play's third verb. Lobby / fixtures / tournaments live here. */
+export const HUB_ORGANISE_HUB_HREF = "/play/organise" as const;
+/** Short alias — redirects to the hub. */
+export const HUB_ORGANISE_ALIAS_HREF = "/organise" as const;
+export const HUB_ORGANISE_HUB_TITLE = "Organise" as const;
+export const HUB_ORGANISE_HUB_SUBTITLE =
+  "Find players, team fixtures, tournaments." as const;
 export const HUB_LOBBY_HREF = "/lobby" as const;
 export const HUB_WATCH_HREF = "/watch" as const;
 export const HUB_GUIDES_HREF = "/guides" as const;
@@ -91,12 +103,19 @@ export type HubPlayVerbOption = {
   id: HubPlayVerbId;
   label: string;
   description: string;
+  /**
+   * When set, Play navigates here instead of opening the sport modal.
+   * Organise is the hub; Start / Capture still pick a sport first.
+   */
+  href?: string;
 };
 
 /**
  * Play verbs first — sport pick is a modal, not inline game blocks.
  * Quick start is a separate location → venue + sport + friends entry
  * (`HUB_QUICK_START_HREF`), not a fourth verb.
+ * Organise is a hub (`HUB_ORGANISE_HUB_HREF`), not a fourth Play entry
+ * for Lobby / Team matches / Tournaments.
  */
 export const HUB_PLAY_SPORT_PICK = "modal" as const;
 
@@ -113,10 +132,61 @@ export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
   },
   {
     id: "organise",
-    label: "Organise game",
-    description: "Set a venue and time, then invite friends.",
+    label: "Organise",
+    description: "Find players, team fixtures, and tournaments.",
+    href: HUB_ORGANISE_HUB_HREF,
   },
 ];
+
+export const HUB_ORGANISE_ROW_IDS = [
+  "game",
+  "lobby",
+  "team-matches",
+  "tournaments",
+] as const;
+
+export type HubOrganiseRowId = (typeof HUB_ORGANISE_ROW_IDS)[number];
+
+export type HubOrganiseRow = {
+  id: HubOrganiseRowId;
+  title: string;
+  description: string;
+  /** Destination page. `null` opens the organise-a-game sport modal. */
+  href: string | null;
+};
+
+export const HUB_ORGANISE_ROWS: readonly HubOrganiseRow[] = [
+  {
+    id: "game",
+    title: "Organise a game",
+    description: "Set a venue and time, then invite friends.",
+    href: null,
+  },
+  {
+    id: "lobby",
+    title: "Lobby",
+    description: "Looking for a game, open games, and proposes.",
+    href: HUB_LOBBY_HREF,
+  },
+  {
+    id: "team-matches",
+    title: "Team matches",
+    description: "Challenge another squad and start a live scorecard.",
+    href: HUB_TEAM_MATCHES_HREF,
+  },
+  {
+    id: "tournaments",
+    title: "Tournaments",
+    description: "Run a single-elim draw and start fixtures as team matches.",
+    href: HUB_TOURNAMENTS_HREF,
+  },
+];
+
+export type HubOrganiseBadgeCounts = {
+  lobby?: number;
+  teamMatches?: number;
+  tournaments?: number;
+};
 
 /** Location-based who / what / where entry from the Play tab. */
 export const HUB_QUICK_START = {
@@ -298,6 +368,46 @@ export function hubLobbyHref(): string {
   return HUB_LOBBY_HREF;
 }
 
+export function hubOrganiseHubHref(): string {
+  return HUB_ORGANISE_HUB_HREF;
+}
+
+export function hubPlayVerbHref(verb: HubPlayVerbOption): string | null {
+  return verb.href ?? null;
+}
+
+export function hubPlayVerbOpensModal(verb: HubPlayVerbOption): boolean {
+  return !verb.href;
+}
+
+export function pendingLobbyProposalCount(
+  proposals: ReadonlyArray<{ status: string }>,
+): number {
+  return proposals.filter((proposal) => proposal.status === "pending").length;
+}
+
+export function hubOrganiseRowBadge(
+  id: HubOrganiseRowId,
+  counts: HubOrganiseBadgeCounts = {},
+): string | null {
+  if (id === "lobby") {
+    const n = counts.lobby ?? 0;
+    if (n <= 0) return null;
+    return n === 1 ? "1 propose" : `${n} proposes`;
+  }
+  if (id === "team-matches") {
+    const n = counts.teamMatches ?? 0;
+    if (n <= 0) return null;
+    return n === 1 ? "1 upcoming" : `${n} upcoming`;
+  }
+  if (id === "tournaments") {
+    const n = counts.tournaments ?? 0;
+    if (n <= 0) return null;
+    return n === 1 ? "1 upcoming" : `${n} upcoming`;
+  }
+  return null;
+}
+
 export function isHubPlayableSport(sport: SportDefinition): boolean {
   return (
     sport.capabilities.includes("play") &&
@@ -370,7 +480,7 @@ export function hubPlayModalSportOptions(
 
 export function hubPlayModalTitle(verb: HubPlayVerbId): string {
   if (verb === "capture") return "Capture results";
-  if (verb === "organise") return "Organise game";
+  if (verb === "organise") return "Organise a game";
   return "Start game";
 }
 

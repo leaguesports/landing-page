@@ -11,8 +11,6 @@ import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
-import { TeamMatchesStrip } from "@/components/home/TeamMatchesStrip";
-import { TournamentsStrip } from "@/components/home/TournamentsStrip";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -23,16 +21,6 @@ import {
   emptyTeamsSnapshot,
   type TeamsSnapshot,
 } from "@/lib/teams/teams";
-import {
-  emptyMineSnapshot,
-  TEAM_MATCHES_HREF,
-  type TeamMatchesMineSnapshot,
-} from "@/lib/team-matches/team-matches";
-import {
-  emptyMineSnapshot as emptyTournamentsSnapshot,
-  TOURNAMENTS_HREF,
-  type TournamentsMineSnapshot,
-} from "@/lib/tournaments/tournaments";
 import {
   emptyIntegrationsSnapshot,
   type IntegrationsSnapshot,
@@ -63,7 +51,6 @@ import {
   HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
-  HUB_LOBBY_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
   HUB_PLAY_VERBS,
@@ -227,10 +214,6 @@ type SportsHubProps = {
   followedFixtureCount?: number;
   friends?: FriendsSnapshot;
   organisedGames?: OrganisedGamesSnapshot;
-  /** Prefetched `GET /api/team-matches/mine` — empty on failure. */
-  teamMatches?: TeamMatchesMineSnapshot;
-  /** Prefetched `GET /api/tournaments/mine` — empty on failure. */
-  tournaments?: TournamentsMineSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
   /** Prefetched `GET /api/teams` — empty on failure. */
@@ -636,8 +619,6 @@ export function SportsHub({
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
   organisedGames = emptyOrganisedGamesSnapshot(),
-  teamMatches = emptyMineSnapshot(),
-  tournaments = emptyTournamentsSnapshot(),
   myCommunities = [],
   myTeams = emptyTeamsSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
@@ -941,7 +922,7 @@ export function SportsHub({
               <SectionHeading
                 id="hub-play"
                 title="Play"
-                description="Quick start from your location, or start, organise, or capture manually."
+                description="Quick start from your location, or start, capture, or organise."
               />
 
               <Link
@@ -962,23 +943,19 @@ export function SportsHub({
               </Link>
 
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-                {HUB_PLAY_VERBS.map((verb) => (
-                  <li key={verb.id}>
-                    <button
-                      type="button"
-                      aria-haspopup="dialog"
-                      aria-expanded={playVerb === verb.id}
-                      onClick={() => setPlayVerb(verb.id)}
-                      className="flex h-full w-full flex-col items-start gap-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7"
-                    >
+                {HUB_PLAY_VERBS.map((verb) => {
+                  const icon =
+                    verb.id === "capture" ? (
+                      <ClipboardList className="h-4 w-4" aria-hidden />
+                    ) : verb.id === "organise" ? (
+                      <Calendar className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <Zap className="h-4 w-4" aria-hidden />
+                    );
+                  const body = (
+                    <>
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
-                        {verb.id === "capture" ? (
-                          <ClipboardList className="h-4 w-4" aria-hidden />
-                        ) : verb.id === "organise" ? (
-                          <Calendar className="h-4 w-4" aria-hidden />
-                        ) : (
-                          <Zap className="h-4 w-4" aria-hidden />
-                        )}
+                        {icon}
                       </span>
                       <div>
                         <h3 className="font-display text-3xl tracking-wide text-white">
@@ -988,66 +965,36 @@ export function SportsHub({
                           {verb.description}
                         </p>
                       </div>
-                    </button>
-                  </li>
-                ))}
+                    </>
+                  );
+                  const className =
+                    "flex h-full w-full flex-col items-start gap-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7";
+                  return (
+                    <li key={verb.id}>
+                      {verb.href ? (
+                        <Link href={verb.href} className={className}>
+                          {body}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-haspopup="dialog"
+                          aria-expanded={playVerb === verb.id}
+                          onClick={() => setPlayVerb(verb.id)}
+                          className={className}
+                        >
+                          {body}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
-
-              <Link
-                href={HUB_LOBBY_HREF}
-                className="mt-4 flex w-full flex-col items-start gap-3 rounded-3xl border border-emerald-400/20 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-emerald-400/40 sm:px-6"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
-                  <Users className="h-4 w-4" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
-                    Find players
-                  </p>
-                  <h3 className="mt-1 font-display text-3xl tracking-wide text-white">
-                    Lobby
-                  </h3>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-400">
-                    Looking for a game, or looking for players. Convert into
-                    Organise when the lobby fills.
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href={TEAM_MATCHES_HREF}
-                className="mt-4 flex w-full flex-col items-start gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-white/16 sm:px-6"
-              >
-                <h3 className="font-display text-3xl tracking-wide text-white">
-                  Team matches
-                </h3>
-                <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
-                  Challenge another squad, set a lineup, and start a live
-                  scorecard.
-                </p>
-              </Link>
-
-              <Link
-                href={TOURNAMENTS_HREF}
-                className="mt-4 flex w-full flex-col items-start gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-white/16 sm:px-6"
-              >
-                <h3 className="font-display text-3xl tracking-wide text-white">
-                  Tournaments
-                </h3>
-                <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
-                  Run a 4, 8, or 16 team single-elim. Captains register, then
-                  start fixtures as team matches.
-                </p>
-              </Link>
 
               <OrganisedGamesStrip
                 snapshot={organisedGames}
                 nowIso={nowIso}
               />
-
-              <TeamMatchesStrip snapshot={teamMatches} nowIso={nowIso} />
-
-              <TournamentsStrip snapshot={tournaments} />
 
               {playVerb ? (
                 <PlaySportModal

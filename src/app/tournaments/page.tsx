@@ -1,4 +1,5 @@
 import { TournamentsMine } from "@/components/tournaments/TournamentsMine";
+import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
 import {
   TOURNAMENTS_NEW_HREF,
   listMyTournaments,
@@ -23,6 +24,12 @@ export default async function TournamentsPage() {
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-linear-to-br from-emerald-950/40 via-[#0c0f0c] to-[#0c0f0c]" />
         <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <Link
+            href={HUB_ORGANISE_HUB_HREF}
+            className="mb-5 block w-fit text-sm text-zinc-400 transition-colors hover:text-white"
+          >
+            ← Organise
+          </Link>
           <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
             <Medal className="h-3.5 w-3.5" aria-hidden />
             Tournaments
