@@ -74,6 +74,11 @@ const nextConfig: NextConfig = {
     // and venue sources plus a catch-all proxy the rest to Railway.
     // No rewrites when the Railway origin is unset (Preview / local without env).
     return {
+      beforeFiles: [
+        // `generateSitemaps` serves `/sitemap/{id}.xml` and 404s `/sitemap.xml`.
+        // Keep the conventional URL as an alias of the sitemap index.
+        { source: "/sitemap.xml", destination: "/sitemap-index.xml" },
+      ],
       afterFiles: getApiProxyRewrites(),
     };
   },

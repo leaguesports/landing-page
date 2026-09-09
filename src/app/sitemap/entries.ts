@@ -52,6 +52,27 @@ export type SitemapDataSource = {
   getFixtures: () => Promise<SitemapFixtureRow[]>;
 };
 
+/** Named modules emitted by `generateSitemaps` at `/sitemap/{id}.xml`. */
+export const SITEMAP_BUCKET_IDS = [
+  "static",
+  "venues",
+  "events",
+  "guides",
+  "play-cities",
+  "watch-cities",
+] as const;
+
+export type SitemapBucketId = (typeof SITEMAP_BUCKET_IDS)[number];
+
+/** Canonical sitemap index (robots.txt points here, not at per-bucket files). */
+export const SITEMAP_INDEX_PATH = "/sitemap-index.xml";
+
+export type SitemapBuildOptions = {
+  baseUrl?: string | null;
+  now?: Date;
+  source?: Partial<SitemapDataSource>;
+};
+
 const STATIC_PATHS: Array<{
   path: string;
   changeFrequency: SitemapChangeFrequency;
@@ -281,53 +302,134 @@ export function fixtureSitemapRoutes(
   return routes;
 }
 
-export async function buildSitemapEntries(options: {
-  baseUrl?: string | null;
-  now?: Date;
-  source?: Partial<SitemapDataSource>;
-}): Promise<SitemapEntry[]> {
+export function isSitemapBucketId(value: unknown): value is SitemapBucketId {
+  return (
+    typeof value === "string" &&
+    (SITEMAP_BUCKET_IDS as readonly string[]).includes(value)
+  );
+}
+
+/** Next.js passes `{id}.xml` in the route param; the handler receives the bare id. */
+export function parseSitemapBucketId(value: unknown): SitemapBucketId | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  const bare = trimmed.endsWith(".xml") ? trimmed.slice(0, -4) : trimmed;
+  return isSitemapBucketId(bare) ? bare : null;
+}
+
+export function listSitemapModules(): { id: SitemapBucketId }[] {
+  return SITEMAP_BUCKET_IDS.map((id) => ({ id }));
+}
+
+export function sitemapIndexUrl(origin: string): string {
+  return `${resolveSitemapOrigin(origin)}${SITEMAP_INDEX_PATH}`;
+}
+
+export function sitemapBucketUrl(origin: string, id: SitemapBucketId): string {
+  return `${resolveSitemapOrigin(origin)}/sitemap/${id}.xml`;
+}
+
+function xmlText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+export function buildSitemapIndexXml(origin: string): string {
+  const body = SITEMAP_BUCKET_IDS.map((id) => {
+    const loc = xmlText(sitemapBucketUrl(origin, id));
+    return `  <sitemap>\n    <loc>${loc}</loc>\n  </sitemap>`;
+  }).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</sitemapindex>`;
+}
+
+function dedupeSitemapEntries(entries: SitemapEntry[]): SitemapEntry[] {
+  const seen = new Set<string>();
+  const merged: SitemapEntry[] = [];
+  for (const entry of entries) {
+    if (seen.has(entry.url)) continue;
+    seen.add(entry.url);
+    merged.push(entry);
+  }
+  return merged;
+}
+
+async function loadSourceRows<T>(
+  load: (() => Promise<T>) | undefined,
+  fallback: T,
+): Promise<T> {
+  if (!load) return fallback;
+  try {
+    return await load();
+  } catch {
+    return fallback;
+  }
+}
+
+export async function buildSitemapBucket(
+  id: SitemapBucketId,
+  options: SitemapBuildOptions = {},
+): Promise<SitemapEntry[]> {
+  const now = options.now ?? new Date();
+  const origin = resolveSitemapOrigin(options.baseUrl);
+  const source = options.source ?? {};
+
+  switch (id) {
+    case "static":
+      return staticSitemapRoutes(origin, now);
+    case "venues": {
+      const venues = await loadSourceRows(source.getVenues, []);
+      return dedupeSitemapEntries(venueSitemapRoutes(origin, venues, now));
+    }
+    case "events": {
+      const fixtures = await loadSourceRows(source.getFixtures, []);
+      return dedupeSitemapEntries(fixtureSitemapRoutes(origin, fixtures, now));
+    }
+    case "guides": {
+      const guides = await loadSourceRows(source.getGuides, []);
+      return dedupeSitemapEntries(guideSitemapRoutes(origin, guides, now));
+    }
+    case "play-cities": {
+      const getIntentPairs = source.getIntentPairs;
+      const pairs = await loadSourceRows(
+        getIntentPairs ? () => getIntentPairs("play") : undefined,
+        [],
+      );
+      return dedupeSitemapEntries(
+        intentSitemapRoutes(origin, "play", pairs, now),
+      );
+    }
+    case "watch-cities": {
+      const getIntentPairs = source.getIntentPairs;
+      const pairs = await loadSourceRows(
+        getIntentPairs ? () => getIntentPairs("watch") : undefined,
+        [],
+      );
+      return dedupeSitemapEntries(
+        intentSitemapRoutes(origin, "watch", pairs, now),
+      );
+    }
+  }
+}
+
+export async function buildSitemapEntries(
+  options: SitemapBuildOptions = {},
+): Promise<SitemapEntry[]> {
   const now = options.now ?? new Date();
   const origin = resolveSitemapOrigin(options.baseUrl);
   const fallback = staticSitemapRoutes(origin, now);
 
   try {
-    const source = options.source ?? {};
-    const empty = async () => [];
-    const [venues, guides, watchPairs, playPairs, fixtures] = await Promise.all([
-      Promise.resolve()
-        .then(() => (source.getVenues ?? empty)())
-        .catch(() => []),
-      Promise.resolve()
-        .then(() => (source.getGuides ?? empty)())
-        .catch(() => []),
-      Promise.resolve()
-        .then(() => (source.getIntentPairs ?? empty)("watch"))
-        .catch(() => []),
-      Promise.resolve()
-        .then(() => (source.getIntentPairs ?? empty)("play"))
-        .catch(() => []),
-      Promise.resolve()
-        .then(() => (source.getFixtures ?? empty)())
-        .catch(() => []),
-    ]);
-
-    const seen = new Set<string>();
-    const merged: SitemapEntry[] = [];
-
-    for (const entry of [
-      ...fallback,
-      ...intentSitemapRoutes(origin, "watch", watchPairs, now),
-      ...intentSitemapRoutes(origin, "play", playPairs, now),
-      ...guideSitemapRoutes(origin, guides, now),
-      ...venueSitemapRoutes(origin, venues, now),
-      ...fixtureSitemapRoutes(origin, fixtures, now),
-    ]) {
-      if (seen.has(entry.url)) continue;
-      seen.add(entry.url);
-      merged.push(entry);
-    }
-
-    return merged;
+    const groups = await Promise.all(
+      SITEMAP_BUCKET_IDS.map((id) =>
+        buildSitemapBucket(id, { ...options, now }),
+      ),
+    );
+    return dedupeSitemapEntries(groups.flat());
   } catch (error) {
     console.error("[sitemap] generation failed", error);
     return fallback;
