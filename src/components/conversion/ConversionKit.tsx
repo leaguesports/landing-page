@@ -3,7 +3,7 @@
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import { CtaPair, type CtaPairTone } from "@/components/conversion/CtaPair";
 import { StickyCtaBar } from "@/components/conversion/StickyCtaBar";
-import type { PageType } from "@/lib/analytics/track";
+import type { CtaSlot, PageType } from "@/lib/analytics/track";
 import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
 
 export function ConversionKit({
@@ -20,6 +20,7 @@ export function ConversionKit({
   showFallback = false,
   stickyOffsetClassName = "",
   pageType,
+  slot = "hero",
 }: {
   matrix: CtaMatrix;
   tone?: CtaPairTone;
@@ -34,6 +35,7 @@ export function ConversionKit({
   showFallback?: boolean;
   stickyOffsetClassName?: string;
   pageType: PageType;
+  slot?: CtaSlot;
 }) {
   const fallbackRoadmap = matrix.fallback === "notify_roadmap";
   const showNotify =
@@ -44,7 +46,7 @@ export function ConversionKit({
     <>
       <CtaPair
         matrix={matrix}
-        slot="hero"
+        slot={slot}
         tone={tone}
         sport={sport}
         city={city}

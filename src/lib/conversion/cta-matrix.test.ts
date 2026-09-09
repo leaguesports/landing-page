@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   createFlowHref,
+  ctaAnalyticsParams,
   isScorecardSport,
   selectCtaMatrix,
   startMatchLabel,
@@ -158,6 +159,22 @@ describe("selectCtaMatrix", () => {
     });
     assert.equal(fixtures.primary.label, "Find fixtures");
     assert.equal(fixtures.secondary.label, "Inquire on WhatsApp");
+  });
+
+  it("keeps page_type=guide and cta_slot=inline on guide in-body CTAs", () => {
+    const matrix = selectCtaMatrix({
+      pageType: "guide",
+      guideIntent: "watch",
+      sport: "rugby",
+    });
+    const params = ctaAnalyticsParams(matrix, "inline", {
+      sport: "rugby",
+      slug: "where-to-watch-springboks",
+    });
+    assert.equal(params.page_type, "guide");
+    assert.equal(params.cta_slot, "inline");
+    assert.equal(params.sport, "rugby");
+    assert.equal(params.slug, "where-to-watch-springboks");
   });
 
   it("caps sticky actions at two", () => {

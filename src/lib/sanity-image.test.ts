@@ -4,6 +4,9 @@ import { createImageUrlBuilder } from "@sanity/image-url";
 import {
   isUsableSanityImageSource,
   safeSanityImageUrl,
+  sanityHotspotObjectPosition,
+  sanityImageAssetId,
+  sanityImageCropParams,
   urlFor,
 } from "./sanity-image.ts";
 
@@ -32,6 +35,36 @@ describe("safeSanityImageUrl", () => {
     assert.equal(safeSanityImageUrl(null), undefined);
     assert.equal(safeSanityImageUrl(undefined), undefined);
     assert.equal(safeSanityImageUrl({ _type: "image" }), undefined);
+  });
+});
+
+describe("sanity hotspot / crop helpers", () => {
+  it("requests fit=crop when both width and height are set so hotspot is applied", () => {
+    assert.deepEqual(sanityImageCropParams({ width: 1200, height: 750 }), {
+      width: 1200,
+      height: 750,
+      fit: "crop",
+    });
+    assert.deepEqual(sanityImageCropParams(), {});
+  });
+
+  it("maps hotspot x/y to CSS object-position", () => {
+    assert.equal(
+      sanityHotspotObjectPosition({
+        hotspot: { x: 0.25, y: 0.8, height: 0.4, width: 0.4 },
+      }),
+      "25% 80%",
+    );
+    assert.equal(sanityHotspotObjectPosition({ _type: "image" }), undefined);
+  });
+
+  it("reads the asset id from a ref or nested image", () => {
+    assert.equal(
+      sanityImageAssetId({
+        asset: { _type: "reference", _ref: "image-abc-1200x800-jpg" },
+      }),
+      "image-abc-1200x800-jpg",
+    );
   });
 });
 

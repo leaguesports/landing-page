@@ -1,40 +1,28 @@
 import { ConversionKit } from "@/components/conversion/ConversionKit";
-import { CoverageNotify } from "@/components/conversion/CoverageNotify";
-import { getGuideFaqs, type GuideFaq } from "@/data/guides/faqs";
+import { CtaPair } from "@/components/conversion/CtaPair";
 import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { guideConversionIntent } from "@/lib/conversion/deep-links";
+import { getGuideFaqs, type GuideFaq } from "@/data/guides/faqs";
 import { normalizeGuideContent } from "@/lib/guides/portableText";
+import {
+  extractGuideTocHeadings,
+  guideCtaSlot,
+  guideHeadingIdMap,
+  guideHeroVisual,
+  guideSportFromText,
+  splitGuideContentForInlineCta,
+} from "@/lib/guides/presentation";
 import { stripMatchingFaqBlocks } from "@/lib/guides/stripFaqBlocks";
-import { safeSanityImageUrl } from "@/lib/sanity-image";
-import { Flag } from "lucide-react";
+import {
+  safeSanityImageUrl,
+  sanityImageAssetId,
+} from "@/lib/sanity-image";
 import { PortableText } from "next-sanity";
-import Image from "next/image";
 import type { Guide } from "../actions";
-import { guidePortableTextComponents } from "../textComponents";
+import { createGuidePortableTextComponents } from "../textComponents";
 import { getGuideJsonLd } from "./guideJsonLd";
-
-const GUIDE_SPORTS = [
-  "padel",
-  "golf",
-  "darts",
-  "rugby",
-  "soccer",
-  "cricket",
-  "tennis",
-] as const;
-
-function guideSport(guide: Guide): string | null {
-  const haystack = [
-    guide.slug,
-    guide.title,
-    guide.description,
-    ...(guide.keywords ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return GUIDE_SPORTS.find((sport) => haystack.includes(sport)) ?? null;
-}
+import { GuideHeroBand } from "./GuideHeroBand";
+import { GuideToc } from "./GuideToc";
 
 function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
   if (faqs.length === 0) return null;
@@ -77,15 +65,35 @@ export function GuideDetail({ guide }: { guide: Guide }) {
       ? stripMatchingFaqBlocks(guide.content, faqs)
       : (guide.content ?? []);
   const content = normalizeGuideContent(stripped);
-  const imageUrl = safeSanityImageUrl(guide.mainImage);
   const intent = guideConversionIntent(guide);
-  const sport = guideSport(guide);
+  const sport = guideSportFromText([
+    guide.slug,
+    guide.title,
+    guide.description,
+    ...(guide.keywords ?? []),
+  ]);
+  const imageUrl = safeSanityImageUrl(guide.mainImage, {
+    width: 1920,
+    height: 1080,
+  });
+  const visual = guideHeroVisual({ imageUrl, sport, intent });
+  const headings = extractGuideTocHeadings(content);
+  const headingIds = guideHeadingIdMap(headings);
+  const { before, after } = splitGuideContentForInlineCta(content);
   const matrix = selectCtaMatrix({
     pageType: "guide",
     guideIntent: intent,
     sport,
     relatedHref: "/guides",
   });
+  const tone = intent === "watch" ? "watch" : "play";
+  const portableText = createGuidePortableTextComponents({
+    intent,
+    headingIds,
+    skipImageAssetId: sanityImageAssetId(guide.mainImage),
+  });
+  const endSlot = guideCtaSlot("end");
+  const midSlot = guideCtaSlot("mid");
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
@@ -94,98 +102,88 @@ export function GuideDetail({ guide }: { guide: Guide }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <section className="relative overflow-hidden border-b border-white/5">
-        <div className="absolute inset-0 bg-linear-to-br from-emerald-950/40 via-[#0c0f0c] to-[#0c0f0c]" />
-        <div className="pointer-events-none absolute right-0 top-1/4 h-80 w-80 rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
-
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-            Guide
-          </p>
-          <h1 className="font-display text-5xl tracking-wide text-white sm:text-6xl lg:text-7xl">
-            {guide.title}
-          </h1>
-          {guide.description ? (
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-              {guide.description}
-            </p>
-          ) : null}
-          <div className="mt-8">
-            <ConversionKit
-              matrix={matrix}
-              tone={intent === "watch" ? "watch" : "play"}
-              sport={sport}
-              sourcePage={`/guides/${guide.slug}`}
-              pageKey={`guide:${guide.slug}`}
-              pageType="guide"
-              slug={guide.slug}
-              showSticky
-              showFallback={false}
-            />
-          </div>
-        </div>
-      </section>
-
-      {imageUrl ? (
-        <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="overflow-hidden rounded-3xl border border-white/8 bg-[#141814]">
-              <div className="aspect-21/9 w-full sm:aspect-[2.4/1]">
-                <Image
-                  src={imageUrl}
-                  alt={guide.title}
-                  width={1500}
-                  height={1000}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <GuideHeroBand
+        visual={visual}
+        title={guide.title}
+        description={guide.description}
+        intent={intent}
+        sport={sport}
+        slug={guide.slug}
+        matrix={matrix}
+        mainImage={guide.mainImage}
+      />
 
       <section
         id="content"
         className="scroll-mt-24 border-t border-white/5 py-12 sm:py-20"
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <PortableText
-            value={content}
-            components={guidePortableTextComponents}
-          />
+          <GuideToc headings={headings} />
+          <PortableText value={before} components={portableText} />
+          {after.length > 0 ? (
+            <aside
+              className="my-12 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-7 sm:py-7"
+              data-cta-slot={midSlot}
+            >
+              <p
+                className={`mb-4 text-xs font-semibold uppercase tracking-[0.2em] ${
+                  intent === "watch" ? "text-sky-400" : "text-[var(--color-brand)]"
+                }`}
+              >
+                {intent === "watch" ? "Find a screening" : "Play nearby"}
+              </p>
+              <CtaPair
+                matrix={matrix}
+                slot={midSlot}
+                tone={tone}
+                sport={sport}
+                slug={guide.slug}
+              />
+            </aside>
+          ) : null}
+          {after.length > 0 ? (
+            <PortableText value={after} components={portableText} />
+          ) : null}
         </div>
       </section>
 
       <GuideFaqSection faqs={faqs} />
 
       <section className="relative overflow-hidden border-t border-white/5 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-950/30 via-[#0c0f0c] to-[#0c0f0c]" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-64 w-64 rounded-full bg-[var(--color-brand)]/8 blur-3xl" />
+        <div
+          className={`pointer-events-none absolute inset-0 bg-linear-to-br ${
+            intent === "watch"
+              ? "from-sky-950/30 via-[#0c0f0c] to-[#0c0f0c]"
+              : "from-emerald-950/30 via-[#0c0f0c] to-[#0c0f0c]"
+          }`}
+        />
+        <div
+          className={`pointer-events-none absolute bottom-0 left-0 h-64 w-64 rounded-full blur-3xl ${
+            intent === "watch" ? "bg-sky-400/8" : "bg-[var(--color-brand)]/8"
+          }`}
+        />
 
         <div className="relative mx-auto max-w-7xl">
-          <div className="flex flex-col items-start justify-between gap-8 rounded-3xl border border-white/8 bg-[#141814] p-8 sm:flex-row sm:items-center sm:p-10">
-            <div>
-              <div className="mb-4 flex items-center gap-3">
-                <Flag className="h-5 w-5 text-[var(--color-brand)]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                  Stay in the loop
-                </span>
-              </div>
-              <h2 className="mb-3 font-display text-4xl tracking-wide text-white sm:text-5xl">
-                More <span className="text-[var(--color-brand)]">venues</span>
-              </h2>
-              <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                Discover screenings, fan zones, and places to play near you.
-              </p>
-            </div>
-
-            <div className="w-full min-w-0 shrink-0 sm:max-w-md">
-              <CoverageNotify
-                sport={sport}
-                sourcePage={`/guides/${guide.slug}`}
-                pageType="guide"
-              />
-            </div>
+          <div className="rounded-3xl border border-white/8 bg-[#141814] p-8 sm:p-10">
+            <p
+              className={`mb-5 text-xs font-semibold uppercase tracking-[0.2em] ${
+                intent === "watch" ? "text-sky-400" : "text-[var(--color-brand)]"
+              }`}
+            >
+              Next step
+            </p>
+            <ConversionKit
+              matrix={matrix}
+              tone={tone}
+              sport={sport}
+              sourcePage={`/guides/${guide.slug}`}
+              pageKey={`guide:${guide.slug}`}
+              pageType="guide"
+              slug={guide.slug}
+              slot={endSlot}
+              showSticky={false}
+              showFallback
+            />
           </div>
         </div>
       </section>
