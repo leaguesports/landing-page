@@ -42,7 +42,12 @@ export type GolfCourseCmsTee = {
   name: string;
   color?: string | null;
   courseRating?: number | null;
+  /** WHS slope. Prefer this; GROQ coalesces legacy `slope`. */
+  slopeRating?: number | null;
+  /** Legacy CMS slope. Kept so published tee documents stay readable. */
   slope?: number | null;
+  /** Optional tee-specific total par when it differs from course parTotal. */
+  par?: number | null;
   totalMeters?: number | null;
 };
 

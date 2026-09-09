@@ -8,3 +8,17 @@ export {
   eventType,
   f1DetailsType,
 } from "./event.ts";
+export {
+  TEE_HANDICAP_INCOMPLETE_MESSAGE,
+  golfCourseFieldNames,
+  golfCourseSchemaTypes,
+  golfCourseType,
+  golfHoleFieldNames,
+  golfHoleType,
+  golfTeeDistanceType,
+  golfTeeFieldNames,
+  golfTeeType,
+  isTeeCompleteForHandicap,
+  teeHandicapCompleteness,
+  teeSlopeRating,
+} from "./golfCourse.ts";
