@@ -5,6 +5,7 @@ import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./src/lib/sports/hub-redirects";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  transpilePackages: ["three"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
@@ -74,8 +75,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes
-    // (`/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`)
-    // are excluded and win via the App Router filesystem. Explicit match
+    // (`/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`,
+    // `/api/f1-replay*`) are excluded and win via the App Router filesystem. Explicit match
     // and venue sources plus a catch-all proxy the rest to Railway.
     // No rewrites when the Railway origin is unset (Preview / local without env).
     return {

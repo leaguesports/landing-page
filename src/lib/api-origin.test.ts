@@ -192,6 +192,19 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim/extra"), false);
+    assert.equal(shouldProxyApiPath("/api/fixtures/spanish-gp/feed"), false);
+    assert.equal(shouldProxyApiPath("/api/fixtures/spanish-gp/live"), false);
+    assert.equal(shouldProxyApiPath("/api/f1-replay"), false);
+    assert.equal(shouldProxyApiPath("/api/f1-replay/sessions/11361"), false);
+    assert.equal(
+      shouldProxyApiPath("/api/f1-replay/sessions/11361/location"),
+      false,
+    );
+    assert.equal(
+      shouldProxyApiPath("/api/f1-replay/events/italian-grand-prix-2026-09-06"),
+      false,
+    );
+    assert.equal(shouldProxyApiPath("/api/f1-replay-extra"), true);
   });
 
   it("does not treat non-api paths as proxy targets", () => {
@@ -391,7 +404,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -412,7 +425,7 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)).*)",
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
         assert.equal(

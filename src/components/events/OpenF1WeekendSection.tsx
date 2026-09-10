@@ -58,12 +58,14 @@ export function OpenF1WeekendSection({
   weekend,
   calendarHref = "/motorsport/f1/calendar",
   eventPageHref,
+  replayHref,
   now,
   tone = "event",
 }: {
   weekend: OpenF1Weekend;
   calendarHref?: string;
   eventPageHref?: string | null;
+  replayHref?: string | null;
   now?: Date;
   tone?: "event" | "motorsport";
 }) {
@@ -239,6 +241,18 @@ export function OpenF1WeekendSection({
               }
             >
               Race hub
+            </Link>
+          ) : null}
+          {replayHref ? (
+            <Link
+              href={replayHref}
+              className={
+                motorsport
+                  ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
+                  : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+              }
+            >
+              Race replay
             </Link>
           ) : null}
         </div>
