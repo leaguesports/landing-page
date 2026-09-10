@@ -4,7 +4,7 @@ import { worldVec } from "@/lib/openf1/coords";
 import { sampleAt, type DriverTracks } from "@/lib/openf1/location-buffer";
 import { HEADING_LOOKAHEAD_MS } from "@/lib/openf1/replay";
 import type { ReplayCircuit, ReplayDriver } from "@/lib/openf1/replay";
-import { buildGridFloor, buildNeonTrack, buildScenery } from "./track/buildNeonTrack";
+import { buildGridFloor, buildNeonTrack, buildScenery, TRACK_DECK_Y } from "./track/buildNeonTrack";
 
 const SURFACE = 0x0c0f0c;
 const BRAND = 0x3dff8a;
@@ -32,9 +32,9 @@ export function createReplayEngine(input: {
 }): ReplayEngine {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(SURFACE);
-  scene.fog = new THREE.Fog(SURFACE, 70, 420);
+  scene.fog = new THREE.Fog(SURFACE, 160, 720);
 
-  const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 800);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.4, 1400);
   const renderer = new THREE.WebGLRenderer({
     canvas: input.canvas,
     antialias: true,
@@ -49,8 +49,8 @@ export function createReplayEngine(input: {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI / 2.15;
-  controls.minDistance = 12;
-  controls.maxDistance = 280;
+  controls.minDistance = 10;
+  controls.maxDistance = 360;
   controls.autoRotateSpeed = 0.45;
 
   scene.add(new THREE.AmbientLight(0xb8c4b8, 0.55));
@@ -74,43 +74,64 @@ export function createReplayEngine(input: {
   brandLight.position.set(center.x, 18, center.z);
   root.add(brandLight);
 
-  camera.position.set(center.x + span * 0.35, span * 0.42, center.z + span * 0.55);
+  camera.position.set(center.x + span * 0.22, Math.max(48, span * 0.32), center.z + span * 0.34);
   controls.target.copy(center);
+  controls.target.y = TRACK_DECK_Y;
   controls.update();
 
   const cars: CarVisual[] = [];
-  const bodyGeom = new THREE.BoxGeometry(0.85, 0.28, 1.9);
-  const glowGeom = new THREE.SphereGeometry(0.7, 8, 6);
+  const bodyGeom = new THREE.BoxGeometry(1.55, 0.55, 3.6);
+  const cabinGeom = new THREE.BoxGeometry(1.05, 0.42, 1.2);
+  const wingGeom = new THREE.BoxGeometry(2.15, 0.18, 0.28);
+  const glowGeom = new THREE.CircleGeometry(2.6, 18);
+  const haloGeom = new THREE.RingGeometry(1.35, 1.7, 20);
   for (const driver of input.drivers) {
     const group = new THREE.Group();
+    group.renderOrder = 8;
     const color = new THREE.Color(driver.teamColour);
-    const body = new THREE.Mesh(
-      bodyGeom,
-      new THREE.MeshLambertMaterial({ color }),
-    );
-    body.position.y = 0.22;
-    const wire = new THREE.LineSegments(
-      new THREE.EdgesGeometry(bodyGeom),
-      new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.35,
-      }),
-    );
+    const bodyMat = new THREE.MeshBasicMaterial({ color });
+    const body = new THREE.Mesh(bodyGeom, bodyMat);
+    body.position.y = TRACK_DECK_Y + 0.55;
+    const cabin = new THREE.Mesh(cabinGeom, bodyMat);
+    cabin.position.set(0, TRACK_DECK_Y + 0.92, -0.15);
+    const wing = new THREE.Mesh(wingGeom, bodyMat);
+    wing.position.set(0, TRACK_DECK_Y + 0.95, -1.7);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const wire = new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeom), edgeMat);
     wire.position.copy(body.position);
     const glow = new THREE.Mesh(
       glowGeom,
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.28,
+        opacity: 0.55,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
+        side: THREE.DoubleSide,
       }),
     );
-    glow.position.y = 0.05;
-    glow.scale.set(1.1, 0.35, 1.6);
-    group.add(glow, body, wire);
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = TRACK_DECK_Y + 0.12;
+    glow.renderOrder = 7;
+    const halo = new THREE.Mesh(
+      haloGeom,
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = TRACK_DECK_Y + 0.14;
+    halo.renderOrder = 7;
+    group.add(glow, halo, body, cabin, wing, wire);
     group.visible = false;
     root.add(group);
     cars.push({ driverNumber: driver.driverNumber, group });
@@ -183,7 +204,7 @@ export function createReplayEngine(input: {
         .applyQuaternion(followCar.quaternion)
         .multiplyScalar(18);
       scratchCam.copy(followCar.position).add(backward);
-      scratchCam.y += 8;
+      scratchCam.y += 10;
       camera.position.lerp(scratchCam, 0.08);
       controls.target.lerp(followCar.position, 0.12);
     }

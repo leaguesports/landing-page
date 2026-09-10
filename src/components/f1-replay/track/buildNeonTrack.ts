@@ -35,6 +35,9 @@ function offsetPolyline(points: THREE.Vector3[], dist: number): THREE.Vector3[] 
   return out;
 }
 
+export const TRACK_RIBBON_WIDTH = 4.4;
+export const TRACK_DECK_Y = 0.04;
+
 function tubeFromPoints(
   points: THREE.Vector3[],
   radius: number,
@@ -43,8 +46,41 @@ function tubeFromPoints(
 ): THREE.Mesh {
   const curve = new THREE.CatmullRomCurve3(points, true, "catmullrom", 0.15);
   const geometry = new THREE.TubeGeometry(curve, tubularSegments, radius, 8, true);
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
+  return new THREE.Mesh(geometry, material);
+}
+
+function ribbonFromEdges(
+  left: THREE.Vector3[],
+  right: THREE.Vector3[],
+  y: number,
+): THREE.BufferGeometry {
+  const count = Math.min(left.length, right.length);
+  const positions = new Float32Array(count * 2 * 3);
+  for (let i = 0; i < count; i += 1) {
+    const l = left[i]!;
+    const r = right[i]!;
+    const o = i * 6;
+    positions[o] = l.x;
+    positions[o + 1] = y;
+    positions[o + 2] = l.z;
+    positions[o + 3] = r.x;
+    positions[o + 4] = y;
+    positions[o + 5] = r.z;
+  }
+  const indices: number[] = [];
+  const segs = count - 1;
+  for (let i = 0; i < segs; i += 1) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, b, c, b, d, c);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 export function buildNeonTrack(circuit: ReplayCircuit): {
@@ -57,28 +93,37 @@ export function buildNeonTrack(circuit: ReplayCircuit): {
   const group = new THREE.Group();
   group.name = "neon-track";
 
+  const half = TRACK_RIBBON_WIDTH / 2;
+  const inner = offsetPolyline(points, half);
+  const outer = offsetPolyline(points, -half);
+
   const ribbonMat = new THREE.MeshBasicMaterial({
-    color: 0x0a160f,
+    color: 0x101a12,
     transparent: true,
-    opacity: 0.55,
-    depthWrite: false,
+    opacity: 0.82,
+    side: THREE.DoubleSide,
   });
-  group.add(tubeFromPoints(points, 1.55, ribbonMat, 480));
+  const ribbon = new THREE.Mesh(
+    ribbonFromEdges(inner, outer, TRACK_DECK_Y),
+    ribbonMat,
+  );
+  ribbon.renderOrder = 0;
+  group.add(ribbon);
 
   const edgeMat = new THREE.MeshBasicMaterial({ color: BRAND });
   const glowMat = new THREE.MeshBasicMaterial({
     color: BRAND,
     transparent: true,
-    opacity: 0.18,
+    opacity: 0.22,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const inner = offsetPolyline(points, 1.45);
-  const outer = offsetPolyline(points, -1.45);
-  group.add(tubeFromPoints(inner, 0.07, edgeMat, 420));
-  group.add(tubeFromPoints(outer, 0.07, edgeMat, 420));
-  group.add(tubeFromPoints(inner, 0.28, glowMat, 280));
-  group.add(tubeFromPoints(outer, 0.28, glowMat, 280));
+  const innerEdge = inner.map((p) => p.clone().setY(TRACK_DECK_Y));
+  const outerEdge = outer.map((p) => p.clone().setY(TRACK_DECK_Y));
+  group.add(tubeFromPoints(innerEdge, 0.09, edgeMat, 420));
+  group.add(tubeFromPoints(outerEdge, 0.09, edgeMat, 420));
+  group.add(tubeFromPoints(innerEdge, 0.32, glowMat, 280));
+  group.add(tubeFromPoints(outerEdge, 0.32, glowMat, 280));
 
   const dashCount = 160;
   const dashGeom = new THREE.BoxGeometry(0.18, 0.05, 0.7);
@@ -96,7 +141,7 @@ export function buildNeonTrack(circuit: ReplayCircuit): {
     const p = spaced[i]!;
     const n = spaced[(i + 1) % spaced.length]!;
     dummy.position.copy(p);
-    dummy.position.y += 0.06;
+    dummy.position.y = TRACK_DECK_Y + 0.06;
     dummy.lookAt(n.x, p.y, n.z);
     dummy.updateMatrix();
     dashes.setMatrixAt(visible, dummy.matrix);
