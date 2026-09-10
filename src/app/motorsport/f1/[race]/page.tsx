@@ -1,9 +1,11 @@
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
 import {
   getOpenF1WeekendByEventSlug,
   openF1EventSlugFromNameAndInstant,
 } from "@/lib/openf1/openf1";
+import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { formatDate, formatTime } from "@/util/formats";
 import { PortableText, PortableTextComponents } from "@portabletext/react";
 import {
@@ -29,6 +31,7 @@ import { getRaceBySlug } from "../_services/race";
 const NAV_LINKS = [
     { label: "Race Info", href: "#race-info" },
     { label: "Timetable", href: "#weekend-timetable" },
+    { label: "Replay", href: "#race-replay" },
     { label: "Venues", href: "#watch-venues" },
     { label: "Details", href: "#details" },
     { label: "Follow", href: "#follow" },
@@ -136,6 +139,7 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
     const weekend = eventSlug
         ? await getOpenF1WeekendByEventSlug(eventSlug)
         : null;
+    const replay = weekend ? replayConfigFromWeekend(weekend) : null;
 
     const raceDate = new Date(raceDetails.dateTime);
     const isPast = raceDate.getTime() < new Date().getTime();
@@ -346,6 +350,12 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                         >
                             Full calendar <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                         </Link>
+                        <Link
+                            href="/motorsport/f1/replay"
+                            className="flex items-center gap-2 text-zinc-400 hover:text-white font-black uppercase italic tracking-wider text-xs sm:text-sm transition-colors"
+                        >
+                            Race replays <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                        </Link>
                     </div>
                 </div>
             </section>
@@ -403,7 +413,21 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
             </section >
 
             {weekend ? (
-                <OpenF1WeekendSection weekend={weekend} tone="motorsport" />
+                <OpenF1WeekendSection
+                    weekend={weekend}
+                    tone="motorsport"
+                    replayHref={replay ? `#race-replay` : null}
+                />
+            ) : null}
+
+            {replay ? (
+                <RaceReplaySection
+                    sessionKey={replay.sessionKey}
+                    eventSlug={eventSlug}
+                    title={`${weekend?.meeting.meetingName ?? raceDetails.title} replay`}
+                    replayHref={eventSlug ? `/events/${eventSlug}/replay` : null}
+                    tone="motorsport"
+                />
             ) : null}
 
             {/* ─── F1 by the numbers ────────────────────────────────────────── */}

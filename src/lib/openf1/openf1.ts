@@ -362,14 +362,15 @@ export function openF1SessionStatus(
 
 export function findOpenF1RaceSession(
   sessions: readonly OpenF1Session[],
+  options: { includeCancelled?: boolean } = {},
 ): OpenF1Session | null {
-  return (
-    sessions.find(
-      (session) =>
-        session.sessionName.trim().toLowerCase() === "race" &&
-        !session.isCancelled,
-    ) ?? null
+  const races = sessions.filter(
+    (session) => session.sessionName.trim().toLowerCase() === "race",
   );
+  const active = races.find((session) => !session.isCancelled) ?? null;
+  if (active) return active;
+  if (options.includeCancelled) return races[0] ?? null;
+  return null;
 }
 
 export function formatOpenF1SessionWhen(

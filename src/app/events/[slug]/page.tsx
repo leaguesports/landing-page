@@ -12,6 +12,7 @@ import {
 } from "@/components/events/FixtureSeoSections";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
 import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
 import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
@@ -29,6 +30,7 @@ import {
   openF1CircuitImageUrl,
   openF1CircuitLine,
 } from "@/lib/openf1/openf1";
+import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
 import { formatFixtureWhen } from "@/lib/sports/events-feed";
@@ -147,6 +149,10 @@ export default async function EventFixturePage({ params }: PageProps) {
     ? (prefetchedWeekend ?? (await getOpenF1WeekendForFixture(fixture)))
     : null;
   const race = weekend ? findOpenF1RaceSession(weekend.sessions) : null;
+  const replay = weekend ? replayConfigFromWeekend(weekend) : null;
+  const replayEventSlug =
+    weekend?.meeting.eventSlug ?? (isOpenF1EventSlug(slug) ? slug : null);
+  const replayHref = replay || replayEventSlug ? `/events/${fixture.slug}/replay` : null;
   const kickoff = race?.dateStart ?? fixture.startsAt;
   const when = formatFixtureWhen(kickoff);
   const sport = sportDisplayName(fixture.sportSlug);
@@ -316,6 +322,14 @@ export default async function EventFixturePage({ params }: PageProps) {
                   Weekend timetable
                 </Link>
               ) : null}
+              {replay || replayEventSlug ? (
+                <Link
+                  href="#race-replay"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  Race replay
+                </Link>
+              ) : null}
               {fixture.relatedGuide?.slug ? (
                 <Link
                   href={`/guides/${fixture.relatedGuide.slug}`}
@@ -353,6 +367,16 @@ export default async function EventFixturePage({ params }: PageProps) {
         <OpenF1WeekendSection
           weekend={weekend}
           eventPageHref={fixture.eventPageHref}
+          replayHref={replayHref}
+        />
+      ) : null}
+
+      {replay || replayEventSlug ? (
+        <RaceReplaySection
+          sessionKey={replay?.sessionKey}
+          eventSlug={replayEventSlug ?? fixture.slug}
+          title={`${weekend?.meeting.meetingName ?? fixture.title} replay`}
+          replayHref={replayHref}
         />
       ) : null}
 

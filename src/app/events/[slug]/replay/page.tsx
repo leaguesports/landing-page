@@ -1,0 +1,125 @@
+import { RaceReplay } from "@/components/f1-replay/RaceReplay";
+import { RaceReplayCatalog } from "@/components/f1-replay/RaceReplayCatalog";
+import {
+  getOpenF1WeekendByEventSlug,
+  isOpenF1EventSlug,
+} from "@/lib/openf1/openf1";
+import {
+  defaultReplayCatalogYear,
+  loadReplayCatalogSafe,
+} from "@/lib/openf1/replay-catalog";
+import { replayConfigFromWeekend } from "@/lib/openf1/replay";
+import { getSiteBaseUrl } from "@/lib/site-url";
+import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+export const revalidate = 300;
+
+type PageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+type FixtureLite = {
+  slug: string;
+  title: string;
+};
+
+async function loadFixtureLite(slug: string): Promise<FixtureLite | null> {
+  try {
+    const { getFixtureBySlug } = await import("@/services/events");
+    const fixture = await getFixtureBySlug(slug);
+    if (!fixture) return null;
+    return { slug: fixture.slug, title: fixture.title };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const weekend = isOpenF1EventSlug(slug)
+    ? await getOpenF1WeekendByEventSlug(slug)
+    : null;
+  const fixture = await loadFixtureLite(slug);
+  const titleBase = weekend?.meeting.meetingName ?? fixture?.title ?? "F1";
+  const title = `${titleBase} race replay`;
+  const description = `Watch a 3D replay of ${titleBase} with live order, flags, and GPS car positions.`;
+  const canonical = `/events/${slug}/replay`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: `${getSiteBaseUrl()}${canonical}`,
+      type: "website",
+      locale: "en_ZA",
+    },
+  };
+}
+
+export default async function EventReplayPage({ params }: PageProps) {
+  const { slug } = await params;
+  const canResolveBySlug = isOpenF1EventSlug(slug);
+  const weekend = canResolveBySlug
+    ? await getOpenF1WeekendByEventSlug(slug)
+    : null;
+  const fixture = await loadFixtureLite(slug);
+  const replay = weekend ? replayConfigFromWeekend(weekend) : null;
+
+  if (!replay && !canResolveBySlug && !fixture) notFound();
+  if (!replay && !canResolveBySlug) notFound();
+
+  const backHref = fixture ? `/events/${fixture.slug}` : `/events/${slug}`;
+  const heading =
+    weekend?.meeting.meetingName ?? fixture?.title ?? "Race replay";
+  const catalogYear = weekend?.meeting.year ?? defaultReplayCatalogYear();
+  const { races } = await loadReplayCatalogSafe(catalogYear);
+
+  return (
+    <div className="min-h-screen bg-[#0c0f0c] pb-10 text-white">
+      <section className="border-b border-white/5 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <Link
+            href={backHref}
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back to event
+          </Link>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-brand)]">
+            3D race replay
+          </p>
+          <h1 className="font-display text-3xl tracking-wide text-white sm:text-5xl">
+            {heading}
+          </h1>
+        </div>
+      </section>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <RaceReplay
+          sessionKey={replay?.sessionKey}
+          eventSlug={canResolveBySlug ? slug : weekend?.meeting.eventSlug}
+          variant="page"
+        />
+        <div className="mt-12">
+          <RaceReplayCatalog
+            races={races}
+            year={catalogYear}
+            currentEventSlug={
+              weekend?.meeting.eventSlug ?? (canResolveBySlug ? slug : null)
+            }
+            currentMeetingKey={weekend?.meeting.meetingKey}
+            variant="compact"
+            heading={`${catalogYear} races`}
+            description="Switch to another Grand Prix in this season, or open the full race library."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,10 +1,16 @@
-import { broadcastService } from "@/services/broadcast";
 import { formatDate, formatTime } from "@/util/formats";
 import { Flag, Heart, Bell, MapPin, Clock, Calendar, ChevronRight, Zap, Trophy, TrendingUp, Radio, Star } from "lucide-react";
 import Link from "next/link";
+import { RaceReplayCatalog } from "@/components/f1-replay/RaceReplayCatalog";
+import {
+    defaultReplayCatalogYear,
+    loadReplayCatalogSafe,
+} from "@/lib/openf1/replay-catalog";
+import type { Broadcast } from "@/types/broadcast";
 
 const NAV_LINKS = [
     { label: "Next Races", href: "#next-races" },
+    { label: "Replays", href: "#race-replays" },
     { label: "Standings", href: "#standings" },
     { label: "Teams", href: "#teams" },
     // { label: "Latest News", href: "#news" },
@@ -26,8 +32,21 @@ const TEAMS = [
     { name: "Aston Martin", color: "#229971", wins: 0, pts: 56 },
 ];
 
+async function loadF1Broadcasts(): Promise<Broadcast[]> {
+    try {
+        const { broadcastService } = await import("@/services/broadcast");
+        return await broadcastService.getBroadcastsBySeriesSlug("f1");
+    } catch {
+        return [];
+    }
+}
+
 export default async function F1Page() {
-    const broadcasts = await broadcastService.getBroadcastsBySeriesSlug("f1");
+    const replayYear = defaultReplayCatalogYear();
+    const [broadcasts, replayCatalog] = await Promise.all([
+        loadF1Broadcasts(),
+        loadReplayCatalogSafe(replayYear),
+    ]);
 
     return (
         <div className="min-h-screen bg-[#0c0f0c] text-white">
@@ -284,6 +303,14 @@ export default async function F1Page() {
                     </div>
                 </div>
             </section>
+
+            <RaceReplayCatalog
+                races={replayCatalog.races}
+                year={replayYear}
+                tone="motorsport"
+                heading="Race Replays"
+                description={`${replayYear} Grands Prix with GPS telemetry. Completed races play back now.`}
+            />
 
             {/* ─── Standings ────────────────────────────────────────────────── */}
             <section id="standings" className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-950/50">
