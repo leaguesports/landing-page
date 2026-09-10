@@ -7,13 +7,17 @@ import {
   groupOpenF1SessionsBySaDay,
   isOpenF1EnrichableFixture,
   isOpenF1EventSlug,
+  OPENF1_MEDIA_HOST,
   OPENF1_PROXY_SOURCES,
   OPENF1_REVALIDATE_SECONDS,
+  openF1CircuitImageUrl,
   openF1CircuitLine,
+  openF1CountryFlagUrl,
   openF1EventSlugForFixture,
   openF1EventSlugFromNameAndInstant,
   openF1EventUrl,
   openF1SessionStatus,
+  parseOpenF1MediaUrl,
   parseOpenF1Weekend,
   slugifyOpenF1Name,
 } from "./openf1.ts";
@@ -26,12 +30,14 @@ const SPANISH_MEETING = {
   circuitKey: 153,
   circuitShortName: "Madring",
   circuitType: "Temporary - Street",
-  circuitImage: null,
+  circuitImage:
+    "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png",
   circuitInfoUrl: null,
   countryKey: 1,
   countryCode: "ESP",
   countryName: "Spain",
-  countryFlag: null,
+  countryFlag:
+    "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Flags%2016x9/spain-flag.png",
   dateStart: "2026-09-11T11:30:00+00:00",
   dateEnd: "2026-09-13T15:00:00+00:00",
   gmtOffset: "02:00:00",
@@ -176,6 +182,14 @@ describe("parseOpenF1Weekend", () => {
     });
     assert.equal(weekend?.meeting.meetingKey, 1294);
     assert.equal(weekend?.meeting.eventSlug, "spanish-grand-prix-2026-09-13");
+    assert.equal(
+      weekend?.meeting.circuitImage,
+      "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png",
+    );
+    assert.equal(
+      weekend?.meeting.countryFlag,
+      "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Flags%2016x9/spain-flag.png",
+    );
     assert.deepEqual(
       weekend?.sessions.map((session) => session.sessionName),
       ["Practice 1", "Qualifying", "Race"],
@@ -192,6 +206,36 @@ describe("parseOpenF1Weekend", () => {
       parseOpenF1Weekend({ meeting: { meetingName: "Spanish Grand Prix" } }),
       null,
     );
+  });
+
+  it("drops circuit and flag URLs that are not on the F1 media CDN", () => {
+    const weekend = parseOpenF1Weekend({
+      meeting: {
+        ...SPANISH_MEETING,
+        circuitImage: "https://evil.example/track.png",
+        countryFlag: "javascript:alert(1)",
+      },
+      sessions: SPANISH_SESSIONS,
+    });
+    assert.equal(weekend?.meeting.circuitImage, null);
+    assert.equal(weekend?.meeting.countryFlag, null);
+  });
+});
+
+describe("parseOpenF1MediaUrl", () => {
+  it("keeps HTTPS F1 media URLs and rejects other hosts", () => {
+    const track =
+      "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png";
+    assert.equal(parseOpenF1MediaUrl(track), track);
+    assert.equal(openF1CircuitImageUrl(SPANISH_MEETING), track);
+    assert.equal(
+      openF1CountryFlagUrl(SPANISH_MEETING),
+      "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Flags%2016x9/spain-flag.png",
+    );
+    assert.equal(parseOpenF1MediaUrl("http://media.formula1.com/flag.png"), null);
+    assert.equal(parseOpenF1MediaUrl("https://cdn.sanity.io/flag.png"), null);
+    assert.equal(parseOpenF1MediaUrl("https://user:pass@media.formula1.com/x.png"), null);
+    assert.equal(OPENF1_MEDIA_HOST, "media.formula1.com");
   });
 });
 

@@ -41,6 +41,11 @@ const nextConfig: NextConfig = {
         hostname: "img.redbull.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "media.formula1.com",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {

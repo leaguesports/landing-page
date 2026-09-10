@@ -11,7 +11,7 @@ import {
   FixtureIntroSection,
 } from "@/components/events/FixtureSeoSections";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
-import { OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
 import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
@@ -26,6 +26,7 @@ import {
   getOpenF1WeekendForFixture,
   isOpenF1EnrichableFixture,
   isOpenF1EventSlug,
+  openF1CircuitImageUrl,
   openF1CircuitLine,
 } from "@/lib/openf1/openf1";
 import { getSiteBaseUrl } from "@/lib/site-url";
@@ -89,6 +90,7 @@ export async function generateMetadata({
     circuitLine: weekend ? openF1CircuitLine(weekend.meeting) : null,
   });
   const canonical = `/events/${fixture.slug}`;
+  const circuitImage = weekend ? openF1CircuitImageUrl(weekend.meeting) : null;
 
   return {
     title,
@@ -100,6 +102,9 @@ export async function generateMetadata({
       url: `${getSiteBaseUrl()}${canonical}`,
       type: "website",
       locale: "en_ZA",
+      ...(circuitImage
+        ? { images: [{ url: circuitImage, alt: weekend?.meeting.circuitShortName }] }
+        : {}),
     },
     twitter: { card: "summary_large_image", title, description },
     robots: {
@@ -191,6 +196,7 @@ export default async function EventFixturePage({ params }: PageProps) {
       endDate: session.dateEnd,
       cancelled: session.isCancelled,
     })),
+    image: weekend ? openF1CircuitImageUrl(weekend.meeting) : null,
     faqs,
     siteUrl: getSiteBaseUrl(),
   });
@@ -263,7 +269,8 @@ export default async function EventFixturePage({ params }: PageProps) {
               </span>
             ) : null}
             {weekend ? (
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+              <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                <OpenF1CountryFlag meeting={weekend.meeting} />
                 {openF1CircuitLine(weekend.meeting)}
               </span>
             ) : null}

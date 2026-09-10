@@ -11,6 +11,8 @@ type HeaderTuple = { key: string; value: string };
  * Venue photos are `cdn.sanity.io` (`hero_image`, then Play sport image)
  * or the same-origin placeholder (`img-src 'self'`). Do not add
  * `blocks.astratic.com` — directory cards must not depend on it.
+ * F1 weekend track maps and country flags are `media.formula1.com`
+ * (OpenF1 `circuitImage` / `countryFlag`).
  *
  * HSTS matches current Vercel production (`max-age=63072000`) without
  * includeSubDomains — unknown HTTPS coverage on other subdomains.
@@ -39,6 +41,7 @@ export function getSecurityHeaders(
       "https://images.motorsport-magazin.com",
       "https://images.sportschau.de",
       "https://img.redbull.com",
+      "https://media.formula1.com",
       "https://*.googleusercontent.com",
       "https://*.basemaps.cartocdn.com",
       "https://www.googletagmanager.com",

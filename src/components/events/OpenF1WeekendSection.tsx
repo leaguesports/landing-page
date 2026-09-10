@@ -2,11 +2,15 @@ import {
   findOpenF1RaceSession,
   formatOpenF1SessionWhen,
   groupOpenF1SessionsBySaDay,
+  openF1CircuitImageUrl,
   openF1CircuitLine,
+  openF1CountryFlagUrl,
   openF1SessionStatus,
+  type OpenF1Meeting,
   type OpenF1SessionStatus,
   type OpenF1Weekend,
 } from "@/lib/openf1/openf1";
+import Image from "next/image";
 import Link from "next/link";
 
 const STATUS_LABEL: Record<OpenF1SessionStatus, string> = {
@@ -29,6 +33,27 @@ function statusClass(status: OpenF1SessionStatus, tone: "event" | "motorsport"):
   return "bg-white/8 text-zinc-300";
 }
 
+export function OpenF1CountryFlag({
+  meeting,
+  className = "h-4 w-7",
+}: {
+  meeting: Pick<OpenF1Meeting, "countryFlag" | "countryName" | "countryCode">;
+  className?: string;
+}) {
+  const src = openF1CountryFlagUrl(meeting);
+  if (!src) return null;
+  const label = meeting.countryName.trim() || meeting.countryCode.trim() || "Country flag";
+  return (
+    <Image
+      src={src}
+      alt={label}
+      width={64}
+      height={36}
+      className={`rounded-sm object-cover ${className}`}
+    />
+  );
+}
+
 export function OpenF1WeekendSection({
   weekend,
   calendarHref = "/motorsport/f1/calendar",
@@ -49,6 +74,11 @@ export function OpenF1WeekendSection({
   const circuit = openF1CircuitLine(meeting);
   const raceWhen = race ? formatOpenF1SessionWhen(race.dateStart) : null;
   const motorsport = tone === "motorsport";
+  const circuitImage = openF1CircuitImageUrl(meeting);
+  const trackLabel = [meeting.circuitShortName, meeting.circuitType]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <section
@@ -61,21 +91,24 @@ export function OpenF1WeekendSection({
       }
     >
       <div className="mx-auto max-w-7xl">
-        <p
-          className={
-            motorsport
-              ? "mb-2 text-xs font-black uppercase tracking-[0.2em] text-red-400"
-              : "mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]"
-          }
-        >
-          Formula 1 weekend
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <OpenF1CountryFlag meeting={meeting} className="h-5 w-9" />
+          <p
+            className={
+              motorsport
+                ? "text-xs font-black uppercase tracking-[0.2em] text-red-400"
+                : "text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]"
+            }
+          >
+            Formula 1 weekend
+          </p>
+        </div>
         <h2
           id="openf1-weekend-heading"
           className={
             motorsport
-              ? "text-xl sm:text-2xl font-black italic uppercase text-white"
-              : "font-display text-3xl tracking-wide text-white sm:text-4xl"
+              ? "mt-2 text-xl sm:text-2xl font-black italic uppercase text-white"
+              : "mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl"
           }
         >
           Practice, qualifying &amp; race
@@ -101,6 +134,29 @@ export function OpenF1WeekendSection({
           >
             This meeting is marked cancelled in the official timetable.
           </p>
+        ) : null}
+
+        {circuitImage ? (
+          <figure
+            className={
+              motorsport
+                ? "mt-8 max-w-md overflow-hidden rounded-lg border border-white/10 bg-black/40 p-4 sm:p-6"
+                : "mt-8 max-w-md overflow-hidden rounded-2xl border border-white/8 bg-[#141814] p-4 sm:p-6"
+            }
+          >
+            <Image
+              src={circuitImage}
+              alt={`${meeting.circuitShortName} track map`}
+              width={640}
+              height={480}
+              className="mx-auto h-auto w-full max-w-sm object-contain"
+            />
+            {trackLabel ? (
+              <figcaption className="mt-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                {trackLabel}
+              </figcaption>
+            ) : null}
+          </figure>
         ) : null}
 
         {days.length > 0 ? (

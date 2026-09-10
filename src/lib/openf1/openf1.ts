@@ -18,6 +18,9 @@ export const OPENF1_PROXY_SOURCES = [
 /** Align with `/events/[slug]` ISR (`revalidate = 300`). API caches 15 minutes. */
 export const OPENF1_REVALIDATE_SECONDS = 300;
 
+/** OpenF1 circuit maps and country flags are served from the F1 media CDN. */
+export const OPENF1_MEDIA_HOST = "media.formula1.com";
+
 const F1_SERIES = new Set(["f1", "formula-1", "formula 1", "formula1"]);
 const EVENT_SLUG = /^([a-z0-9]+(?:-[a-z0-9]+)*)-(\d{4}-\d{2}-\d{2})$/;
 const NAME_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -126,6 +129,22 @@ function isValidUtcDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
+}
+
+/** HTTPS circuit/flag URLs on the F1 media CDN only — drop other hosts. */
+export function parseOpenF1MediaUrl(value: unknown): string | null {
+  const text = asString(value);
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    if (url.protocol !== "https:") return null;
+    if (url.username || url.password) return null;
+    if (url.hostname !== OPENF1_MEDIA_HOST) return null;
+    if (url.hash) url.hash = "";
+    return url.href;
+  } catch {
+    return null;
+  }
 }
 
 export function parseOpenF1EventSlug(
@@ -243,12 +262,12 @@ export function parseOpenF1Meeting(value: unknown): OpenF1Meeting | null {
     circuitKey,
     circuitShortName,
     circuitType: asString(row.circuitType) || null,
-    circuitImage: asString(row.circuitImage) || null,
+    circuitImage: parseOpenF1MediaUrl(row.circuitImage),
     circuitInfoUrl: asString(row.circuitInfoUrl) || null,
     countryKey,
     countryCode,
     countryName,
-    countryFlag: asString(row.countryFlag) || null,
+    countryFlag: parseOpenF1MediaUrl(row.countryFlag),
     dateStart,
     dateEnd,
     gmtOffset,
@@ -423,6 +442,18 @@ export function openF1CircuitLine(
     .map((part) => part.trim())
     .filter(Boolean);
   return [...new Set(bits)].join(", ");
+}
+
+export function openF1CircuitImageUrl(
+  meeting: Pick<OpenF1Meeting, "circuitImage">,
+): string | null {
+  return parseOpenF1MediaUrl(meeting.circuitImage);
+}
+
+export function openF1CountryFlagUrl(
+  meeting: Pick<OpenF1Meeting, "countryFlag">,
+): string | null {
+  return parseOpenF1MediaUrl(meeting.countryFlag);
 }
 
 async function readJson(res: Response): Promise<unknown> {

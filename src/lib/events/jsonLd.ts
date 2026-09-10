@@ -44,6 +44,7 @@ export type EventJsonLdInput = {
   screeningVenues?: EventJsonLdVenue[];
   circuit?: EventJsonLdCircuit | null;
   sessions?: EventJsonLdSession[];
+  image?: string | null;
   faqs?: Array<{ question: string; answer: string }>;
   siteUrl?: string;
 };
@@ -89,6 +90,7 @@ export type SportsEventJsonLd = {
   competitor?: SportsTeamJsonLd[];
   location?: PlaceJsonLd | PlaceJsonLd[];
   subEvent?: SubEventJsonLd[];
+  image?: string;
 };
 
 export type BreadcrumbListJsonLd = {
@@ -243,6 +245,9 @@ export function buildSportsEventJsonLd(
   const places = eventJsonLdPlaces(input, siteUrl);
   if (places.length === 1) event.location = places[0];
   else if (places.length > 1) event.location = places;
+
+  const image = input.image?.trim();
+  if (image) event.image = image;
 
   const sessions = (input.sessions ?? [])
     .map((session) => {

@@ -106,6 +106,8 @@ describe("buildEventJsonLd", () => {
         countryName: "Spain",
         countryCode: "ESP",
       },
+      image:
+        "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png",
       sessions: [
         {
           name: "Practice 1",
@@ -132,6 +134,10 @@ describe("buildEventJsonLd", () => {
     assert.equal(event?.subEvent?.length, 2);
     assert.equal(event?.subEvent?.[0]?.name, "Practice 1");
     assert.equal(event?.subEvent?.[1]?.name, "Race");
+    assert.equal(
+      event?.image,
+      "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png",
+    );
   });
 });
 
