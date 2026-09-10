@@ -1,4 +1,9 @@
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import {
+  getOpenF1WeekendByEventSlug,
+  openF1EventSlugFromNameAndInstant,
+} from "@/lib/openf1/openf1";
 import { formatDate, formatTime } from "@/util/formats";
 import { PortableText, PortableTextComponents } from "@portabletext/react";
 import {
@@ -23,6 +28,7 @@ import { getRaceBySlug } from "../_services/race";
 
 const NAV_LINKS = [
     { label: "Race Info", href: "#race-info" },
+    { label: "Timetable", href: "#weekend-timetable" },
     { label: "Venues", href: "#watch-venues" },
     { label: "Details", href: "#details" },
     { label: "Follow", href: "#follow" },
@@ -122,6 +128,14 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
     const raceDetails = await getRaceBySlug(race);
 
     if (!raceDetails) return notFound();
+
+    const eventSlug = openF1EventSlugFromNameAndInstant(
+        raceDetails.slug || race,
+        raceDetails.dateTime,
+    );
+    const weekend = eventSlug
+        ? await getOpenF1WeekendByEventSlug(eventSlug)
+        : null;
 
     const raceDate = new Date(raceDetails.dateTime);
     const isPast = raceDate.getTime() < new Date().getTime();
@@ -386,6 +400,10 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                     </div>
                 </div>
             </section >
+
+            {weekend ? (
+                <OpenF1WeekendSection weekend={weekend} tone="motorsport" />
+            ) : null}
 
             {/* ─── F1 by the numbers ────────────────────────────────────────── */}
             < section id="details" className="py-10 sm:py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden" >

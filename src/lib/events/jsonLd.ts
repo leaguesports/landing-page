@@ -17,16 +17,33 @@ export type EventJsonLdVenue = {
   city?: string | null;
 };
 
+export type EventJsonLdCircuit = {
+  name: string;
+  location?: string | null;
+  countryName?: string | null;
+  countryCode?: string | null;
+};
+
+export type EventJsonLdSession = {
+  name: string;
+  startDate: string;
+  endDate?: string | null;
+  cancelled?: boolean;
+};
+
 export type EventJsonLdInput = {
   title: string;
   slug: string;
   description?: string | null;
   startsAt?: string | null;
+  endsAt?: string | null;
   sportName?: string | null;
   competition?: string | null;
   teams?: EventJsonLdTeam[];
   hostVenue?: EventJsonLdVenue | null;
   screeningVenues?: EventJsonLdVenue[];
+  circuit?: EventJsonLdCircuit | null;
+  sessions?: EventJsonLdSession[];
   faqs?: Array<{ question: string; answer: string }>;
   siteUrl?: string;
 };
@@ -39,12 +56,22 @@ type SportsTeamJsonLd = {
 type PlaceJsonLd = {
   "@type": "Place";
   name: string;
-  url: string;
+  url?: string;
   address?: {
     "@type": "PostalAddress";
     addressLocality?: string;
-    addressCountry: "ZA";
+    addressCountry?: string;
   };
+};
+
+type SubEventJsonLd = {
+  "@type": "SportsEvent";
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  eventStatus?:
+    | "https://schema.org/EventScheduled"
+    | "https://schema.org/EventCancelled";
 };
 
 export type SportsEventJsonLd = {
@@ -53,6 +80,7 @@ export type SportsEventJsonLd = {
   url: string;
   description?: string;
   startDate?: string;
+  endDate?: string;
   sport?: string;
   superEvent?: {
     "@type": "SportsEvent";
@@ -60,6 +88,7 @@ export type SportsEventJsonLd = {
   };
   competitor?: SportsTeamJsonLd[];
   location?: PlaceJsonLd | PlaceJsonLd[];
+  subEvent?: SubEventJsonLd[];
 };
 
 export type BreadcrumbListJsonLd = {
@@ -122,30 +151,55 @@ function placeFromVenue(venue: EventJsonLdVenue, siteUrl: string): PlaceJsonLd |
   return place;
 }
 
+function placeFromCircuit(circuit: EventJsonLdCircuit): PlaceJsonLd | null {
+  const name = circuit.name.trim();
+  if (!name) return null;
+  const place: PlaceJsonLd = {
+    "@type": "Place",
+    name,
+  };
+  const locality = circuit.location?.trim();
+  const country = circuit.countryName?.trim() || circuit.countryCode?.trim();
+  if (locality || country) {
+    place.address = {
+      "@type": "PostalAddress",
+    };
+    if (locality) place.address.addressLocality = locality;
+    if (country) place.address.addressCountry = country;
+  }
+  return place;
+}
+
 /**
- * Real venues only — host stadium and listed screening venues.
+ * Real venues plus an official F1 circuit when OpenF1 weekend data is present.
  * Never invent geo coordinates or a default city.
  */
 export function eventJsonLdPlaces(
-  input: Pick<EventJsonLdInput, "hostVenue" | "screeningVenues">,
+  input: Pick<EventJsonLdInput, "hostVenue" | "screeningVenues" | "circuit">,
   siteUrl: string,
 ): PlaceJsonLd[] {
   const places: PlaceJsonLd[] = [];
   const seen = new Set<string>();
 
-  function push(venue: EventJsonLdVenue | null | undefined) {
-    if (!venue) return;
-    const place = placeFromVenue(venue, siteUrl);
+  function pushPlace(place: PlaceJsonLd | null, key: string) {
     if (!place) return;
-    const key = venue.slug.trim().toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
+    const normalized = key.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
     places.push(place);
   }
 
-  push(input.hostVenue ?? null);
+  function pushVenue(venue: EventJsonLdVenue | null | undefined) {
+    if (!venue) return;
+    pushPlace(placeFromVenue(venue, siteUrl), venue.slug);
+  }
+
+  if (input.circuit) {
+    pushPlace(placeFromCircuit(input.circuit), `circuit:${input.circuit.name}`);
+  }
+  pushVenue(input.hostVenue ?? null);
   for (const venue of input.screeningVenues ?? []) {
-    push(venue);
+    pushVenue(venue);
   }
   return places;
 }
@@ -166,6 +220,8 @@ export function buildSportsEventJsonLd(
 
   const startDate = toIsoDate(input.startsAt);
   if (startDate) event.startDate = startDate;
+  const endDate = toIsoDate(input.endsAt);
+  if (endDate) event.endDate = endDate;
 
   const sport = input.sportName?.trim();
   if (sport) event.sport = sport;
@@ -187,6 +243,23 @@ export function buildSportsEventJsonLd(
   const places = eventJsonLdPlaces(input, siteUrl);
   if (places.length === 1) event.location = places[0];
   else if (places.length > 1) event.location = places;
+
+  const sessions = (input.sessions ?? [])
+    .map((session) => {
+      const name = session.name.trim();
+      if (!name) return null;
+      const sub: SubEventJsonLd = { "@type": "SportsEvent", name };
+      const sessionStart = toIsoDate(session.startDate);
+      if (sessionStart) sub.startDate = sessionStart;
+      const sessionEnd = toIsoDate(session.endDate);
+      if (sessionEnd) sub.endDate = sessionEnd;
+      if (session.cancelled) {
+        sub.eventStatus = "https://schema.org/EventCancelled";
+      }
+      return sub;
+    })
+    .filter((session): session is SubEventJsonLd => session !== null);
+  if (sessions.length > 0) event.subEvent = sessions;
 
   return event;
 }

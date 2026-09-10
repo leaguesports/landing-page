@@ -92,6 +92,47 @@ describe("buildEventJsonLd", () => {
       false,
     );
   });
+
+  it("adds F1 circuit location, weekend endDate, and session subEvents", () => {
+    const jsonLd = buildEventJsonLd({
+      title: "Spanish Grand Prix",
+      slug: "spanish-grand-prix-2026-09-13",
+      startsAt: "2026-09-11T11:30:00.000Z",
+      endsAt: "2026-09-13T15:00:00.000Z",
+      sportName: "Motorsport",
+      circuit: {
+        name: "Madring",
+        location: "Madrid",
+        countryName: "Spain",
+        countryCode: "ESP",
+      },
+      sessions: [
+        {
+          name: "Practice 1",
+          startDate: "2026-09-11T11:30:00.000Z",
+          endDate: "2026-09-11T12:30:00.000Z",
+        },
+        {
+          name: "Race",
+          startDate: "2026-09-13T13:00:00.000Z",
+          endDate: "2026-09-13T15:00:00.000Z",
+          cancelled: false,
+        },
+      ],
+    });
+
+    const event = findEventJsonLdNode(jsonLd, "SportsEvent");
+    assert.equal(event?.endDate, "2026-09-13T15:00:00.000Z");
+    const location = event?.location;
+    assert.ok(location && !Array.isArray(location));
+    assert.equal(location.name, "Madring");
+    assert.equal(location.address?.addressLocality, "Madrid");
+    assert.equal(location.address?.addressCountry, "Spain");
+    assert.equal(location.url, undefined);
+    assert.equal(event?.subEvent?.length, 2);
+    assert.equal(event?.subEvent?.[0]?.name, "Practice 1");
+    assert.equal(event?.subEvent?.[1]?.name, "Race");
+  });
 });
 
 describe("eventJsonLdPlaces", () => {

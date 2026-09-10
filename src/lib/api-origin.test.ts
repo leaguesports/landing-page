@@ -18,6 +18,7 @@ import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
 import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
 import { TOURNAMENT_PROXY_SOURCES } from "./tournaments/tournaments.ts";
 import { GOLF_TOUR_PROXY_SOURCES } from "./golf-tours/golf-tours.ts";
+import { OPENF1_PROXY_SOURCES } from "./openf1/openf1.ts";
 
 const ORIGIN_ENV_KEYS = [
   "API_ORIGIN",
@@ -178,6 +179,14 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/roadmap/requests"), true);
     assert.equal(shouldProxyApiPath("/api/intents/coverage"), true);
     assert.equal(shouldProxyApiPath("/api/intents/coverage/unsubscribe"), true);
+    assert.equal(shouldProxyApiPath("/api/openf1/meetings"), true);
+    assert.equal(shouldProxyApiPath("/api/openf1/meetings/1294"), true);
+    assert.equal(
+      shouldProxyApiPath("/api/openf1/events/spanish-grand-prix-2026-09-13"),
+      true,
+    );
+    assert.equal(shouldProxyApiPath("/api/openf1/sessions"), true);
+    assert.equal(shouldProxyApiPath("/api/openf1/sessions/latest"), true);
     assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
@@ -567,6 +576,25 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/intents/coverage/"),
         );
         assert.deepEqual(coverageSources, [...COVERAGE_PROXY_SOURCES]);
+        const openF1Sources = API_PROXY_EXPLICIT_SOURCES.filter(
+          (source) =>
+            source === "/api/openf1" || source.startsWith("/api/openf1/"),
+        );
+        assert.deepEqual(openF1Sources, [...OPENF1_PROXY_SOURCES]);
+        assert.ok(
+          rewriteSources.indexOf("/api/openf1/meetings") <
+            rewriteSources.indexOf("/api/openf1/meetings/:meetingKey"),
+        );
+        assert.ok(
+          rewriteSources.indexOf("/api/openf1/sessions") <
+            rewriteSources.indexOf("/api/openf1/sessions/:sessionKey"),
+        );
+        assert.equal(
+          rewrites.find(
+            (rule) => rule.source === "/api/openf1/events/:eventSlug",
+          )?.destination,
+          "https://api.example.test/api/openf1/events/:eventSlug",
+        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/intents/coverage")
             ?.destination,
