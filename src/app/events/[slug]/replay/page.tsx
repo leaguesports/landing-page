@@ -1,8 +1,13 @@
 import { RaceReplay } from "@/components/f1-replay/RaceReplay";
+import { RaceReplayCatalog } from "@/components/f1-replay/RaceReplayCatalog";
 import {
   getOpenF1WeekendByEventSlug,
   isOpenF1EventSlug,
 } from "@/lib/openf1/openf1";
+import {
+  defaultReplayCatalogYear,
+  loadReplayCatalogSafe,
+} from "@/lib/openf1/replay-catalog";
 import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import { ArrowLeft } from "lucide-react";
@@ -73,6 +78,8 @@ export default async function EventReplayPage({ params }: PageProps) {
   const backHref = fixture ? `/events/${fixture.slug}` : `/events/${slug}`;
   const heading =
     weekend?.meeting.meetingName ?? fixture?.title ?? "Race replay";
+  const catalogYear = weekend?.meeting.year ?? defaultReplayCatalogYear();
+  const { races } = await loadReplayCatalogSafe(catalogYear);
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] pb-10 text-white">
@@ -99,6 +106,19 @@ export default async function EventReplayPage({ params }: PageProps) {
           eventSlug={canResolveBySlug ? slug : weekend?.meeting.eventSlug}
           variant="page"
         />
+        <div className="mt-12">
+          <RaceReplayCatalog
+            races={races}
+            year={catalogYear}
+            currentEventSlug={
+              weekend?.meeting.eventSlug ?? (canResolveBySlug ? slug : null)
+            }
+            currentMeetingKey={weekend?.meeting.meetingKey}
+            variant="compact"
+            heading={`${catalogYear} races`}
+            description="Switch to another Grand Prix in this season, or open the full race library."
+          />
+        </div>
       </div>
     </div>
   );

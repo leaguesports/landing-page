@@ -204,6 +204,7 @@ describe("shouldProxyApiPath", () => {
       shouldProxyApiPath("/api/f1-replay/events/italian-grand-prix-2026-09-06"),
       false,
     );
+    assert.equal(shouldProxyApiPath("/api/f1-replay/meetings"), false);
     assert.equal(shouldProxyApiPath("/api/f1-replay-extra"), true);
   });
 

@@ -264,12 +264,20 @@ export async function fetchOpenF1LocationChunk(
   });
 }
 
+export function openF1MeetingsByYearUrl(year: number): string {
+  return `${OPENF1_UPSTREAM_ORIGIN}/v1/meetings?year=${year}`;
+}
+
+export function openF1SessionsByYearUrl(year: number): string {
+  return `${OPENF1_UPSTREAM_ORIGIN}/v1/sessions?year=${year}`;
+}
+
 export async function fetchOpenF1MeetingsByYear(
   year: number,
 ): Promise<OpenF1Meeting[]> {
   return cachedGet(`meetings:${year}`, 600_000, async () => {
     const { status, body } = await upstreamGet(
-      `${OPENF1_UPSTREAM_ORIGIN}/v1/meetings?year=${year}`,
+      openF1MeetingsByYearUrl(year),
       600,
       [`openf1-meetings-${year}`],
     );
@@ -277,6 +285,23 @@ export async function fetchOpenF1MeetingsByYear(
     return body
       .map(parseOpenF1MeetingSnake)
       .filter((row): row is OpenF1Meeting => row !== null);
+  });
+}
+
+export async function fetchOpenF1SessionsByYear(
+  year: number,
+): Promise<OpenF1Session[]> {
+  return cachedGet(`sessions-year:${year}`, 600_000, async () => {
+    const { status, body } = await upstreamGet(
+      openF1SessionsByYearUrl(year),
+      600,
+      [`openf1-sessions-year-${year}`],
+    );
+    if (status >= 400 || !Array.isArray(body)) return [];
+    return body
+      .map(parseOpenF1SessionSnake)
+      .filter((row): row is OpenF1Session => row !== null)
+      .sort((a, b) => a.dateStart.localeCompare(b.dateStart));
   });
 }
 

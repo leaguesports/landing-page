@@ -33,6 +33,12 @@ export default async function F1CalendarPage() {
                         >
                             <span className="transform skew-x-6 block">Next Races</span>
                         </Link>
+                        <Link
+                            href="/motorsport/f1/replay"
+                            className="px-4 py-1.5 text-xs font-black uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 transition-all shrink-0 transform -skew-x-6"
+                        >
+                            <span className="transform skew-x-6 block">Replays</span>
+                        </Link>
                         <div className="px-4 py-1.5 text-xs font-black uppercase tracking-wider text-white bg-white/10 shrink-0 transform -skew-x-6">
                             <span className="transform skew-x-6 flex items-center gap-2">
                                 <Calendar className="w-3.5 h-3.5" />

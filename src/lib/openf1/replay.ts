@@ -124,6 +124,14 @@ export function f1ReplayEventUrl(eventSlug: string): string {
   return `${F1_REPLAY_API_PREFIX}/events/${encodeURIComponent(eventSlug)}`;
 }
 
+export function f1ReplayMeetingsUrl(year: number): string {
+  return `${F1_REPLAY_API_PREFIX}/meetings?year=${year}`;
+}
+
+export function replayHrefForEventSlug(eventSlug: string): string {
+  return `/events/${eventSlug}/replay`;
+}
+
 export function replayConfigFromWeekend(
   weekend: OpenF1Weekend,
 ): RaceReplayConfig | null {

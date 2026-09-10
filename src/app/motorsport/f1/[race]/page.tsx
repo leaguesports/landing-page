@@ -350,6 +350,12 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                         >
                             Full calendar <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                         </Link>
+                        <Link
+                            href="/motorsport/f1/replay"
+                            className="flex items-center gap-2 text-zinc-400 hover:text-white font-black uppercase italic tracking-wider text-xs sm:text-sm transition-colors"
+                        >
+                            Race replays <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                        </Link>
                     </div>
                 </div>
             </section>

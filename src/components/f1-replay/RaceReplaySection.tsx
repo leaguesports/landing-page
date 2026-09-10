@@ -59,18 +59,30 @@ export function RaceReplaySection({
               cars, and the chequered flag. Telemetry is loaded by our API.
             </p>
           </div>
-          {replayHref ? (
+          <div className="flex flex-wrap items-center gap-4">
             <Link
-              href={replayHref}
+              href="/motorsport/f1/replay"
               className={
                 motorsport
                   ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                  : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  : "inline-flex min-h-11 items-center text-sm font-medium text-zinc-400 transition-colors hover:text-white"
               }
             >
-              Full screen
+              All races
             </Link>
-          ) : null}
+            {replayHref ? (
+              <Link
+                href={replayHref}
+                className={
+                  motorsport
+                    ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
+                    : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                }
+              >
+                Full screen
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="mt-8">
           <RaceReplay
