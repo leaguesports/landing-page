@@ -80,22 +80,25 @@ export function createReplayEngine(input: {
   controls.update();
 
   const cars: CarVisual[] = [];
-  const bodyGeom = new THREE.BoxGeometry(1.55, 0.55, 3.6);
-  const cabinGeom = new THREE.BoxGeometry(1.05, 0.42, 1.2);
-  const wingGeom = new THREE.BoxGeometry(2.15, 0.18, 0.28);
-  const glowGeom = new THREE.CircleGeometry(2.6, 18);
-  const haloGeom = new THREE.RingGeometry(1.35, 1.7, 20);
+  const bodyH = 0.42;
+  const cabinH = 0.32;
+  const wingH = 0.14;
+  const bodyGeom = new THREE.BoxGeometry(1.55, bodyH, 3.6);
+  const cabinGeom = new THREE.BoxGeometry(1.05, cabinH, 1.2);
+  const wingGeom = new THREE.BoxGeometry(2.15, wingH, 0.28);
+  const glowGeom = new THREE.CircleGeometry(2.2, 18);
+  const haloGeom = new THREE.RingGeometry(1.2, 1.55, 20);
   for (const driver of input.drivers) {
     const group = new THREE.Group();
     group.renderOrder = 8;
     const color = new THREE.Color(driver.teamColour);
     const bodyMat = new THREE.MeshBasicMaterial({ color });
     const body = new THREE.Mesh(bodyGeom, bodyMat);
-    body.position.y = TRACK_DECK_Y + 0.55;
+    body.position.y = bodyH / 2;
     const cabin = new THREE.Mesh(cabinGeom, bodyMat);
-    cabin.position.set(0, TRACK_DECK_Y + 0.92, -0.15);
+    cabin.position.set(0, bodyH + cabinH / 2, -0.15);
     const wing = new THREE.Mesh(wingGeom, bodyMat);
-    wing.position.set(0, TRACK_DECK_Y + 0.95, -1.7);
+    wing.position.set(0, bodyH + cabinH - wingH / 2, -1.7);
     const edgeMat = new THREE.LineBasicMaterial({
       color: 0xffffff,
       transparent: true,
@@ -108,28 +111,28 @@ export function createReplayEngine(input: {
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.4,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
     glow.rotation.x = -Math.PI / 2;
-    glow.position.y = TRACK_DECK_Y + 0.12;
+    glow.position.y = 0.03;
     glow.renderOrder = 7;
     const halo = new THREE.Mesh(
       haloGeom,
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.85,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
     halo.rotation.x = -Math.PI / 2;
-    halo.position.y = TRACK_DECK_Y + 0.14;
+    halo.position.y = 0.04;
     halo.renderOrder = 7;
     group.add(glow, halo, body, cabin, wing, wire);
     group.visible = false;
@@ -159,11 +162,14 @@ export function createReplayEngine(input: {
   function poseToWorld(
     x: number,
     y: number,
-    z: number,
+    _z: number,
     into: THREE.Vector3,
   ): THREE.Vector3 {
-    worldVec(x, y, z, mapped);
-    into.set(mapped.x, mapped.y, mapped.z);
+    // The neon ribbon is 2D (circuit outline has no z). OpenF1 GPS z is
+    // circuit-local (~1900 at Monza, ~4100 at Spa) so applying it lifts cars
+    // off the deck. Keep XZ from telemetry and sit on the ribbon.
+    worldVec(x, y, 0, mapped);
+    into.set(mapped.x, TRACK_DECK_Y, mapped.z);
     return into;
   }
 

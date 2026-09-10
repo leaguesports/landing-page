@@ -30,6 +30,13 @@ describe("worldVec", () => {
     assert.ok(50 <= MISSING_Z_MAX);
   });
 
+  it("does not use circuit-local GPS z as world height on a 2D ribbon", () => {
+    const spa = worldVec(0, 0, 4133);
+    assert.ok(spa.y > 8);
+    const onDeck = worldVec(0, 0, 0);
+    assert.equal(onDeck.y, 0);
+  });
+
   it("applies mild elevation when z is present", () => {
     const mapped = worldVec(0, 0, 2500);
     assert.ok(mapped.y > 0);
