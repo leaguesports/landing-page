@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { worldVec, MISSING_Z_MAX, TRACK_SCALE } from "./coords.ts";
+import { worldVec, MISSING_Z_MAX, TRACK_SCALE, TRACK_Z0 } from "./coords.ts";
 import {
   appendLocationPoints,
   mergeLocationSamples,
@@ -35,6 +35,15 @@ describe("worldVec", () => {
     assert.ok(spa.y > 8);
     const onDeck = worldVec(0, 0, 0);
     assert.equal(onDeck.y, 0);
+  });
+
+  it("measures elevation relative to a circuit z0", () => {
+    const z0 = 4133;
+    const onDeck = worldVec(0, 0, 4133, undefined, z0);
+    assert.equal(onDeck.y, 0);
+    const hill = worldVec(0, 0, 4394, undefined, z0);
+    assert.ok(hill.y > 2);
+    assert.ok(hill.y < 8);
   });
 
   it("applies mild elevation when z is present", () => {
@@ -329,6 +338,8 @@ describe("parsers", () => {
       { circuitKey: 39, year: 2026 },
     );
     assert.equal(circuit?.x.length, 8);
+    assert.equal(circuit?.z.length, 8);
+    assert.equal(circuit?.z0, TRACK_Z0);
     assert.equal(circuit?.corners[0]?.number, 1);
   });
 });
@@ -343,6 +354,15 @@ describe("helpers", () => {
     assert.equal(url.includes("date%3E"), true);
     assert.equal(url.includes("date%3C"), true);
     assert.equal(url.includes("driver_number"), false);
+    assert.equal(
+      openF1LocationUrl(
+        11361,
+        "2026-09-06T13:03:30.000Z",
+        "2026-09-06T13:04:10.000Z",
+        1,
+      ).includes("driver_number=1"),
+      true,
+    );
   });
 
   it("matches event slugs to meetings across the weekend, not only date_start", () => {

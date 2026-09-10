@@ -137,8 +137,13 @@ export function openF1LocationUrl(
   sessionKey: number,
   fromIso: string,
   toIso: string,
+  driverNumber?: number,
 ): string {
-  return `${OPENF1_UPSTREAM_ORIGIN}/v1/location?session_key=${sessionKey}&date%3E${encodeURIComponent(fromIso)}&date%3C${encodeURIComponent(toIso)}`;
+  const driver =
+    typeof driverNumber === "number" && driverNumber > 0
+      ? `&driver_number=${driverNumber}`
+      : "";
+  return `${OPENF1_UPSTREAM_ORIGIN}/v1/location?session_key=${sessionKey}&date%3E${encodeURIComponent(fromIso)}&date%3C${encodeURIComponent(toIso)}${driver}`;
 }
 
 export async function fetchOpenF1Session(
@@ -245,11 +250,13 @@ export async function fetchOpenF1LocationChunk(
   sessionKey: number,
   fromIso: string,
   toIso: string,
+  driverNumber?: number,
 ): Promise<LocationPoint[]> {
-  const key = `location:${sessionKey}:${fromIso}:${toIso}`;
+  const driverKey = driverNumber && driverNumber > 0 ? `:d${driverNumber}` : "";
+  const key = `location:${sessionKey}:${fromIso}:${toIso}${driverKey}`;
   return cachedGet(key, 3_600_000, async () => {
     const { status, body, retryAfterSec } = await upstreamGet(
-      openF1LocationUrl(sessionKey, fromIso, toIso),
+      openF1LocationUrl(sessionKey, fromIso, toIso, driverNumber),
       3600,
       [`openf1-location-${sessionKey}`],
       20_000,

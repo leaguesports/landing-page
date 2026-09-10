@@ -74,9 +74,8 @@ export function createReplayEngine(input: {
   brandLight.position.set(center.x, 18, center.z);
   root.add(brandLight);
 
-  camera.position.set(center.x + span * 0.22, Math.max(48, span * 0.32), center.z + span * 0.34);
+  camera.position.set(center.x + span * 0.22, Math.max(48, span * 0.32) + center.y, center.z + span * 0.34);
   controls.target.copy(center);
-  controls.target.y = TRACK_DECK_Y;
   controls.update();
 
   const cars: CarVisual[] = [];
@@ -162,14 +161,11 @@ export function createReplayEngine(input: {
   function poseToWorld(
     x: number,
     y: number,
-    _z: number,
+    z: number,
     into: THREE.Vector3,
   ): THREE.Vector3 {
-    // The neon ribbon is 2D (circuit outline has no z). OpenF1 GPS z is
-    // circuit-local (~1900 at Monza, ~4100 at Spa) so applying it lifts cars
-    // off the deck. Keep XZ from telemetry and sit on the ribbon.
-    worldVec(x, y, 0, mapped);
-    into.set(mapped.x, TRACK_DECK_Y, mapped.z);
+    worldVec(x, y, z, mapped, input.circuit.z0);
+    into.set(mapped.x, mapped.y + TRACK_DECK_Y, mapped.z);
     return into;
   }
 
@@ -197,7 +193,6 @@ export function createReplayEngine(input: {
       );
       if (ahead) {
         poseToWorld(ahead.x, ahead.y, ahead.z, scratchAhead);
-        scratchAhead.y = scratchPos.y;
         if (scratchAhead.distanceToSquared(scratchPos) > 0.01) {
           car.group.lookAt(scratchAhead);
         }

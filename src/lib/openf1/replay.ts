@@ -47,6 +47,10 @@ export type ReplayCircuit = {
   rotation: number;
   x: number[];
   y: number[];
+  /** GPS z painted onto the outline; same length as x. */
+  z: number[];
+  /** Median GPS z for this session so circuits don't float (Monza ~1900, Spa ~4100). */
+  z0: number;
   corners: ReplayCircuitCorner[];
 };
 

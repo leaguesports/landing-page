@@ -6,6 +6,7 @@ import {
   type OpenF1Meeting,
   type OpenF1Session,
 } from "./openf1.ts";
+import { TRACK_Z0 } from "./coords.ts";
 import type {
   LocationPoint,
   PositionEvent,
@@ -200,6 +201,11 @@ export function parseReplayCircuit(
   const circuitKey = asInt(row.circuitKey) ?? fallback.circuitKey;
   const year = asInt(row.year) ?? fallback.year;
   const rotation = asFiniteNumber(row.rotation) ?? 0;
+  const z =
+    Array.isArray(row.z) && row.z.length === x.length
+      ? row.z.map((value) => asFiniteNumber(value) ?? 0)
+      : x.map(() => 0);
+  const z0 = asFiniteNumber(row.z0) ?? TRACK_Z0;
   return {
     circuitKey,
     circuitName: asString(row.circuitName) || "Circuit",
@@ -207,6 +213,8 @@ export function parseReplayCircuit(
     rotation,
     x,
     y,
+    z,
+    z0,
     corners,
   };
 }

@@ -6,9 +6,18 @@ const BRAND = 0x3dff8a;
 
 function circuitPoints(circuit: ReplayCircuit): THREE.Vector3[] {
   const points: THREE.Vector3[] = [];
+  const mapped = { x: 0, y: 0, z: 0 };
   for (let i = 0; i < circuit.x.length; i += 1) {
-    const mapped = worldVec(circuit.x[i]!, circuit.y[i]!, 0);
-    points.push(new THREE.Vector3(mapped.x, mapped.y, mapped.z));
+    worldVec(
+      circuit.x[i]!,
+      circuit.y[i]!,
+      circuit.z[i] ?? 0,
+      mapped,
+      circuit.z0,
+    );
+    points.push(
+      new THREE.Vector3(mapped.x, mapped.y + TRACK_DECK_Y, mapped.z),
+    );
   }
   const first = points[0];
   const last = points[points.length - 1];
@@ -52,7 +61,6 @@ function tubeFromPoints(
 function ribbonFromEdges(
   left: THREE.Vector3[],
   right: THREE.Vector3[],
-  y: number,
 ): THREE.BufferGeometry {
   const count = Math.min(left.length, right.length);
   const positions = new Float32Array(count * 2 * 3);
@@ -61,10 +69,10 @@ function ribbonFromEdges(
     const r = right[i]!;
     const o = i * 6;
     positions[o] = l.x;
-    positions[o + 1] = y;
+    positions[o + 1] = l.y;
     positions[o + 2] = l.z;
     positions[o + 3] = r.x;
-    positions[o + 4] = y;
+    positions[o + 4] = r.y;
     positions[o + 5] = r.z;
   }
   const indices: number[] = [];
@@ -103,10 +111,7 @@ export function buildNeonTrack(circuit: ReplayCircuit): {
     opacity: 0.82,
     side: THREE.DoubleSide,
   });
-  const ribbon = new THREE.Mesh(
-    ribbonFromEdges(inner, outer, TRACK_DECK_Y),
-    ribbonMat,
-  );
+  const ribbon = new THREE.Mesh(ribbonFromEdges(inner, outer), ribbonMat);
   ribbon.renderOrder = 0;
   group.add(ribbon);
 
@@ -118,12 +123,10 @@ export function buildNeonTrack(circuit: ReplayCircuit): {
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const innerEdge = inner.map((p) => p.clone().setY(TRACK_DECK_Y));
-  const outerEdge = outer.map((p) => p.clone().setY(TRACK_DECK_Y));
-  group.add(tubeFromPoints(innerEdge, 0.09, edgeMat, 420));
-  group.add(tubeFromPoints(outerEdge, 0.09, edgeMat, 420));
-  group.add(tubeFromPoints(innerEdge, 0.32, glowMat, 280));
-  group.add(tubeFromPoints(outerEdge, 0.32, glowMat, 280));
+  group.add(tubeFromPoints(inner, 0.09, edgeMat, 420));
+  group.add(tubeFromPoints(outer, 0.09, edgeMat, 420));
+  group.add(tubeFromPoints(inner, 0.32, glowMat, 280));
+  group.add(tubeFromPoints(outer, 0.32, glowMat, 280));
 
   const dashCount = 160;
   const dashGeom = new THREE.BoxGeometry(0.18, 0.05, 0.7);
@@ -141,8 +144,8 @@ export function buildNeonTrack(circuit: ReplayCircuit): {
     const p = spaced[i]!;
     const n = spaced[(i + 1) % spaced.length]!;
     dummy.position.copy(p);
-    dummy.position.y = TRACK_DECK_Y + 0.06;
-    dummy.lookAt(n.x, p.y, n.z);
+    dummy.position.y = p.y + 0.06;
+    dummy.lookAt(n.x, n.y, n.z);
     dummy.updateMatrix();
     dashes.setMatrixAt(visible, dummy.matrix);
     visible += 1;

@@ -1,10 +1,23 @@
 import { findOpenF1RaceSession, parseOpenF1EventSlug } from "./openf1.ts";
 import { buildScrubMarks } from "./race-control.ts";
-import { replayConfigFromSession, type ReplayBootstrap } from "./replay.ts";
+import {
+  chunkWindows,
+  replayConfigFromSession,
+  type ReplayBootstrap,
+  type ReplayCircuit,
+  type ReplayDriver,
+  type ReplayWindow,
+} from "./replay.ts";
 import { resolveReplayWindow } from "./replay-window.ts";
+import {
+  ELEVATION_CHUNK_MS,
+  ELEVATION_SAMPLE_MS,
+  withCircuitElevation,
+} from "./elevation.ts";
 import {
   fetchMultiviewerCircuit,
   fetchOpenF1Drivers,
+  fetchOpenF1LocationChunk,
   fetchOpenF1Meeting,
   fetchOpenF1MeetingsByYear,
   fetchOpenF1Positions,
@@ -43,15 +56,53 @@ export async function loadReplayBootstrap(
   config.raceStartIso = window.startIso;
   config.raceEndIso = window.endIso;
 
+  const elevated = await paintSessionElevation(
+    sessionKey,
+    circuit,
+    drivers,
+    window,
+  );
+
   return {
     config,
     window,
     drivers,
-    circuit,
+    circuit: elevated,
     positions,
     raceControl,
     scrubMarks: buildScrubMarks(raceControl),
   };
+}
+
+async function paintSessionElevation(
+  sessionKey: number,
+  circuit: ReplayCircuit,
+  drivers: readonly ReplayDriver[],
+  window: ReplayWindow,
+): Promise<ReplayCircuit> {
+  const driverNumber = drivers[0]?.driverNumber;
+  if (!driverNumber) return circuit;
+  const endMs = Math.min(window.endMs, window.startMs + ELEVATION_SAMPLE_MS);
+  const slices = chunkWindows(window.startMs, endMs, ELEVATION_CHUNK_MS);
+  if (slices.length === 0) return circuit;
+  try {
+    const samples = [];
+    for (const slice of slices) {
+      const points = await fetchOpenF1LocationChunk(
+        sessionKey,
+        new Date(slice.from).toISOString(),
+        new Date(slice.to).toISOString(),
+        driverNumber,
+      );
+      for (const point of points) {
+        samples.push({ x: point.x, y: point.y, z: point.z });
+      }
+    }
+    return withCircuitElevation(circuit, samples);
+  } catch (error) {
+    console.error("[f1-replay] elevation samples failed", error);
+    return circuit;
+  }
 }
 
 export async function resolveSessionKeyByEventSlug(
