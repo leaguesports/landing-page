@@ -1,13 +1,10 @@
 import { RaceReplay } from "@/components/f1-replay/RaceReplay";
 import {
   getOpenF1WeekendByEventSlug,
-  getOpenF1WeekendForFixture,
-  isOpenF1EnrichableFixture,
   isOpenF1EventSlug,
 } from "@/lib/openf1/openf1";
 import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { getSiteBaseUrl } from "@/lib/site-url";
-import { getFixtureBySlug } from "@/services/events";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -19,16 +16,30 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+type FixtureLite = {
+  slug: string;
+  title: string;
+};
+
+async function loadFixtureLite(slug: string): Promise<FixtureLite | null> {
+  try {
+    const { getFixtureBySlug } = await import("@/services/events");
+    const fixture = await getFixtureBySlug(slug);
+    if (!fixture) return null;
+    return { slug: fixture.slug, title: fixture.title };
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const fixture = await getFixtureBySlug(slug);
   const weekend = isOpenF1EventSlug(slug)
     ? await getOpenF1WeekendByEventSlug(slug)
-    : fixture && isOpenF1EnrichableFixture(fixture)
-      ? await getOpenF1WeekendForFixture(fixture)
-      : null;
+    : null;
+  const fixture = await loadFixtureLite(slug);
   const titleBase = weekend?.meeting.meetingName ?? fixture?.title ?? "F1";
   const title = `${titleBase} race replay`;
   const description = `Watch a 3D replay of ${titleBase} with live order, flags, and GPS car positions.`;
@@ -49,18 +60,14 @@ export async function generateMetadata({
 
 export default async function EventReplayPage({ params }: PageProps) {
   const { slug } = await params;
-  const fixture = await getFixtureBySlug(slug);
-  const weekendPrefetch = isOpenF1EventSlug(slug)
+  const canResolveBySlug = isOpenF1EventSlug(slug);
+  const weekend = canResolveBySlug
     ? await getOpenF1WeekendByEventSlug(slug)
     : null;
-  const weekend =
-    weekendPrefetch ??
-    (fixture && isOpenF1EnrichableFixture(fixture)
-      ? await getOpenF1WeekendForFixture(fixture)
-      : null);
+  const fixture = await loadFixtureLite(slug);
   const replay = weekend ? replayConfigFromWeekend(weekend) : null;
-  const canResolveBySlug = isOpenF1EventSlug(slug);
 
+  if (!replay && !canResolveBySlug && !fixture) notFound();
   if (!replay && !canResolveBySlug) notFound();
 
   const backHref = fixture ? `/events/${fixture.slug}` : `/events/${slug}`;
