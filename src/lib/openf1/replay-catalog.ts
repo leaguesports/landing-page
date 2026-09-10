@@ -32,6 +32,8 @@ export type ReplayCatalogItem = {
   sessionKey: number;
   raceStartIso: string;
   raceEndIso: string;
+  dateStart: string;
+  dateEnd: string;
   status: ReplayCatalogStatus;
 };
 
@@ -87,7 +89,11 @@ export function catalogStatusForRace(
   now: Date = new Date(),
 ): ReplayCatalogStatus | null {
   const status = openF1SessionStatus(session, now);
-  if (status === "cancelled") return null;
+  if (status === "cancelled") {
+    // OpenF1 sometimes flags completed weekends cancelled after the fact.
+    if (Date.parse(session.dateEnd) < now.getTime()) return "replay";
+    return null;
+  }
   if (status === "live") return "live";
   if (status === "completed") return "replay";
   return "upcoming";
@@ -117,14 +123,15 @@ export function buildReplayCatalog(
   const items: ReplayCatalogItem[] = [];
 
   for (const meeting of meetings) {
-    if (meeting.isCancelled) continue;
     if (
       isOpenF1TestingMeeting(meeting.meetingName) ||
       isOpenF1TestingMeeting(meeting.meetingOfficialName)
     ) {
       continue;
     }
-    const race = findOpenF1RaceSession(grouped.get(meeting.meetingKey) ?? []);
+    const race = findOpenF1RaceSession(grouped.get(meeting.meetingKey) ?? [], {
+      includeCancelled: true,
+    });
     if (!race) continue;
     const status = catalogStatusForRace(race, now);
     if (!status) continue;
@@ -146,6 +153,8 @@ export function buildReplayCatalog(
       sessionKey: race.sessionKey,
       raceStartIso: race.dateStart,
       raceEndIso: race.dateEnd,
+      dateStart: meeting.dateStart,
+      dateEnd: meeting.dateEnd,
       status,
     });
   }

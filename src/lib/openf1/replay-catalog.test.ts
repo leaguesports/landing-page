@@ -135,14 +135,24 @@ describe("replay catalog", () => {
     assert.equal(status, "live");
   });
 
-  it("drops cancelled meetings and weekends without a race", () => {
+  it("lists past races OpenF1 marked cancelled, and skips future cancellations", () => {
     const races = buildReplayCatalog(
       [
         meeting({
+          meetingKey: 1282,
+          meetingName: "Bahrain Grand Prix",
+          eventSlug: "bahrain-grand-prix-2026-04-10",
+          isCancelled: true,
+          dateStart: "2026-04-10T11:30:00.000Z",
+          dateEnd: "2026-04-12T17:00:00.000Z",
+        }),
+        meeting({
           meetingKey: 1,
           meetingName: "Cancelled Grand Prix",
-          eventSlug: "cancelled-grand-prix-2026-05-01",
+          eventSlug: "cancelled-grand-prix-2026-11-01",
           isCancelled: true,
+          dateStart: "2026-11-01T12:00:00.000Z",
+          dateEnd: "2026-11-03T16:00:00.000Z",
         }),
         meeting({
           meetingKey: 2,
@@ -152,9 +162,20 @@ describe("replay catalog", () => {
       ],
       [
         session({
+          sessionKey: 11261,
+          meetingKey: 1282,
+          sessionName: "Race",
+          isCancelled: true,
+          dateStart: "2026-04-12T15:00:00.000Z",
+          dateEnd: "2026-04-12T17:00:00.000Z",
+        }),
+        session({
           sessionKey: 9,
           meetingKey: 1,
           sessionName: "Race",
+          isCancelled: true,
+          dateStart: "2026-11-03T13:00:00.000Z",
+          dateEnd: "2026-11-03T15:00:00.000Z",
         }),
         session({
           sessionKey: 10,
@@ -164,7 +185,9 @@ describe("replay catalog", () => {
       ],
       NOW,
     );
-    assert.deepEqual(races, []);
+    assert.equal(races.length, 1);
+    assert.equal(races[0]?.meetingName, "Bahrain Grand Prix");
+    assert.equal(races[0]?.status, "replay");
   });
 
   it("parses season years from 2023 through the current year", () => {

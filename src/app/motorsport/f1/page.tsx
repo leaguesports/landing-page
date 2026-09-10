@@ -1,4 +1,3 @@
-import { broadcastService } from "@/services/broadcast";
 import { formatDate, formatTime } from "@/util/formats";
 import { Flag, Heart, Bell, MapPin, Clock, Calendar, ChevronRight, Zap, Trophy, TrendingUp, Radio, Star } from "lucide-react";
 import Link from "next/link";
@@ -7,6 +6,7 @@ import {
     defaultReplayCatalogYear,
     loadReplayCatalogSafe,
 } from "@/lib/openf1/replay-catalog";
+import type { Broadcast } from "@/types/broadcast";
 
 const NAV_LINKS = [
     { label: "Next Races", href: "#next-races" },
@@ -32,10 +32,19 @@ const TEAMS = [
     { name: "Aston Martin", color: "#229971", wins: 0, pts: 56 },
 ];
 
+async function loadF1Broadcasts(): Promise<Broadcast[]> {
+    try {
+        const { broadcastService } = await import("@/services/broadcast");
+        return await broadcastService.getBroadcastsBySeriesSlug("f1");
+    } catch {
+        return [];
+    }
+}
+
 export default async function F1Page() {
     const replayYear = defaultReplayCatalogYear();
     const [broadcasts, replayCatalog] = await Promise.all([
-        broadcastService.getBroadcastsBySeriesSlug("f1"),
+        loadF1Broadcasts(),
         loadReplayCatalogSafe(replayYear),
     ]);
 

@@ -4,6 +4,7 @@ import {
   openF1CountryFlagUrl,
   type OpenF1Meeting,
 } from "@/lib/openf1/openf1";
+import { meetingMatchesEventSlug } from "@/lib/openf1/upstream";
 import type {
   ReplayCatalogItem,
   ReplayCatalogStatus,
@@ -35,6 +36,17 @@ function ctaLabel(status: ReplayCatalogStatus): string {
   if (status === "replay") return "Watch replay";
   if (status === "live") return "Watch live";
   return "Open weekend";
+}
+
+function isCurrentRace(
+  race: ReplayCatalogItem,
+  eventSlug?: string | null,
+  meetingKey?: number | null,
+): boolean {
+  if (meetingKey && race.meetingKey === meetingKey) return true;
+  if (!eventSlug) return false;
+  if (race.eventSlug === eventSlug) return true;
+  return meetingMatchesEventSlug(race, eventSlug);
 }
 
 export function RaceReplayCatalog({
@@ -196,15 +208,6 @@ export function RaceReplayCatalog({
       </div>
     </section>
   );
-}
-
-function isCurrentRace(
-  race: ReplayCatalogItem,
-  eventSlug?: string | null,
-  meetingKey?: number | null,
-): boolean {
-  if (meetingKey && race.meetingKey === meetingKey) return true;
-  return Boolean(eventSlug && race.eventSlug === eventSlug);
 }
 
 function CatalogRow({

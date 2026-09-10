@@ -19,7 +19,7 @@ export async function loadReplayBootstrap(
   sessionKey: number,
 ): Promise<ReplayBootstrap | null> {
   const session = await fetchOpenF1Session(sessionKey);
-  if (!session || session.isCancelled) return null;
+  if (!session) return null;
 
   const [meeting, drivers, positions, raceControl, circuit] = await Promise.all([
     fetchOpenF1Meeting(session.meetingKey),
@@ -66,5 +66,8 @@ export async function resolveSessionKeyByEventSlug(
   );
   if (!meeting) return null;
   const sessions = await fetchOpenF1SessionsForMeeting(meeting.meetingKey);
-  return findOpenF1RaceSession(sessions)?.sessionKey ?? null;
+  return (
+    findOpenF1RaceSession(sessions, { includeCancelled: true })?.sessionKey ??
+    null
+  );
 }

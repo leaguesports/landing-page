@@ -135,7 +135,9 @@ export function replayHrefForEventSlug(eventSlug: string): string {
 export function replayConfigFromWeekend(
   weekend: OpenF1Weekend,
 ): RaceReplayConfig | null {
-  const race = findOpenF1RaceSession(weekend.sessions);
+  const race = findOpenF1RaceSession(weekend.sessions, {
+    includeCancelled: true,
+  });
   if (!race) return null;
   return replayConfigFromSession(race, weekend.meeting.meetingName, weekend.meeting.eventSlug);
 }
