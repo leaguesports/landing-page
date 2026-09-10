@@ -11,6 +11,7 @@ import {
   FixtureIntroSection,
 } from "@/components/events/FixtureSeoSections";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
+import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
 import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
@@ -19,6 +20,15 @@ import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { buildFixtureWhatsAppShare } from "@/lib/events/whatsapp-share";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
+import {
+  findOpenF1RaceSession,
+  getOpenF1WeekendByEventSlug,
+  getOpenF1WeekendForFixture,
+  isOpenF1EnrichableFixture,
+  isOpenF1EventSlug,
+  openF1CircuitImageUrl,
+  openF1CircuitLine,
+} from "@/lib/openf1/openf1";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
 import { formatFixtureWhen } from "@/lib/sports/events-feed";
@@ -44,19 +54,29 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const fixture = await getFixtureBySlug(slug);
+  const weekendPrefetch = isOpenF1EventSlug(slug)
+    ? getOpenF1WeekendByEventSlug(slug)
+    : Promise.resolve(null);
+  const [fixture, prefetchedWeekend] = await Promise.all([
+    getFixtureBySlug(slug),
+    weekendPrefetch,
+  ]);
   if (!fixture) {
     const title = missingObjectOgTitle("event", slug);
     return { title, robots: { index: false, follow: false } };
   }
 
+  const weekend = isOpenF1EnrichableFixture(fixture)
+    ? (prefetchedWeekend ?? (await getOpenF1WeekendForFixture(fixture)))
+    : null;
+  const race = weekend ? findOpenF1RaceSession(weekend.sessions) : null;
   const indexable = isFixtureIndexable(fixture);
   const title = fixtureSeoTitle({
     title: fixture.title,
     seoTitle: fixture.seoTitle,
     competition: fixture.competition,
     teams: fixture.teams,
-    startsAt: fixture.startsAt,
+    startsAt: race?.dateStart ?? fixture.startsAt,
   });
   const description = fixtureSeoDescription({
     title: fixture.title,
@@ -65,10 +85,12 @@ export async function generateMetadata({
     seoIntro: fixture.seoIntro,
     competition: fixture.competition,
     teams: fixture.teams,
-    startsAt: fixture.startsAt,
+    startsAt: race?.dateStart ?? fixture.startsAt,
     venueCount: fixture.venues.length,
+    circuitLine: weekend ? openF1CircuitLine(weekend.meeting) : null,
   });
   const canonical = `/events/${fixture.slug}`;
+  const circuitImage = weekend ? openF1CircuitImageUrl(weekend.meeting) : null;
 
   return {
     title,
@@ -80,6 +102,9 @@ export async function generateMetadata({
       url: `${getSiteBaseUrl()}${canonical}`,
       type: "website",
       locale: "en_ZA",
+      ...(circuitImage
+        ? { images: [{ url: circuitImage, alt: weekend?.meeting.circuitShortName }] }
+        : {}),
     },
     twitter: { card: "summary_large_image", title, description },
     robots: {
@@ -102,9 +127,13 @@ export async function generateStaticParams() {
 
 export default async function EventFixturePage({ params }: PageProps) {
   const { slug } = await params;
-  const [fixture, upcoming] = await Promise.all([
+  const weekendPrefetch = isOpenF1EventSlug(slug)
+    ? getOpenF1WeekendByEventSlug(slug)
+    : Promise.resolve(null);
+  const [fixture, upcoming, prefetchedWeekend] = await Promise.all([
     getFixtureBySlug(slug),
     getUpcomingFixtures({ limit: 24 }),
+    weekendPrefetch,
   ]);
   if (!fixture) {
     return (
@@ -114,7 +143,12 @@ export default async function EventFixturePage({ params }: PageProps) {
     );
   }
 
-  const when = formatFixtureWhen(fixture.startsAt);
+  const weekend = isOpenF1EnrichableFixture(fixture)
+    ? (prefetchedWeekend ?? (await getOpenF1WeekendForFixture(fixture)))
+    : null;
+  const race = weekend ? findOpenF1RaceSession(weekend.sessions) : null;
+  const kickoff = race?.dateStart ?? fixture.startsAt;
+  const when = formatFixtureWhen(kickoff);
   const sport = sportDisplayName(fixture.sportSlug);
   const venueCount = fixture.venues.length;
   const watchHref = fixture.sportSlug
@@ -125,7 +159,7 @@ export default async function EventFixturePage({ params }: PageProps) {
     seoTitle: fixture.seoTitle,
     competition: fixture.competition,
     teams: fixture.teams,
-    startsAt: fixture.startsAt,
+    startsAt: kickoff,
   });
   const faqs = indexableFixtureFaqs(fixture);
   const intro = fixture.seoIntro?.trim() || null;
@@ -141,12 +175,28 @@ export default async function EventFixturePage({ params }: PageProps) {
     title: heading,
     slug: fixture.slug,
     description: fixture.seoDescription || intro,
-    startsAt: fixture.startsAt,
+    startsAt: weekend?.meeting.dateStart ?? kickoff,
+    endsAt: weekend?.meeting.dateEnd,
     sportName: sport,
-    competition: fixture.competition,
+    competition: fixture.competition ?? (weekend ? "Formula 1" : null),
     teams: fixture.teams,
     hostVenue: fixture.hostVenue,
     screeningVenues: fixture.venues,
+    circuit: weekend
+      ? {
+          name: weekend.meeting.circuitShortName,
+          location: weekend.meeting.location,
+          countryName: weekend.meeting.countryName,
+          countryCode: weekend.meeting.countryCode,
+        }
+      : null,
+    sessions: weekend?.sessions.map((session) => ({
+      name: session.sessionName,
+      startDate: session.dateStart,
+      endDate: session.dateEnd,
+      cancelled: session.isCancelled,
+    })),
+    image: weekend ? openF1CircuitImageUrl(weekend.meeting) : null,
     faqs,
     siteUrl: getSiteBaseUrl(),
   });
@@ -208,14 +258,20 @@ export default async function EventFixturePage({ params }: PageProps) {
                 {sport}
               </span>
             ) : null}
-            {fixture.competition ? (
+            {fixture.competition || weekend ? (
               <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
-                {fixture.competition}
+                {fixture.competition || "Formula 1"}
               </span>
             ) : null}
             {when ? (
               <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
                 {when}
+              </span>
+            ) : null}
+            {weekend ? (
+              <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                <OpenF1CountryFlag meeting={weekend.meeting} />
+                {openF1CircuitLine(weekend.meeting)}
               </span>
             ) : null}
           </div>
@@ -225,7 +281,9 @@ export default async function EventFixturePage({ params }: PageProps) {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
             {fixture.broadcastInfo?.trim() ||
-              (venueCount > 0
+              (weekend
+                ? `Official practice, qualifying, and race times for ${weekend.meeting.meetingName} at ${openF1CircuitLine(weekend.meeting)}.`
+                : venueCount > 0
                 ? `Find a screening nearby, follow the fixture, then open the live feed.`
                 : `Follow the live feed, then pick a venue screening nearby when listings land.`)}
           </p>
@@ -250,6 +308,14 @@ export default async function EventFixturePage({ params }: PageProps) {
               >
                 Open live feed
               </Link>
+              {weekend ? (
+                <Link
+                  href="#weekend-timetable"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                >
+                  Weekend timetable
+                </Link>
+              ) : null}
               {fixture.relatedGuide?.slug ? (
                 <Link
                   href={`/guides/${fixture.relatedGuide.slug}`}
@@ -283,6 +349,13 @@ export default async function EventFixturePage({ params }: PageProps) {
 
       <FixtureIntroSection intro={intro} localAngle={localAngle} />
 
+      {weekend ? (
+        <OpenF1WeekendSection
+          weekend={weekend}
+          eventPageHref={fixture.eventPageHref}
+        />
+      ) : null}
+
       <section
         id="live-feed"
         className="scroll-mt-24 border-b border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
@@ -302,7 +375,7 @@ export default async function EventFixturePage({ params }: PageProps) {
               <FixturePoolPanel
                 slug={fixture.slug}
                 fixtureTitle={fixture.title}
-                kicksOffAt={fixture.startsAt}
+                kicksOffAt={kickoff}
               />
             </div>
             <div className="mb-6">

@@ -10,6 +10,7 @@ export type FixtureMetaInput = {
   teams?: Array<{ name: string }>;
   startsAt?: string | null;
   venueCount?: number;
+  circuitLine?: string | null;
 };
 
 function formatMetaDate(iso: string | null | undefined): string | null {
@@ -59,8 +60,12 @@ export function fixtureSeoDescription(input: FixtureMetaInput): string {
 
   const title = teamLine(input);
   const venueCount = input.venueCount ?? 0;
+  const circuit = input.circuitLine?.trim();
   if (venueCount > 0) {
     return `Live updates for ${title} plus ${venueCount} venue${venueCount === 1 ? "" : "s"} screening nearby.`;
+  }
+  if (circuit) {
+    return `Weekend timetable and watch options for ${title} at ${circuit} on LeagueSports.`;
   }
   return `Live feed and watch options for ${title} on LeagueSports.`;
 }

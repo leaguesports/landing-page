@@ -1,4 +1,9 @@
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import {
+  getOpenF1WeekendByEventSlug,
+  openF1EventSlugFromNameAndInstant,
+} from "@/lib/openf1/openf1";
 import { formatDate, formatTime } from "@/util/formats";
 import { PortableText, PortableTextComponents } from "@portabletext/react";
 import {
@@ -23,6 +28,7 @@ import { getRaceBySlug } from "../_services/race";
 
 const NAV_LINKS = [
     { label: "Race Info", href: "#race-info" },
+    { label: "Timetable", href: "#weekend-timetable" },
     { label: "Venues", href: "#watch-venues" },
     { label: "Details", href: "#details" },
     { label: "Follow", href: "#follow" },
@@ -122,6 +128,14 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
     const raceDetails = await getRaceBySlug(race);
 
     if (!raceDetails) return notFound();
+
+    const eventSlug = openF1EventSlugFromNameAndInstant(
+        raceDetails.slug || race,
+        raceDetails.dateTime,
+    );
+    const weekend = eventSlug
+        ? await getOpenF1WeekendByEventSlug(eventSlug)
+        : null;
 
     const raceDate = new Date(raceDetails.dateTime);
     const isPast = raceDate.getTime() < new Date().getTime();
@@ -276,6 +290,7 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
 
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 sm:pb-24 pt-10 sm:pt-20 w-full">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
+                        {weekend ? <OpenF1CountryFlag meeting={weekend.meeting} className="h-6 w-11" /> : null}
                         {roundLabel && (
                             <span className="bg-red-600 px-3 sm:px-4 py-1.5 rounded text-xs font-black uppercase tracking-[0.2em] text-white">
                                 {roundLabel}
@@ -386,6 +401,10 @@ export default async function F1RacePage({ params }: { params: Promise<{ race: s
                     </div>
                 </div>
             </section >
+
+            {weekend ? (
+                <OpenF1WeekendSection weekend={weekend} tone="motorsport" />
+            ) : null}
 
             {/* ─── F1 by the numbers ────────────────────────────────────────── */}
             < section id="details" className="py-10 sm:py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden" >

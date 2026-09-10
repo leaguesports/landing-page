@@ -260,6 +260,11 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/lobby/proposals",
   "/api/lobby/proposals/:id/accept",
   "/api/lobby/proposals/:id/pass",
+  "/api/openf1/meetings",
+  "/api/openf1/meetings/:meetingKey",
+  "/api/openf1/events/:eventSlug",
+  "/api/openf1/sessions",
+  "/api/openf1/sessions/:sessionKey",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */

@@ -47,5 +47,12 @@ describe("fixtureSeoDescription", () => {
       fixtureSeoDescription({ title: "Derby", venueCount: 2 }),
       /2 venues screening/,
     );
+    assert.match(
+      fixtureSeoDescription({
+        title: "Spanish Grand Prix",
+        circuitLine: "Madring, Madrid, Spain",
+      }),
+      /Madring, Madrid, Spain/,
+    );
   });
 });
