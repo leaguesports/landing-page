@@ -37,6 +37,11 @@ describe("worldVec", () => {
     assert.equal(onDeck.y, 0);
   });
 
+  it("does not drop below the grid when GPS z is under z0", () => {
+    const mapped = worldVec(0, 0, 3000, undefined, 4133);
+    assert.equal(mapped.y, 0);
+  });
+
   it("measures elevation relative to a circuit z0", () => {
     const z0 = 4133;
     const onDeck = worldVec(0, 0, 4133, undefined, z0);

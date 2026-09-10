@@ -5,13 +5,14 @@ import { TRACK_Z0 } from "./coords.ts";
 import type { ReplayCircuit } from "./replay.ts";
 
 describe("paintCircuitElevation", () => {
-  it("uses median GPS z as z0 and follows the samples along the outline", () => {
+  it("uses the lowest GPS z as z0 so the ribbon stays above the grid", () => {
     const x = [0, 50, 100, 150, 200];
     const painted = paintCircuitElevation(
       { x, y: [0, 0, 0, 0, 0] },
       x.map((value) => ({ x: value, y: 0, z: 4000 + value })),
     );
-    assert.equal(painted.z0, 4100);
+    assert.ok(painted.z0 <= Math.min(...painted.z));
+    assert.ok(painted.z0 <= 4000);
     assert.equal(painted.z.length, 5);
     assert.ok(painted.z[0]! < painted.z[4]!);
     assert.ok(painted.z[0]! > 3900);

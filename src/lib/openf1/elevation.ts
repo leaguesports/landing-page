@@ -12,12 +12,13 @@ export type ElevationSample = {
   z: number;
 };
 
-function median(values: readonly number[]): number {
-  if (values.length === 0) return TRACK_Z0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 1) return sorted[mid]!;
-  return (sorted[mid - 1]! + sorted[mid]!) / 2;
+function minZ(values: readonly number[], fallback: number = TRACK_Z0): number {
+  if (values.length === 0) return fallback;
+  let min = values[0]!;
+  for (const value of values) {
+    if (value < min) min = value;
+  }
+  return min;
 }
 
 function validZ(z: number): boolean {
@@ -138,11 +139,10 @@ export function paintCircuitElevation(
   samples: readonly ElevationSample[],
 ): { z0: number; z: number[] } {
   const usable = samples.filter((sample) => validZ(sample.z));
-  const z0 = median(usableZ(usable));
   const z = circuit.x.map(() => 0);
-  if (circuit.x.length === 0) return { z0, z };
-
-  if (usable.length === 0) return { z0, z };
+  if (circuit.x.length === 0 || usable.length === 0) {
+    return { z0: TRACK_Z0, z };
+  }
 
   const cell = Math.max(40, ELEVATION_MATCH_RADIUS / 2);
   const index = buildIndex(usable, cell);
@@ -150,11 +150,10 @@ export function paintCircuitElevation(
   const raw: Array<number | null> = circuit.x.map((x, i) =>
     nearestZ(x, circuit.y[i]!, index, cell, maxDist2),
   );
-  return { z0, z: smoothCircular(fillCircular(raw)) };
-}
-
-function usableZ(samples: readonly ElevationSample[]): number[] {
-  return samples.map((sample) => sample.z);
+  const painted = smoothCircular(fillCircular(raw));
+  // Sit the lowest vertex on the grid. Median z0 buried half of Spa.
+  const z0 = minZ([...usable.map((sample) => sample.z), ...painted]);
+  return { z0, z: painted };
 }
 
 export function withCircuitElevation(

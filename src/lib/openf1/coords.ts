@@ -22,7 +22,7 @@ export function worldVec(
   z0: number = TRACK_Z0,
 ): WorldVec {
   into.x = x * TRACK_SCALE;
-  into.y = worldElev(z, z0);
+  into.y = Math.max(0, worldElev(z, z0));
   into.z = -y * TRACK_SCALE;
   return into;
 }
