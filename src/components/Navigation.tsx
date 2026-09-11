@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import HeaderSessionControls from "@/components/HeaderSessionControls";
 
@@ -11,10 +12,20 @@ export default function Navigation() {
         >
           <Link
             href="/"
-            className="font-display text-2xl tracking-wide text-white sm:text-[1.75rem]"
+            className="inline-flex items-center gap-2 font-display text-2xl tracking-wide text-white sm:gap-2.5 sm:text-[1.75rem]"
           >
-            LEAGUE
-            <span className="text-[var(--color-brand)]">SPORTS</span>
+            <Image
+              src="/logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-9 w-9 shrink-0 sm:h-10 sm:w-10"
+              priority
+            />
+            <span>
+              LEAGUE
+              <span className="text-[var(--color-brand)]">SPORTS</span>
+            </span>
           </Link>
           <HeaderSessionControls />
         </nav>
