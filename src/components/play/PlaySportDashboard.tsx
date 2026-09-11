@@ -17,7 +17,6 @@ import {
   type PlayDashboardGuide,
   type PlayDashboardShortcut,
 } from "@/lib/play/play-dashboard";
-import { isRemoteVenuePhoto } from "@/lib/venues/photo";
 import {
   Bell,
   BookOpen,
@@ -90,7 +89,7 @@ function PlayClubCard({ club }: { club: PlayDashboardClub }) {
       className="group flex flex-col overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-zinc-800">
-        {isRemoteVenuePhoto(club.imageSrc) ? (
+        {club.imageSrc.startsWith("https://") ? (
           <Image
             src={club.imageSrc}
             alt=""
