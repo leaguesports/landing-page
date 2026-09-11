@@ -17,6 +17,7 @@ export function buildHomeJsonLd(siteUrl = DEFAULT_SITE_URL): HomeJsonLdGraph {
         "@id": `${origin}/#organization`,
         name: "LeagueSports",
         url: origin,
+        logo: `${origin}/logo.png`,
         description:
           "South Africa's local sports platform to watch fixtures, find play venues, and lock live scorecards.",
         areaServed: {

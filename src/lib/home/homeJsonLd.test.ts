@@ -9,6 +9,12 @@ describe("buildHomeJsonLd", () => {
     assert.deepEqual(types, ["Organization", "WebSite", "WebPage"]);
   });
 
+  it("exposes the Organization logo", () => {
+    const jsonLd = buildHomeJsonLd("https://leaguesports.co.za");
+    const org = jsonLd["@graph"].find((node) => node["@type"] === "Organization");
+    assert.equal(org?.logo, "https://leaguesports.co.za/logo.png");
+  });
+
   it("exposes a venue SearchAction", () => {
     const jsonLd = buildHomeJsonLd("https://leaguesports.co.za");
     const website = jsonLd["@graph"].find((node) => node["@type"] === "WebSite");
