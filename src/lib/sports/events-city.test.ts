@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  detectEventsCityFromText,
   eventsCityLabel,
   filterFixturesByCity,
   parseEventsCityParam,
@@ -106,5 +107,21 @@ describe("eventsCityLabel", () => {
     assert.equal(eventsCityLabel("dbn"), "Durban");
     assert.equal(eventsCityLabel("pta"), "Pretoria");
     assert.equal(eventsCityLabel(null), null);
+  });
+});
+
+describe("detectEventsCityFromText", () => {
+  it("reads the first metro named in copy", () => {
+    assert.equal(
+      detectEventsCityFromText("Where to Watch in Joburg"),
+      "jhb",
+    );
+    assert.equal(
+      detectEventsCityFromText("Springboks Test in Cape Town this Saturday"),
+      "cpt",
+    );
+    assert.equal(detectEventsCityFromText("Durban night market"), "dbn");
+    assert.equal(detectEventsCityFromText(""), null);
+    assert.equal(detectEventsCityFromText("Sandton pubs fill early"), null);
   });
 });

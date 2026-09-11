@@ -188,6 +188,7 @@ export default async function EventFixturePage({ params }: PageProps) {
     teams: fixture.teams,
     hostVenue: fixture.hostVenue,
     screeningVenues: fixture.venues,
+    localAngle,
     circuit: weekend
       ? {
           name: weekend.meeting.circuitShortName,

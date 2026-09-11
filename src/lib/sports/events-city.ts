@@ -23,6 +23,14 @@ const DIRECTORY_SLUG_TO_CODE: Record<string, EventsCityCode> = {
   pretoria: "pta",
 };
 
+/** Metro names only — used to read a city from editorial copy without suburb false positives. */
+const METRO_COPY_TOKENS: Record<EventsCityCode, string[]> = {
+  jhb: ["johannesburg", "joburg", "jozi", "jhb"],
+  cpt: ["cape town", "cape-town", "capetown", "cpt"],
+  dbn: ["durban", "dbn"],
+  pta: ["pretoria", "tshwane", "pta"],
+};
+
 function normalizeCityToken(value: string): string {
   return value
     .trim()
@@ -58,6 +66,36 @@ const METRO_TOKENS = buildMetroTokens();
 export function eventsCityLabel(code: EventsCityCode | null): string | null {
   if (!code) return null;
   return EVENTS_CITY_FILTERS.find((item) => item.code === code)?.label ?? null;
+}
+
+/**
+ * First metro named in editorial copy (title, intro, FAQs).
+ * Word-boundary match on city aliases only — not suburbs.
+ */
+export function detectEventsCityFromText(
+  text: string | null | undefined,
+): EventsCityCode | null {
+  if (!text?.trim()) return null;
+  const haystack = ` ${normalizeCityToken(text).replace(/-/g, " ")} `;
+
+  let best: { code: EventsCityCode; index: number; length: number } | null =
+    null;
+  for (const filter of EVENTS_CITY_FILTERS) {
+    for (const token of METRO_COPY_TOKENS[filter.code]) {
+      const needle = token.replace(/-/g, " ").trim();
+      if (!needle) continue;
+      const index = haystack.indexOf(` ${needle} `);
+      if (index === -1) continue;
+      if (
+        !best ||
+        index < best.index ||
+        (index === best.index && needle.length > best.length)
+      ) {
+        best = { code: filter.code, index, length: needle.length };
+      }
+    }
+  }
+  return best?.code ?? null;
 }
 
 /**
