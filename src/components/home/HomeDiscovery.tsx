@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandMark } from "@/components/BrandMark";
 import { HomePhoneMockup } from "@/components/home/HomePhoneMockup";
 import Link from "next/link";
 
@@ -44,9 +45,16 @@ export function HomeDiscovery() {
               South Africa
             </p>
             <h1 className="animate-rise">
-              <span className="font-display block text-[clamp(2.75rem,11vw,5.5rem)] leading-[0.9] tracking-wide text-white">
-                LEAGUE
-                <span className="text-[var(--color-brand)]">SPORTS</span>
+              <span className="flex items-center gap-3 sm:gap-4">
+                <BrandMark
+                  className="h-12 w-12 shrink-0 sm:h-16 sm:w-16 lg:h-[4.25rem] lg:w-[4.25rem]"
+                  size={80}
+                  priority
+                />
+                <span className="font-display block text-[clamp(2.75rem,11vw,5.5rem)] leading-[0.9] tracking-wide text-white">
+                  LEAGUE
+                  <span className="text-[var(--color-brand)]">SPORTS</span>
+                </span>
               </span>
               <span className="mt-3 block text-xl font-semibold leading-snug tracking-tight text-white sm:mt-5 sm:text-4xl sm:leading-tight">
                 Watch, play, and track sport in one place

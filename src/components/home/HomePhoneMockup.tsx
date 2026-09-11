@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandMark } from "@/components/BrandMark";
 import { useEffect, useState } from "react";
 
 const TOASTS = [
@@ -82,9 +83,7 @@ export function HomePhoneMockup({ className = "" }: { className?: string }) {
             </div>
 
             <div className="mb-4 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-sky-500 font-display text-lg tracking-wide text-zinc-950">
-                LS
-              </div>
+              <BrandMark className="mx-auto mb-3 h-14 w-14" size={56} />
               <p className="text-sm font-semibold text-white">Your sports hub</p>
               <p className="mt-0.5 text-[11px] text-zinc-500">Watch · Play · Score</p>
             </div>
