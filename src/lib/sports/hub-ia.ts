@@ -69,7 +69,7 @@ export const HUB_GOLF_TOURS_HREF = "/golf-tours" as const;
 export const HUB_GOLF_TOURS_NEW_HREF = "/golf-tours/new" as const;
 /** People tab block order — Teams is third under Friends + Communities. */
 export const HUB_PEOPLE_BLOCKS = ["communities", "friends", "teams"] as const;
-/** Thin hosted/invited strip on Play — keep the verb grid the focus. */
+/** Hosted/invited strip on the sport dashboard — keep it short. */
 export const HUB_ORGANISED_PREVIEW_LIMIT = 4;
 
 export const HUB_SPORT_CONTROL = "dropdown" as const;

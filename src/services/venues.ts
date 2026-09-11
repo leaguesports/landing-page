@@ -28,6 +28,8 @@ export type VenueSearchFilters = {
   intent?: VenueSearchIntent | null;
   sportSlug?: string | null;
   locationSlug?: string | null;
+  /** Exclusive GROQ slice end — omit to return the full match set. */
+  limit?: number;
 };
 
 export type VenueFilterOption = {
@@ -49,6 +51,12 @@ export async function searchVenues(
       : "";
   const sportSlugs = sportSlugVariants(filters.sportSlug);
   const location = filters.locationSlug?.trim() || "";
+
+  const limit =
+    typeof filters.limit === "number" && Number.isFinite(filters.limit)
+      ? Math.max(0, Math.floor(filters.limit))
+      : null;
+  const slice = limit === null ? "" : "[0...$end]";
 
   const venues = await sanityClient.fetch<VenueRow[]>(
     `*[
@@ -74,10 +82,10 @@ export async function searchVenues(
       && ($location == "" || ${VENUE_IN_LOCATION})
       && ($intent != "watch" || count(broadcasts) > 0)
       && ($intent != "play" || count(sports) > 0)
-    ] | order(_createdAt desc) {
+    ] | order(_createdAt desc) ${slice} {
       ${VENUE_PROJECTION}
     }`,
-    { intent, sportSlugs, location },
+    { intent, sportSlugs, location, ...(limit === null ? {} : { end: limit }) },
   );
 
   return venues.map(mapVenueRow).filter((v): v is VenueDetail => v !== null);
