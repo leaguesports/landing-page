@@ -13,6 +13,7 @@ import { getHomepageStats } from "@/services/homepageStats";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { guideHref, isGuideSlug } from "@/lib/guides/slugs";
@@ -234,12 +235,27 @@ async function MarketingHome() {
   );
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string | string[] }>;
+}) {
   const auth = await getServerAuthState();
+  const params = await searchParams;
+  const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  if (tabParam?.trim().toLowerCase() === "play") {
+    redirect("/play");
+  }
 
   if (auth.isAuthenticated && auth.user?.id) {
     const cookie = (await cookies()).toString();
-    return <HomeDashboard user={auth.user} cookie={cookie} />;
+    return (
+      <HomeDashboard
+        user={auth.user}
+        cookie={cookie}
+        initialTab={tabParam}
+      />
+    );
   }
 
   return <MarketingHome />;

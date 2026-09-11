@@ -1,17 +1,16 @@
 "use client";
 
 import { BadgesPanel } from "@/components/home/BadgesPanel";
-import { PlaySportModal } from "@/components/home/PlaySportModal";
 import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
+import { HubBottomNav } from "@/components/hub/HubBottomNav";
 import { TeamsPanel } from "@/components/home/TeamsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHandicapIndexField } from "@/components/golf/GolfHandicapIndexField";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
-import { OrganisedGamesStrip } from "@/components/play/OrganisedGamesStrip";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -31,7 +30,6 @@ import {
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
 import {
-  emptyOrganisedGamesSnapshot,
   type OrganisedGamesSnapshot,
 } from "@/lib/organised-games/organised-games";
 import { updatePreferences } from "@/lib/preferences/preferences";
@@ -54,17 +52,14 @@ import {
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
-  HUB_PLAY_VERBS,
-  HUB_QUICK_START,
+  HUB_PLAY_HREF,
   HUB_RECENT_LOCK_LIMIT,
-  HUB_TABS,
   HUB_TRAINING_HREF,
   hubConnectedCount,
-  hubPlayModalSportOptions,
   hubSearchHref,
   hubShowsSportControl,
+  parseHubTabParam,
   takeHubPreview,
-  type HubPlayVerbId,
   type HubTabId,
 } from "@/lib/sports/hub-ia";
 import {
@@ -81,20 +76,14 @@ import {
   BookOpen,
   Calendar,
   Check,
-  ClipboardList,
   Flag,
   Heart,
-  Home,
   ListFilter,
-  Navigation,
   Search,
   Sparkles,
-  Trophy,
   Tv,
-  User,
   Users,
   X,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -121,13 +110,6 @@ const HUB_ICON_BTN_ACTIVE =
 
 const HUB_CONTROL =
   "min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] text-sm text-white outline-none focus:border-emerald-400/40";
-
-function HubTabIcon({ id }: { id: HubTabId }) {
-  if (id === "home") return <Home className="h-5 w-5" aria-hidden />;
-  if (id === "play") return <Trophy className="h-5 w-5" aria-hidden />;
-  if (id === "people") return <Users className="h-5 w-5" aria-hidden />;
-  return <User className="h-5 w-5" aria-hidden />;
-}
 
 function SectionHeading({
   id,
@@ -228,6 +210,8 @@ type SportsHubProps = {
   /** Server-backed sport follows from `/api/me/preferences`. */
   initialFollowedSports?: string[];
   initialActiveSport?: string | null;
+  /** `?tab=` on `/` — Play is a route and is ignored here. */
+  initialTab?: string | null;
 };
 
 function useHubPreferences(
@@ -619,7 +603,7 @@ export function SportsHub({
   followedFixtures = [],
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
-  organisedGames = emptyOrganisedGamesSnapshot(),
+  organisedGames: _organisedGames,
   myCommunities = [],
   myTeams = emptyTeamsSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
@@ -629,6 +613,7 @@ export function SportsHub({
   nowIso,
   initialFollowedSports = [],
   initialActiveSport = null,
+  initialTab = null,
 }: SportsHubProps) {
   const router = useRouter();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
@@ -651,9 +636,7 @@ export function SportsHub({
     seedFollowed,
     initialActiveSport,
   );
-  const tablistId = useId();
-  const [tab, setTab] = useState<HubTabId>("home");
-  const [playVerb, setPlayVerb] = useState<HubPlayVerbId | null>(null);
+  const [tab, setTab] = useState<HubTabId>(() => parseHubTabParam(initialTab));
   const [searchQuery, setSearchQuery] = useState("");
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
@@ -721,9 +704,6 @@ export function SportsHub({
   const handle = athleteHandle(user);
   const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const playModalOptions = playVerb
-    ? hubPlayModalSportOptions(sports, playVerb)
-    : [];
   const youHistoryEmpty =
     recentPadel.length === 0 &&
     !historyError &&
@@ -732,13 +712,9 @@ export function SportsHub({
     recentDarts.length === 0 &&
     !dartsHistoryError;
 
-  const closePlaySportModal = useCallback(() => {
-    setPlayVerb(null);
-  }, []);
-
   function selectTab(id: HubTabId) {
+    if (id === "play") return;
     setTab(id);
-    setPlayVerb(null);
   }
 
   function focusSport(slug: string) {
@@ -908,101 +884,6 @@ export function SportsHub({
                     ))}
                   </div>
                 </div>
-              ) : null}
-            </section>
-          </div>
-        ) : null}
-
-        {tab === "play" ? (
-          <div
-            role="tabpanel"
-            id="hub-panel-play"
-            aria-labelledby="hub-tab-play"
-          >
-            <section aria-labelledby="hub-play">
-              <SectionHeading
-                id="hub-play"
-                title="Play"
-                description="Quick start from your location, or start, capture, or organise."
-              />
-
-              <Link
-                href={HUB_QUICK_START.href}
-                className="mb-4 flex w-full flex-col items-start gap-4 rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-400/15 via-emerald-400/5 to-transparent px-5 py-6 text-left transition-colors hover:border-emerald-400/45 sm:px-6 lg:mb-5 lg:px-7 lg:py-7"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
-                  <Navigation className="h-4 w-4" aria-hidden />
-                </span>
-                <div>
-                  <h3 className="font-display text-3xl tracking-wide text-white">
-                    {HUB_QUICK_START.label}
-                  </h3>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-300">
-                    {HUB_QUICK_START.description}
-                  </p>
-                </div>
-              </Link>
-
-              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-                {HUB_PLAY_VERBS.map((verb) => {
-                  const icon =
-                    verb.id === "capture" ? (
-                      <ClipboardList className="h-4 w-4" aria-hidden />
-                    ) : verb.id === "organise" ? (
-                      <Calendar className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <Zap className="h-4 w-4" aria-hidden />
-                    );
-                  const body = (
-                    <>
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
-                        {icon}
-                      </span>
-                      <div>
-                        <h3 className="font-display text-3xl tracking-wide text-white">
-                          {verb.label}
-                        </h3>
-                        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-                          {verb.description}
-                        </p>
-                      </div>
-                    </>
-                  );
-                  const className =
-                    "flex h-full w-full flex-col items-start gap-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left sm:px-6 lg:px-7 lg:py-7";
-                  return (
-                    <li key={verb.id}>
-                      {verb.href ? (
-                        <Link href={verb.href} className={className}>
-                          {body}
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          aria-haspopup="dialog"
-                          aria-expanded={playVerb === verb.id}
-                          onClick={() => setPlayVerb(verb.id)}
-                          className={className}
-                        >
-                          {body}
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <OrganisedGamesStrip
-                snapshot={organisedGames}
-                nowIso={nowIso}
-              />
-
-              {playVerb ? (
-                <PlaySportModal
-                  verb={playVerb}
-                  options={playModalOptions}
-                  onClose={closePlaySportModal}
-                />
               ) : null}
             </section>
           </div>
@@ -1232,13 +1113,12 @@ export function SportsHub({
                   {youHistoryEmpty ? (
                     <p className="mt-6 text-sm leading-relaxed text-zinc-500">
                       Start or capture a result from{" "}
-                      <button
-                        type="button"
-                        onClick={() => selectTab("play")}
+                      <Link
+                        href={HUB_PLAY_HREF}
                         className="font-medium text-emerald-300 hover:text-emerald-200"
                       >
                         Play
-                      </button>{" "}
+                      </Link>{" "}
                       to lock a result here.
                     </p>
                   ) : null}
@@ -1305,45 +1185,11 @@ export function SportsHub({
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/8 bg-[#0c0f0c]/95 backdrop-blur-xl">
-        <nav
-          id={tablistId}
-          role="tablist"
-          aria-label="Hub"
-          className="mx-auto grid max-w-none grid-cols-4 pb-[max(0.4rem,env(safe-area-inset-bottom))] lg:max-w-xl"
-        >
-          {HUB_TABS.map((item) => {
-            const selected = tab === item.id;
-            const badge =
-              item.id === "people" && friendRequestCount > 0
-                ? friendRequestCount
-                : null;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                aria-controls={`hub-panel-${item.id}`}
-                id={`hub-tab-${item.id}`}
-                onClick={() => selectTab(item.id)}
-                className={[
-                  "relative flex min-h-14 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors",
-                  selected ? "text-emerald-200" : "text-zinc-500 hover:text-white",
-                ].join(" ")}
-              >
-                <HubTabIcon id={item.id} />
-                {item.label}
-                {badge ? (
-                  <span className="absolute top-1.5 right-[calc(50%-1.15rem)] inline-flex min-w-4 items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-semibold text-zinc-950 tabular-nums">
-                    {badge}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <HubBottomNav
+        active={tab}
+        friendRequestCount={friendRequestCount}
+        onSelectTab={selectTab}
+      />
     </div>
   );
 }

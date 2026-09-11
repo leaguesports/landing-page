@@ -3,7 +3,7 @@ import {
   GOLF_TOURS_NEW_HREF,
   listMyGolfTours,
 } from "@/lib/golf-tours/golf-tours";
-import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
+import { hubPlaySportHref } from "@/lib/sports/hub-ia";
 import { Flag } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -25,10 +25,10 @@ export default async function GolfToursPage() {
         <div className="absolute inset-0 bg-linear-to-br from-emerald-950/40 via-[#0c0f0c] to-[#0c0f0c]" />
         <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <Link
-            href={HUB_ORGANISE_HUB_HREF}
+            href={hubPlaySportHref("golf")}
             className="mb-5 block w-fit text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            ← Organise
+            ← Play
           </Link>
           <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
             <Flag className="h-3.5 w-3.5" aria-hidden />
