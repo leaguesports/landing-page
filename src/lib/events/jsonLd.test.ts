@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildEventJsonLd,
+  detectStadiumNameFromText,
   eventJsonLdPlaces,
   findEventJsonLdNode,
 } from "./jsonLd.ts";
@@ -24,7 +25,7 @@ const FAQS = [
 ];
 
 describe("buildEventJsonLd", () => {
-  it("emits SportsEvent + BreadcrumbList and omits fake location", () => {
+  it("emits SportsEvent with required Event fields and no fake coordinates", () => {
     const jsonLd = buildEventJsonLd({
       title: "Springboks vs All Blacks",
       slug: "springboks-vs-all-blacks-2026-09-06",
@@ -48,9 +49,18 @@ describe("buildEventJsonLd", () => {
     );
     assert.equal(event?.startDate, "2026-09-06T16:00:00.000Z");
     assert.equal(event?.sport, "Rugby");
+    assert.equal(event?.eventStatus, "https://schema.org/EventScheduled");
+    assert.equal(event?.organizer?.name, "LeagueSports");
+    assert.equal(event?.organizer?.url, "https://leaguesports.co.za");
     assert.equal(event?.superEvent?.name, "Rugby Championship");
+    assert.equal(event?.superEvent?.startDate, event?.startDate);
     assert.equal(event?.competitor?.length, 2);
-    assert.equal(event?.location, undefined);
+    assert.equal(event?.performer?.length, 2);
+    const location = event?.location;
+    assert.ok(location && !Array.isArray(location));
+    assert.equal(location.name, "South Africa");
+    assert.equal(location.address?.addressCountry, "ZA");
+    assert.deepEqual(event?.superEvent?.location, location);
     assert.equal(
       JSON.stringify(event ?? {}).includes("GeoCoordinates"),
       false,
@@ -58,6 +68,33 @@ describe("buildEventJsonLd", () => {
     assert.equal(crumbs?.itemListElement[1]?.name, "Events");
     assert.equal(crumbs?.itemListElement[2]?.item, event?.url);
     assert.equal(faq, undefined);
+  });
+
+  it("uses Ellis Park / Joburg from watch-guide copy when CMS hostVenue is empty", () => {
+    const jsonLd = buildEventJsonLd({
+      title: "Springboks vs All Blacks 2026 - Where to Watch in Joburg",
+      slug: "springboks-vs-all-blacks-2026-09-13",
+      description:
+        "Springboks host the All Blacks in Johannesburg. Kickoff details, Ellis Park context, and how to find Joburg bars screening the Rugby Championship Test on LeagueSports.",
+      localAngle:
+        "Johannesburg owns this rivalry when the Boks host at Ellis Park. Northern-suburbs pubs fill early.",
+      faqs: FAQS,
+      startsAt: "2026-09-13T15:00:00.000Z",
+      sportName: "Rugby",
+      competition: "The Rugby Championship",
+      teams: [{ name: "Springboks" }, { name: "All Blacks" }],
+    });
+
+    const event = findEventJsonLdNode(jsonLd, "SportsEvent");
+    const location = event?.location;
+    assert.ok(location && !Array.isArray(location));
+    assert.equal(location.name, "Ellis Park Stadium");
+    assert.equal(location.address?.addressLocality, "Johannesburg");
+    assert.equal(location.address?.addressCountry, "ZA");
+    assert.equal(location.url, undefined);
+    assert.equal(event?.superEvent?.name, "The Rugby Championship");
+    assert.equal(event?.superEvent?.startDate, "2026-09-13T15:00:00.000Z");
+    assert.deepEqual(event?.superEvent?.location, location);
   });
 
   it("adds FAQPage when FAQs exist and real venues as Place location", () => {
@@ -87,6 +124,7 @@ describe("buildEventJsonLd", () => {
       "https://leaguesports.co.za/venues/ellis-park",
     );
     assert.equal(event.location[0]?.address?.addressLocality, "Johannesburg");
+    assert.equal(event.location[0]?.address?.addressCountry, "ZA");
     assert.equal(
       JSON.stringify(event.location).includes("latitude"),
       false,
@@ -134,6 +172,11 @@ describe("buildEventJsonLd", () => {
     assert.equal(event?.subEvent?.length, 2);
     assert.equal(event?.subEvent?.[0]?.name, "Practice 1");
     assert.equal(event?.subEvent?.[1]?.name, "Race");
+    assert.equal(event?.subEvent?.[0]?.location?.name, "Madring");
+    assert.equal(
+      event?.subEvent?.[0]?.eventStatus,
+      "https://schema.org/EventScheduled",
+    );
     assert.equal(
       event?.image,
       "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png",
@@ -142,7 +185,7 @@ describe("buildEventJsonLd", () => {
 });
 
 describe("eventJsonLdPlaces", () => {
-  it("drops venues without a real name and slug", () => {
+  it("drops venues without a real name and slug, then falls back to country", () => {
     assert.deepEqual(
       eventJsonLdPlaces(
         {
@@ -151,7 +194,25 @@ describe("eventJsonLdPlaces", () => {
         },
         "https://leaguesports.co.za",
       ),
-      [],
+      [
+        {
+          "@type": "Place",
+          name: "South Africa",
+          address: { "@type": "PostalAddress", addressCountry: "ZA" },
+        },
+      ],
     );
+  });
+});
+
+describe("detectStadiumNameFromText", () => {
+  it("recognizes Ellis Park from fixture copy", () => {
+    assert.equal(
+      detectStadiumNameFromText(
+        "This fixture is hosted in Johannesburg at Ellis Park Stadium.",
+      ),
+      "Ellis Park Stadium",
+    );
+    assert.equal(detectStadiumNameFromText("No ground named here"), null);
   });
 });
