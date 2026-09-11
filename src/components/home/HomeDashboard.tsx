@@ -31,9 +31,14 @@ import { redirect } from "next/navigation";
 type HomeDashboardProps = {
   user: AuthUser;
   cookie: string;
+  initialTab?: string | null;
 };
 
-export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
+export async function HomeDashboard({
+  user,
+  cookie,
+  initialTab = null,
+}: HomeDashboardProps) {
   const preferencesPromise = getPreferences({ cookie });
 
   // Start follow I/O immediately; hub generic Sanity reads do not wait on it.
@@ -147,6 +152,7 @@ export async function HomeDashboard({ user, cookie }: HomeDashboardProps) {
       nowIso={new Date().toISOString()}
       initialFollowedSports={preferences.sports}
       initialActiveSport={preferences.activeSport}
+      initialTab={initialTab}
     />
   );
 }

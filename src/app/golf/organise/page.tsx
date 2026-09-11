@@ -6,7 +6,7 @@ import { isGolfVenue, toGolfVenueOption } from "@/lib/golf/venue-options";
 import { rankVenuesByCity } from "@/lib/conversion/deep-links";
 import { venueQueryKey } from "@/lib/scorecard/start-href";
 import { getServerAuthState } from "@/lib/server-auth";
-import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
+import { hubPlaySportHref } from "@/lib/sports/hub-ia";
 import { getVenueBySlug, searchVenues } from "@/services/venues";
 import { cookies } from "next/headers";
 
@@ -65,11 +65,11 @@ export default async function OrganiseGolfPage({
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
           <Link
             href={
-              initialVenue ? `/venues/${initialVenue.slug}` : HUB_ORGANISE_HUB_HREF
+              initialVenue ? `/venues/${initialVenue.slug}` : hubPlaySportHref("golf")
             }
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            {initialVenue ? "← Venue" : "← Organise"}
+            {initialVenue ? "← Venue" : "← Play"}
           </Link>
           {auth.isAuthenticated ? (
             <Link

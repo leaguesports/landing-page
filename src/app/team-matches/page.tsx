@@ -1,5 +1,5 @@
 import { TeamMatchesMine } from "@/components/team-matches/TeamMatchesMine";
-import { HUB_ORGANISE_HUB_HREF } from "@/lib/sports/hub-ia";
+import { HUB_PLAY_HREF } from "@/lib/sports/hub-ia";
 import {
   listMyTeamMatches,
   TEAM_MATCHES_NEW_HREF,
@@ -25,10 +25,10 @@ export default async function TeamMatchesPage() {
         <div className="absolute inset-0 bg-linear-to-br from-emerald-950/40 via-[#0c0f0c] to-[#0c0f0c]" />
         <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <Link
-            href={HUB_ORGANISE_HUB_HREF}
+            href={HUB_PLAY_HREF}
             className="mb-5 block w-fit text-sm text-zinc-400 transition-colors hover:text-white"
           >
-            ← Organise
+            ← Play
           </Link>
           <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
             <Trophy className="h-3.5 w-3.5" aria-hidden />

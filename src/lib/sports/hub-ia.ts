@@ -1,9 +1,9 @@
 /**
- * Signed-in hub information architecture (#145 / #150 / #153 / #155 / #157 / #192).
- * 4-tab bottom nav — one active panel, sport filter modal, page search modal.
- * Play = three verbs (Start / Capture / Organise). Organise opens the hub
- * at `/play/organise`; sport pick for Start / Capture / organise-a-game
- * stays a modal.
+ * Signed-in hub information architecture
+ * (#145 / #150 / #153 / #155 / #157 / #192 / #212).
+ * 4-tab bottom nav — Home / People / You stay in-hub; Play is a route.
+ * Play tab always opens the `/play` sport grid (not a modal, not last-sport).
+ * Sport dashboards live at `/play/[sport]`; Change sport returns to `/play`.
  */
 
 import {
@@ -31,13 +31,22 @@ export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
-/** Organise hub — Play's third verb. Lobby / fixtures / tournaments live here. */
-export const HUB_ORGANISE_HUB_HREF = "/play/organise" as const;
-/** Short alias — redirects to the hub. */
+/** Play tab and Change sport always land on the sport grid. */
+export const HUB_PLAY_TAB_HREF = HUB_PLAY_HREF;
+export const HUB_CHANGE_SPORT_HREF = HUB_PLAY_HREF;
+export const HUB_CHANGE_SPORT_LABEL = "Change sport" as const;
+/**
+ * Former global Organise hub. Redirects to `/play` so the user picks a sport
+ * first; sport-scoped organise lives under `/play/[sport]` and `/{sport}/organise`.
+ */
+export const HUB_ORGANISE_HUB_HREF = HUB_PLAY_HREF;
+/** Short alias — redirects to `/play`. */
 export const HUB_ORGANISE_ALIAS_HREF = "/organise" as const;
 export const HUB_ORGANISE_HUB_TITLE = "Organise" as const;
 export const HUB_ORGANISE_HUB_SUBTITLE =
   "Find players, team fixtures, tournaments." as const;
+/** Profile HI editor — existing You-tab entry. */
+export const HUB_GOLF_HANDICAP_HREF = "/?tab=you" as const;
 export const HUB_LOBBY_HREF = "/lobby" as const;
 export const HUB_WATCH_HREF = "/watch" as const;
 export const HUB_GUIDES_HREF = "/guides" as const;
@@ -73,14 +82,15 @@ export type HubTabId = (typeof HUB_TAB_IDS)[number];
 
 export const HUB_DEFAULT_TAB: HubTabId = "home";
 
-export const HUB_TABS: { id: HubTabId; label: string }[] = [
+export const HUB_TABS: { id: HubTabId; label: string; href?: string }[] = [
   { id: "home", label: "Home" },
-  { id: "play", label: "Play" },
+  { id: "play", label: "Play", href: HUB_PLAY_TAB_HREF },
   { id: "people", label: "People" },
   { id: "you", label: "You" },
 ];
 
-export const HUB_SPORT_SCOPED_TABS: HubTabId[] = ["home", "play"];
+/** Sport dropdown stays on Home only — Play is a dedicated route now. */
+export const HUB_SPORT_SCOPED_TABS: HubTabId[] = ["home"];
 
 export const HUB_START_ACTION_TABS: HubTabId[] = ["play"];
 
@@ -106,20 +116,18 @@ export type HubPlayVerbOption = {
   label: string;
   description: string;
   /**
-   * When set, Play navigates here instead of opening the sport modal.
-   * Organise is the hub; Start / Capture still pick a sport first.
+   * Optional direct href. Play tab never uses these — sport is picked
+   * on `/play`, then the sport dashboard lists Start / Capture / Organise.
    */
   href?: string;
 };
 
 /**
- * Play verbs first — sport pick is a modal, not inline game blocks.
- * Quick start is a separate location → venue + sport + friends entry
- * (`HUB_QUICK_START_HREF`), not a fourth verb.
- * Organise is a hub (`HUB_ORGANISE_HUB_HREF`), not a fourth Play entry
- * for Lobby / Team matches / Tournaments.
+ * Play tab is a full page (`/play` grid), not a modal and not last-sport skip.
+ * Quick start stays a separate location → venue + sport + friends entry
+ * (`HUB_QUICK_START_HREF`). Organise is sport-scoped on `/play/[sport]`.
  */
-export const HUB_PLAY_SPORT_PICK = "modal" as const;
+export const HUB_PLAY_SPORT_PICK = "page" as const;
 
 export const HUB_PLAY_VERBS: readonly HubPlayVerbOption[] = [
   {
@@ -154,8 +162,39 @@ export type HubOrganiseRow = {
   id: HubOrganiseRowId;
   title: string;
   description: string;
-  /** Destination page. `null` opens the organise-a-game sport modal. */
+  /** Destination page. Sport-scoped organise-a-game hrefs come from `hubPlayOrganiseHref`. */
   href: string | null;
+};
+
+export const HUB_PLAY_DASHBOARD_ACTION_IDS = [
+  "start",
+  "capture",
+  "organise",
+  "lobby",
+  "team-matches",
+  "tournaments",
+  "golf-tours",
+  "handicap",
+] as const;
+
+export type HubPlayDashboardActionId =
+  (typeof HUB_PLAY_DASHBOARD_ACTION_IDS)[number];
+
+export type HubPlayDashboardGroup = "play" | "with-others" | "golf";
+
+export type HubPlayDashboardAction = {
+  id: HubPlayDashboardActionId;
+  title: string;
+  description: string;
+  href: string;
+  group: HubPlayDashboardGroup;
+};
+
+export type HubPlayGridItem = {
+  slug: string;
+  name: string;
+  href: string;
+  description: string;
 };
 
 export const HUB_ORGANISE_ROWS: readonly HubOrganiseRow[] = [
@@ -288,6 +327,144 @@ export function isHubTabId(value: string): value is HubTabId {
   return (HUB_TAB_IDS as readonly string[]).includes(value);
 }
 
+/** Play tab always opens the sport grid — never last-sport or a modal. */
+export function hubPlayTabHref(): string {
+  return HUB_PLAY_TAB_HREF;
+}
+
+export function hubPlayTabOpensModal(): boolean {
+  return false;
+}
+
+export function hubTabHref(id: HubTabId): string {
+  if (id === "play") return HUB_PLAY_TAB_HREF;
+  if (id === "home") return "/";
+  return `/?tab=${id}`;
+}
+
+/** Ignore `?tab=play` — Play is a route, not an in-hub panel. */
+export function parseHubTabParam(value: string | null | undefined): HubTabId {
+  const trimmed = value?.trim().toLowerCase() ?? "";
+  if (trimmed === "play" || !isHubTabId(trimmed)) return HUB_DEFAULT_TAB;
+  return trimmed;
+}
+
+export function hubChangeSportHref(): string {
+  return HUB_CHANGE_SPORT_HREF;
+}
+
+export function hubPlaySportHref(slug: string): string {
+  const trimmed = slug.trim().toLowerCase();
+  return trimmed ? `${HUB_PLAY_HREF}/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
+}
+
+export function isHubPlayDashboardSport(slug: string): boolean {
+  return hubPlayStartHref(slug) !== null;
+}
+
+export function hubPlayGridSports(
+  sports: readonly SportDefinition[],
+): SportDefinition[] {
+  return hubPlayableSports(sports);
+}
+
+export function hubPlayGridItems(
+  sports: readonly SportDefinition[],
+): HubPlayGridItem[] {
+  return hubPlayGridSports(sports).map((sport) => ({
+    slug: sport.slug,
+    name: sport.name,
+    href: hubPlaySportHref(sport.slug),
+    description:
+      HUB_PLAY_START_BY_SLUG[sport.slug]?.description ??
+      `Play ${sport.name.toLowerCase()}.`,
+  }));
+}
+
+export function hubLobbyHrefForSport(slug: string): string {
+  const trimmed = slug.trim().toLowerCase();
+  return trimmed
+    ? `${HUB_LOBBY_HREF}?sport=${encodeURIComponent(trimmed)}`
+    : HUB_LOBBY_HREF;
+}
+
+export function hubPlayDashboardActions(
+  slug: string,
+): HubPlayDashboardAction[] {
+  const actions: HubPlayDashboardAction[] = [];
+  const start = HUB_PLAY_START_BY_SLUG[slug];
+  if (start) {
+    actions.push({
+      id: "start",
+      title: start.label,
+      description: start.description,
+      href: start.href,
+      group: "play",
+    });
+  }
+  const capture = HUB_PLAY_CAPTURE_BY_SLUG[slug];
+  if (capture) {
+    actions.push({
+      id: "capture",
+      title: capture.label,
+      description: capture.description,
+      href: capture.href,
+      group: "play",
+    });
+  }
+  const organise = HUB_PLAY_ORGANISE_BY_SLUG[slug];
+  if (organise) {
+    actions.push({
+      id: "organise",
+      title: "Organise a game",
+      description: organise.description,
+      href: organise.href,
+      group: "with-others",
+    });
+  }
+  if (isHubPlayDashboardSport(slug)) {
+    actions.push({
+      id: "lobby",
+      title: "Lobby",
+      description: "Looking for a game, open games, and proposes.",
+      href: hubLobbyHrefForSport(slug),
+      group: "with-others",
+    });
+    actions.push({
+      id: "team-matches",
+      title: "Team matches",
+      description: "Challenge another squad and start a live scorecard.",
+      href: HUB_TEAM_MATCHES_HREF,
+      group: "with-others",
+    });
+    actions.push({
+      id: "tournaments",
+      title: "Tournaments",
+      description: "Run a single-elim draw and start fixtures as team matches.",
+      href: HUB_TOURNAMENTS_HREF,
+      group: "with-others",
+    });
+  }
+  if (slug === "golf") {
+    actions.push({
+      id: "golf-tours",
+      title: "Golf tours",
+      description:
+        "Multi-day camp events across courses, with fourballs and a leaderboard.",
+      href: HUB_GOLF_TOURS_HREF,
+      group: "golf",
+    });
+    actions.push({
+      id: "handicap",
+      title: "Handicap",
+      description: "Profile handicap index for net scoring.",
+      href: HUB_GOLF_HANDICAP_HREF,
+      group: "golf",
+    });
+  }
+  return actions;
+}
+
 export function hubShowsSportControl(tab: HubTabId): boolean {
   return HUB_SPORT_SCOPED_TABS.includes(tab);
 }
@@ -385,8 +562,8 @@ export function hubPlayVerbHref(verb: HubPlayVerbOption): string | null {
   return verb.href ?? null;
 }
 
-export function hubPlayVerbOpensModal(verb: HubPlayVerbOption): boolean {
-  return !verb.href;
+export function hubPlayVerbOpensModal(_verb: HubPlayVerbOption): boolean {
+  return false;
 }
 
 export function pendingLobbyProposalCount(
