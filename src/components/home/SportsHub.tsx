@@ -603,7 +603,7 @@ export function SportsHub({
   followedFixtures = [],
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
-  organisedGames: _organisedGames = undefined,
+  organisedGames: _organisedGames,
   myCommunities = [],
   myTeams = emptyTeamsSnapshot(),
   integrations = emptyIntegrationsSnapshot(),
