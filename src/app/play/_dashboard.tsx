@@ -16,7 +16,7 @@ export function playDashboardMetadata(slug: string): Metadata {
   };
 }
 
-export async function PlayDashboardPage({ slug }: { slug: string }) {
+export function PlayDashboardPage({ slug }: { slug: string }) {
   if (!isHubPlayDashboardSport(slug)) notFound();
   const sport = SPORT_CATALOG.find((item) => item.slug === slug);
   if (!sport) notFound();
