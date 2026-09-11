@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import HeaderSessionControls from "@/components/HeaderSessionControls";
 
 export default function Navigation() {
@@ -14,12 +14,9 @@ export default function Navigation() {
             href="/"
             className="inline-flex items-center gap-2 font-display text-2xl tracking-wide text-white sm:gap-2.5 sm:text-[1.75rem]"
           >
-            <Image
-              src="/logo.png"
-              alt=""
-              width={40}
-              height={40}
+            <BrandMark
               className="h-9 w-9 shrink-0 sm:h-10 sm:w-10"
+              size={40}
               priority
             />
             <span>

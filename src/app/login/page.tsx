@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandMark } from "@/components/BrandMark";
 import { getGoogleSignInUrl } from "@/lib/api-client";
 import { isApiConfigured } from "@/lib/api-origin";
 import { stashAuthReturnTo } from "@/lib/auth-return-to";
@@ -78,7 +79,12 @@ function LoginForm() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-300/50 to-transparent" />
 
         <div className="animate-rise text-center">
-          <p className="font-display text-[clamp(2.5rem,10vw,3.25rem)] leading-none tracking-wide text-white">
+          <BrandMark
+            className="mx-auto h-16 w-16 sm:h-20 sm:w-20"
+            size={80}
+            priority
+          />
+          <p className="mt-4 font-display text-[clamp(2.5rem,10vw,3.25rem)] leading-none tracking-wide text-white">
             LEAGUE
             <span className="text-[var(--color-brand)]">SPORTS</span>
           </p>
