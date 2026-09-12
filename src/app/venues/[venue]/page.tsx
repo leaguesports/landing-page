@@ -26,6 +26,8 @@ import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueFollowButton } from "./_components/VenueFollowButton";
+import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
+import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
 import { VenueMatchHistory } from "./_components/VenueMatchHistory";
 import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
 import { VenueMap } from "./_components/VenueMap";
@@ -123,6 +125,7 @@ const BASE_NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "This weekend", href: "#weekend" },
   { label: "Match history", href: "#match-history" },
+  { label: "Leaderboards", href: "#leaderboards" },
   { label: "Sports", href: "#sports" },
   { label: "Amenities", href: "#amenities" },
   { label: "Location", href: "#location" },
@@ -133,7 +136,10 @@ function venueNavLinks(hasQuickStart: boolean) {
   return [{ label: "Quick start", href: "#quick-start" }, ...BASE_NAV_LINKS];
 }
 
-type Props = { params: Promise<{ venue: string }> };
+type Props = {
+  params: Promise<{ venue: string }>;
+  searchParams: Promise<{ board?: string | string[]; window?: string | string[] }>;
+};
 
 function getBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -269,8 +275,13 @@ function SectionHeader({
   );
 }
 
-export default async function VenuePage({ params }: Props) {
+export default async function VenuePage({ params, searchParams }: Props) {
   const { venue: venueSlug } = await params;
+  const query = await searchParams;
+  const initialBoard = Array.isArray(query.board) ? query.board[0] : query.board;
+  const initialWindow = Array.isArray(query.window)
+    ? query.window[0]
+    : query.window;
   const venue = await getVenueBySlug(venueSlug);
   if (!venue) {
     return (
@@ -471,6 +482,15 @@ export default async function VenuePage({ params }: Props) {
           venueName={venue.name}
           venueCmsId={venue._id}
           startHref={primaryQuickStart?.href}
+        />
+
+        <VenueLeaderboardSection
+          venueId={venue._id}
+          venueName={venue.name}
+          playHref={venueLeaderboardPlayHref(primaryQuickStart?.sportSlug)}
+          sport={primaryQuickStart?.sportSlug ?? null}
+          initialBoard={initialBoard}
+          initialWindow={initialWindow}
         />
 
         {/* About */}
