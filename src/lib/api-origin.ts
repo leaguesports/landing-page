@@ -225,6 +225,7 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/venues/:cmsId/golf-rounds",
   "/api/venues/:cmsId/darts",
   "/api/venues/:cmsId/follow",
+  "/api/venues/:cmsId/leaderboards",
   "/api/fixtures/:slug/follow",
   "/api/venues/:cmsId",
   "/api/pools",

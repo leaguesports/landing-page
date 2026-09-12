@@ -90,6 +90,10 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/golf-rounds"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-pub/darts"), true);
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
+    assert.equal(
+      shouldProxyApiPath("/api/venues/sanity-court/leaderboards"),
+      true,
+    );
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/communities"), true);
@@ -680,6 +684,14 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/follow`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/leaderboards`,
         ),
         true,
       );

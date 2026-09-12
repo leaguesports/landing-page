@@ -6,6 +6,8 @@ export type UserPreferences = {
   activeSport: string | null;
   onboardingCompletedAt: string | null;
   onboardingSkippedAt: string | null;
+  /** Default true — opt out of venue boards with `false`. */
+  appearOnVenueLeaderboards: boolean;
 };
 
 export type UpdatePreferencesInput = {
@@ -13,6 +15,7 @@ export type UpdatePreferencesInput = {
   activeSport?: string | null;
   completeOnboarding?: boolean;
   skipOnboarding?: boolean;
+  appearOnVenueLeaderboards?: boolean;
 };
 
 export type PreferencesDeps = {
@@ -59,6 +62,7 @@ function parsePreferences(body: unknown): UserPreferences | null {
       typeof row.onboardingSkippedAt === "string"
         ? row.onboardingSkippedAt
         : null,
+    appearOnVenueLeaderboards: row.appearOnVenueLeaderboards !== false,
   };
 }
 
@@ -68,6 +72,7 @@ export function emptyPreferences(): UserPreferences {
     activeSport: null,
     onboardingCompletedAt: null,
     onboardingSkippedAt: null,
+    appearOnVenueLeaderboards: true,
   };
 }
 

@@ -8,7 +8,12 @@ import type { PageType } from "@/lib/analytics/track";
 import { X } from "lucide-react";
 import { useEffect, useId } from "react";
 
-export type SoftWallReason = "save_history" | "join_team" | "organise" | "lobby";
+export type SoftWallReason =
+  | "save_history"
+  | "join_team"
+  | "organise"
+  | "lobby"
+  | "venue_leaderboards";
 
 export type SoftWallState = {
   reason: SoftWallReason;
@@ -55,6 +60,10 @@ const COPY: Record<SoftWallReason, { title: string; body: string }> = {
   lobby: {
     title: "Save to your account",
     body: "Looking and posting an open game need an account so players can find you. Keep browsing the lobby as a guest.",
+  },
+  venue_leaderboards: {
+    title: "Save to your account",
+    body: "Venue leaderboards need a signed-in session. Keep browsing as a guest.",
   },
 };
 

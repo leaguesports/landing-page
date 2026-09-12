@@ -9,6 +9,7 @@ import { TeamsPanel } from "@/components/home/TeamsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHandicapIndexField } from "@/components/golf/GolfHandicapIndexField";
+import { VenueLeaderboardPreference } from "@/components/venue-leaderboards/VenueLeaderboardPreference";
 import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
 import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import type { AuthUser } from "@/lib/api-client";
@@ -920,6 +921,10 @@ export function SportsHub({
 
                   <div className="mb-8">
                     <GolfHandicapIndexField />
+                  </div>
+
+                  <div className="mb-8">
+                    <VenueLeaderboardPreference />
                   </div>
 
                   <div className="mb-8">
