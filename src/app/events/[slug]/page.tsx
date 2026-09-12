@@ -22,6 +22,7 @@ import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { buildFixtureWhatsAppShare } from "@/lib/events/whatsapp-share";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import {
+  eventRaceReplaySlug,
   findOpenF1RaceSession,
   getOpenF1WeekendByEventSlug,
   getOpenF1WeekendForFixture,
@@ -150,9 +151,14 @@ export default async function EventFixturePage({ params }: PageProps) {
     : null;
   const race = weekend ? findOpenF1RaceSession(weekend.sessions) : null;
   const replay = weekend ? replayConfigFromWeekend(weekend) : null;
-  const replayEventSlug =
-    weekend?.meeting.eventSlug ?? (isOpenF1EventSlug(slug) ? slug : null);
-  const replayHref = replay || replayEventSlug ? `/events/${fixture.slug}/replay` : null;
+  const replayEventSlug = eventRaceReplaySlug({
+    slug: fixture.slug,
+    fixture,
+    weekendEventSlug: weekend?.meeting.eventSlug,
+  });
+  const replayHref = replayEventSlug
+    ? `/events/${fixture.slug}/replay`
+    : null;
   const kickoff = race?.dateStart ?? fixture.startsAt;
   const when = formatFixtureWhen(kickoff);
   const sport = sportDisplayName(fixture.sportSlug);
@@ -323,7 +329,7 @@ export default async function EventFixturePage({ params }: PageProps) {
                   Weekend timetable
                 </Link>
               ) : null}
-              {replay || replayEventSlug ? (
+              {replayEventSlug ? (
                 <Link
                   href="#race-replay"
                   className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
@@ -372,10 +378,10 @@ export default async function EventFixturePage({ params }: PageProps) {
         />
       ) : null}
 
-      {replay || replayEventSlug ? (
+      {replayEventSlug ? (
         <RaceReplaySection
           sessionKey={replay?.sessionKey}
-          eventSlug={replayEventSlug ?? fixture.slug}
+          eventSlug={replayEventSlug}
           title={`${weekend?.meeting.meetingName ?? fixture.title} replay`}
           replayHref={replayHref}
         />
