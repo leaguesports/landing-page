@@ -48,7 +48,6 @@ import {
 } from "@/lib/sports/catalog";
 import {
   HUB_DARTS_HISTORY_HREF,
-  HUB_FOR_YOU_EMPTY_CTAS,
   HUB_GOLF_HISTORY_HREF,
   HUB_INTEGRATIONS_HREF,
   HUB_PADEL_HISTORY_HREF,
@@ -57,6 +56,8 @@ import {
   HUB_RECENT_LOCK_LIMIT,
   HUB_TRAINING_HREF,
   hubConnectedCount,
+  hubEventsHref,
+  hubForYouEmptyCtas,
   hubSearchHref,
   hubShowsSportControl,
   parseHubTabParam,
@@ -824,7 +825,7 @@ export function SportsHub({
                   Games you follow will show here when kickoff details are
                   available.{" "}
                   <Link
-                    href="/events"
+                    href={hubEventsHref(active)}
                     className="font-medium text-emerald-300 hover:text-emerald-200"
                   >
                     Browse fixtures
@@ -870,7 +871,7 @@ export function SportsHub({
                       : "Follow sports in onboarding or the sport menu, or follow a fixture on Events — matching games land here."}
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
-                    {HUB_FOR_YOU_EMPTY_CTAS.map((cta, index) => (
+                    {hubForYouEmptyCtas(active).map((cta, index) => (
                       <Link
                         key={cta.href}
                         href={cta.href}

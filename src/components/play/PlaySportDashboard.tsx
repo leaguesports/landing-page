@@ -3,6 +3,7 @@ import type { SportDefinition } from "@/lib/sports/catalog";
 import {
   HUB_CHANGE_SPORT_LABEL,
   hubChangeSportHref,
+  hubEventsHref,
   hubPlayDashboardActions,
   type HubPlayDashboardAction,
 } from "@/lib/sports/hub-ia";
@@ -92,12 +93,20 @@ export function PlaySportDashboard({ sport }: PlaySportDashboardProps) {
         Start, capture, or play {sport.name.toLowerCase()} with others.
       </p>
 
-      <Link
-        href={hubChangeSportHref()}
-        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/5"
-      >
-        {HUB_CHANGE_SPORT_LABEL}
-      </Link>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href={hubChangeSportHref()}
+          className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/5"
+        >
+          {HUB_CHANGE_SPORT_LABEL}
+        </Link>
+        <Link
+          href={hubEventsHref(sport.slug)}
+          className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/5"
+        >
+          Upcoming fixtures
+        </Link>
+      </div>
 
       {play.length > 0 ? (
         <ActionGroup title="Play">

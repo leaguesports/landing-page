@@ -1,3 +1,4 @@
+import { discoverEventsHref } from "@/lib/events/scope";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
 import Link from "next/link";
@@ -72,7 +73,7 @@ export function IntentHub({
           </Link>
           {isWatch ? (
             <Link
-              href="/events"
+              href={discoverEventsHref(activitySlug)}
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
             >
               Upcoming fixtures
