@@ -203,6 +203,27 @@ export function isOpenF1EnrichableFixture(fixture: {
   return Boolean(fixture.eventPageHref?.startsWith("/motorsport/f1/"));
 }
 
+/**
+ * OpenF1 GP slugs look like `name-YYYY-MM-DD`. CMS rugby fixtures use the
+ * same shape (`springboks-vs-all-blacks-2026-09-13`), so slug-shape alone
+ * must not mount a race replay. Known fixtures need an F1 series (or an
+ * `/motorsport/f1/` event page). Slug-only GPs without a CMS fixture stay
+ * eligible so `/events/:gp/replay` still works.
+ */
+export function eventRaceReplaySlug(input: {
+  slug: string;
+  fixture?: {
+    series?: string | null;
+    eventPageHref?: string | null;
+  } | null;
+  weekendEventSlug?: string | null;
+}): string | null {
+  if (input.fixture && !isOpenF1EnrichableFixture(input.fixture)) return null;
+  const fromWeekend = input.weekendEventSlug?.trim();
+  if (fromWeekend) return fromWeekend;
+  return isOpenF1EventSlug(input.slug) ? input.slug : null;
+}
+
 export function openF1EventSlugForFixture(fixture: {
   slug: string;
   title: string;

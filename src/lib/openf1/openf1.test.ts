@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  eventRaceReplaySlug,
   findOpenF1RaceSession,
   formatOpenF1SessionWhen,
   getOpenF1WeekendByEventSlugWith,
@@ -170,6 +171,59 @@ describe("isOpenF1EnrichableFixture", () => {
         eventPageHref: "/watch/rugby",
       }),
       false,
+    );
+  });
+});
+
+describe("eventRaceReplaySlug", () => {
+  it("does not treat dated rugby CMS slugs as F1 race replays", () => {
+    assert.equal(isOpenF1EventSlug("springboks-vs-all-blacks-2026-09-13"), true);
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "springboks-vs-all-blacks-2026-09-13",
+        fixture: { series: "springboks", eventPageHref: "/watch/rugby" },
+      }),
+      null,
+    );
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "springboks-vs-all-blacks-2026-09-13",
+        fixture: { series: "rugby", eventPageHref: null },
+        weekendEventSlug: "spanish-grand-prix-2026-09-13",
+      }),
+      null,
+    );
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "springboks-vs-all-blacks-2026-09-13",
+        fixture: { series: null, eventPageHref: null },
+      }),
+      null,
+    );
+  });
+
+  it("keeps F1 fixtures and slug-only GP pages eligible", () => {
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "spanish-grand-prix-2026-09-13",
+        fixture: { series: "f1", eventPageHref: null },
+        weekendEventSlug: "spanish-grand-prix-2026-09-13",
+      }),
+      "spanish-grand-prix-2026-09-13",
+    );
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "spanish-grand-prix-2026-09-13",
+        fixture: { series: "formula-1", eventPageHref: "/motorsport/f1/spanish-grand-prix" },
+      }),
+      "spanish-grand-prix-2026-09-13",
+    );
+    assert.equal(
+      eventRaceReplaySlug({
+        slug: "spanish-grand-prix-2026-09-13",
+        fixture: null,
+      }),
+      "spanish-grand-prix-2026-09-13",
     );
   });
 });

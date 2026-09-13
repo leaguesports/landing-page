@@ -1,6 +1,7 @@
 import { RaceReplay } from "@/components/f1-replay/RaceReplay";
 import { RaceReplayCatalog } from "@/components/f1-replay/RaceReplayCatalog";
 import {
+  eventRaceReplaySlug,
   getOpenF1WeekendByEventSlug,
   isOpenF1EventSlug,
 } from "@/lib/openf1/openf1";
@@ -24,6 +25,8 @@ type PageProps = {
 type FixtureLite = {
   slug: string;
   title: string;
+  series?: string | null;
+  eventPageHref?: string | null;
 };
 
 async function loadFixtureLite(slug: string): Promise<FixtureLite | null> {
@@ -31,7 +34,12 @@ async function loadFixtureLite(slug: string): Promise<FixtureLite | null> {
     const { getFixtureBySlug } = await import("@/services/events");
     const fixture = await getFixtureBySlug(slug);
     if (!fixture) return null;
-    return { slug: fixture.slug, title: fixture.title };
+    return {
+      slug: fixture.slug,
+      title: fixture.title,
+      series: fixture.series,
+      eventPageHref: fixture.eventPageHref,
+    };
   } catch {
     return null;
   }
@@ -41,10 +49,19 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const weekend = isOpenF1EventSlug(slug)
+  const fixture = await loadFixtureLite(slug);
+  const canResolveBySlug = Boolean(
+    eventRaceReplaySlug({ slug, fixture }) && isOpenF1EventSlug(slug),
+  );
+  const weekend = canResolveBySlug
     ? await getOpenF1WeekendByEventSlug(slug)
     : null;
-  const fixture = await loadFixtureLite(slug);
+  const replayEventSlug = eventRaceReplaySlug({
+    slug,
+    fixture,
+    weekendEventSlug: weekend?.meeting.eventSlug,
+  });
+  if (!replayEventSlug) notFound();
   const titleBase = weekend?.meeting.meetingName ?? fixture?.title ?? "F1";
   const title = `${titleBase} race replay`;
   const description = `Watch a 3D replay of ${titleBase} with live order, flags, and GPS car positions.`;
@@ -65,15 +82,21 @@ export async function generateMetadata({
 
 export default async function EventReplayPage({ params }: PageProps) {
   const { slug } = await params;
-  const canResolveBySlug = isOpenF1EventSlug(slug);
+  const fixture = await loadFixtureLite(slug);
+  const canResolveBySlug = Boolean(
+    eventRaceReplaySlug({ slug, fixture }) && isOpenF1EventSlug(slug),
+  );
   const weekend = canResolveBySlug
     ? await getOpenF1WeekendByEventSlug(slug)
     : null;
-  const fixture = await loadFixtureLite(slug);
   const replay = weekend ? replayConfigFromWeekend(weekend) : null;
+  const replayEventSlug = eventRaceReplaySlug({
+    slug,
+    fixture,
+    weekendEventSlug: weekend?.meeting.eventSlug,
+  });
 
-  if (!replay && !canResolveBySlug && !fixture) notFound();
-  if (!replay && !canResolveBySlug) notFound();
+  if (!replayEventSlug) notFound();
 
   const backHref = fixture ? `/events/${fixture.slug}` : `/events/${slug}`;
   const heading =
@@ -103,16 +126,14 @@ export default async function EventReplayPage({ params }: PageProps) {
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <RaceReplay
           sessionKey={replay?.sessionKey}
-          eventSlug={canResolveBySlug ? slug : weekend?.meeting.eventSlug}
+          eventSlug={replayEventSlug}
           variant="page"
         />
         <div className="mt-12">
           <RaceReplayCatalog
             races={races}
             year={catalogYear}
-            currentEventSlug={
-              weekend?.meeting.eventSlug ?? (canResolveBySlug ? slug : null)
-            }
+            currentEventSlug={replayEventSlug}
             currentMeetingKey={weekend?.meeting.meetingKey}
             variant="compact"
             heading={`${catalogYear} races`}
