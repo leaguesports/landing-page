@@ -196,6 +196,8 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim/extra"), false);
+    assert.equal(shouldProxyApiPath("/api/venues/search"), false);
+    assert.equal(shouldProxyApiPath("/api/venues/search/extra"), false);
     assert.equal(shouldProxyApiPath("/api/fixtures/spanish-gp/feed"), false);
     assert.equal(shouldProxyApiPath("/api/fixtures/spanish-gp/live"), false);
     assert.equal(shouldProxyApiPath("/api/f1-replay"), false);
@@ -220,6 +222,7 @@ describe("shouldProxyApiPath", () => {
 
   it("does not treat a venues-claim prefix as the local claim route", () => {
     assert.equal(shouldProxyApiPath("/api/venues/claimant"), true);
+    assert.equal(shouldProxyApiPath("/api/venues/searching"), true);
   });
 });
 
@@ -409,7 +412,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -430,7 +433,7 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
         assert.equal(
