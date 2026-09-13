@@ -103,6 +103,8 @@ import {
   isHubTabId,
   takeHubPreview,
   hubConnectedCount,
+  hubEventsHref,
+  hubForYouEmptyCtas,
 } from "./hub-ia.ts";
 import { SPORT_CATALOG } from "./catalog.ts";
 
@@ -201,6 +203,11 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
       HUB_FOR_YOU_EMPTY_CTAS.map((cta) => cta.label).join(" "),
       /tools|discover/i,
     );
+    assert.equal(hubEventsHref("rugby"), "/events?sport=rugby");
+    assert.equal(hubEventsHref("padel"), "/events?sport=padel");
+    assert.equal(hubEventsHref("all"), "/events");
+    assert.equal(hubForYouEmptyCtas("rugby")[0]?.href, "/events?sport=rugby");
+    assert.equal(hubForYouEmptyCtas("all")[0]?.href, "/events");
   });
 
   it("filters Play to catalog sports that support play and have a start href", () => {

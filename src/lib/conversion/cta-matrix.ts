@@ -1,4 +1,6 @@
+import { eventsListHref, parseEventsSportParam } from "../events/scope.ts";
 import { intentOrDirectoryHref, intentPath } from "../intent/paths.ts";
+import { parseEventsCityParam } from "../sports/events-city.ts";
 import { padelNewHref, golfNewHref, dartsNewHref } from "../venues/quick-start.ts";
 import type { CtaSlot, PageType } from "../analytics/track.ts";
 
@@ -210,11 +212,13 @@ function watchPrimary(input: CtaMatrixInput): ConversionCta {
 }
 
 function watchSecondary(input: CtaMatrixInput): ConversionCta {
-  const city = input.city?.trim();
   return {
     id: "browse_fixtures",
     label: "Browse fixtures",
-    href: city ? `/events?city=${encodeURIComponent(city)}` : "/events",
+    href: eventsListHref({
+      sport: parseEventsSportParam(input.sport),
+      city: parseEventsCityParam(input.city),
+    }),
   };
 }
 
@@ -245,17 +249,17 @@ function guideSecondary(input: CtaMatrixInput): ConversionCta {
 
 function eventPrimary(input: CtaMatrixInput): ConversionCta {
   const count = input.venueCount ?? 0;
-  if (count > 0) {
-    return {
-      id: "find_screening",
-      label: "Find venues screening",
-      href: "#where-to-watch",
-    };
-  }
   return {
-    id: "im_watching",
-    label: "I'm watching",
-    href: "#live-feed",
+    id: "find_watch",
+    label: "Find where to watch",
+    href:
+      count > 0
+        ? "#where-to-watch"
+        : findVenuesHref({
+            intent: "watch",
+            sport: input.sport,
+            city: input.city,
+          }),
   };
 }
 
@@ -284,7 +288,7 @@ function venuePrimary(input: CtaMatrixInput): ConversionCta {
   return {
     id: "find_fixtures",
     label: "Find fixtures",
-    href: "/events",
+    href: eventsListHref({ sport: parseEventsSportParam(input.sport) }),
   };
 }
 

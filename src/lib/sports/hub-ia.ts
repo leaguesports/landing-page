@@ -6,6 +6,7 @@
  * Sport dashboards live at `/play/[sport]`; Change sport returns to `/play`.
  */
 
+import { hubEventsHref } from "../events/scope.ts";
 import {
   activitySupportsIntent,
   buildIntentActivity,
@@ -15,6 +16,8 @@ import { parseVenueSearch } from "../search/venueSearch.ts";
 import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
 import { HUB_QUICK_START_HREF } from "../play/quick-start.ts";
 import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./hub-redirects.ts";
+
+export { hubEventsHref };
 
 export { HUB_PLAY_DEEP_LINK_REDIRECTS };
 
@@ -100,6 +103,16 @@ export const HUB_FOR_YOU_EMPTY_CTAS = [
   { href: HUB_BROWSE_FIXTURES_HREF, label: "Browse fixtures" },
   { href: HUB_FIND_VENUES_HREF, label: "Find venues" },
 ] as const;
+
+export function hubForYouEmptyCtas(active: string): {
+  href: string;
+  label: string;
+}[] {
+  return [
+    { href: hubEventsHref(active), label: "Browse fixtures" },
+    { href: HUB_FIND_VENUES_HREF, label: "Find venues" },
+  ];
+}
 
 export type HubPlayStartSpec = {
   href: string;

@@ -78,30 +78,52 @@ export function FixtureFaqSection({ faqs }: { faqs: FixtureFaq[] }) {
   );
 }
 
-export function FixtureInternalLinks({ links }: { links: FixtureRelatedLink[] }) {
-  if (links.length === 0) return null;
+export function FixtureInternalLinks({
+  links,
+  heading = "Keep exploring",
+  allEventsHref = null,
+}: {
+  links: FixtureRelatedLink[];
+  heading?: string;
+  allEventsHref?: string | null;
+}) {
+  if (links.length === 0 && !allEventsHref) return null;
 
   return (
     <section className="border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-          Related
-        </p>
-        <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
-          Keep exploring
-        </h2>
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {links.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="flex min-h-11 items-center rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {links.length > 0 ? (
+          <>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              Related
+            </p>
+            <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
+              {heading}
+            </h2>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {links.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="flex min-h-11 items-center rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {allEventsHref ? (
+          <p className={links.length > 0 ? "mt-6" : ""}>
+            <Link
+              href={allEventsHref}
+              className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+            >
+              All events
+            </Link>
+          </p>
+        ) : null}
       </div>
     </section>
   );

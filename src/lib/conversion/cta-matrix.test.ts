@@ -96,7 +96,7 @@ describe("selectCtaMatrix", () => {
     assert.equal(matrix.primary.label, "Find where to watch");
     assert.equal(matrix.primary.href, "#venues");
     assert.equal(matrix.secondary.label, "Browse fixtures");
-    assert.equal(matrix.secondary.href, "/events?city=johannesburg");
+    assert.equal(matrix.secondary.href, "/events?sport=soccer&city=jhb");
     assert.equal(matrix.fallback, "notify_roadmap");
   });
 
@@ -119,23 +119,26 @@ describe("selectCtaMatrix", () => {
     assert.equal(watch.fallback, "notify_roadmap");
   });
 
-  it("uses Find venues screening or I'm watching on events", () => {
+  it("uses Find where to watch on events", () => {
     const withVenues = selectCtaMatrix({
       pageType: "event",
+      sport: "rugby",
       venueCount: 3,
       shareHref: "https://wa.me/?text=hi",
     });
-    assert.equal(withVenues.primary.label, "Find venues screening");
+    assert.equal(withVenues.primary.label, "Find where to watch");
+    assert.equal(withVenues.primary.href, "#where-to-watch");
     assert.equal(withVenues.secondary.label, "Share event");
     assert.equal(withVenues.fallback, "notify");
 
     const empty = selectCtaMatrix({
       pageType: "event",
+      sport: "rugby",
       venueCount: 0,
       shareHref: "https://wa.me/?text=hi",
     });
-    assert.equal(empty.primary.label, "I'm watching");
-    assert.equal(empty.primary.href, "#live-feed");
+    assert.equal(empty.primary.label, "Find where to watch");
+    assert.notEqual(empty.primary.href, "#live-feed");
   });
 
   it("starts a match with venue prefill or finds fixtures on venue pages", () => {
@@ -158,6 +161,7 @@ describe("selectCtaMatrix", () => {
       whatsAppHref: "https://wa.me/27",
     });
     assert.equal(fixtures.primary.label, "Find fixtures");
+    assert.equal(fixtures.primary.href, "/events?sport=soccer");
     assert.equal(fixtures.secondary.label, "Inquire on WhatsApp");
   });
 

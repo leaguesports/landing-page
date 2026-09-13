@@ -16,6 +16,11 @@ import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
 import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
+import {
+  EVENTS_LIST_HREF,
+  eventDetailListHref,
+  eventMoreSportLabel,
+} from "@/lib/events/scope";
 import { fixtureSeoDescription, fixtureSeoTitle } from "@/lib/events/meta";
 import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
@@ -250,7 +255,10 @@ export default async function EventFixturePage({ params }: PageProps) {
               Home
             </Link>
             <span aria-hidden>/</span>
-            <Link href="/events" className="transition-colors hover:text-white">
+            <Link
+              href={eventDetailListHref(fixture.sportSlug)}
+              className="transition-colors hover:text-white"
+            >
               Events
             </Link>
             <span aria-hidden>/</span>
@@ -258,11 +266,11 @@ export default async function EventFixturePage({ params }: PageProps) {
           </nav>
 
           <Link
-            href="/events"
-            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+            href={eventDetailListHref(fixture.sportSlug)}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
-            All events
+            {eventMoreSportLabel(fixture.sportSlug)}
           </Link>
 
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -437,7 +445,11 @@ export default async function EventFixturePage({ params }: PageProps) {
       </section>
 
       <FixtureFaqSection faqs={faqs} />
-      <FixtureInternalLinks links={internalLinks} />
+      <FixtureInternalLinks
+        links={internalLinks}
+        heading={eventMoreSportLabel(fixture.sportSlug)}
+        allEventsHref={fixture.sportSlug ? EVENTS_LIST_HREF : null}
+      />
     </div>
   );
 }

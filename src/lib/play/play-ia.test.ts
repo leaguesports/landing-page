@@ -13,6 +13,7 @@ import {
   hubPlayDashboardActions,
   hubPlayGridItems,
   hubPlayGridSports,
+  hubEventsHref,
   hubPlaySportHref,
   hubPlayTabHref,
   hubPlayTabOpensModal,
@@ -131,5 +132,8 @@ describe("Play sport-first IA (#212)", () => {
       "/golf-tours",
     );
     assert.deepEqual(hubPlayDashboardActions("rugby"), []);
+    assert.equal(hubEventsHref("padel"), "/events?sport=padel");
+    assert.equal(hubEventsHref("golf"), "/events?sport=golf");
+    assert.equal(hubEventsHref("darts"), "/events?sport=darts");
   });
 });
