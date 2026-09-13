@@ -7,11 +7,44 @@ import {
 } from "@/lib/venues/hub";
 import {
   VENUE_IN_LOCATION,
-  VENUE_PROJECTION,
   mapVenueRow,
   type VenueDetail,
   type VenueRow,
 } from "./venueQuery";
+
+/** Card fields only — no Portable Text description, no golfCourse holes/tees. */
+export const VENUE_HUB_CARD_PROJECTION = `
+  _id,
+  name,
+  "slug": slug.current,
+  hero_image,
+  rating,
+  "phone": coalesce(contact.phone, contactInfo.phone, phone),
+  "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp, whatsapp),
+  "website": coalesce(contact.website, contactInfo.website, website),
+  "has_generator_backup": coalesce(amenities.has_generator_backup, has_generator_backup),
+  "has_big_screens": coalesce(amenities.has_big_screens, has_big_screens),
+  "has_live_audio": coalesce(amenities.has_live_audio, has_live_audio),
+  "has_craft_drafts": coalesce(amenities.has_craft_drafts, has_craft_drafts),
+  "has_food_menu": coalesce(amenities.has_food_menu, has_food_menu),
+  "has_outdoor_area": coalesce(amenities.has_outdoor_area, has_outdoor_area),
+  "has_parking": coalesce(amenities.has_parking, has_parking),
+  "address": {
+    "suburb": address.suburb->title,
+    "city": address.city->title
+  },
+  "sports": sports[]-> {
+    _id,
+    name,
+    image,
+    "slug": slug.current
+  },
+  "broadcasts": broadcasts[]-> {
+    _id,
+    name,
+    "slug": slug.current
+  }
+`;
 
 export const VENUE_HUB_SEARCH_QUERY = `*[
   _type == "venue"
@@ -34,7 +67,7 @@ export const VENUE_HUB_RECOMMENDED_QUERY = `*[
   && defined(name)
   && ($location == "" || ${VENUE_IN_LOCATION})
 ] | order(coalesce(rating, 0) desc, name asc) [0...6] {
-  ${VENUE_PROJECTION}
+  ${VENUE_HUB_CARD_PROJECTION}
 }`;
 
 export const VENUE_HUB_CITIES_BY_SLUG_QUERY = `*[

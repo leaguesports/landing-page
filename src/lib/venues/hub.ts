@@ -2,6 +2,7 @@ import { CITY_DIRECTORY } from "../../data/cities.ts";
 import { activityQuerySlugs } from "../intent/activity.ts";
 import { intentPath } from "../intent/paths.ts";
 import { SPORT_CATALOG } from "../sports/catalog.ts";
+import { isHubPlayDashboardSport } from "../sports/hub-ia.ts";
 import { UPCOMING_GRACE_MS, type UpcomingFixture } from "../sports/events-feed.ts";
 
 /** Minimum characters before /venues name search runs. */
@@ -16,8 +17,17 @@ export const VENUE_HUB_ON_NOW_LIMIT = 8;
 /** How far ahead “on now / upcoming” looks. */
 export const VENUE_HUB_ON_NOW_WINDOW_MS = 72 * 60 * 60 * 1000;
 
+/** Fetch cap before sport-filter — hub upcoming list, not the catalog. */
+export const VENUE_HUB_FIXTURE_FETCH_LIMIT = 48;
+
 /** Scannable fixture tiles on the hub. */
 export const VENUE_HUB_EVENT_TILE_LIMIT = 6;
+
+/** Signed-in follow pins on the hub — never the uncapped API list. */
+export const VENUE_HUB_FAVOURITES_LIMIT = 8;
+
+/** City used for play-only dashboard sports so chips stay on SEO landings. */
+export const VENUE_HUB_PLAY_SEO_CITY = "johannesburg";
 
 /** Recommended venues — city heuristic or nationwide popular. */
 export const VENUE_HUB_RECOMMENDED_LIMIT = 6;
@@ -199,9 +209,26 @@ export function favouritesSection(input: {
   return { visible: true, empty: false };
 }
 
+export function capVenueHubFavourites<T>(venues: T[]): T[] {
+  return venues.slice(0, VENUE_HUB_FAVOURITES_LIMIT);
+}
+
+/** True when the request likely has a session — guests skip Railway auth/follows. */
+export function shouldLoadVenueHubSession(cookieHeader: string): boolean {
+  return cookieHeader.trim().length > 0;
+}
+
+function playSportDirectoryHref(slug: string): string {
+  if (isHubPlayDashboardSport(slug)) {
+    return intentPath("play", slug, VENUE_HUB_PLAY_SEO_CITY);
+  }
+  return intentPath("play", slug);
+}
+
 /**
- * Footer directory links — existing SEO Watch / Play / Cities / Sports routes only.
- * Never `/venues` catalog query strings and never an inline venue list.
+ * Footer directory links — crawlable Watch / Play / city / sport SEO routes only.
+ * Never `/venues` catalog query strings, never an inline venue list, and never
+ * noindex Play dashboards (`/play/golf`, `/play/darts`, `/play/padel`).
  */
 export function venueHubDirectoryLinks(): VenueHubDirectoryLink[] {
   const links: VenueHubDirectoryLink[] = [
@@ -228,7 +255,7 @@ export function venueHubDirectoryLinks(): VenueHubDirectoryLink[] {
     }
     if (sport.capabilities.includes("play")) {
       links.push({
-        href: intentPath("play", sport.slug),
+        href: playSportDirectoryHref(sport.slug),
         label: sport.name,
         group: "sports",
       });
@@ -239,5 +266,12 @@ export function venueHubDirectoryLinks(): VenueHubDirectoryLink[] {
 }
 
 export function isVenueHubDirectoryHref(href: string): boolean {
-  return href === "/watch" || href === "/play" || href.startsWith("/watch/") || href.startsWith("/play/");
+  if (href === "/watch" || href === "/play") return true;
+  if (/^\/watch\/[^/]+(?:\/[^/]+)?$/.test(href)) return true;
+  const play = href.match(/^\/play\/([^/]+)(?:\/([^/]+))?$/);
+  if (!play?.[1]) return false;
+  const sport = play[1];
+  const location = play[2];
+  if (isHubPlayDashboardSport(sport) && !location) return false;
+  return true;
 }

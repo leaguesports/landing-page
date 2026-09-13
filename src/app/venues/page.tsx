@@ -1,30 +1,26 @@
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { permanentRedirect } from "next/navigation";
 import { CITY_DIRECTORY } from "@/data/cities";
-import { getServerAuthState } from "@/lib/server-auth";
 import {
   parseVenueSearchParams,
   venueSearchSummary,
 } from "@/lib/search/venueSearch";
 import { intentPath } from "@/lib/intent/paths";
-import { listFollowedVenues } from "@/lib/venues/follow";
 import {
+  VENUE_HUB_FIXTURE_FETCH_LIMIT,
   buildOnNowCards,
   filterHubEventTiles,
   resolveRecommendedCity,
   venueHubDirectoryLinks,
 } from "@/lib/venues/hub";
 import { getUpcomingFixtures } from "@/services/events";
-import {
-  getRecommendedVenues,
-  getVenueCitiesBySlugs,
-} from "@/services/venueHub";
+import { getRecommendedVenues } from "@/services/venueHub";
+import { VenueHubFavouritesSlot } from "./_components/VenueHubFavouritesSlot";
 import { VenueNameSearch } from "./_components/VenueNameSearch";
 import {
   VenueHubDirectories,
   VenueHubEventTiles,
-  VenueHubFavourites,
   VenueHubOnNow,
   VenueHubRecommended,
 } from "./_components/VenueHubSections";
@@ -88,42 +84,18 @@ export default async function VenuesPage({
   const filters = parseVenueSearchParams(await searchParams);
   redirectIntentQueryToSeoPath(filters);
 
-  const cookie = (await cookies()).toString();
-  const fixturesPromise = getUpcomingFixtures({ limit: 12 }).catch(() => []);
-  const authPromise = getServerAuthState();
-
-  const followedPromise = authPromise.then((auth) =>
-    auth.isAuthenticated ? listFollowedVenues({ cookie }) : Promise.resolve([]),
-  );
-  const followedCitiesPromise = followedPromise.then((venues) =>
-    venues.length > 0
-      ? getVenueCitiesBySlugs(venues.map((venue) => venue.slug))
-      : Promise.resolve([]),
-  );
-
-  const recommendedPromise = followedCitiesPromise.then((followedCities) => {
-    const citySlug = resolveRecommendedCity({
-      locationSlug: filters.locationSlug,
-      citySlug: filters.citySlug,
-      followedVenueCities: followedCities,
-    });
-    return getRecommendedVenues({ locationSlug: citySlug });
-  });
-
-  const [fixtures, auth, followed, followedCities, recommended] =
-    await Promise.all([
-      fixturesPromise,
-      authPromise,
-      followedPromise,
-      followedCitiesPromise,
-      recommendedPromise,
-    ]);
-
   const citySlug = resolveRecommendedCity({
     locationSlug: filters.locationSlug,
     citySlug: filters.citySlug,
-    followedVenueCities: followedCities,
   });
+
+  const [fixtures, recommended] = await Promise.all([
+    getUpcomingFixtures({ limit: VENUE_HUB_FIXTURE_FETCH_LIMIT }).catch(
+      () => [],
+    ),
+    getRecommendedVenues({ locationSlug: citySlug }),
+  ]);
+
   const onNow = buildOnNowCards(fixtures);
   const eventTiles = filterHubEventTiles(fixtures, filters.sportSlug);
   const directories = venueHubDirectoryLinks();
@@ -153,14 +125,11 @@ export default async function VenuesPage({
       <VenueHubEventTiles fixtures={eventTiles} sportSlug={filters.sportSlug} />
       <VenueHubRecommended
         venues={recommended}
-        cityLabel={
-          filters.locationLabel ?? cityDisplayName(citySlug)
-        }
+        cityLabel={filters.locationLabel ?? cityDisplayName(citySlug)}
       />
-      <VenueHubFavourites
-        signedIn={auth.isAuthenticated}
-        venues={followed}
-      />
+      <Suspense fallback={null}>
+        <VenueHubFavouritesSlot />
+      </Suspense>
       <VenueHubDirectories links={directories} />
     </div>
   );
