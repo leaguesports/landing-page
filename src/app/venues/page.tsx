@@ -1,19 +1,29 @@
-import { Search } from "lucide-react";
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { permanentRedirect } from "next/navigation";
-import { searchVenues } from "@/services/venues";
+import { CITY_DIRECTORY } from "@/data/cities";
 import {
-  hasActiveVenueFilters,
   parseVenueSearchParams,
-  venueDirectoryHref,
-  venueResultCountLabel,
   venueSearchSummary,
 } from "@/lib/search/venueSearch";
 import { intentPath } from "@/lib/intent/paths";
-import { VenueDirectoryCard } from "./_components/VenueDirectoryCard";
-import { VenueFinder } from "./_components/VenueFinder";
-
+import {
+  VENUE_HUB_FIXTURE_FETCH_LIMIT,
+  buildOnNowCards,
+  filterHubEventTiles,
+  resolveRecommendedCity,
+  venueHubDirectoryLinks,
+} from "@/lib/venues/hub";
+import { getUpcomingFixtures } from "@/services/events";
+import { getRecommendedVenues } from "@/services/venueHub";
+import { VenueHubFavouritesSlot } from "./_components/VenueHubFavouritesSlot";
+import { VenueNameSearch } from "./_components/VenueNameSearch";
+import {
+  VenueHubDirectories,
+  VenueHubEventTiles,
+  VenueHubOnNow,
+  VenueHubRecommended,
+} from "./_components/VenueHubSections";
 
 function redirectIntentQueryToSeoPath(filters: {
   intent: string | null;
@@ -30,6 +40,17 @@ function redirectIntentQueryToSeoPath(filters: {
   }
 }
 
+function cityDisplayName(slug: string | null): string | null {
+  if (!slug) return null;
+  const city = CITY_DIRECTORY.find((item) => item.slug === slug);
+  if (city) return city.name;
+  for (const item of CITY_DIRECTORY) {
+    const suburb = item.suburbs.find((row) => row.slug === slug);
+    if (suburb) return suburb.name;
+  }
+  return slug.replace(/-/g, " ");
+}
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -42,11 +63,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const filters = parseVenueSearchParams(await searchParams);
   redirectIntentQueryToSeoPath(filters);
-  const filtered = hasActiveVenueFilters(filters);
-  const title = filtered ? venueSearchSummary(filters) : "Venues";
+  const filtered = Boolean(filters.sportSlug || filters.locationSlug);
+  const title = filtered ? venueSearchSummary(filters) : "Find a venue";
   const description = filtered
     ? `${title} — bars, courts, and clubs on LeagueSports.`
-    : "Find bars, fan zones, courts, and clubs to watch and play sport across South Africa.";
+    : "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.";
   return { title, description };
 }
 
@@ -60,93 +81,56 @@ export default async function VenuesPage({
     q?: string | string[];
   }>;
 }) {
-  const params = await searchParams;
-  const filters = parseVenueSearchParams(params);
+  const filters = parseVenueSearchParams(await searchParams);
   redirectIntentQueryToSeoPath(filters);
-  const venues = await searchVenues({
-    intent: filters.intent,
-    sportSlug: filters.sportSlug,
+
+  const citySlug = resolveRecommendedCity({
     locationSlug: filters.locationSlug,
+    citySlug: filters.citySlug,
   });
 
-  const filtered = hasActiveVenueFilters(filters);
-  const heading = filtered ? venueSearchSummary(filters) : "All venues";
-  const countLabel = venueResultCountLabel(venues.length);
+  const [fixtures, recommended] = await Promise.all([
+    getUpcomingFixtures({ limit: VENUE_HUB_FIXTURE_FETCH_LIMIT }).catch(
+      () => [],
+    ),
+    getRecommendedVenues({ locationSlug: citySlug }),
+  ]);
+
+  const onNow = buildOnNowCards(fixtures);
+  const eventTiles = filterHubEventTiles(fixtures, filters.sportSlug);
+  const directories = venueHubDirectoryLinks();
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
-      <VenueFinder
-        filters={filters}
-        resultCountLabel={countLabel}
-        filtered={filtered}
-      >
-        <section
-          id="venues"
-          className="scroll-mt-28 px-4 py-8 sm:px-6 sm:py-10 lg:px-8"
-        >
-          <div className="mx-auto max-w-7xl">
-            {filtered ? (
-              <h2 className="mb-6 font-display text-2xl tracking-wide text-white sm:mb-8 sm:text-3xl">
-                {heading}
-              </h2>
-            ) : null}
-
-            {venues.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-                {venues.map((venue) => (
-                  <VenueDirectoryCard
-                    key={venue._id}
-                    venue={venue}
-                    intent={filters.intent}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-14 text-center">
-                <Search className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
-                <p className="text-base font-medium text-white">
-                  No venues match this search
-                </p>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-                  Try another sport or area, or browse the full directory.
-                </p>
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                  {filters.intent === "play" ? (
-                    <Link
-                      href={venueDirectoryHref({
-                        intent: "watch",
-                        sport: filters.sportSlug,
-                        location: filters.locationSlug,
-                      })}
-                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                    >
-                      Try Watch instead
-                    </Link>
-                  ) : null}
-                  {filters.intent === "watch" ? (
-                    <Link
-                      href={venueDirectoryHref({
-                        intent: "play",
-                        sport: filters.sportSlug,
-                        location: filters.locationSlug,
-                      })}
-                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                    >
-                      Try Play instead
-                    </Link>
-                  ) : null}
-                  <Link
-                    href="/venues"
-                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]"
-                  >
-                    Clear filters
-                  </Link>
-                </div>
-              </div>
-            )}
+      <section className="border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+            Find a venue
+          </p>
+          <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+            Search, then browse
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Type a venue name to jump straight there. What’s on and short
+            recommended lists stay capped — the full catalog lives on Watch,
+            Play, and city landings.
+          </p>
+          <div className="mt-8">
+            <VenueNameSearch />
           </div>
-        </section>
-      </VenueFinder>
+        </div>
+      </section>
+
+      <VenueHubOnNow cards={onNow} />
+      <VenueHubEventTiles fixtures={eventTiles} sportSlug={filters.sportSlug} />
+      <VenueHubRecommended
+        venues={recommended}
+        cityLabel={filters.locationLabel ?? cityDisplayName(citySlug)}
+      />
+      <Suspense fallback={null}>
+        <VenueHubFavouritesSlot />
+      </Suspense>
+      <VenueHubDirectories links={directories} />
     </div>
   );
 }
