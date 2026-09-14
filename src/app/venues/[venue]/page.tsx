@@ -26,6 +26,7 @@ import { venueQuickStartActivities } from "@/lib/venues/quick-start";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueFollowButton } from "./_components/VenueFollowButton";
+import { VenueFriendsPlayed } from "./_components/VenueFriendsPlayed";
 import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
 import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
 import { VenueMatchHistory } from "./_components/VenueMatchHistory";
@@ -481,6 +482,14 @@ export default async function VenuePage({ params, searchParams }: Props) {
         <VenueMatchHistory
           venueName={venue.name}
           venueCmsId={venue._id}
+          startHref={primaryQuickStart?.href}
+        />
+
+        <VenueFriendsPlayed
+          venueId={venue._id}
+          venueName={venue.name}
+          venueSlug={venue.slug}
+          primarySport={primaryQuickStart?.sportSlug ?? null}
           startHref={primaryQuickStart?.href}
         />
 
