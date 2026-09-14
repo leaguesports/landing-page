@@ -13,7 +13,8 @@ export type SoftWallReason =
   | "join_team"
   | "organise"
   | "lobby"
-  | "venue_leaderboards";
+  | "venue_leaderboards"
+  | "start_match";
 
 export type SoftWallState = {
   reason: SoftWallReason;
@@ -64,6 +65,10 @@ const COPY: Record<SoftWallReason, { title: string; body: string }> = {
   venue_leaderboards: {
     title: "Save to your account",
     body: "Venue leaderboards need a signed-in session. Keep browsing as a guest.",
+  },
+  start_match: {
+    title: "Save to your account",
+    body: "Start this match with Google to keep it on your hub. Or stay a guest — scoring still works.",
   },
 };
 

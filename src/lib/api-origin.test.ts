@@ -94,6 +94,10 @@ describe("shouldProxyApiPath", () => {
       shouldProxyApiPath("/api/venues/sanity-court/leaderboards"),
       true,
     );
+    assert.equal(
+      shouldProxyApiPath("/api/venues/sanity-court/friends-played"),
+      true,
+    );
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/communities"), true);
@@ -695,6 +699,14 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/leaderboards`,
+        ),
+        true,
+      );
+      assert.equal(
+        rewrites.some(
+          (rule) =>
+            rule.destination ===
+            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/friends-played`,
         ),
         true,
       );
