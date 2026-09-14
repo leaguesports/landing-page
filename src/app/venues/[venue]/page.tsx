@@ -347,9 +347,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div
-        className={`min-h-screen bg-[#0c0f0c] text-white ${showClaimBar ? "pb-28" : "pb-24"}`}
-      >
+      <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
         <nav className="sticky top-16 z-40 border-b border-white/6 bg-[#0c0f0c]/80 backdrop-blur-xl">
           <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 overflow-x-auto px-4 scrollbar-hide sm:px-6 lg:px-8">
             <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--color-brand)] px-3.5 py-1.5 text-xs font-semibold text-zinc-950">
@@ -438,7 +436,6 @@ export default async function VenuePage({ params, searchParams }: Props) {
                 pageType="venue"
                 showSticky
                 showFallback={false}
-                stickyOffsetClassName={showClaimBar ? "bottom-28" : ""}
               />
             </div>
 
@@ -713,11 +710,11 @@ export default async function VenuePage({ params, searchParams }: Props) {
             </div>
           </div>
         </section>
-      </div>
 
-      {showClaimBar ? (
-        <VenueClaimBar venueName={venue.name} venueSlug={venue.slug} />
-      ) : null}
+        {showClaimBar ? (
+          <VenueClaimBar venueName={venue.name} venueSlug={venue.slug} />
+        ) : null}
+      </div>
     </div>
   );
 }
