@@ -80,6 +80,25 @@ describe("gross / toPar / running totals", () => {
     assert.equal(totals[0]?.net, 10);
     assert.equal(totals[0]?.playingHandicap, 2);
   });
+
+  it("prefers API hole netStrokes over client SI allocation", () => {
+    const withPh: GolfPlayer[] = [
+      {
+        slot: 1,
+        displayName: "Alex",
+        isGuest: false,
+        userId: "u1",
+        playingHandicap: 2,
+        courseHandicap: 2,
+      },
+    ];
+    const totals = runningTotals(withPh, strokes, holes, [
+      { number: 1, strokes: { "1": 4 }, netStrokes: { "1": 2 } },
+      { number: 2, strokes: { "1": 6 }, netStrokes: { "1": 5 } },
+      { number: 3, strokes: { "1": 2 }, netStrokes: { "1": 2 } },
+    ]);
+    assert.equal(totals[0]?.net, 9);
+  });
 });
 
 describe("allHolesScored / buildLockPayload", () => {
