@@ -8,8 +8,11 @@ export function VenueClaimBar({
   venueSlug: string;
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4">
-      <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/12 bg-[#141814]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5">
+    <section
+      aria-label="Claim this venue"
+      className="border-t border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+    >
+      <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/12 bg-[#141814] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5">
         <div className="min-w-0">
           <p className="text-sm font-medium text-white">
             Do you manage {venueName}?
@@ -26,6 +29,6 @@ export function VenueClaimBar({
           Claim Profile
         </Link>
       </div>
-    </div>
+    </section>
   );
 }
