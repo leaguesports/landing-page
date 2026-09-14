@@ -1,20 +1,25 @@
 "use client";
 
 import { PostActionShare } from "@/components/conversion/PostActionShare";
-import { ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  GolfRoundHandicapBanner,
-  GolfStrokeDots,
-} from "@/components/golf/GolfHandicapBanners";
+import { GolfRoundHandicapBanner } from "@/components/golf/GolfHandicapBanners";
 import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
-import {
-  handicapSnapshotLabel,
-  resolveHoleNet,
-} from "@/lib/golf/handicap";
+import { GolfScoreStepper } from "@/components/golf/GolfScoreStepper";
+import { handicapSnapshotLabel } from "@/lib/golf/handicap";
 import { lockGolfRound } from "@/lib/golf/api-round";
 import { track } from "@/lib/analytics/track";
+import {
+  apiNetStrokesForHole,
+  applyStrokeDelta,
+  formatHoleProgress,
+  formatLiveHoleMeta,
+  formatThisHoleNetLine,
+  holeStrokeValue,
+  liveHoleNet,
+  seedHoleStrokesIfEmpty,
+} from "@/lib/golf/live-hole-ui";
 import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
 import {
   clearGolfRoundLocal,
@@ -25,7 +30,6 @@ import { toScorecardHoles } from "@/lib/golf/scorecard-holes";
 import {
   allHolesScored,
   buildLockPayload,
-  clampStrokes,
   formatToPar,
   runningTotals,
   strokesFromScore,
@@ -58,7 +62,7 @@ function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
   if (tees.length === 0) return null;
   return (
     <ul
-      className="mt-3 flex flex-wrap items-center justify-center gap-1.5"
+      className="mt-2 flex flex-wrap items-center justify-center gap-1"
       aria-label="Tee distances"
     >
       {tees.map((tee) => (
@@ -66,7 +70,7 @@ function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
           key={tee.teeName}
           aria-current={tee.selected ? "true" : undefined}
           className={[
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] tabular-nums",
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tabular-nums",
             tee.selected
               ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-100"
               : "border-white/10 bg-white/5 text-zinc-400",
@@ -74,7 +78,7 @@ function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
         >
           <span
             className={[
-              "h-2 w-2 shrink-0 rounded-full",
+              "h-1.5 w-1.5 shrink-0 rounded-full",
               teeSwatchClass(tee.color ?? tee.teeName),
             ].join(" ")}
             aria-hidden
@@ -118,8 +122,8 @@ export function GolfScorecard({
   const hole = holes[currentHoleIndex] ?? null;
   const canLock = !locked && allHolesScored(round.players, strokes, holes);
   const totals = useMemo(
-    () => runningTotals(round.players, strokes, holes),
-    [round.players, strokes, holes],
+    () => runningTotals(round.players, strokes, holes, round.score?.holes),
+    [round.players, strokes, holes, round.score?.holes],
   );
   const lockedStrokes = round.score ? strokesFromScore(round.score) : strokes;
 
@@ -135,15 +139,9 @@ export function GolfScorecard({
 
   const ensureHoleDefault = useCallback(
     (holeNumber: number, par: number) => {
-      setStrokes((prev) => {
-        const existing = prev[holeNumber];
-        if (existing && Object.keys(existing).length > 0) return prev;
-        const seeded: Record<string, number> = {};
-        for (const player of round.players) {
-          seeded[String(player.slot)] = clampStrokes(par);
-        }
-        return { ...prev, [holeNumber]: seeded };
-      });
+      setStrokes((prev) =>
+        seedHoleStrokesIfEmpty(prev, { number: holeNumber, par }, round.players),
+      );
     },
     [round.players],
   );
@@ -157,9 +155,8 @@ export function GolfScorecard({
     if (!hole || locked) return;
     setStrokes((prev) => {
       const key = String(slot);
-      const current =
-        prev[hole.number]?.[key] ?? clampStrokes(hole.par);
-      const next = clampStrokes(current + delta);
+      const current = holeStrokeValue(prev, hole.number, slot, hole.par);
+      const next = applyStrokeDelta(current, delta);
       return {
         ...prev,
         [hole.number]: {
@@ -260,26 +257,23 @@ export function GolfScorecard({
 
       {!locked && hole ? (
         <div className="flex flex-1 flex-col px-4 py-6">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               disabled={currentHoleIndex <= 0}
               onClick={() => setCurrentHoleIndex((i) => Math.max(0, i - 1))}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
               aria-label="Previous hole"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
             <div className="min-w-0 flex-1 text-center">
-              <p className="font-display text-5xl tracking-wide text-white tabular-nums">
-                {hole.number}
-              </p>
-              <p className="mt-1 text-sm text-zinc-400">
-                Par {hole.par} · SI {hole.strokeIndex}
+              <p className="text-sm font-medium tabular-nums text-zinc-200">
+                {formatLiveHoleMeta(hole)}
               </p>
               <HoleTeeDistances tees={hole.tees} />
-              <p className="mt-1.5 text-[11px] text-zinc-600">
-                Hole {currentHoleIndex + 1} of {holes.length}
+              <p className="mt-1 text-[11px] text-zinc-600">
+                {formatHoleProgress(currentHoleIndex, holes.length)}
               </p>
             </div>
             <button
@@ -288,73 +282,62 @@ export function GolfScorecard({
               onClick={() =>
                 setCurrentHoleIndex((i) => Math.min(holes.length - 1, i + 1))
               }
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white disabled:opacity-30"
               aria-label="Next hole"
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
           </div>
 
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-6 space-y-3">
             {round.players.map((player) => {
-              const key = String(player.slot);
-              const value =
-                strokes[hole.number]?.[key] ?? clampStrokes(hole.par);
+              const value = holeStrokeValue(
+                strokes,
+                hole.number,
+                player.slot,
+                hole.par,
+              );
               const toPar = value - hole.par;
-              const holeNet = resolveHoleNet({
+              const holeNet = liveHoleNet({
                 gross: value,
                 playingHandicap: player.playingHandicap,
                 holeNumber: hole.number,
                 holes,
-                apiNetStrokes:
-                  round.score?.holes.find((row) => row.number === hole.number)
-                    ?.netStrokes?.[key] ?? null,
+                apiNetStrokes: apiNetStrokesForHole(
+                  round.score,
+                  hole.number,
+                  player.slot,
+                ),
               });
               const hcpLabel = handicapSnapshotLabel(player);
               return (
                 <li
                   key={player.slot}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
+                  className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-5"
                 >
-                  <div className="min-w-0">
+                  <GolfScoreStepper
+                    value={value}
+                    playerName={player.displayName}
+                    disabled={locked}
+                    strokesReceived={holeNet.strokesReceived}
+                    onDecrease={() => adjustStroke(player.slot, -1)}
+                    onIncrease={() => adjustStroke(player.slot, 1)}
+                  />
+                  <div className="mt-3 min-w-0 text-center">
                     <p className="truncate text-sm font-medium text-white">
                       {player.displayName}
                     </p>
-                    <p className="text-xs text-zinc-500">
-                      {formatToPar(toPar)} this hole
-                      {holeNet.net != null ? ` · net ${holeNet.net}` : ""}
+                    <p className="text-sm text-zinc-400">
+                      {formatThisHoleNetLine({
+                        net: holeNet.net,
+                        toParLabel: formatToPar(toPar),
+                      })}
                     </p>
                     {hcpLabel ? (
                       <p className="mt-0.5 text-[11px] text-zinc-500">
                         {hcpLabel}
                       </p>
                     ) : null}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={locked || value <= 1}
-                      onClick={() => adjustStroke(player.slot, -1)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white disabled:opacity-30"
-                      aria-label={`Fewer strokes for ${player.displayName}`}
-                    >
-                      <Minus className="h-4 w-4" aria-hidden />
-                    </button>
-                    <span className="flex w-10 flex-col items-center">
-                      <span className="text-center font-display text-3xl tabular-nums text-white">
-                        {value}
-                      </span>
-                      <GolfStrokeDots count={holeNet.strokesReceived} />
-                    </span>
-                    <button
-                      type="button"
-                      disabled={locked || value >= 15}
-                      onClick={() => adjustStroke(player.slot, 1)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-400 text-zinc-950 disabled:opacity-30"
-                      aria-label={`More strokes for ${player.displayName}`}
-                    >
-                      <Plus className="h-4 w-4" aria-hidden />
-                    </button>
                   </div>
                 </li>
               );

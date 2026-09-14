@@ -71,6 +71,7 @@ export function runningTotals(
   players: GolfPlayer[],
   strokes: GolfLiveStrokes,
   holes: GolfCourseHole[],
+  scoreHoles?: GolfHoleScore[] | null,
 ): PlayerRunningTotal[] {
   return players.map((player) => {
     const key = slotKey(player.slot);
@@ -97,11 +98,14 @@ export function runningTotals(
       for (const hole of holes) {
         const value = strokes[hole.number]?.[key];
         if (typeof value !== "number" || !Number.isFinite(value)) continue;
+        const apiNet = scoreHoles?.find((row) => row.number === hole.number)
+          ?.netStrokes?.[key];
         const resolved = resolveHoleNet({
           gross: value,
           playingHandicap: player.playingHandicap,
           holeNumber: hole.number,
           holes,
+          apiNetStrokes: typeof apiNet === "number" ? apiNet : null,
         });
         if (resolved.net == null) continue;
         holeNetSum += resolved.net;
