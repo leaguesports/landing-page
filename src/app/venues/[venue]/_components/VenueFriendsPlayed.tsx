@@ -95,12 +95,14 @@ export function VenueFriendsPlayed({
 
   if (!view.visible) return null;
 
+  const ctaHref = view.startHref;
+
   function handleStartClick(event: { preventDefault: () => void }) {
     if (isAuthenticated) return;
     event.preventDefault();
     promptSoftWall({
       reason: "start_match",
-      returnTo: view.startHref,
+      returnTo: ctaHref,
       pageType: "venue",
     });
   }
@@ -159,7 +161,7 @@ export function VenueFriendsPlayed({
           )}
 
           <Link
-            href={view.startHref}
+            href={ctaHref}
             onClick={handleStartClick}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
           >
