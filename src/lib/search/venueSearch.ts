@@ -5,7 +5,7 @@ import {
 } from "../../data/cities.ts";
 import { toSlug } from "../../data/suburbs.ts";
 import { intentOrDirectoryHref } from "../intent/paths.ts";
-import { venueNameSearchHref } from "./nameSearch.ts";
+import { clampVenueNameQuery, venueNameSearchHref } from "./nameSearch.ts";
 
 export type VenueSearchIntent = IntentMode;
 
@@ -364,7 +364,7 @@ const CATALOG_STRIP_NEEDLES = catalogStripNeedles().sort(
  * directory landing.
  */
 export function leftoverVenueNameText(query: string): string {
-  let rest = ` ${query.trim().toLowerCase()} `;
+  let rest = ` ${clampVenueNameQuery(query).toLowerCase()} `;
   for (const needle of CATALOG_STRIP_NEEDLES) {
     if (!needle) continue;
     const pattern = new RegExp(
@@ -400,7 +400,7 @@ export function classifySiteSearch(
   query: string,
   fallbackIntent: VenueSearchIntent | null = "watch",
 ): ClassifiedSiteSearch {
-  const normalized = query.trim().replace(/\s+/g, " ");
+  const normalized = clampVenueNameQuery(query);
   if (!normalized) {
     return { kind: "empty", query: "", href: venueNameSearchHref("") };
   }
@@ -509,5 +509,38 @@ export function resolveVenuesLanding(input: {
     nameQuery: null,
     filters,
     redirectTo: directoryRedirectHref(filters),
+  };
+}
+
+/**
+ * Name-search URLs are typeahead state, not unique landing pages.
+ * Keep the public title generic and point crawlers at `/venues`.
+ */
+export function venuesLandingMetadata(landing: VenuesLanding): {
+  title: string;
+  description: string;
+  canonical: string | null;
+  index: boolean;
+} {
+  const filtered = Boolean(
+    landing.filters.sportSlug || landing.filters.locationSlug,
+  );
+  if (landing.kind === "name") {
+    return {
+      title: "Find a venue",
+      description:
+        "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.",
+      canonical: "/venues",
+      index: false,
+    };
+  }
+  const title = filtered ? venueSearchSummary(landing.filters) : "Find a venue";
+  return {
+    title,
+    description: filtered
+      ? `${title} — bars, courts, and clubs on LeagueSports.`
+      : "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.",
+    canonical: null,
+    index: true,
   };
 }

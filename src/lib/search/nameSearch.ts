@@ -7,6 +7,9 @@
 
 export const VENUE_NAME_SEARCH_MIN = 2;
 
+/** Max characters for leftover-regex, GROQ `$term`, and `/venues?q=`. */
+export const VENUE_NAME_SEARCH_MAX = 80;
+
 /** Debounce before hitting `GET /api/venues/search`. */
 export const VENUE_NAME_SEARCH_DEBOUNCE_MS = 250;
 
@@ -49,8 +52,14 @@ export type VenueNameFields = {
   suburb?: string | null;
 };
 
+export function clampVenueNameQuery(query: string): string {
+  const collapsed = query.trim().replace(/\s+/g, " ");
+  if (collapsed.length <= VENUE_NAME_SEARCH_MAX) return collapsed;
+  return collapsed.slice(0, VENUE_NAME_SEARCH_MAX).trimEnd();
+}
+
 export function normalizeVenueNameQuery(query: string): string {
-  return query.trim().replace(/\s+/g, " ").toLowerCase();
+  return clampVenueNameQuery(query).toLowerCase();
 }
 
 function matchTokenBody(normalized: string): string {
@@ -74,7 +83,7 @@ export function venueNameSearchShouldFetch(query: string): boolean {
 }
 
 export function venueNameSearchHref(query: string): string {
-  const normalized = query.trim().replace(/\s+/g, " ");
+  const normalized = clampVenueNameQuery(query);
   if (!normalized) return VENUE_NAME_SEARCH_ALL_HREF;
   return `${VENUE_NAME_SEARCH_ALL_HREF}?q=${encodeURIComponent(normalized)}`;
 }

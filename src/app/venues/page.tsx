@@ -4,7 +4,7 @@ import { permanentRedirect } from "next/navigation";
 import { CITY_DIRECTORY } from "@/data/cities";
 import {
   resolveVenuesLanding,
-  venueSearchSummary,
+  venuesLandingMetadata,
 } from "@/lib/search/venueSearch";
 import {
   VENUE_HUB_FIXTURE_FETCH_LIMIT,
@@ -49,18 +49,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const landing = resolveVenuesLanding(await searchParams);
   if (landing.redirectTo) permanentRedirect(landing.redirectTo);
-  const filtered = Boolean(
-    landing.filters.sportSlug || landing.filters.locationSlug,
-  );
-  const title = landing.nameQuery
-    ? `Find ${landing.nameQuery}`
-    : filtered
-      ? venueSearchSummary(landing.filters)
-      : "Find a venue";
-  const description = filtered
-    ? `${title} — bars, courts, and clubs on LeagueSports.`
-    : "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.";
-  return { title, description };
+  const seo = venuesLandingMetadata(landing);
+  return {
+    title: seo.title,
+    description: seo.description,
+    ...(seo.canonical
+      ? {
+          alternates: { canonical: seo.canonical },
+          robots: { index: false },
+        }
+      : {}),
+  };
 }
 
 export default async function VenuesPage({

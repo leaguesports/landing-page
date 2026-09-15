@@ -12,6 +12,7 @@ import {
   venueResultCountLabel,
   venueSearchQueryText,
   venueSearchSummary,
+  venuesLandingMetadata,
 } from "./venueSearch.ts";
 import { filterSuggestions } from "../../data/cities.ts";
 
@@ -254,6 +255,14 @@ describe("classifySiteSearch", () => {
     const classified = classifySiteSearch("Wanderers", "watch");
     assert.equal(classified.kind, "venue-name");
   });
+
+  it("caps a huge free-text query before leftover matching", () => {
+    const classified = classifySiteSearch(`Wanderers ${"n".repeat(400)}`, "watch");
+    assert.equal(classified.kind, "venue-name");
+    if (classified.kind !== "venue-name") return;
+    assert.ok(classified.nameQuery.length <= 80);
+    assert.ok(classified.href.startsWith("/venues?q="));
+  });
 });
 
 describe("resolveVenuesLanding", () => {
@@ -279,6 +288,24 @@ describe("resolveVenuesLanding", () => {
     });
     assert.equal(landing.kind, "directory");
     assert.equal(landing.filters.sportSlug, "golf");
+  });
+});
+
+describe("venuesLandingMetadata", () => {
+  it("noindexes name-search URLs and keeps a generic title", () => {
+    const landing = resolveVenuesLanding({ q: "Africa Padel" });
+    const seo = venuesLandingMetadata(landing);
+    assert.equal(seo.title, "Find a venue");
+    assert.equal(seo.canonical, "/venues");
+    assert.equal(seo.index, false);
+  });
+
+  it("keeps directory landings indexable", () => {
+    const landing = resolveVenuesLanding({});
+    const seo = venuesLandingMetadata(landing);
+    assert.equal(seo.title, "Find a venue");
+    assert.equal(seo.canonical, null);
+    assert.equal(seo.index, true);
   });
 });
 

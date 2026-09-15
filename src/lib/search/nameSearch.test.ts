@@ -7,8 +7,10 @@ import {
   VENUE_NAME_SEARCH_FETCH_LIMIT,
   VENUE_NAME_SEARCH_HAYSTACK,
   VENUE_NAME_SEARCH_LIMIT,
+  VENUE_NAME_SEARCH_MAX,
   VENUE_NAME_SEARCH_MIN,
   capVenueNameSearchResults,
+  clampVenueNameQuery,
   matchesVenueNameQuery,
   normalizeVenueNameQuery,
   rankVenueNameHits,
@@ -28,6 +30,18 @@ describe("venue name search contract", () => {
     assert.equal(venueNameMatchTerm("  b  "), null);
     assert.equal(venueNameSearchShouldFetch("a"), false);
     assert.equal(venueNameSearchShouldFetch("Mo"), true);
+  });
+
+  it("caps queries so leftover-regex and GROQ $term stay bounded", () => {
+    assert.equal(VENUE_NAME_SEARCH_MAX, 80);
+    const long = `Africa Padel ${"x".repeat(200)}`;
+    const clamped = clampVenueNameQuery(long);
+    assert.equal(clamped.length, VENUE_NAME_SEARCH_MAX);
+    assert.ok(clamped.startsWith("Africa Padel"));
+    const term = venueNameMatchTerm(long);
+    assert.ok(term);
+    assert.ok(term.length <= VENUE_NAME_SEARCH_MAX + 1);
+    assert.equal(term?.endsWith("*"), true);
   });
 
   it("exports a 250ms debounce contract for typeahead fetches", () => {
