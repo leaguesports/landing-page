@@ -489,7 +489,10 @@ export function resolveVenuesLanding(input: {
   const explicitLocation = firstParam(input.location);
 
   if (q && !explicitSport && !explicitLocation) {
-    const classified = classifySiteSearch(q, firstParam(input.intent) || null);
+    const intentRaw = firstParam(input.intent);
+    const fallbackIntent: VenueSearchIntent | null =
+      intentRaw === "play" || intentRaw === "watch" ? intentRaw : null;
+    const classified = classifySiteSearch(q, fallbackIntent);
     if (classified.kind === "venue-name") {
       return {
         kind: "name",
