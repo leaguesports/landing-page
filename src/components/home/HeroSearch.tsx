@@ -5,8 +5,10 @@ import {
   type IntentMode,
   type SearchSuggestion,
 } from "@/data/cities";
+import { useVenueNameSearch } from "@/hooks/useVenueNameSearch";
 import {
   buildVenueDirectoryPath,
+  classifySiteSearch,
   parseVenueSearch,
 } from "@/lib/search/venueSearch";
 import { MapPin, Search, Trophy, Tv } from "lucide-react";
@@ -44,6 +46,14 @@ export function HeroSearch({
   const [isPending, startTransition] = useTransition();
 
   const suggestions = filterSuggestions(query);
+  const classified = classifySiteSearch(query, intent);
+  const venueSearch = useVenueNameSearch(
+    classified.kind === "venue-name" ? query : "",
+  );
+  const venueHits =
+    classified.kind === "venue-name" ? venueSearch.results : [];
+  const catalogHits = classified.kind === "venue-name" ? [] : suggestions;
+  const showDropdown = open && (venueHits.length > 0 || catalogHits.length > 0);
 
   useEffect(() => {
     onIntentChange?.(intent);
@@ -96,6 +106,16 @@ export function HeroSearch({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!selected) {
+      const classified = classifySiteSearch(query, intent);
+      if (classified.kind === "venue-name") {
+        const exact = venueSearch.results.find(
+          (venue) => venue.name.toLowerCase() === query.trim().toLowerCase(),
+        );
+        navigate(exact ? `/venues/${exact.slug}` : classified.href);
+        return;
+      }
+    }
     navigate(pathFromQuery(intent, query, selected));
   }
 
@@ -186,8 +206,8 @@ export function HeroSearch({
               autoComplete="off"
               aria-autocomplete="list"
               aria-controls={listId}
-              aria-expanded={open && suggestions.length > 0}
-              placeholder="Suburb, city, or sport…"
+              aria-expanded={showDropdown}
+              placeholder="Venue name, suburb, city, or sport…"
               onChange={(e) => {
                 setQuery(e.target.value);
                 setSelected(null);
@@ -231,13 +251,35 @@ export function HeroSearch({
           </div>
 
           {/* Anchored to the full search shell so it isn't clipped by row layout */}
-          {open && suggestions.length > 0 && (
+          {showDropdown ? (
             <ul
               id={listId}
               role="listbox"
               className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[60] max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#121512] p-1 shadow-2xl"
             >
-              {suggestions.map((s) => (
+              {venueHits.map((venue) => (
+                <li key={venue.cmsId} role="option">
+                  <button
+                    type="button"
+                    className="flex w-full min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left hover:bg-white/6"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => navigate(`/venues/${venue.slug}`)}
+                  >
+                    <span>
+                      <span className="block text-sm font-medium text-white">
+                        {venue.name}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-zinc-500">
+                        {venue.city ?? "South Africa"}
+                      </span>
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+                      venue
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {catalogHits.map((s) => (
                 <li
                   key={s.id}
                   role="option"
@@ -259,9 +301,18 @@ export function HeroSearch({
                 </li>
               ))}
             </ul>
-          )}
+          ) : null}
         </div>
 
+        {classified.kind === "venue-name" && venueSearch.tooShort ? (
+          <p className="text-xs text-zinc-500">{venueSearch.hint}</p>
+        ) : null}
+        {classified.kind === "venue-name" && venueSearch.error ? (
+          <p className="text-xs text-amber-300/90">{venueSearch.errorCopy}</p>
+        ) : null}
+        {classified.kind === "venue-name" && venueSearch.empty ? (
+          <p className="text-xs text-zinc-500">{venueSearch.emptyCopy}</p>
+        ) : null}
         {geoStatus === "error" && (
           <p className="text-xs text-amber-300/90">
             Couldn&apos;t access location. Enter a suburb or city instead.

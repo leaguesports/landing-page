@@ -35,6 +35,11 @@ const hubServiceSource = readFileSync(
   "utf8",
 );
 
+const sportsHubSource = readFileSync(
+  new URL("../../components/home/SportsHub.tsx", import.meta.url),
+  "utf8",
+);
+
 function fixture(
   partial: Partial<UpcomingFixture> &
     Pick<UpcomingFixture, "slug" | "title">,
@@ -75,6 +80,10 @@ describe("venues hub does not fetch the full catalog", () => {
     assert.doesNotMatch(hubPageSource, /\bsearchVenues\b/);
     assert.doesNotMatch(hubPageSource, /All venues/);
     assert.match(hubPageSource, /VenueNameSearch/);
+    assert.match(hubPageSource, /venuesLandingMetadata/);
+    assert.match(hubPageSource, /canonical: seo.canonical/);
+    assert.match(hubPageSource, /robots: \{ index: false \}/);
+    assert.doesNotMatch(hubPageSource, /Find \$\{landing\.nameQuery\}/);
     assert.match(hubPageSource, /venueHubDirectoryLinks/);
   });
 
@@ -88,13 +97,13 @@ describe("venues hub does not fetch the full catalog", () => {
   });
 
   it("keeps Sanity reads sliced to hub caps", () => {
-    assert.match(hubServiceSource, /\[0\.\.\.10\]/);
+    assert.match(hubServiceSource, /VENUE_NAME_SEARCH_FETCH_LIMIT/);
     assert.match(
       hubServiceSource,
       new RegExp(`\\[0\\.\\.\\.${VENUE_HUB_RECOMMENDED_LIMIT}\\]`),
     );
-    assert.match(hubServiceSource, /name match \$term/);
-    assert.match(hubServiceSource, /slug\.current match \$term/);
+    assert.match(hubServiceSource, /VENUE_NAME_SEARCH_HAYSTACK/);
+    assert.match(hubServiceSource, /match \$term/);
     assert.doesNotMatch(hubServiceSource, /order\(_createdAt desc\)/);
   });
 
@@ -303,5 +312,12 @@ describe("resolveRecommendedCity", () => {
       "johannesburg",
     );
     assert.equal(resolveRecommendedCity({}), null);
+  });
+});
+
+describe("hub search modal lock", () => {
+  it("does not re-run focus/scroll-lock when typeahead re-renders onClose", () => {
+    assert.match(sportsHubSource, /onCloseRef/);
+    assert.doesNotMatch(sportsHubSource, /\[open, onClose\]/);
   });
 });

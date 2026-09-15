@@ -6,6 +6,7 @@ import {
   rankOnboardingVenues,
   type OnboardingVenueOption,
 } from "@/lib/onboarding/venue-search";
+import { VENUE_NAME_SEARCH_HAYSTACK } from "@/lib/search/nameSearch";
 import { sanityClient } from "@/sanity/client";
 import {
   mapVenueRow,
@@ -54,12 +55,9 @@ export async function searchOnboardingVenues(
   const rows = await sanityClient.fetch<VenueRow[]>(
     `*[
       _type == "venue"
-      && (
-        name match $term
-        || address.city->title match $term
-        || address.suburb->title match $term
-        || slug.current match $term
-      )
+      && defined(slug.current)
+      && defined(name)
+      && ${VENUE_NAME_SEARCH_HAYSTACK} match $term
     ] | order(name asc) [0...36] {
       ${VENUE_PROJECTION}
     }`,

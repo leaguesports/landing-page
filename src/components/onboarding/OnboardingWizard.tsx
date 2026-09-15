@@ -14,6 +14,7 @@ import {
   ONBOARDING_VENUE_QUERY_MIN,
   type OnboardingVenueOption,
 } from "@/lib/onboarding/venue-search";
+import { VENUE_NAME_SEARCH_EMPTY, venueNameSearchHint } from "@/lib/search/nameSearch";
 import { updatePreferences } from "@/lib/preferences/preferences";
 import { SPORT_CATALOG, type SportDefinition } from "@/lib/sports/catalog";
 import { followVenue } from "@/lib/venues/follow";
@@ -360,8 +361,7 @@ export function OnboardingWizard({
             {!venueSearchPending &&
             deferredVenueQuery.length < ONBOARDING_VENUE_QUERY_MIN ? (
               <p className="text-sm text-zinc-400">
-                Type at least {ONBOARDING_VENUE_QUERY_MIN} characters to find a
-                venue — you can always follow more later from the directory.
+                {venueNameSearchHint(ONBOARDING_VENUE_QUERY_MIN)}
               </p>
             ) : null}
 
@@ -370,7 +370,7 @@ export function OnboardingWizard({
             deferredVenueQuery.length >= ONBOARDING_VENUE_QUERY_MIN &&
             venueResults.length === 0 ? (
               <p className="text-sm text-zinc-400">
-                No venues matched. Try another name or suburb.
+                {VENUE_NAME_SEARCH_EMPTY}
               </p>
             ) : null}
 

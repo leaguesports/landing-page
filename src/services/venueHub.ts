@@ -1,8 +1,13 @@
 import { sanityClient } from "@/sanity/client";
 import {
+  VENUE_NAME_SEARCH_FETCH_LIMIT,
+  VENUE_NAME_SEARCH_HAYSTACK,
+  capVenueNameSearchResults,
+  rankVenueNameHits,
+  venueNameMatchTerm,
+} from "@/lib/search/nameSearch";
+import {
   VENUE_HUB_RECOMMENDED_LIMIT,
-  capVenueHubSearchResults,
-  venueHubMatchTerm,
   type VenueHubSearchHit,
 } from "@/lib/venues/hub";
 import {
@@ -50,11 +55,8 @@ export const VENUE_HUB_SEARCH_QUERY = `*[
   _type == "venue"
   && defined(slug.current)
   && defined(name)
-  && (
-    name match $term
-    || slug.current match $term
-  )
-] | order(name asc) [0...10] {
+  && ${VENUE_NAME_SEARCH_HAYSTACK} match $term
+] | order(name asc) [0...${VENUE_NAME_SEARCH_FETCH_LIMIT}] {
   _id,
   name,
   "slug": slug.current,
@@ -117,21 +119,20 @@ function isSanityConfigured(): boolean {
 export async function searchVenuesByName(
   query: string,
 ): Promise<VenueHubSearchHit[]> {
-  const term = venueHubMatchTerm(query);
+  const term = venueNameMatchTerm(query);
   if (!term || !isSanityConfigured()) return [];
 
   try {
     const rows = await sanityClient.fetch<SearchRow[]>(VENUE_HUB_SEARCH_QUERY, {
       term,
     });
-    return capVenueHubSearchResults(
-      (rows ?? [])
-        .map(toSearchHit)
-        .filter((item): item is VenueHubSearchHit => item !== null),
-    );
+    const hits = (rows ?? [])
+      .map(toSearchHit)
+      .filter((item): item is VenueHubSearchHit => item !== null);
+    return capVenueNameSearchResults(rankVenueNameHits(hits, query));
   } catch (error) {
     console.error("[venues-hub] name search failed", error);
-    return [];
+    throw error;
   }
 }
 

@@ -5,6 +5,7 @@ import {
 } from "../../data/cities.ts";
 import { toSlug } from "../../data/suburbs.ts";
 import { intentOrDirectoryHref } from "../intent/paths.ts";
+import { clampVenueNameQuery, venueNameSearchHref } from "./nameSearch.ts";
 
 export type VenueSearchIntent = IntentMode;
 
@@ -322,4 +323,224 @@ function firstParam(value: string | string[] | undefined): string {
 
 export function hasActiveVenueFilters(parsed: ParsedVenueSearch): boolean {
   return Boolean(parsed.intent || parsed.sportSlug || parsed.locationSlug);
+}
+
+const DIRECTORY_STOP_WORDS = [
+  "watch",
+  "play",
+  "in",
+  "at",
+  "near",
+  "the",
+  "and",
+  "for",
+  "to",
+  "of",
+] as const;
+
+function catalogStripNeedles(): string[] {
+  const places = allPlaces();
+  return [
+    ...DIRECTORY_STOP_WORDS,
+    ...Object.keys(SPORT_ALIASES),
+    ...SEARCH_SPORTS.map((sport) => sport.name.toLowerCase()),
+    ...SEARCH_SPORTS.map((sport) => sport.slug.replace(/-/g, " ")),
+    ...SEARCH_SPORTS.map((sport) => sport.slug),
+    ...places.flatMap((place) => [
+      place.name.toLowerCase(),
+      place.slug.replace(/-/g, " "),
+      place.slug,
+    ]),
+  ];
+}
+
+const CATALOG_STRIP_NEEDLES = catalogStripNeedles().sort(
+  (a, b) => b.length - a.length,
+);
+
+/**
+ * Text that remains after removing Watch/Play, sport aliases, and city/suburb
+ * names. Leftover tokens mean the user is looking for a venue by name — not a
+ * directory landing.
+ */
+export function leftoverVenueNameText(query: string): string {
+  let rest = ` ${clampVenueNameQuery(query).toLowerCase()} `;
+  for (const needle of CATALOG_STRIP_NEEDLES) {
+    if (!needle) continue;
+    const pattern = new RegExp(
+      `(^|[^a-z0-9])${escapeRegExp(needle)}([^a-z0-9]|$)`,
+      "gi",
+    );
+    rest = rest.replace(pattern, "$1 $2");
+  }
+  return rest.replace(/\s+/g, " ").trim();
+}
+
+export type ClassifiedSiteSearch =
+  | { kind: "empty"; query: string; href: string }
+  | {
+      kind: "directory";
+      query: string;
+      parsed: ParsedVenueSearch;
+      href: string;
+    }
+  | {
+      kind: "venue-name";
+      query: string;
+      nameQuery: string;
+      href: string;
+    };
+
+/**
+ * Route a free-text query to either sport/city directory landings or the
+ * Find Venue name typeahead. Used by SearchAction `/venues?q=`, hub search,
+ * and the homepage hero so “Africa Padel” is not hijacked as `/watch/padel`.
+ */
+export function classifySiteSearch(
+  query: string,
+  fallbackIntent: VenueSearchIntent | null = "watch",
+): ClassifiedSiteSearch {
+  const normalized = clampVenueNameQuery(query);
+  if (!normalized) {
+    return { kind: "empty", query: "", href: venueNameSearchHref("") };
+  }
+
+  const leftover = leftoverVenueNameText(normalized);
+  if (leftover) {
+    return {
+      kind: "venue-name",
+      query: normalized,
+      nameQuery: normalized,
+      href: venueNameSearchHref(normalized),
+    };
+  }
+
+  const fallback: VenueSearchIntent =
+    fallbackIntent === "play" ? "play" : "watch";
+  const parsed = parseVenueSearch(normalized, fallback);
+  const hasVerb = /\b(watch|play)\b/i.test(normalized);
+  if (!hasVerb) {
+    parsed.intent =
+      fallbackIntent === "play" || fallbackIntent === "watch"
+        ? fallbackIntent
+        : null;
+  }
+
+  return {
+    kind: "directory",
+    query: normalized,
+    parsed,
+    href: buildVenueDirectoryPath(parsed),
+  };
+}
+
+export function emptyVenueSearchFilters(): ParsedVenueSearch {
+  return {
+    intent: null,
+    sportSlug: null,
+    sportName: null,
+    locationSlug: null,
+    locationLabel: null,
+    locationKind: null,
+    citySlug: null,
+  };
+}
+
+export type VenuesLanding =
+  | {
+      kind: "name";
+      nameQuery: string;
+      filters: ParsedVenueSearch;
+      redirectTo: null;
+    }
+  | {
+      kind: "directory";
+      nameQuery: null;
+      filters: ParsedVenueSearch;
+      redirectTo: string | null;
+    };
+
+function directoryRedirectHref(filters: ParsedVenueSearch): string | null {
+  if (
+    (filters.intent === "watch" || filters.intent === "play") &&
+    filters.sportSlug
+  ) {
+    return intentOrDirectoryHref({
+      intent: filters.intent,
+      sport: filters.sportSlug,
+      location: filters.locationSlug,
+    });
+  }
+  return null;
+}
+
+/**
+ * `/venues` landing: honor `q` as a venue name when it isn’t a pure
+ * sport/city/intent directory query.
+ */
+export function resolveVenuesLanding(input: {
+  intent?: string | string[] | undefined;
+  sport?: string | string[] | undefined;
+  location?: string | string[] | undefined;
+  q?: string | string[] | undefined;
+}): VenuesLanding {
+  const q = firstParam(input.q);
+  const explicitSport = firstParam(input.sport);
+  const explicitLocation = firstParam(input.location);
+
+  if (q && !explicitSport && !explicitLocation) {
+    const intentRaw = firstParam(input.intent);
+    const fallbackIntent: VenueSearchIntent | null =
+      intentRaw === "play" || intentRaw === "watch" ? intentRaw : null;
+    const classified = classifySiteSearch(q, fallbackIntent);
+    if (classified.kind === "venue-name") {
+      return {
+        kind: "name",
+        nameQuery: classified.nameQuery,
+        filters: emptyVenueSearchFilters(),
+        redirectTo: null,
+      };
+    }
+  }
+
+  const filters = parseVenueSearchParams(input);
+  return {
+    kind: "directory",
+    nameQuery: null,
+    filters,
+    redirectTo: directoryRedirectHref(filters),
+  };
+}
+
+/**
+ * Name-search URLs are typeahead state, not unique landing pages.
+ * Keep the public title generic and point crawlers at `/venues`.
+ */
+export function venuesLandingMetadata(landing: VenuesLanding): {
+  title: string;
+  description: string;
+  canonical: string | null;
+  index: boolean;
+} {
+  const filtered = Boolean(
+    landing.filters.sportSlug || landing.filters.locationSlug,
+  );
+  if (landing.kind === "name") {
+    return {
+      title: "Find a venue",
+      description:
+        "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.",
+      canonical: "/venues",
+      index: false,
+    };
+  }
+  const title = filtered ? venueSearchSummary(landing.filters) : "Find a venue";
+  return {
+    title,
+    description: filtered
+      ? `${title} — bars, courts, and clubs on LeagueSports.`
+      : "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.",
+    canonical: null,
+    index: true,
+  };
 }

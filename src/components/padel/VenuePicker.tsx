@@ -1,12 +1,18 @@
 "use client";
 
 import { ArrowLeftRight, MapPin, Navigation } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   distanceKm,
   useGeolocation,
 } from "@/hooks/useGeolocation";
 import type { VenueOption } from "@/lib/padel/venue-options";
+import {
+  VENUE_NAME_SEARCH_EMPTY,
+  matchesVenueNameQuery,
+  venueNameSearchHref,
+} from "@/lib/search/nameSearch";
 
 type VenuePickerProps = {
   venues: VenueOption[];
@@ -28,11 +34,11 @@ export function VenuePicker({
     const q = query.trim().toLowerCase();
     let list = venues;
     if (q) {
-      list = list.filter(
-        (v) =>
-          v.name.toLowerCase().includes(q) ||
-          v.suburb.toLowerCase().includes(q) ||
-          v.city.toLowerCase().includes(q),
+      list = list.filter((v) =>
+        matchesVenueNameQuery(
+          { name: v.name, slug: v.slug, city: v.city, suburb: v.suburb },
+          q,
+        ),
       );
     }
 
@@ -86,6 +92,17 @@ export function VenuePicker({
 
       {error ? (
         <p className="text-xs text-amber-400/90">{error}</p>
+      ) : null}
+      {query.trim() && sorted.length === 0 ? (
+        <p className="text-sm text-zinc-500">
+          {VENUE_NAME_SEARCH_EMPTY}{" "}
+          <Link
+            href={venueNameSearchHref(query)}
+            className="font-medium text-emerald-300 hover:text-white"
+          >
+            Search all venues
+          </Link>
+        </p>
       ) : null}
       {coords ? (
         <p className="text-xs text-zinc-500">

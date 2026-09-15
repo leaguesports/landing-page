@@ -3,10 +3,9 @@ import { Suspense } from "react";
 import { permanentRedirect } from "next/navigation";
 import { CITY_DIRECTORY } from "@/data/cities";
 import {
-  parseVenueSearchParams,
-  venueSearchSummary,
+  resolveVenuesLanding,
+  venuesLandingMetadata,
 } from "@/lib/search/venueSearch";
-import { intentPath } from "@/lib/intent/paths";
 import {
   VENUE_HUB_FIXTURE_FETCH_LIMIT,
   buildOnNowCards,
@@ -25,20 +24,12 @@ import {
   VenueHubRecommended,
 } from "./_components/VenueHubSections";
 
-function redirectIntentQueryToSeoPath(filters: {
-  intent: string | null;
-  sportSlug: string | null;
-  locationSlug: string | null;
-}) {
-  if (
-    (filters.intent === "watch" || filters.intent === "play") &&
-    filters.sportSlug
-  ) {
-    permanentRedirect(
-      intentPath(filters.intent, filters.sportSlug, filters.locationSlug),
-    );
-  }
-}
+type VenuesSearchParams = {
+  intent?: string | string[];
+  sport?: string | string[];
+  location?: string | string[];
+  q?: string | string[];
+};
 
 function cityDisplayName(slug: string | null): string | null {
   if (!slug) return null;
@@ -54,36 +45,32 @@ function cityDisplayName(slug: string | null): string | null {
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{
-    intent?: string | string[];
-    sport?: string | string[];
-    location?: string | string[];
-    q?: string | string[];
-  }>;
+  searchParams: Promise<VenuesSearchParams>;
 }): Promise<Metadata> {
-  const filters = parseVenueSearchParams(await searchParams);
-  redirectIntentQueryToSeoPath(filters);
-  const filtered = Boolean(filters.sportSlug || filters.locationSlug);
-  const title = filtered ? venueSearchSummary(filters) : "Find a venue";
-  const description = filtered
-    ? `${title} — bars, courts, and clubs on LeagueSports.`
-    : "Search venues by name, see what’s on, and browse Watch, Play, cities, and sports.";
-  return { title, description };
+  const landing = resolveVenuesLanding(await searchParams);
+  if (landing.redirectTo) permanentRedirect(landing.redirectTo);
+  const seo = venuesLandingMetadata(landing);
+  return {
+    title: seo.title,
+    description: seo.description,
+    ...(seo.canonical
+      ? {
+          alternates: { canonical: seo.canonical },
+          robots: { index: false },
+        }
+      : {}),
+  };
 }
 
 export default async function VenuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    intent?: string | string[];
-    sport?: string | string[];
-    location?: string | string[];
-    q?: string | string[];
-  }>;
+  searchParams: Promise<VenuesSearchParams>;
 }) {
-  const filters = parseVenueSearchParams(await searchParams);
-  redirectIntentQueryToSeoPath(filters);
+  const landing = resolveVenuesLanding(await searchParams);
+  if (landing.redirectTo) permanentRedirect(landing.redirectTo);
 
+  const filters = landing.filters;
   const citySlug = resolveRecommendedCity({
     locationSlug: filters.locationSlug,
     citySlug: filters.citySlug,
@@ -116,7 +103,7 @@ export default async function VenuesPage({
             Play, and city landings.
           </p>
           <div className="mt-8">
-            <VenueNameSearch />
+            <VenueNameSearch initialQuery={landing.nameQuery ?? ""} />
           </div>
         </div>
       </section>
