@@ -81,6 +81,8 @@ import {
   Flag,
   Heart,
   ListFilter,
+  LoaderCircle,
+  MapPin,
   Search,
   Sparkles,
   Tv,
@@ -89,6 +91,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useVenueNameSearch } from "@/hooks/useVenueNameSearch";
+import { classifySiteSearch } from "@/lib/search/venueSearch";
 import {
   useCallback,
   useEffect,
@@ -521,6 +525,13 @@ function HubSearch({
   const panelId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const classified = classifySiteSearch(query, "play");
+  const venueSearch = useVenueNameSearch(
+    classified.kind === "venue-name" ? query : "",
+  );
+  const showVenueHits =
+    classified.kind === "venue-name" && venueSearch.results.length > 0;
+
   useEffect(() => {
     if (!open) return;
     const frame = window.requestAnimationFrame(() => {
@@ -575,11 +586,49 @@ function HubSearch({
               type="search"
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
-              placeholder="Venues, play, watch…"
+              placeholder="Venue name, play, watch…"
               autoComplete="off"
               className={`${HUB_CONTROL} px-4 pl-10 placeholder:text-zinc-600`}
             />
           </div>
+          {classified.kind === "venue-name" && venueSearch.tooShort ? (
+            <p className="text-sm text-zinc-500">{venueSearch.hint}</p>
+          ) : null}
+          {classified.kind === "venue-name" && venueSearch.error ? (
+            <p className="text-sm text-amber-300/90">{venueSearch.errorCopy}</p>
+          ) : null}
+          {classified.kind === "venue-name" && venueSearch.empty ? (
+            <p className="text-sm text-zinc-500">{venueSearch.emptyCopy}</p>
+          ) : null}
+          {venueSearch.pending && classified.kind === "venue-name" ? (
+            <p className="flex items-center gap-2 text-sm text-zinc-400">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Searching venues…
+            </p>
+          ) : null}
+          {showVenueHits ? (
+            <ul className="overflow-hidden rounded-2xl border border-white/10">
+              {venueSearch.results.map((venue) => (
+                <li key={venue.cmsId}>
+                  <Link
+                    href={`/venues/${venue.slug}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5"
+                  >
+                    <span>
+                      <span className="block text-sm font-medium text-white">
+                        {venue.name}
+                      </span>
+                      <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
+                        <MapPin className="h-3 w-3" aria-hidden />
+                        {venue.city ?? "South Africa"}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <button
             type="submit"
             className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"

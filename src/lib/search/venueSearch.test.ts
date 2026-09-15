@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildVenueDirectoryPath,
+  classifySiteSearch,
+  leftoverVenueNameText,
   parseVenueSearch,
   parseVenueSearchParams,
+  resolveVenuesLanding,
   venueDirectoryHref,
   venueDirectoryHrefFromQuery,
   venueResultCountLabel,
@@ -203,6 +206,79 @@ describe("venueSearchQueryText", () => {
       }),
       "",
     );
+  });
+});
+
+describe("classifySiteSearch", () => {
+  it("treats a specific venue name as name search, not a sport landing", () => {
+    const classified = classifySiteSearch("Africa Padel", "watch");
+    assert.equal(classified.kind, "venue-name");
+    if (classified.kind !== "venue-name") return;
+    assert.equal(classified.href, "/venues?q=Africa%20Padel");
+    assert.ok(leftoverVenueNameText("Africa Padel").length > 0);
+  });
+
+  it("keeps Watch soccer in Claremont on the directory", () => {
+    const classified = classifySiteSearch("Watch soccer in Claremont", "play");
+    assert.equal(classified.kind, "directory");
+    if (classified.kind !== "directory") return;
+    assert.equal(classified.href, "/watch/soccer/claremont");
+    assert.equal(leftoverVenueNameText("Watch soccer in Claremont"), "");
+  });
+
+  it("keeps a sport-only query on the directory", () => {
+    const classified = classifySiteSearch("padel", "play");
+    assert.equal(classified.kind, "directory");
+    if (classified.kind !== "directory") return;
+    assert.equal(classified.href, "/play/padel");
+  });
+
+  it("keeps a city-only query on the directory", () => {
+    const classified = classifySiteSearch("Sandton", null);
+    assert.equal(classified.kind, "directory");
+    if (classified.kind !== "directory") return;
+    assert.equal(classified.parsed.locationSlug, "sandton");
+  });
+
+  it("keeps play + sport alias + suburb on the directory", () => {
+    const classified = classifySiteSearch(
+      "Play go karting in Rosebank",
+      "watch",
+    );
+    assert.equal(classified.kind, "directory");
+    if (classified.kind !== "directory") return;
+    assert.equal(classified.href, "/play/karting/rosebank");
+  });
+
+  it("treats a partial unique name as name search", () => {
+    const classified = classifySiteSearch("Wanderers", "watch");
+    assert.equal(classified.kind, "venue-name");
+  });
+});
+
+describe("resolveVenuesLanding", () => {
+  it("does not redirect a venue name that contains a sport word", () => {
+    const landing = resolveVenuesLanding({ q: "Africa Padel" });
+    assert.equal(landing.kind, "name");
+    assert.equal(landing.redirectTo, null);
+    assert.equal(landing.nameQuery, "Africa Padel");
+    assert.equal(landing.filters.sportSlug, null);
+  });
+
+  it("redirects a pure sport+place query to the SEO landing", () => {
+    const landing = resolveVenuesLanding({ q: "Watch soccer in Claremont" });
+    assert.equal(landing.kind, "directory");
+    assert.equal(landing.redirectTo, "/watch/soccer/claremont");
+  });
+
+  it("still lets explicit sport/location params win over q", () => {
+    const landing = resolveVenuesLanding({
+      sport: "golf",
+      location: "johannesburg",
+      q: "Africa Padel",
+    });
+    assert.equal(landing.kind, "directory");
+    assert.equal(landing.filters.sportSlug, "golf");
   });
 });
 

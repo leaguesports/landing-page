@@ -711,8 +711,8 @@ export function hubPlayEmptyNearbyHref(
 
 /**
  * Hub search → existing venues / play / watch entry points.
- * Uses `/venues?q=` (same as site SearchAction); the directory already
- * parses `q` into sport/place/intent and redirects to SEO landings.
+ * Uses `/venues?q=` (same as site SearchAction). The Find Venue hub classifies
+ * `q` as a venue name or a sport/city directory query.
  */
 export function hubSearchHref(query: string, activeSport: string): string {
   const trimmed = query.trim().replace(/\s+/g, " ");

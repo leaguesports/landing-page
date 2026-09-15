@@ -1,15 +1,22 @@
 import { CITY_DIRECTORY } from "../../data/cities.ts";
 import { activityQuerySlugs } from "../intent/activity.ts";
 import { intentPath } from "../intent/paths.ts";
+import {
+  VENUE_NAME_SEARCH_LIMIT,
+  VENUE_NAME_SEARCH_MIN,
+  capVenueNameSearchResults,
+  normalizeVenueNameQuery,
+  venueNameMatchTerm,
+} from "../search/nameSearch.ts";
 import { SPORT_CATALOG } from "../sports/catalog.ts";
 import { isHubPlayDashboardSport } from "../sports/hub-ia.ts";
 import { UPCOMING_GRACE_MS, type UpcomingFixture } from "../sports/events-feed.ts";
 
 /** Minimum characters before /venues name search runs. */
-export const VENUE_HUB_SEARCH_MIN = 2;
+export const VENUE_HUB_SEARCH_MIN = VENUE_NAME_SEARCH_MIN;
 
 /** Typeahead cap — never a catalog dump. */
-export const VENUE_HUB_SEARCH_LIMIT = 10;
+export const VENUE_HUB_SEARCH_LIMIT = VENUE_NAME_SEARCH_LIMIT;
 
 /** Venues with a screening in the next ~72h. */
 export const VENUE_HUB_ON_NOW_LIMIT = 8;
@@ -65,25 +72,9 @@ export type VenueHubFavouritesSection =
   | { visible: true; empty: true; copy: string }
   | { visible: true; empty: false };
 
-export function normalizeVenueHubQuery(query: string): string {
-  return query.trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-/** Sanity `match` token for name/slug typeahead. Null below the minimum. */
-export function venueHubMatchTerm(query: string): string | null {
-  const normalized = normalizeVenueHubQuery(query);
-  if (normalized.length < VENUE_HUB_SEARCH_MIN) return null;
-  const token = normalized
-    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (token.length < VENUE_HUB_SEARCH_MIN) return null;
-  return `${token}*`;
-}
-
-export function capVenueHubSearchResults<T>(rows: T[]): T[] {
-  return rows.slice(0, VENUE_HUB_SEARCH_LIMIT);
-}
+export const normalizeVenueHubQuery = normalizeVenueNameQuery;
+export const venueHubMatchTerm = venueNameMatchTerm;
+export const capVenueHubSearchResults = capVenueNameSearchResults;
 
 export function fixtureMatchesHubSport(
   fixture: Pick<UpcomingFixture, "sportSlug">,

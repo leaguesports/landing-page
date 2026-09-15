@@ -69,7 +69,7 @@ export function IntentHub({
             href="/venues"
             className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
           >
-            Browse all venues
+            Search by venue name
           </Link>
           {isWatch ? (
             <Link

@@ -536,7 +536,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
   it("wires hub search to existing venues / play / watch routes", () => {
     assert.equal(hubSearchHref("", "all"), HUB_FIND_VENUES_HREF);
     assert.equal(hubSearchHref("   ", "padel"), "/play/padel");
-    assert.equal(hubSearchHref("sandton", "all"), "/venues?q=sandton");
+    assert.equal(hubSearchHref("Africa Padel", "all"), "/venues?q=Africa%20Padel");
     assert.equal(hubSearchHref("sandton", "padel"), "/venues?q=padel%20sandton");
     assert.equal(
       hubSearchHref("watch soccer", "padel"),
