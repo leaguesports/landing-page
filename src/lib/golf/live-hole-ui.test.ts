@@ -20,7 +20,9 @@ import {
   liveCardVisibility,
   liveHeaderShowsStrokeIndex,
   liveHoleNet,
+  roundInfoShowsWhsDisclaimer,
   seedHoleStrokesIfEmpty,
+  wrapModalFocus,
 } from "./live-hole-ui.ts";
 
 const holes: GolfCourseHole[] = [
@@ -124,6 +126,40 @@ describe("live lock hint", () => {
       formatLiveLockHint(true),
       "All holes scored. Lock to save the round.",
     );
+  });
+});
+
+describe("round info handicap honesty", () => {
+  it("shows the WHS disclaimer only when a playing handicap is snapshotted", () => {
+    assert.equal(
+      roundInfoShowsWhsDisclaimer([
+        { playingHandicap: 11 },
+      ]),
+      true,
+    );
+    assert.equal(
+      roundInfoShowsWhsDisclaimer([
+        { playingHandicap: null },
+      ]),
+      false,
+    );
+    assert.equal(
+      roundInfoShowsWhsDisclaimer([
+        { playingHandicap: undefined },
+      ]),
+      false,
+    );
+  });
+});
+
+describe("round info modal tab wrap", () => {
+  it("wraps Tab from last to first and Shift+Tab from first to last", () => {
+    const nodes = ["close", "done"];
+    assert.equal(wrapModalFocus(nodes, "done", false), "close");
+    assert.equal(wrapModalFocus(nodes, "close", true), "done");
+    assert.equal(wrapModalFocus(nodes, "close", false), null);
+    assert.equal(wrapModalFocus(nodes, "done", true), null);
+    assert.equal(wrapModalFocus([], "close", false), null);
   });
 });
 

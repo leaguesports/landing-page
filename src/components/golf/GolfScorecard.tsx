@@ -179,8 +179,14 @@ export function GolfScorecard({
     }
   }
 
+  const closeInfo = useCallback(() => setInfoOpen(false), []);
+
   return (
     <div className="flex min-h-dvh flex-col bg-[#050705] text-white">
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        inert={infoOpen ? true : undefined}
+      >
       <header className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
         <Link
           href="/golf/new"
@@ -426,11 +432,12 @@ export function GolfScorecard({
           </div>
         )}
       </div>
+      </div>
 
       {!locked ? (
         <GolfRoundInfoSheet
           open={infoOpen}
-          onClose={() => setInfoOpen(false)}
+          onClose={closeInfo}
           round={round}
           players={round.players}
           tees={hole?.tees ?? []}

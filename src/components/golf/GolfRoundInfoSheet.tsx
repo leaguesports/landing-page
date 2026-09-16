@@ -1,12 +1,15 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
-import { GolfHandicapDisclaimer } from "@/components/golf/GolfHandicapBanners";
+import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
+import { GolfRoundHandicapBanner } from "@/components/golf/GolfHandicapBanners";
 import {
+  MODAL_FOCUSABLE_SELECTOR,
   formatHoleProgress,
   formatRoundInfoPlayerHcp,
   formatRoundInfoRatings,
+  wrapModalFocus,
 } from "@/lib/golf/live-hole-ui";
 import { golfLayoutLabel } from "@/lib/golf/locked-scorecard";
 import type {
@@ -18,11 +21,11 @@ import type {
 function teeSwatchClass(colorOrName: string | null): string {
   const key = (colorOrName ?? "").trim().toLowerCase();
   if (key === "yellow" || key === "gold") return "bg-yellow-400";
-  if (key === "white") return "bg-white";
   if (key === "blue") return "bg-sky-400";
   if (key === "red") return "bg-red-500";
   if (key === "black") return "bg-zinc-950 ring-1 ring-white/40";
   if (key === "green") return "bg-emerald-500";
+  if (key === "white") return "bg-white";
   return "bg-zinc-500";
 }
 
@@ -87,18 +90,53 @@ export function GolfRoundInfoSheet({
   currentHoleIndex: number;
   holeCount: number;
 }) {
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+
+    const previouslyFocused = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    panelRef.current?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const root = panelRef.current;
+      if (!root) return;
+      const focusable = [
+        ...root.querySelectorAll<HTMLElement>(MODAL_FOCUSABLE_SELECTOR),
+      ].filter((node) => !node.hasAttribute("disabled"));
+      const wrapTo = wrapModalFocus(
+        focusable,
+        document.activeElement,
+        event.shiftKey,
+      );
+      if (!wrapTo) return;
+      event.preventDefault();
+      wrapTo.focus();
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
 
-  if (!open) return null;
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [open]);
 
-  const title = "Round info";
+  if (!open || typeof document === "undefined") return null;
+
   const place = round.venue?.name || round.course.name || null;
   const ratings = formatRoundInfoRatings({
     courseRating: round.courseRating,
@@ -112,33 +150,34 @@ export function GolfRoundInfoSheet({
     }))
     .filter((row) => row.label);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
-      <button
-        type="button"
-        aria-label="Dismiss round info"
+      <div
+        aria-hidden
         className="absolute inset-0 bg-black/60"
-        onClick={onClose}
+        onClick={() => onCloseRef.current()}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="golf-round-info-title"
-        className="relative w-full max-w-md rounded-t-3xl border border-white/10 bg-[#101410] p-6 shadow-2xl sm:rounded-3xl"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-t-3xl border border-white/10 bg-[#101410] p-6 shadow-2xl outline-none sm:rounded-3xl"
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => onCloseRef.current()}
           aria-label="Close"
           className="absolute right-3 top-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
         <h2
-          id="golf-round-info-title"
+          id={titleId}
           className="pr-12 text-lg font-semibold text-white"
         >
-          {title}
+          Round info
         </h2>
         <dl className="mt-4 space-y-3 text-sm">
           {place ? (
@@ -202,9 +241,10 @@ export function GolfRoundInfoSheet({
           ) : null}
         </dl>
         <div className="mt-5">
-          <GolfHandicapDisclaimer apiDisclaimer={round.handicapDisclaimer} />
+          <GolfRoundHandicapBanner round={round} players={players} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

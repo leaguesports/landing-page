@@ -5,7 +5,11 @@ import type {
   GolfPlayerSlot,
   GolfScore,
 } from "../../types/golf-round.ts";
-import { playerHasPlayingHandicap, resolveHoleNet } from "./handicap.ts";
+import {
+  anyPlayerHasPlayingHandicap,
+  playerHasPlayingHandicap,
+  resolveHoleNet,
+} from "./handicap.ts";
 import { clampStrokes } from "./scoring.ts";
 
 /** Minimum +/- hit target (px). Tailwind `min-h-11` / `min-w-11` is 44px. */
@@ -72,6 +76,37 @@ export function formatLivePlayingHcp(
 /** Instructional lock copy — only when every hole is ready. */
 export function formatLiveLockHint(canLock: boolean): string | null {
   return canLock ? "All holes scored. Lock to save the round." : null;
+}
+
+/**
+ * Round info shows the WHS estimated-CH disclaimer only when a playing
+ * handicap is snapshotted. Otherwise GolfRoundHandicapBanner stays gross-only.
+ */
+export function roundInfoShowsWhsDisclaimer(
+  players: readonly Pick<GolfPlayer, "playingHandicap">[],
+): boolean {
+  return anyPlayerHasPlayingHandicap(players);
+}
+
+/** Focusables inside an aria-modal panel (matches PlaySportModal). */
+export const MODAL_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * When Tab would leave the modal, return the node to wrap to. Null means the
+ * browser can move focus inside the panel as usual.
+ */
+export function wrapModalFocus<T>(
+  focusable: readonly T[],
+  active: unknown,
+  shiftKey: boolean,
+): T | null {
+  if (focusable.length === 0) return null;
+  const first = focusable[0]!;
+  const last = focusable[focusable.length - 1]!;
+  if (shiftKey && active === first) return last;
+  if (!shiftKey && active === last) return first;
+  return null;
 }
 
 export function formatRoundInfoRatings(input: {
