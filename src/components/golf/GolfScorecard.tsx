@@ -1,22 +1,24 @@
 "use client";
 
 import { PostActionShare } from "@/components/conversion/PostActionShare";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GolfRoundHandicapBanner } from "@/components/golf/GolfHandicapBanners";
 import { GolfLockedScorecard } from "@/components/golf/GolfLockedScorecard";
+import { GolfRoundInfoSheet } from "@/components/golf/GolfRoundInfoSheet";
 import { GolfScoreStepper } from "@/components/golf/GolfScoreStepper";
-import { handicapSnapshotLabel } from "@/lib/golf/handicap";
 import { lockGolfRound } from "@/lib/golf/api-round";
 import { track } from "@/lib/analytics/track";
 import {
   apiNetStrokesForHole,
   applyStrokeDelta,
-  formatHoleProgress,
   formatLiveHoleMeta,
+  formatLiveLockHint,
+  formatLivePlayingHcp,
   formatThisHoleNetLine,
   holeStrokeValue,
+  liveCardVisibility,
+  liveHeaderShowsStrokeIndex,
   liveHoleNet,
   seedHoleStrokesIfEmpty,
 } from "@/lib/golf/live-hole-ui";
@@ -39,57 +41,12 @@ import type {
   GolfLiveStrokes,
   GolfPlayerSlot,
   GolfRound,
-  ScorecardTeeDistance,
 } from "@/types/golf-round";
 
 type GolfScorecardProps = {
   initialRound: GolfRound;
   golfCourse?: GolfCourseCms | null;
 };
-
-function teeSwatchClass(colorOrName: string | null): string {
-  const key = (colorOrName ?? "").trim().toLowerCase();
-  if (key === "yellow" || key === "gold") return "bg-yellow-400";
-  if (key === "white") return "bg-white";
-  if (key === "blue") return "bg-sky-400";
-  if (key === "red") return "bg-red-500";
-  if (key === "black") return "bg-zinc-950 ring-1 ring-white/40";
-  if (key === "green") return "bg-emerald-500";
-  return "bg-zinc-500";
-}
-
-function HoleTeeDistances({ tees }: { tees: ScorecardTeeDistance[] }) {
-  if (tees.length === 0) return null;
-  return (
-    <ul
-      className="mt-2 flex flex-wrap items-center justify-center gap-1"
-      aria-label="Tee distances"
-    >
-      {tees.map((tee) => (
-        <li
-          key={tee.teeName}
-          aria-current={tee.selected ? "true" : undefined}
-          className={[
-            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tabular-nums",
-            tee.selected
-              ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-100"
-              : "border-white/10 bg-white/5 text-zinc-400",
-          ].join(" ")}
-        >
-          <span
-            className={[
-              "h-1.5 w-1.5 shrink-0 rounded-full",
-              teeSwatchClass(tee.color ?? tee.teeName),
-            ].join(" ")}
-            aria-hidden
-          />
-          <span className="font-medium">{tee.teeName}</span>
-          <span>{tee.meters} m</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function GolfScorecard({
   initialRound,
@@ -118,14 +75,47 @@ export function GolfScorecard({
 
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const hole = holes[currentHoleIndex] ?? null;
   const canLock = !locked && allHolesScored(round.players, strokes, holes);
+  const lockHint = formatLiveLockHint(canLock);
+  const chrome = liveCardVisibility(round.players.length);
   const totals = useMemo(
     () => runningTotals(round.players, strokes, holes, round.score?.holes),
     [round.players, strokes, holes, round.score?.holes],
   );
   const lockedStrokes = round.score ? strokesFromScore(round.score) : strokes;
+  const playerHoleNets = useMemo(() => {
+    if (!hole) return [];
+    return round.players.map((player) => {
+      const value = holeStrokeValue(
+        strokes,
+        hole.number,
+        player.slot,
+        hole.par,
+      );
+      return {
+        player,
+        value,
+        toPar: value - hole.par,
+        holeNet: liveHoleNet({
+          gross: value,
+          playingHandicap: player.playingHandicap,
+          holeNumber: hole.number,
+          holes,
+          apiNetStrokes: apiNetStrokesForHole(
+            round.score,
+            hole.number,
+            player.slot,
+          ),
+        }),
+      };
+    });
+  }, [hole, holes, round.players, round.score, strokes]);
+  const showStrokeIndex = liveHeaderShowsStrokeIndex(
+    playerHoleNets.map((row) => row.holeNet.strokesReceived),
+  );
 
   useEffect(() => {
     if (locked) return;
@@ -239,19 +229,29 @@ export function GolfScorecard({
         </div>
       ) : (
         <div className="px-4 pt-4 text-center">
-          {round.venue?.name || round.course.name || round.teeName ? (
-            <p className="truncate text-xs text-zinc-500">
+          <div className="flex items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              className="inline-flex min-h-11 max-w-[85%] items-center justify-center truncate px-2 text-xs text-zinc-500 hover:text-zinc-300"
+              aria-label="Round info"
+            >
               {[round.venue?.name || round.course.name, round.teeName]
                 .filter(Boolean)
-                .join(" · ")}
-            </p>
-          ) : null}
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+                .join(" · ") || "Round info"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+              aria-label="Round info"
+            >
+              <MoreHorizontal className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
             {golfLayoutLabel(round)}
           </p>
-          <div className="mx-auto mt-3 max-w-md text-left">
-            <GolfRoundHandicapBanner round={round} players={round.players} />
-          </div>
         </div>
       )}
 
@@ -269,11 +269,7 @@ export function GolfScorecard({
             </button>
             <div className="min-w-0 flex-1 text-center">
               <p className="text-sm font-medium tabular-nums text-zinc-200">
-                {formatLiveHoleMeta(hole)}
-              </p>
-              <HoleTeeDistances tees={hole.tees} />
-              <p className="mt-1 text-[11px] text-zinc-600">
-                {formatHoleProgress(currentHoleIndex, holes.length)}
+                {formatLiveHoleMeta(hole, { showStrokeIndex })}
               </p>
             </div>
             <button
@@ -290,30 +286,16 @@ export function GolfScorecard({
           </div>
 
           <ul className="mt-6 space-y-3">
-            {round.players.map((player) => {
-              const value = holeStrokeValue(
-                strokes,
-                hole.number,
-                player.slot,
-                hole.par,
-              );
-              const toPar = value - hole.par;
-              const holeNet = liveHoleNet({
-                gross: value,
-                playingHandicap: player.playingHandicap,
-                holeNumber: hole.number,
-                holes,
-                apiNetStrokes: apiNetStrokesForHole(
-                  round.score,
-                  hole.number,
-                  player.slot,
-                ),
-              });
-              const hcpLabel = handicapSnapshotLabel(player);
+            {playerHoleNets.map(({ player, value, toPar, holeNet }) => {
+              const hcpLabel = formatLivePlayingHcp(player.playingHandicap);
               return (
                 <li
                   key={player.slot}
-                  className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-5"
+                  className={
+                    chrome.compactSinglePlayerCard
+                      ? "px-1 py-2"
+                      : "rounded-2xl border border-white/8 bg-[#141814] px-4 py-5"
+                  }
                 >
                   <GolfScoreStepper
                     value={value}
@@ -324,9 +306,18 @@ export function GolfScorecard({
                     onIncrease={() => adjustStroke(player.slot, 1)}
                   />
                   <div className="mt-3 min-w-0 text-center">
-                    <p className="truncate text-sm font-medium text-white">
-                      {player.displayName}
-                    </p>
+                    {chrome.showPlayerNameOnCard ? (
+                      <p
+                        className={[
+                          "truncate text-sm font-medium",
+                          chrome.compactSinglePlayerCard
+                            ? "text-zinc-400"
+                            : "text-white",
+                        ].join(" ")}
+                      >
+                        {player.displayName}
+                      </p>
+                    ) : null}
                     <p className="text-sm text-zinc-400">
                       {formatThisHoleNetLine({
                         net: holeNet.net,
@@ -348,15 +339,30 @@ export function GolfScorecard({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
               Totals
             </p>
-            <ul className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8 bg-[#141814]">
+            <ul
+              className={
+                chrome.compactSinglePlayerCard
+                  ? "px-1"
+                  : "divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8 bg-[#141814]"
+              }
+            >
               {totals.map((total) => (
                 <li
                   key={total.slot}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className={[
+                    "flex items-center gap-3",
+                    chrome.showPlayerNameInTotals
+                      ? "justify-between px-4 py-3"
+                      : "justify-center py-2",
+                  ].join(" ")}
                 >
-                  <span className="truncate text-sm text-zinc-300">
-                    {total.displayName}
-                  </span>
+                  {chrome.showPlayerNameInTotals ? (
+                    <span className="truncate text-sm text-zinc-300">
+                      {total.displayName}
+                    </span>
+                  ) : (
+                    <span className="sr-only">{total.displayName}</span>
+                  )}
                   <span className="text-right text-sm tabular-nums text-white">
                     {total.gross}
                     {total.net != null ? (
@@ -398,15 +404,9 @@ export function GolfScorecard({
           <div className="space-y-3">
             {lockError ? (
               <p className="text-center text-sm text-red-400">{lockError}</p>
-            ) : canLock ? (
-              <p className="text-center text-sm text-emerald-300">
-                All holes scored. Lock to save the round.
-              </p>
-            ) : (
-              <p className="text-center text-xs text-zinc-500">
-                Enter strokes hole by hole. Lock writes the result to history.
-              </p>
-            )}
+            ) : lockHint ? (
+              <p className="text-center text-sm text-emerald-300">{lockHint}</p>
+            ) : null}
             <button
               type="button"
               disabled={!canLock || locking}
@@ -426,6 +426,18 @@ export function GolfScorecard({
           </div>
         )}
       </div>
+
+      {!locked ? (
+        <GolfRoundInfoSheet
+          open={infoOpen}
+          onClose={() => setInfoOpen(false)}
+          round={round}
+          players={round.players}
+          tees={hole?.tees ?? []}
+          currentHoleIndex={currentHoleIndex}
+          holeCount={holes.length}
+        />
+      ) : null}
     </div>
   );
 }

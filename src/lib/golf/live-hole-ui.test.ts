@@ -11,8 +11,14 @@ import {
   applyStrokeDelta,
   formatHoleProgress,
   formatLiveHoleMeta,
+  formatLiveLockHint,
+  formatLivePlayingHcp,
+  formatRoundInfoPlayerHcp,
+  formatRoundInfoRatings,
   formatThisHoleNetLine,
   holeStrokeValue,
+  liveCardVisibility,
+  liveHeaderShowsStrokeIndex,
   liveHoleNet,
   seedHoleStrokesIfEmpty,
 } from "./live-hole-ui.ts";
@@ -29,16 +35,95 @@ const players: GolfPlayer[] = [
 ];
 
 describe("live hole header copy", () => {
-  it("formats a compact Hole · Par · SI line", () => {
+  it("formats compact Hole · Par without SI by default", () => {
     assert.equal(
       formatLiveHoleMeta({ number: 9, par: 5, strokeIndex: 15 }),
+      "Hole 9 · Par 5",
+    );
+  });
+
+  it("adds SI only when stroke dots need it", () => {
+    assert.equal(liveHeaderShowsStrokeIndex([0, 0]), false);
+    assert.equal(liveHeaderShowsStrokeIndex([0, 1]), true);
+    assert.equal(liveHeaderShowsStrokeIndex([-1]), true);
+    assert.equal(
+      formatLiveHoleMeta({ number: 9, par: 5, strokeIndex: 15 }, {
+        showStrokeIndex: true,
+      }),
       "Hole 9 · Par 5 · SI 15",
     );
   });
 
-  it("formats quiet Hole N of M progress", () => {
+  it("formats Hole N of M for Round info, not the live header", () => {
     assert.equal(formatHoleProgress(0, 9), "Hole 1 of 9");
     assert.equal(formatHoleProgress(8, 9), "Hole 9 of 9");
+  });
+});
+
+describe("live card visibility", () => {
+  it("hides tee pills, stacked hcp, and hole progress on the live card", () => {
+    const single = liveCardVisibility(1);
+    const fourball = liveCardVisibility(4);
+    for (const chrome of [single, fourball]) {
+      assert.equal(chrome.showTeePills, false);
+      assert.equal(chrome.showStackedHcp, false);
+      assert.equal(chrome.showHoleProgressOnCard, false);
+    }
+  });
+
+  it("does not duplicate the player name in totals for a single player", () => {
+    assert.equal(liveCardVisibility(1).showPlayerNameInTotals, false);
+    assert.equal(liveCardVisibility(1).showPlayerNameOnCard, true);
+    assert.equal(liveCardVisibility(2).showPlayerNameInTotals, true);
+  });
+
+  it("uses less card chrome for a single player", () => {
+    assert.equal(liveCardVisibility(1).compactSinglePlayerCard, true);
+    assert.equal(liveCardVisibility(2).compactSinglePlayerCard, false);
+  });
+});
+
+describe("live playing hcp", () => {
+  it("shows one quiet Hcp {playing} line", () => {
+    assert.equal(formatLivePlayingHcp(11), "Hcp 11");
+    assert.equal(formatLivePlayingHcp(0), "Hcp 0");
+    assert.equal(formatLivePlayingHcp(null), null);
+    assert.equal(formatLivePlayingHcp(undefined), null);
+  });
+
+  it("keeps course vs playing detail for Round info", () => {
+    assert.equal(
+      formatRoundInfoPlayerHcp({
+        slot: 1,
+        displayName: "Alex",
+        isGuest: true,
+        courseHandicap: 12,
+        playingHandicap: 11,
+      }),
+      "Course hcp 12 · Playing hcp 11",
+    );
+  });
+
+  it("formats CR / slope / tee par for Round info", () => {
+    assert.equal(
+      formatRoundInfoRatings({
+        courseRating: 71.2,
+        slopeRating: 129,
+        teePar: 72,
+      }),
+      "CR 71.2 · Slope 129 · Par 72",
+    );
+    assert.equal(formatRoundInfoRatings({}), null);
+  });
+});
+
+describe("live lock hint", () => {
+  it("is hidden until the round is ready to lock", () => {
+    assert.equal(formatLiveLockHint(false), null);
+    assert.equal(
+      formatLiveLockHint(true),
+      "All holes scored. Lock to save the round.",
+    );
   });
 });
 
