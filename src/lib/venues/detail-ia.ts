@@ -67,10 +67,7 @@ export function venueDetailKind(
   return "neither";
 }
 
-export function venueDetailChrome(
-  kind: VenueDetailKind,
-  sportsCount: number,
-): {
+export type VenueDetailChrome = {
   showWatchWhatsOn: boolean;
   showWatchChips: boolean;
   showFindPlacesToWatch: boolean;
@@ -79,7 +76,12 @@ export function venueDetailChrome(
   showSportsSection: boolean;
   showPlayStack: boolean;
   ctaMentionsScreenings: boolean;
-} {
+};
+
+export function venueDetailChrome(
+  kind: VenueDetailKind,
+  sportsCount: number,
+): VenueDetailChrome {
   const playCapable = kind === "play-only" || kind === "hybrid";
   const watchCapable = kind === "watch-only" || kind === "hybrid";
   const showPlayChips = playCapable && sportsCount > 0;
