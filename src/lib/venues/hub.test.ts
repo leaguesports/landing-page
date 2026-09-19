@@ -8,17 +8,21 @@ import {
   VENUE_HUB_FIXTURE_FETCH_LIMIT,
   VENUE_HUB_ON_NOW_LIMIT,
   VENUE_HUB_PLAY_SEO_CITY,
+  VENUE_HUB_RECOMMENDED_FETCH_LIMIT,
   VENUE_HUB_RECOMMENDED_LIMIT,
   VENUE_HUB_SEARCH_LIMIT,
   VENUE_HUB_SEARCH_MIN,
   buildOnNowCards,
   capVenueHubFavourites,
   capVenueHubSearchResults,
+  dedupeVenuesBySlug,
   favouritesSection,
   filterHubEventTiles,
   isVenueHubDirectoryHref,
+  rankRecommendedVenues,
   resolveRecommendedCity,
   shouldLoadVenueHubSession,
+  venueHasCardPhoto,
   venueHubDirectoryLinks,
   venueHubMatchTerm,
 } from "./hub.ts";
@@ -100,8 +104,11 @@ describe("venues hub does not fetch the full catalog", () => {
     assert.match(hubServiceSource, /VENUE_NAME_SEARCH_FETCH_LIMIT/);
     assert.match(
       hubServiceSource,
-      new RegExp(`\\[0\\.\\.\\.${VENUE_HUB_RECOMMENDED_LIMIT}\\]`),
+      /\[0\.\.\.\$\{VENUE_HUB_RECOMMENDED_FETCH_LIMIT\}\]/,
     );
+    assert.ok(VENUE_HUB_RECOMMENDED_FETCH_LIMIT > VENUE_HUB_RECOMMENDED_LIMIT);
+    assert.match(hubServiceSource, /dedupeVenuesBySlug/);
+    assert.match(hubServiceSource, /rankRecommendedVenues/);
     assert.match(hubServiceSource, /VENUE_NAME_SEARCH_HAYSTACK/);
     assert.match(hubServiceSource, /match \$term/);
     assert.doesNotMatch(hubServiceSource, /order\(_createdAt desc\)/);
@@ -118,6 +125,67 @@ describe("venues hub does not fetch the full catalog", () => {
     assert.match(cardProjection, /hero_image/);
     assert.doesNotMatch(cardProjection, /golfCourse/);
     assert.doesNotMatch(cardProjection, /\bdescription\b/);
+    assert.match(hubServiceSource, /defined\(hero_image\.asset\)/);
+    assert.match(hubServiceSource, /sports\[defined\(@->image\.asset\)\]/);
+  });
+});
+
+describe("dedupeVenuesBySlug", () => {
+  it("keeps the first row per slug and drops CMS duplicates", () => {
+    const rows = [
+      { slug: "cescos-randburg", name: "Cesco A", _id: "1" },
+      { slug: "cescos-randburg", name: "Cesco B", _id: "2" },
+      { slug: "world-of-golf", name: "World of Golf", _id: "3" },
+    ];
+    assert.deepEqual(dedupeVenuesBySlug(rows), [
+      { slug: "cescos-randburg", name: "Cesco A", _id: "1" },
+      { slug: "world-of-golf", name: "World of Golf", _id: "3" },
+    ]);
+  });
+});
+
+describe("rankRecommendedVenues", () => {
+  const hero = { asset: { _ref: "image-hero" } };
+  const sportImage = { asset: { _ref: "image-golf" } };
+
+  it("prefers venues with a card photo before rating", () => {
+    const ranked = rankRecommendedVenues([
+      {
+        slug: "cescos-randburg",
+        name: "Cesco's Randburg",
+        rating: 4.5,
+        hero_image: null,
+        sports: [],
+      },
+      {
+        slug: "world-of-golf",
+        name: "World of Golf",
+        rating: 4.4,
+        hero_image: null,
+        sports: [{ image: sportImage }],
+      },
+      {
+        slug: "hero-bar",
+        name: "Hero Bar",
+        rating: 4.0,
+        hero_image: hero,
+        sports: [],
+      },
+    ]);
+    assert.deepEqual(
+      ranked.map((row) => row.slug),
+      ["world-of-golf", "hero-bar", "cescos-randburg"],
+    );
+  });
+
+  it("venueHasCardPhoto requires an image asset ref or url", () => {
+    assert.equal(venueHasCardPhoto({ hero_image: hero }), true);
+    assert.equal(
+      venueHasCardPhoto({ sports: [{ image: sportImage }] }),
+      true,
+    );
+    assert.equal(venueHasCardPhoto({ hero_image: { _type: "image" } }), false);
+    assert.equal(venueHasCardPhoto({ sports: [] }), false);
   });
 });
 

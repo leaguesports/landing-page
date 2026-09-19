@@ -233,11 +233,12 @@ export function VenueHubRecommended({
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {venues.map((venue) => (
-          <div key={venue._id} className="overflow-hidden rounded-3xl">
-            <VenueDirectoryCard venue={venue} intent={null} />
-            <div className="-mt-px rounded-b-3xl border border-t-0 border-white/8 bg-[#141814]">
-              <RecommendedCardCta venue={venue} />
-            </div>
+          <div
+            key={venue._id}
+            className="group flex flex-col overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
+          >
+            <VenueDirectoryCard venue={venue} intent={null} embedded />
+            <RecommendedCardCta venue={venue} />
           </div>
         ))}
       </div>

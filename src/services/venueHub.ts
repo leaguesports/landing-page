@@ -7,7 +7,10 @@ import {
   venueNameMatchTerm,
 } from "@/lib/search/nameSearch";
 import {
+  VENUE_HUB_RECOMMENDED_FETCH_LIMIT,
   VENUE_HUB_RECOMMENDED_LIMIT,
+  dedupeVenuesBySlug,
+  rankRecommendedVenues,
   type VenueHubSearchHit,
 } from "@/lib/venues/hub";
 import {
@@ -68,7 +71,15 @@ export const VENUE_HUB_RECOMMENDED_QUERY = `*[
   && defined(slug.current)
   && defined(name)
   && ($location == "" || ${VENUE_IN_LOCATION})
-] | order(coalesce(rating, 0) desc, name asc) [0...6] {
+] | order(
+  select(
+    defined(hero_image.asset) => 0,
+    count(sports[defined(@->image.asset)]) > 0 => 1,
+    2
+  ) asc,
+  coalesce(rating, 0) desc,
+  name asc
+) [0...${VENUE_HUB_RECOMMENDED_FETCH_LIMIT}] {
   ${VENUE_HUB_CARD_PROJECTION}
 }`;
 
@@ -150,10 +161,10 @@ export async function getRecommendedVenues(options: {
       VENUE_HUB_RECOMMENDED_QUERY,
       { location },
     );
-    return (rows ?? [])
+    const mapped = (rows ?? [])
       .map(mapVenueRow)
-      .filter((venue): venue is VenueDetail => venue !== null)
-      .slice(0, limit);
+      .filter((venue): venue is VenueDetail => venue !== null);
+    return dedupeVenuesBySlug(rankRecommendedVenues(mapped)).slice(0, limit);
   } catch (error) {
     console.error("[venues-hub] recommended fetch failed", error);
     return [];
