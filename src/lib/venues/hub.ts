@@ -39,6 +39,12 @@ export const VENUE_HUB_PLAY_SEO_CITY = "johannesburg";
 /** Recommended venues — city heuristic or nationwide popular. */
 export const VENUE_HUB_RECOMMENDED_LIMIT = 6;
 
+/**
+ * Over-fetch before slug dedupe + photo preference so duplicate CMS docs
+ * (same slug, different `_id`) and photo-less watch bars don’t fill the grid.
+ */
+export const VENUE_HUB_RECOMMENDED_FETCH_LIMIT = 24;
+
 /** Signed-in empty copy — reuse venue follow, no new favourite concept. */
 export const VENUE_HUB_FAVOURITES_EMPTY = "Follow a venue to pin it here.";
 
@@ -157,6 +163,66 @@ export function buildOnNowCards(
       return aStart - bStart;
     })
     .slice(0, limit);
+}
+
+/**
+ * Keep the first row per slug. Callers should sort photo/rating-first so the
+ * kept duplicate is the better card.
+ */
+export function dedupeVenuesBySlug<T extends { slug: string }>(
+  venues: T[],
+): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const venue of venues) {
+    const slug = venue.slug.trim().toLowerCase();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(venue);
+  }
+  return out;
+}
+
+/** Prefer CMS hero, then any Play sport with an image asset. */
+export function venueHasCardPhoto(
+  venue: {
+    hero_image?: unknown;
+    sports?: Array<{ image?: unknown } | null> | null;
+  },
+): boolean {
+  if (hasImageAsset(venue.hero_image)) return true;
+  for (const sport of venue.sports ?? []) {
+    if (sport && hasImageAsset(sport.image)) return true;
+  }
+  return false;
+}
+
+function hasImageAsset(source: unknown): boolean {
+  if (!source || typeof source !== "object") return false;
+  const asset = (source as { asset?: { _ref?: unknown; url?: unknown } }).asset;
+  return typeof asset?._ref === "string" || typeof asset?.url === "string";
+}
+
+/**
+ * Photo-first, then rating, then name — stable companion to recommended GROQ.
+ */
+export function rankRecommendedVenues<
+  T extends {
+    slug: string;
+    name: string;
+    rating?: number | null;
+    hero_image?: unknown;
+    sports?: Array<{ image?: unknown } | null> | null;
+  },
+>(venues: T[]): T[] {
+  return [...venues].sort((a, b) => {
+    const photoDelta =
+      Number(venueHasCardPhoto(b)) - Number(venueHasCardPhoto(a));
+    if (photoDelta !== 0) return photoDelta;
+    const ratingDelta = (b.rating ?? 0) - (a.rating ?? 0);
+    if (ratingDelta !== 0) return ratingDelta;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export function resolveRecommendedCity(input: {

@@ -28,10 +28,13 @@ export function VenueDirectoryCard({
   venue,
   intent,
   nextScreening = null,
+  embedded = false,
 }: {
   venue: Venue;
   intent: string | null;
   nextScreening?: VenueScreeningDisplay | null;
+  /** Drop outer chrome when a parent already frames the card (e.g. hub CTA). */
+  embedded?: boolean;
 }) {
   const imageSrc = venuePhotoUrl(venue, { width: 800, height: 480 });
   const place = venuePlaceLine(venue);
@@ -43,7 +46,11 @@ export function VenueDirectoryCard({
   return (
     <Link
       href={`/venues/${venue.slug}`}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
+      className={
+        embedded
+          ? "group flex flex-col"
+          : "group flex flex-col overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
+      }
     >
       <div>
         {isRemoteVenuePhoto(imageSrc) ? (
