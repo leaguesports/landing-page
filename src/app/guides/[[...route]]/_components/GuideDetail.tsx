@@ -19,6 +19,8 @@ import {
   parseWatchGuideVenueCards,
   type WatchGuideVenueCards,
 } from "@/lib/guides/venueCards";
+import type { GuideVenueMedia } from "@/lib/guides/venueMedia";
+import { getGuideVenueMedia } from "@/lib/guides/venueMediaLookup";
 import {
   safeSanityImageUrl,
   sanityImageAssetId,
@@ -26,7 +28,6 @@ import {
 import type { PortableTextComponents } from "@portabletext/react";
 import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
 import { PortableText } from "next-sanity";
-import { Suspense } from "react";
 import type { Guide } from "../actions";
 import { createGuidePortableTextComponents } from "../textComponents";
 import { GuideBestForChips } from "./GuideBestForChips";
@@ -34,7 +35,6 @@ import { getGuideJsonLd } from "./guideJsonLd";
 import { GuideHeroBand } from "./GuideHeroBand";
 import { GuideToc } from "./GuideToc";
 import { GuideUpcomingFixtures } from "./GuideUpcomingFixtures";
-import { GuideVenueCardSkeletons } from "./GuideVenueCard";
 import { GuideVenueCardList } from "./GuideVenueCardList";
 
 function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
@@ -77,6 +77,7 @@ function GuideWatchVenueBody({
   sport,
   matrix,
   pageSlug,
+  venueMedia,
 }: {
   parsed: Extract<WatchGuideVenueCards, { status: "ready" }>;
   portableText: PortableTextComponents;
@@ -84,6 +85,7 @@ function GuideWatchVenueBody({
   sport: string | null;
   matrix: CtaMatrix;
   pageSlug: string;
+  venueMedia: Map<string, GuideVenueMedia>;
 }) {
   return (
     <>
@@ -106,14 +108,13 @@ function GuideWatchVenueBody({
           accentClass={accentClass}
         />
       ) : null}
-      <Suspense fallback={<GuideVenueCardSkeletons />}>
-        <GuideVenueCardList
-          venues={parsed.venues}
-          sport={sport}
-          matrix={matrix}
-          pageSlug={pageSlug}
-        />
-      </Suspense>
+      <GuideVenueCardList
+        venues={parsed.venues}
+        media={venueMedia}
+        sport={sport}
+        matrix={matrix}
+        pageSlug={pageSlug}
+      />
       {parsed.tail.length > 0 ? (
         <PortableText value={parsed.tail} components={portableText} />
       ) : null}
@@ -121,7 +122,7 @@ function GuideWatchVenueBody({
   );
 }
 
-export function GuideDetail({ guide }: { guide: Guide }) {
+export async function GuideDetail({ guide }: { guide: Guide }) {
   const faqs = getGuideFaqs(guide.slug);
   const jsonLd = getGuideJsonLd(guide, faqs);
   const stripped =
@@ -164,6 +165,15 @@ export function GuideDetail({ guide }: { guide: Guide }) {
   if (venueCards?.status === "skip") {
     console.warn("[guides] venue cards skipped", guide.slug, venueCards.reason);
   }
+  // Await media here so the card list is in the first HTML, directly under
+  // Upcoming. A Suspense hole streams the tail (Watch by sport / FAQ / Find a
+  // screening) first and parks the cards in a hidden payload after the footer.
+  const venueMedia =
+    venueCards?.status === "ready"
+      ? await getGuideVenueMedia(
+          venueCards.venues.flatMap((venue) => (venue.slug ? [venue.slug] : [])),
+        )
+      : new Map<string, GuideVenueMedia>();
   const accentClass = headingAccentClass(intent);
 
   return (
@@ -198,6 +208,7 @@ export function GuideDetail({ guide }: { guide: Guide }) {
               sport={sport}
               matrix={matrix}
               pageSlug={guide.slug}
+              venueMedia={venueMedia}
             />
           ) : (
             <PortableText value={before} components={portableText} />
