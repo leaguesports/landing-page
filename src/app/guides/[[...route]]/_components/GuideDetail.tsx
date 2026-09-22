@@ -10,19 +10,32 @@ import {
   guideHeadingIdMap,
   guideHeroVisual,
   guideSportFromText,
+  headingAccentClass,
   splitGuideContentForInlineCta,
 } from "@/lib/guides/presentation";
 import { stripMatchingFaqBlocks } from "@/lib/guides/stripFaqBlocks";
 import {
+  isGuideVenueCardPilot,
+  parseWatchGuideVenueCards,
+  type WatchGuideVenueCards,
+} from "@/lib/guides/venueCards";
+import {
   safeSanityImageUrl,
   sanityImageAssetId,
 } from "@/lib/sanity-image";
+import type { PortableTextComponents } from "@portabletext/react";
+import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
 import { PortableText } from "next-sanity";
+import { Suspense } from "react";
 import type { Guide } from "../actions";
 import { createGuidePortableTextComponents } from "../textComponents";
+import { GuideBestForChips } from "./GuideBestForChips";
 import { getGuideJsonLd } from "./guideJsonLd";
 import { GuideHeroBand } from "./GuideHeroBand";
 import { GuideToc } from "./GuideToc";
+import { GuideUpcomingFixtures } from "./GuideUpcomingFixtures";
+import { GuideVenueCardSkeletons } from "./GuideVenueCard";
+import { GuideVenueCardList } from "./GuideVenueCardList";
 
 function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
   if (faqs.length === 0) return null;
@@ -54,6 +67,57 @@ function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function GuideWatchVenueBody({
+  parsed,
+  portableText,
+  accentClass,
+  sport,
+  matrix,
+  pageSlug,
+}: {
+  parsed: Extract<WatchGuideVenueCards, { status: "ready" }>;
+  portableText: PortableTextComponents;
+  accentClass: string;
+  sport: string | null;
+  matrix: CtaMatrix;
+  pageSlug: string;
+}) {
+  return (
+    <>
+      <PortableText value={parsed.lead} components={portableText} />
+      {parsed.bestFor ? (
+        <GuideBestForChips
+          id={parsed.bestFor.id}
+          title={parsed.bestFor.title}
+          items={parsed.bestFor.items}
+          accentClass={accentClass}
+        />
+      ) : null}
+      {parsed.upcoming ? (
+        <GuideUpcomingFixtures
+          id={parsed.upcoming.id}
+          title={parsed.upcoming.title}
+          intro={parsed.upcoming.intro}
+          fixtures={parsed.upcoming.fixtures}
+          seeAllHref={parsed.upcoming.seeAllHref}
+          accentClass={accentClass}
+        />
+      ) : null}
+      <Suspense fallback={<GuideVenueCardSkeletons />}>
+        <GuideVenueCardList
+          venues={parsed.venues}
+          sport={sport}
+          matrix={matrix}
+          pageSlug={pageSlug}
+        />
+      </Suspense>
+      {parsed.tail.length > 0 ? (
+        <PortableText value={parsed.tail} components={portableText} />
+      ) : null}
+    </>
   );
 }
 
@@ -94,6 +158,13 @@ export function GuideDetail({ guide }: { guide: Guide }) {
   });
   const endSlot = guideCtaSlot("end");
   const midSlot = guideCtaSlot("mid");
+  const venueCards = isGuideVenueCardPilot(guide.slug)
+    ? parseWatchGuideVenueCards(content)
+    : null;
+  if (venueCards?.status === "skip") {
+    console.warn("[guides] venue cards skipped", guide.slug, venueCards.reason);
+  }
+  const accentClass = headingAccentClass(intent);
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
@@ -119,8 +190,19 @@ export function GuideDetail({ guide }: { guide: Guide }) {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <GuideToc headings={headings} />
-          <PortableText value={before} components={portableText} />
-          {after.length > 0 ? (
+          {venueCards?.status === "ready" ? (
+            <GuideWatchVenueBody
+              parsed={venueCards}
+              portableText={portableText}
+              accentClass={accentClass}
+              sport={sport}
+              matrix={matrix}
+              pageSlug={guide.slug}
+            />
+          ) : (
+            <PortableText value={before} components={portableText} />
+          )}
+          {venueCards?.status !== "ready" && after.length > 0 ? (
             <aside
               className="my-12 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-7 sm:py-7"
               data-cta-slot={midSlot}
@@ -141,7 +223,7 @@ export function GuideDetail({ guide }: { guide: Guide }) {
               />
             </aside>
           ) : null}
-          {after.length > 0 ? (
+          {venueCards?.status !== "ready" && after.length > 0 ? (
             <PortableText value={after} components={portableText} />
           ) : null}
         </div>
