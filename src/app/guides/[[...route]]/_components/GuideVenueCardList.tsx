@@ -1,10 +1,11 @@
 import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
 import type { GuideVenueCardEntry } from "@/lib/guides/venueCards";
-import { getGuideVenueMedia } from "@/lib/guides/venueMediaLookup";
+import type { GuideVenueMedia } from "@/lib/guides/venueMedia";
 import { GuideVenueCard } from "./GuideVenueCard";
 
-export async function GuideVenueCardList({
+export function GuideVenueCardList({
   venues,
+  media,
   sport,
   matrix,
   pageSlug,
@@ -13,14 +14,11 @@ export async function GuideVenueCardList({
   sport: string | null;
   matrix: CtaMatrix;
   pageSlug: string;
+  media: Map<string, GuideVenueMedia>;
 }) {
-  const media = await getGuideVenueMedia(
-    venues.flatMap((venue) => (venue.slug ? [venue.slug] : [])),
-  );
-
   return (
     <div
-      className="my-10 grid grid-cols-1 gap-6 lg:grid-cols-2"
+      className="my-8 grid grid-cols-1 gap-3 sm:grid-cols-2"
       data-guide-venue-list=""
     >
       {venues.map((venue) => (

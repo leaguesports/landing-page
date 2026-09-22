@@ -298,6 +298,13 @@ button {
   background-size: 18px 18px, 56px 56px;
 }
 
+/* Pilot venue cards — quiet mark, never a sport-tint wall or map tile. */
+.guide-venue-mark {
+  background-color: #171c17;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.6px, transparent 0.6px);
+  background-size: 7px 7px;
+}
+
 .img-treatment-f1 {
   -webkit-mask-image: linear-gradient(
     to right,

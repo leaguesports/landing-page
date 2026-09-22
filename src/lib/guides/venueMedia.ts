@@ -21,6 +21,33 @@ export function asGuideVenueCoord(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+export type GuideVenueCardVisual =
+  | { kind: "photo"; src: string; initial: string }
+  | { kind: "placeholder"; initial: string };
+
+export function guideVenueMarkInitial(suburb: string, name: string): string {
+  const source = `${suburb} ${name}`.trim();
+  const letter = source.match(/[A-Za-z0-9]/);
+  return letter ? letter[0].toUpperCase() : "•";
+}
+
+/**
+ * Art for a pilot venue card.
+ * A Sanity photo becomes a small thumb. Anything else — including coordinates —
+ * is a quiet initial. Unkeyed CARTO tiles render "API KEY REQUIRED" and must
+ * not be used as card media.
+ */
+export function guideVenueCardVisual(input: {
+  name: string;
+  suburb: string;
+  media: Pick<GuideVenueMedia, "photoUrl" | "latitude" | "longitude"> | null;
+}): GuideVenueCardVisual {
+  const initial = guideVenueMarkInitial(input.suburb, input.name);
+  const src = input.media?.photoUrl?.trim() ?? "";
+  if (src) return { kind: "photo", src, initial };
+  return { kind: "placeholder", initial };
+}
+
 export function guideVenuePhotoSource(
   row: GuideVenueMediaRow,
 ): SanityImageSource | undefined {

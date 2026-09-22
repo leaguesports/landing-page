@@ -121,7 +121,11 @@ export function splitGuideVenueHook(
   return { hook: `${cut}…`, rest: trimmed };
 }
 
-/** CARTO dark tile already allowed by the site CSP. One tile, point marked in CSS. */
+/**
+ * CARTO dark tile URL. Do not render this on guide cards — production tiles
+ * say "API KEY REQUIRED" and are unreadable as media. Kept for the tile math
+ * tests only until a keyed basemap exists.
+ */
 export function cartoDarkTileUrl(
   latitude: number,
   longitude: number,

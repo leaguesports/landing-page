@@ -18,8 +18,8 @@ export function GuideUpcomingFixtures({
   accentClass: string;
 }) {
   return (
-    <section aria-labelledby={id} className="mt-12" data-guide-upcoming="">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <section aria-labelledby={id} className="mt-10" data-guide-upcoming="">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <h2
           id={id}
           className={`scroll-mt-28 border-l-[3px] ${accentClass} pl-4 font-display text-3xl tracking-wide text-white sm:text-4xl`}
@@ -35,22 +35,25 @@ export function GuideUpcomingFixtures({
         </Link>
       </div>
       {intro ? (
-        <p className="mb-5 max-w-3xl text-base leading-relaxed text-zinc-300">{intro}</p>
+        <p className="mb-3 max-w-3xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+          {intro}
+        </p>
       ) : null}
       {fixtures.length > 0 ? (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {fixtures.map((fixture) => (
             <li key={fixture.href}>
               <Link
                 href={fixture.href}
-                className="group block rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 transition-colors hover:border-white/16"
+                className="group flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/8 bg-[#141814] px-3.5 py-2 transition-colors hover:border-white/16"
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-400">
-                  Fixture
-                </p>
-                <p className="mt-2 font-display text-2xl tracking-wide text-white group-hover:text-sky-300">
+                <span className="font-display text-base leading-tight tracking-wide text-white group-hover:text-sky-300 sm:text-lg">
                   {fixture.title}
-                </p>
+                </span>
+                <ArrowUpRight
+                  className="h-3.5 w-3.5 shrink-0 text-sky-400/80"
+                  aria-hidden
+                />
               </Link>
             </li>
           ))}
