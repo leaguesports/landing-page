@@ -54,6 +54,11 @@ export function createGuidePortableTextComponents(options: {
             },
         },
         block: {
+            h1: ({ children }) => (
+                <p className="mb-6 font-display text-4xl tracking-wide text-white sm:text-5xl">
+                    {children}
+                </p>
+            ),
             normal: ({ children }) => (
                 <p className="mb-5 text-balance text-zinc-300 text-base sm:text-lg leading-[1.75] font-medium last:mb-0">
                     {children}
