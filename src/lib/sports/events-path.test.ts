@@ -194,4 +194,67 @@ describe("mergeVenueUpcomingScreenings", () => {
     assert.equal(merged[0]?.title, "Springboks vs All Blacks");
     assert.equal(merged[0]?.href, "/events/springboks-vs-all-blacks-2026-09-06");
   });
+
+  it("hides another sport on a sport-scoped page", () => {
+    const scopedNow = new Date("2026-09-26T08:00:00.000Z");
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "Beer Park",
+          slug: "beer-park",
+          broadcasts: [{ slug: "rugby" }, { slug: "soccer" }],
+          upcoming_screenings: [
+            {
+              title: "Orlando Pirates vs Kaizer Chiefs",
+              startsAt: "2026-10-31T13:30:00.000Z",
+            },
+            {
+              title: "Sharks vs Lions",
+              startsAt: "2026-09-27T13:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      [
+        {
+          title: "Orlando Pirates vs Kaizer Chiefs",
+          sport: "soccer",
+          series: "psl",
+          startDateTime: "2026-10-31T13:30:00.000Z",
+        },
+        {
+          title: "Sharks vs Lions",
+          sport: "rugby",
+          series: "urc",
+          startDateTime: "2026-09-27T13:00:00.000Z",
+        },
+      ],
+      SPORT_CATALOG,
+      { now: scopedNow, limit: 10 },
+    );
+
+    const rugby = mergeVenueUpcomingScreenings(
+      {
+        slug: "beer-park",
+        upcoming_screenings: [
+          {
+            title: "Orlando Pirates vs Kaizer Chiefs",
+            startsAt: "2026-10-31T13:30:00.000Z",
+          },
+          {
+            title: "Sharks vs Lions",
+            startsAt: "2026-09-27T13:00:00.000Z",
+          },
+        ],
+      },
+      fixtures,
+      scopedNow,
+      { sportSlug: "rugby", broadcastSlugs: ["rugby", "soccer"] },
+    );
+
+    assert.deepEqual(
+      rugby.map((item) => item.title),
+      ["Sharks vs Lions"],
+    );
+  });
 });

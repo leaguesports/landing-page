@@ -4,12 +4,22 @@ import type {
 } from "@/lib/intent/enrichment";
 import type { IntentKind } from "@/lib/intent/paths";
 import { CalendarDays, Sparkles } from "lucide-react";
+import Link from "next/link";
+
+type WatchCalendarEmpty = {
+  message: string;
+  eventsHref: string;
+  guideHref: string;
+  guideLabel: string;
+};
 
 type IntentHighlightsProps = {
   intent: IntentKind;
   amenityStats: IntentAmenityStat[];
   screenings: IntentScreeningHighlight[];
   verifiedCount: number;
+  /** Shown on sport city pages when the sport filter leaves no rows. */
+  calendarEmpty?: WatchCalendarEmpty | null;
 };
 
 function formatScreeningWhen(value: string): string {
@@ -29,11 +39,16 @@ export function IntentHighlights({
   amenityStats,
   screenings,
   verifiedCount,
+  calendarEmpty = null,
 }: IntentHighlightsProps) {
+  const showEmptyCalendar =
+    intent === "watch" && screenings.length === 0 && calendarEmpty !== null;
+
   if (
     amenityStats.length === 0 &&
     screenings.length === 0 &&
-    verifiedCount <= 0
+    verifiedCount <= 0 &&
+    !showEmptyCalendar
   ) {
     return null;
   }
@@ -83,7 +98,7 @@ export function IntentHighlights({
             <ul className="mt-4 space-y-3">
               {screenings.map((item) => (
                 <li
-                  key={`${item.venueName}-${item.startsAt}-${item.title}`}
+                  key={`${item.venueSlug ?? item.venueName}-${item.startsAt}-${item.title}`}
                   className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-3"
                 >
                   <p className="text-sm font-medium text-white">{item.title}</p>
@@ -93,6 +108,35 @@ export function IntentHighlights({
                 </li>
               ))}
             </ul>
+          </div>
+        ) : showEmptyCalendar && calendarEmpty ? (
+          <div>
+            <p
+              className={`mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ${accent}`}
+            >
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+              Upcoming screenings
+            </p>
+            <h2 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
+              On the calendar
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+              {calendarEmpty.message}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium">
+              <Link
+                href={calendarEmpty.eventsHref}
+                className="text-sky-300 hover:text-white"
+              >
+                Events
+              </Link>
+              <Link
+                href={calendarEmpty.guideHref}
+                className="text-sky-300 hover:text-white"
+              >
+                {calendarEmpty.guideLabel}
+              </Link>
+            </div>
           </div>
         ) : null}
       </div>

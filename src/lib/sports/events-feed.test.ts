@@ -546,6 +546,64 @@ describe("selectFeaturedFixture", () => {
   });
 });
 
+describe("multi-sport screening sport", () => {
+  const now = new Date("2026-09-26T08:00:00.000Z");
+
+  it("does not stamp the first broadcast onto an untagged screening", () => {
+    const fixtures = groupScreeningsIntoFixtures(
+      [
+        {
+          name: "The Baron",
+          slug: "the-baron-sandton",
+          broadcasts: [{ slug: "soccer" }, { slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Orlando Pirates vs Kaizer Chiefs",
+              startsAt: "2026-10-31T13:30:00.000Z",
+            },
+          ],
+        },
+      ],
+      SPORT_CATALOG,
+      { now },
+    );
+
+    assert.equal(fixtures.length, 1);
+    assert.equal(fixtures[0]?.sportSlug, null);
+  });
+
+  it("lets the CMS event sport replace a single-broadcast guess", () => {
+    const fixtures = buildUpcomingFixtures(
+      [
+        {
+          name: "Rugby-only bar",
+          slug: "rugby-only",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Orlando Pirates vs Kaizer Chiefs",
+              startsAt: "2026-10-31T13:30:00.000Z",
+            },
+          ],
+        },
+      ],
+      [
+        {
+          title: "Orlando Pirates vs Kaizer Chiefs",
+          sport: "soccer",
+          series: "psl",
+          startDateTime: "2026-10-31T13:30:00.000Z",
+        },
+      ],
+      SPORT_CATALOG,
+      { now, limit: 10 },
+    );
+
+    assert.equal(fixtures.length, 1);
+    assert.equal(fixtures[0]?.sportSlug, "soccer");
+  });
+});
+
 describe("findFixtureBySlug + fixtureWatchHref", () => {
   it("resolves detail URLs for screening-backed fixtures", () => {
     const fixtures = buildUpcomingFixtures(

@@ -1,3 +1,5 @@
+import { fixtureMatchesEventsSport } from "../events/scope.ts";
+import { inferSportSlug, resolveSportSlug } from "./catalog.ts";
 import {
   canonicalizeFixtureTitle,
   EVENT_CMS_PROJECTION,
@@ -23,6 +25,16 @@ export type VenueScreeningDisplay = {
   startsAt: string;
   setupTags?: string[];
   href?: string | null;
+};
+
+export type MergeVenueScreeningsOptions = {
+  /**
+   * Hub sport for a sport-scoped page (`rugby`, `soccer`, `cricket`,
+   * `motorsport`). Omit on venue detail, which lists every screening.
+   */
+  sportSlug?: string | null;
+  /** Resolved broadcast slugs for this venue. Used only when a screening has no fixture sport. */
+  broadcastSlugs?: readonly string[];
 };
 
 function asIso(value: string | null | undefined): string | null {
@@ -131,9 +143,50 @@ function fixtureMatchingScreening(
   );
 }
 
+function uniqueBroadcastSports(slugs: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const slug of slugs) {
+    const resolved = resolveSportSlug(slug);
+    if (!resolved || seen.has(resolved)) continue;
+    seen.add(resolved);
+    out.push(resolved);
+  }
+  return out;
+}
+
+/**
+ * True when this screening belongs on a sport-scoped watch page.
+ * A matched fixture's sport wins. Otherwise the title, then a venue that
+ * broadcasts only this sport. Multi-sport bars do not guess.
+ */
+function screeningMatchesPageSport(
+  title: string,
+  startsAt: string | null,
+  fixtures: UpcomingFixture[],
+  sportSlug: string,
+  broadcastSlugs: readonly string[],
+): boolean {
+  const match = fixtureMatchingScreening(fixtures, title, startsAt);
+  if (match?.sportSlug) return fixtureMatchesEventsSport(match, sportSlug);
+
+  const inferred = inferSportSlug(title);
+  if (inferred) {
+    return fixtureMatchesEventsSport({ sportSlug: inferred }, sportSlug);
+  }
+
+  const broadcasts = uniqueBroadcastSports(broadcastSlugs);
+  if (broadcasts.length === 1) {
+    return fixtureMatchesEventsSport({ sportSlug: broadcasts[0] }, sportSlug);
+  }
+  return false;
+}
+
 /**
  * CMS `upcoming_screenings` plus fixtures that already list this venue.
  * Past kickoffs drop after the grace window. Matching Events rows get an href.
+ * Pass `sportSlug` on `/watch/{sport}/{city}` so another sport's kickoff
+ * cannot become the next line.
  */
 export function mergeVenueUpcomingScreenings(
   venue: {
@@ -144,8 +197,11 @@ export function mergeVenueUpcomingScreenings(
   },
   fixtures: UpcomingFixture[],
   now: Date = new Date(),
+  options: MergeVenueScreeningsOptions = {},
 ): VenueScreeningDisplay[] {
   const venueSlug = venue.slug.trim();
+  const pageSport = options.sportSlug?.trim() || null;
+  const broadcastSlugs = options.broadcastSlugs ?? [];
   const byKey = new Map<string, VenueScreeningDisplay>();
 
   function upsert(item: VenueScreeningDisplay) {
@@ -178,7 +234,20 @@ export function mergeVenueUpcomingScreenings(
     const title = (screening.title ?? "").trim();
     const startsAt = (screening.startsAt ?? "").trim();
     if (!title || !startsAt) continue;
-    const match = fixtureMatchingScreening(fixtures, title, asIso(startsAt));
+    const startsAtIso = asIso(startsAt);
+    if (
+      pageSport &&
+      !screeningMatchesPageSport(
+        title,
+        startsAtIso,
+        fixtures,
+        pageSport,
+        broadcastSlugs,
+      )
+    ) {
+      continue;
+    }
+    const match = fixtureMatchingScreening(fixtures, title, startsAtIso);
     upsert({
       title,
       startsAt,
@@ -191,6 +260,7 @@ export function mergeVenueUpcomingScreenings(
     for (const fixture of fixtures) {
       if (!fixture.venues.some((item) => item.slug === venueSlug)) continue;
       if (!fixture.startsAt) continue;
+      if (pageSport && !fixtureMatchesEventsSport(fixture, pageSport)) continue;
       upsert({
         title: fixture.title,
         startsAt: fixture.startsAt,
