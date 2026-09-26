@@ -2,8 +2,9 @@ import { VenueDirectoryCard } from "@/app/venues/_components/VenueDirectoryCard"
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
+import { venueBroadcastSportSlugs } from "@/lib/intent/watch-screenings";
 import { mergeVenueUpcomingScreenings } from "@/lib/sports/events-path";
-import { getUpcomingFixtures } from "@/services/events";
+import type { UpcomingFixture } from "@/lib/sports/events-feed";
 import type { VenueDetail } from "@/services/venues";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -18,11 +19,14 @@ type IntentVenuesSectionProps = {
   cityTitle?: string | null;
   related?: { slug: string; title: string }[];
   activitySlug: string;
+  /** Hub sport used to scope the next-screening line. */
+  sportSlug?: string | null;
+  fixtures?: UpcomingFixture[];
   locationSlug: string;
   sourcePage: string;
 };
 
-export async function IntentVenuesSection({
+export function IntentVenuesSection({
   intent,
   venues,
   activityName,
@@ -32,6 +36,8 @@ export async function IntentVenuesSection({
   cityTitle,
   related = [],
   activitySlug,
+  sportSlug = null,
+  fixtures = [],
   locationSlug,
   sourcePage,
 }: IntentVenuesSectionProps) {
@@ -39,8 +45,7 @@ export async function IntentVenuesSection({
   const fallbackSuburb = suburbTitle ?? locationTitle;
   const fallbackCity = cityTitle ?? "this city";
   const verb = intent === "watch" ? "Watch" : "Play";
-  const fixtures =
-    intent === "watch" ? await getUpcomingFixtures({ limit: 48 }) : [];
+  const now = new Date();
 
   return (
     <section
@@ -90,7 +95,12 @@ export async function IntentVenuesSection({
                 intent={intent}
                 nextScreening={
                   intent === "watch"
-                    ? mergeVenueUpcomingScreenings(venue, fixtures)[0] ?? null
+                    ? mergeVenueUpcomingScreenings(venue, fixtures, now, {
+                        sportSlug,
+                        broadcastSlugs: venueBroadcastSportSlugs(
+                          venue.broadcasts,
+                        ),
+                      })[0] ?? null
                     : null
                 }
               />

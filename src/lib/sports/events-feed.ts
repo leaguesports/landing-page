@@ -511,6 +511,24 @@ function venueFromRow(
 }
 
 /**
+ * A screening has no sport field. Use the venue's broadcast sport only when
+ * the venue shows exactly one sport — the first broadcast on a multi-sport
+ * bar is not the screening's sport.
+ */
+function soleBroadcastSport(
+  broadcasts: EventsScreeningVenueRow["broadcasts"],
+  sports: SportDefinition[],
+): string | null {
+  const slugs = new Set<string>();
+  for (const broadcast of broadcasts ?? []) {
+    const slug = resolveSportSlug(asString(broadcast.slug), sports);
+    if (slug) slugs.add(slug);
+  }
+  if (slugs.size !== 1) return null;
+  return [...slugs][0] ?? null;
+}
+
+/**
  * Group venue screenings by title + SA calendar day so the same kickoff
  * merges across bars, while recurring fixtures stay distinct.
  */
@@ -527,10 +545,7 @@ export function groupScreeningsIntoFixtures(
     const venueSlug = asString(venue.slug);
     if (!venueSlug) continue;
 
-    const broadcastSport =
-      venue.broadcasts
-        ?.map((broadcast) => resolveSportSlug(asString(broadcast.slug), sports))
-        .find((slug): slug is string => Boolean(slug)) ?? null;
+    const broadcastSport = soleBroadcastSport(venue.broadcasts, sports);
 
     for (const screening of venue.upcoming_screenings ?? []) {
       const title = asString(screening.title);
@@ -691,7 +706,11 @@ export function mergeUpcomingFixtures(
       existing.title || item.title,
       existing.startsAt,
     );
-    if (!existing.sportSlug && item.sportSlug) {
+    // Event `sport` / series wins. A screening guess (or a single-sport
+    // broadcast fallback) must not keep a soccer fixture tagged as rugby.
+    if (from === "event" && item.sportSlug) {
+      existing.sportSlug = item.sportSlug;
+    } else if (!existing.sportSlug && item.sportSlug) {
       existing.sportSlug = item.sportSlug;
     }
     if (item.series) existing.series = item.series;

@@ -28,6 +28,8 @@ export type IntentScreeningHighlight = {
   title: string;
   venueName: string;
   startsAt: string;
+  /** Present on sport-scoped calendar rows so duplicate venue docs share one key. */
+  venueSlug?: string;
 };
 
 export type IntentPageEnrichment = {

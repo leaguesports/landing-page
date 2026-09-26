@@ -28,7 +28,15 @@ import {
   buildIntentEnrichment,
   buildIntentIntroParagraphs,
   resolveIntentIndexPolicy,
+  type IntentPageEnrichment,
 } from "@/lib/intent/enrichment";
+import { loadWatchCityFixtures } from "@/lib/intent/watch-fixtures";
+import {
+  watchCalendarScreenings,
+  watchEventsHref,
+  watchRelatedGuideLink,
+  watchScreeningEmptyCopy,
+} from "@/lib/intent/watch-screenings";
 import { buildIntentJsonLd } from "@/lib/intent/jsonLd";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
@@ -49,6 +57,20 @@ function intentOgImageUrl(
   const source = resolveVenueImage(venue);
   if (!source) return null;
   return sanityImageUrl(source, { width: 1200, height: 630 }) ?? null;
+}
+
+function scopeWatchEnrichment(
+  enrichment: IntentPageEnrichment,
+  intent: IntentKind,
+  venues: VenueDetail[],
+  fixtures: Awaited<ReturnType<typeof loadWatchCityFixtures>>,
+  sportSlug: string,
+): IntentPageEnrichment {
+  if (intent !== "watch") return enrichment;
+  return {
+    ...enrichment,
+    screeningHighlights: watchCalendarScreenings(venues, fixtures, sportSlug),
+  };
 }
 
 function metaDescriptionExtras(
@@ -131,13 +153,22 @@ export async function generateIntentMetadata(
     return { title: "Location not found", robots: { index: false, follow: false } };
   }
 
-  const results = await getVenuesByLocationAndActivityWithFallback(
+  const [results, fixtures] = await Promise.all([
+    getVenuesByLocationAndActivityWithFallback(
+      intent,
+      resolved.locationSlug,
+      activity,
+      location,
+    ),
+    intent === "watch" ? loadWatchCityFixtures() : Promise.resolve([]),
+  ]);
+  const enrichment = scopeWatchEnrichment(
+    buildIntentEnrichment(intent, results.venues),
     intent,
-    resolved.locationSlug,
-    activity,
-    location,
+    results.venues,
+    fixtures,
+    activity.sportSlug,
   );
-  const enrichment = buildIntentEnrichment(intent, results.venues);
   const indexPolicy = resolveIntentIndexPolicy({
     locationSlug: location.slug,
     parentSlug: location.parentSlug,
@@ -334,7 +365,7 @@ export async function IntentSeoPage({
   const location = await getLocationBySlug(resolved.locationSlug);
   if (!location) notFound();
 
-  const [results, nearby] = await Promise.all([
+  const [results, nearby, fixtures] = await Promise.all([
     getVenuesByLocationAndActivityWithFallback(
       intent,
       resolved.locationSlug,
@@ -342,9 +373,21 @@ export async function IntentSeoPage({
       location,
     ),
     listLocationsForActivity(intent, activity),
+    intent === "watch" ? loadWatchCityFixtures() : Promise.resolve([]),
   ]);
 
-  const enrichment = buildIntentEnrichment(intent, results.venues);
+  const enrichment = scopeWatchEnrichment(
+    buildIntentEnrichment(intent, results.venues),
+    intent,
+    results.venues,
+    fixtures,
+    activity.sportSlug,
+  );
+  const guideCitySlug = location.parentSlug || location.slug;
+  const guideLink =
+    intent === "watch"
+      ? watchRelatedGuideLink(fixtures, activity.sportSlug, guideCitySlug)
+      : null;
   const heading = intentDetailHeading(intent, activity.name, location.title);
   const title = intentDetailTitle(intent, activity.name, location.title);
   const description = intentDetailDescription(
@@ -424,12 +467,24 @@ export async function IntentSeoPage({
         amenityStats={enrichment.amenityStats}
         screenings={enrichment.screeningHighlights}
         verifiedCount={enrichment.verifiedCount}
+        calendarEmpty={
+          intent === "watch"
+            ? {
+                message: watchScreeningEmptyCopy(activity.name),
+                eventsHref: watchEventsHref(activity.sportSlug),
+                guideHref: guideLink?.href ?? "/guides",
+                guideLabel: guideLink?.label ?? "Guides",
+              }
+            : null
+        }
       />
       <IntentVenuesSection
         intent={intent}
         venues={results.venues}
         activityName={activity.name}
         activitySlug={activity.slug}
+        sportSlug={activity.sportSlug}
+        fixtures={fixtures}
         locationTitle={location.title}
         usedCityFallback={results.usedCityFallback}
         suburbTitle={results.suburbTitle}
