@@ -301,10 +301,112 @@ function venueHasHero(venue: { hero_image?: unknown }): boolean {
   return Boolean((image as { asset?: unknown }).asset);
 }
 
-/** One card per slug. A later duplicate replaces the first only when it has a photo. */
-export function dedupeVenuesBySlug<
-  T extends { slug?: string | null; hero_image?: unknown },
->(venues: readonly T[]): T[] {
+const WATCH_AMENITY_KEYS = [
+  "has_big_screens",
+  "has_live_audio",
+  "has_parking",
+  "has_generator_backup",
+  "has_food_menu",
+  "has_outdoor_area",
+  "has_craft_drafts",
+  "is_verified",
+] as const;
+
+type WatchAmenityKey = (typeof WATCH_AMENITY_KEYS)[number];
+
+type DedupeScreening = {
+  title?: string | null;
+  startsAt?: string | null;
+  setupTags?: string[];
+};
+
+type DedupeBroadcast = {
+  slug?: string | null;
+  _id?: string | null;
+  name?: string | null;
+};
+
+type DedupeVenue = {
+  slug?: string | null;
+  hero_image?: unknown;
+  upcoming_screenings?: readonly DedupeScreening[] | null;
+  broadcasts?: readonly DedupeBroadcast[] | null;
+} & Partial<Record<WatchAmenityKey, boolean | null>>;
+
+function screeningMergeKey(item: DedupeScreening): string {
+  const title = (item.title ?? "").trim().toLowerCase();
+  const startsAt = (item.startsAt ?? "").trim();
+  if (!title || !startsAt) return "";
+  return `${title}|${startsAt}`;
+}
+
+function unionScreenings(
+  current: readonly DedupeScreening[] | null | undefined,
+  incoming: readonly DedupeScreening[] | null | undefined,
+): DedupeScreening[] | null {
+  const left = current ?? [];
+  const right = incoming ?? [];
+  if (left.length === 0 && right.length === 0) {
+    return current ? [...current] : incoming ? [...incoming] : null;
+  }
+  const seen = new Set<string>();
+  const out: DedupeScreening[] = [];
+  for (const item of [...left, ...right]) {
+    const key = screeningMergeKey(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+function unionBroadcasts(
+  current: readonly DedupeBroadcast[] | null | undefined,
+  incoming: readonly DedupeBroadcast[] | null | undefined,
+): DedupeBroadcast[] | null {
+  const left = current ?? [];
+  const right = incoming ?? [];
+  if (left.length === 0 && right.length === 0) {
+    return current ? [...current] : incoming ? [...incoming] : null;
+  }
+  const seen = new Set<string>();
+  const out: DedupeBroadcast[] = [];
+  for (const item of [...left, ...right]) {
+    const slug = (item.slug ?? item._id ?? "").trim().toLowerCase();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(item);
+  }
+  return out;
+}
+
+/**
+ * One card per slug. Duplicate CMS docs are merged, not swapped: screenings,
+ * broadcasts, and amenities survive from either doc, and `hero_image` is
+ * taken from whichever duplicate has one. Replacing the whole record with
+ * the photo doc drops the other doc's calendar.
+ */
+function mergeVenueDocs<T extends DedupeVenue>(current: T, incoming: T): T {
+  const next: DedupeVenue = { ...current };
+  if (!venueHasHero(current) && venueHasHero(incoming)) {
+    next.hero_image = incoming.hero_image;
+  }
+  next.upcoming_screenings = unionScreenings(
+    current.upcoming_screenings,
+    incoming.upcoming_screenings,
+  );
+  next.broadcasts = unionBroadcasts(current.broadcasts, incoming.broadcasts);
+  for (const key of WATCH_AMENITY_KEYS) {
+    if (current[key] === true || incoming[key] === true) {
+      next[key] = true;
+    }
+  }
+  return next as T;
+}
+
+export function dedupeVenuesBySlug<T extends DedupeVenue>(
+  venues: readonly T[],
+): T[] {
   const indexBySlug = new Map<string, number>();
   const out: T[] = [];
   for (const venue of venues) {
@@ -320,9 +422,7 @@ export function dedupeVenuesBySlug<
       continue;
     }
     const current = out[existing];
-    if (current && !venueHasHero(current) && venueHasHero(venue)) {
-      out[existing] = venue;
-    }
+    if (current) out[existing] = mergeVenueDocs(current, venue);
   }
   return out;
 }

@@ -253,20 +253,68 @@ describe("watch city calendar sport scope", () => {
     assert.equal(watchVenueMetaLine({ sportName: "Rugby" }), null);
   });
 
-  it("dedupes venue cards by slug and keeps a photo when a duplicate has one", () => {
+  it("dedupes venue cards by slug and keeps a photo without replacing the record", () => {
     const rows = dedupeVenuesBySlug([
-      { slug: "cescos-randburg", name: "A", hero_image: null },
+      {
+        slug: "cescos-randburg",
+        name: "A",
+        hero_image: null,
+        upcoming_screenings: [pirates],
+        has_big_screens: true,
+      },
       {
         slug: "cescos-randburg",
         name: "B",
         hero_image: { asset: { _ref: "image-abc" } },
+        upcoming_screenings: [],
+        has_big_screens: false,
       },
       { slug: "beer-park-sandton", name: "C", hero_image: null },
     ]);
     assert.deepEqual(
       rows.map((row) => row.name),
-      ["B", "C"],
+      ["A", "C"],
     );
+    assert.deepEqual(rows[0]?.hero_image, { asset: { _ref: "image-abc" } });
+    assert.equal(rows[0]?.upcoming_screenings?.[0]?.title, pirates.title);
+    assert.equal(rows[0]?.has_big_screens, true);
+  });
+
+  it("does not let a photo-only duplicate hide the other doc's screening", () => {
+    const photoOnly = {
+      name: "Cesco's Randburg",
+      slug: "cescos-randburg",
+      broadcasts: [] as { slug: string }[],
+      upcoming_screenings: [] as { title: string; startsAt: string }[],
+      hero_image: { asset: { _ref: "image-photo-only" } },
+      has_big_screens: false,
+      has_parking: false,
+    };
+    const withScreening = {
+      ...cesco,
+      hero_image: null,
+      has_big_screens: true,
+      has_parking: true,
+    };
+
+    for (const listed of [
+      [withScreening, photoOnly],
+      [photoOnly, withScreening],
+    ]) {
+      const deduped = dedupeVenuesBySlug(listed);
+      assert.equal(deduped.length, 1);
+      assert.deepEqual(deduped[0]?.hero_image, photoOnly.hero_image);
+      assert.equal(deduped[0]?.has_big_screens, true);
+      assert.equal(deduped[0]?.has_parking, true);
+      assert.ok(
+        (deduped[0]?.broadcasts ?? []).some((item) => item.slug === "soccer"),
+      );
+      const rows = watchCalendarScreenings(deduped, upcoming, "soccer", now, 6);
+      assert.deepEqual(
+        rows.map((row) => `${row.title} @ ${row.venueSlug}`),
+        [`${pirates.title} @ cescos-randburg`],
+      );
+    }
   });
 
   it("links a matched fixture and does not invent a calendar href", () => {
