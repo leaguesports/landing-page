@@ -19,6 +19,23 @@ export type IntentRouteResolution =
   | IntentDetailRoute
   | IntentNotFoundRoute;
 
+/**
+ * `/watch/{city}` is a city hub. A CMS city, or a parentless location that
+ * is not a suburb/province. Suburbs stay on `/watch/{sport}/{suburb}`.
+ */
+export function isWatchCityHubLocation(
+  location:
+    | { type?: string | null; parentSlug?: string | null }
+    | null
+    | undefined,
+): boolean {
+  if (!location) return false;
+  const type = (location.type ?? "").trim().toLowerCase();
+  if (type === "city") return true;
+  if (type === "suburb" || type === "province" || type === "region") return false;
+  return !(location.parentSlug ?? "").trim();
+}
+
 export function resolveIntentRoute(
   route: string[] | undefined,
 ): IntentRouteResolution {
