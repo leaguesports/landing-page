@@ -249,7 +249,8 @@ describe("intent enrichment", () => {
     });
     assert.equal(paragraphs.length, 2);
     assert.match(paragraphs[0] ?? "", /watch Formula 1 in Midrand/i);
-    assert.match(paragraphs[1] ?? "", /verified|big screens|screening/i);
+    assert.match(paragraphs[1] ?? "", /address and amenities/i);
+    assert.doesNotMatch(paragraphs.join(" "), /big screens|verified listing|upcoming/i);
   });
 });
 
