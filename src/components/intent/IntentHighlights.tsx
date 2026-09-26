@@ -9,7 +9,7 @@ type IntentHighlightsProps = {
 };
 
 /**
- * Play city pages only. Watch city hubs use a stat strip plus WatchCityCalendar
+ * Play city pages only. Watch hubs use the fixture strip and dense cards
  * so amenity counts are not repeated in a second "What these listings offer" block.
  */
 export function IntentHighlights({

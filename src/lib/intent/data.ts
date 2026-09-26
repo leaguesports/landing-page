@@ -6,6 +6,7 @@ import {
   type VenueDetail,
   type VenueRow,
 } from "@/services/venueQuery";
+import { resolveSportSlug } from "../sports/catalog.ts";
 import {
   activityDisplayName,
   activitySupportsIntent,
@@ -13,6 +14,7 @@ import {
   isAllowlistedActivitySlug,
   type IntentActivity,
 } from "./activity.ts";
+import { isWatchHubSport, orderWatchSports } from "./watch-hub.ts";
 import { collectIndexedIntentPairs } from "./indexed-pairs.ts";
 import type { IntentKind } from "./paths.ts";
 
@@ -170,6 +172,60 @@ export async function getVenuesByLocationAndActivityWithFallback(
     suburbTitle: location?.title ?? null,
     cityTitle: location?.parentTitle ?? parentSlug,
   };
+}
+
+/** Every watch-tagged venue in a city or suburb. City hub uses this unscoped list. */
+export async function getWatchVenuesInLocation(
+  locationSlug: string,
+): Promise<VenueDetail[]> {
+  if (!locationSlug) return [];
+
+  const rows = await sanityClient.fetch<VenueRow[]>(
+    `*[_type == "venue" && count(broadcasts) > 0 && ${VENUE_IN_LOCATION}] | order(name asc) {
+      ${VENUE_PROJECTION}
+    }`,
+    { location: locationSlug },
+  );
+
+  return rows.map(mapVenueRow).filter((v): v is VenueDetail => v !== null);
+}
+
+/**
+ * Sports that have at least one broadcast venue in this city. Used for
+ * sibling links on a sport hub, where the page query is already sport-scoped.
+ */
+export async function listWatchSportsInLocation(
+  locationSlug: string,
+): Promise<{ slug: string; name: string }[]> {
+  if (!locationSlug) return [];
+
+  const rows = await sanityClient.fetch<{ slug: string | null; name: string | null }[]>(
+    `*[_type == "sport" && count(*[
+      _type == "venue" &&
+      ^._id in broadcasts[]._ref &&
+      (
+        address.suburb->slug.current == $location ||
+        address.city->slug.current == $location ||
+        location->slug.current == $location ||
+        location->parent->slug.current == $location
+      )
+    ]) > 0] | order(name asc) {
+      "slug": slug.current,
+      name
+    }`,
+    { location: locationSlug },
+  );
+
+  const sports = (rows ?? []).flatMap((row) => {
+    const raw = (row.slug ?? "").trim().toLowerCase();
+    const slug = resolveSportSlug(raw);
+    if (!slug || !isWatchHubSport(slug)) return [];
+    const name =
+      raw === slug ? activityDisplayName(slug, row.name) : activityDisplayName(slug);
+    return [{ slug, name }];
+  });
+
+  return orderWatchSports(sports);
 }
 
 export async function listWatchActivities(): Promise<IntentChoice[]> {

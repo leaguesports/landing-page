@@ -123,3 +123,46 @@ export function intentDetailFaqs(input: {
     },
   ];
 }
+
+export function watchCityHubDescription(
+  cityTitle: string,
+  venueCount: number,
+): string {
+  const city = cityTitle.trim() || "this city";
+  const count = Number.isFinite(venueCount) ? Math.max(0, Math.trunc(venueCount)) : 0;
+  if (count <= 0) {
+    return `Looking for somewhere to watch live sport in ${city}? Browse bars and fan zones on LeagueSports as coverage grows.`;
+  }
+  const noun = count === 1 ? "venue" : "venues";
+  return `Find ${count} ${noun} tagged for live sport in ${city}. Pick a kickoff, then open a bar that is showing it.`;
+}
+
+export function watchCityHubFaqs(input: {
+  cityTitle: string;
+  venueCount: number;
+}): IntentFaq[] {
+  const city = input.cityTitle.trim() || "this city";
+  const count = Number.isFinite(input.venueCount)
+    ? Math.max(0, Math.trunc(input.venueCount))
+    : 0;
+  const noun = count === 1 ? "venue" : "venues";
+  return [
+    {
+      question: `Where can I watch sport in ${city}?`,
+      answer:
+        count > 0
+          ? `LeagueSports lists ${count} ${noun} in ${city} tagged for live sport. Pick a fixture to see which venues are showing it, or open a venue for the address.`
+          : `We are still adding bars and fan zones for live sport in ${city}. Browse Events or a sport hub while coverage grows.`,
+    },
+    {
+      question: "How do I find a bar showing a specific match?",
+      answer:
+        "Choose a fixture on this page to filter venues screening that kickoff. Suburb chips narrow the same list. Open a sport hub for a shareable rugby, soccer, cricket, or motorsport page.",
+    },
+    {
+      question: "Can I list a venue?",
+      answer:
+        "Yes. Use List your venue and submit the bar or fan zone so it can be tagged for the sports it shows.",
+    },
+  ];
+}
