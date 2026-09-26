@@ -30,6 +30,8 @@ export type IntentScreeningHighlight = {
   startsAt: string;
   /** Present on sport-scoped calendar rows so duplicate venue docs share one key. */
   venueSlug?: string;
+  /** Events detail path when the row matches a CMS fixture. */
+  href?: string | null;
 };
 
 export type IntentPageEnrichment = {
@@ -233,9 +235,6 @@ export function buildIntentIntroParagraphs(input: {
     cityTitle,
     enrichment,
   } = input;
-  const verb = intent === "watch" ? "watch" : "play";
-  const placeWord =
-    intent === "watch" ? "bars and fan zones" : "courts and clubs";
   const paragraphs: string[] = [];
 
   if (venueCount <= 0) {
@@ -245,13 +244,26 @@ export function buildIntentIntroParagraphs(input: {
     return paragraphs;
   }
 
+  // Watch city hubs say the counts once, in the stat strip — not again here.
+  if (intent === "watch") {
+    if (usedCityFallback && cityTitle) {
+      paragraphs.push(
+        `Looking to watch ${activity.name} in ${locationTitle}? We have not mapped a direct match in that suburb yet, so these are the strongest bars and fan zones nearby in ${cityTitle}.`,
+      );
+    } else {
+      paragraphs.push(
+        `Looking for somewhere to watch ${activity.name} in ${locationTitle}? These listings are bars and fan zones tagged for live ${activity.name}.`,
+      );
+    }
+    paragraphs.push(
+      "Open a venue for the address and amenities before you head out.",
+    );
+    return paragraphs;
+  }
+
   if (usedCityFallback && cityTitle) {
     paragraphs.push(
-      `Looking to ${verb} ${activity.name} in ${locationTitle}? We have not mapped a direct match in that suburb yet, so these are the strongest ${placeWord} nearby in ${cityTitle}.`,
-    );
-  } else if (intent === "watch") {
-    paragraphs.push(
-      `Looking for somewhere to watch ${activity.name} in ${locationTitle}? LeagueSports currently lists ${venueCount} ${venueCount === 1 ? "venue" : "venues"} tagged for live ${activity.name} screenings — compare screens, parking, and match-day setup before you go.`,
+      `Looking to play ${activity.name} in ${locationTitle}? We have not mapped a direct match in that suburb yet, so these are the strongest courts and clubs nearby in ${cityTitle}.`,
     );
   } else {
     paragraphs.push(
@@ -267,11 +279,6 @@ export function buildIntentIntroParagraphs(input: {
   }
   for (const stat of enrichment.amenityStats.slice(0, 3)) {
     signalBits.push(stat.label);
-  }
-  if (enrichment.screeningHighlights.length > 0 && intent === "watch") {
-    signalBits.push(
-      `${enrichment.screeningHighlights.length} upcoming ${enrichment.screeningHighlights.length === 1 ? "screening" : "screenings"} on the calendar`,
-    );
   }
 
   if (signalBits.length > 0) {

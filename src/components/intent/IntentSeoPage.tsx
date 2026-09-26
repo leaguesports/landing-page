@@ -6,6 +6,7 @@ import { IntentHighlights } from "@/components/intent/IntentHighlights";
 import { IntentHub } from "@/components/intent/IntentHub";
 import { IntentNav } from "@/components/intent/IntentNav";
 import { IntentVenuesSection } from "@/components/intent/IntentVenuesSection";
+import { WatchCityCalendar } from "@/components/intent/WatchCityCalendar";
 import {
   intentBrowseDescription,
   intentBrowseTitle,
@@ -32,10 +33,12 @@ import {
 } from "@/lib/intent/enrichment";
 import { loadWatchCityFixtures } from "@/lib/intent/watch-fixtures";
 import {
+  dedupeVenuesBySlug,
   watchCalendarScreenings,
+  watchCalendarSideLinks,
   watchEventsHref,
-  watchRelatedGuideLink,
-  watchScreeningEmptyCopy,
+  watchRelatedGuides,
+  WATCH_CITY_CALENDAR_LIMIT,
 } from "@/lib/intent/watch-screenings";
 import { buildIntentJsonLd } from "@/lib/intent/jsonLd";
 import type { IntentKind } from "@/lib/intent/paths";
@@ -69,7 +72,13 @@ function scopeWatchEnrichment(
   if (intent !== "watch") return enrichment;
   return {
     ...enrichment,
-    screeningHighlights: watchCalendarScreenings(venues, fixtures, sportSlug),
+    screeningHighlights: watchCalendarScreenings(
+      venues,
+      fixtures,
+      sportSlug,
+      new Date(),
+      WATCH_CITY_CALENDAR_LIMIT,
+    ),
   };
 }
 
@@ -162,17 +171,19 @@ export async function generateIntentMetadata(
     ),
     intent === "watch" ? loadWatchCityFixtures() : Promise.resolve([]),
   ]);
+  const venues =
+    intent === "watch" ? dedupeVenuesBySlug(results.venues) : results.venues;
   const enrichment = scopeWatchEnrichment(
-    buildIntentEnrichment(intent, results.venues),
+    buildIntentEnrichment(intent, venues),
     intent,
-    results.venues,
+    venues,
     fixtures,
     activity.sportSlug,
   );
   const indexPolicy = resolveIntentIndexPolicy({
     locationSlug: location.slug,
     parentSlug: location.parentSlug,
-    venueCount: results.venues.length,
+    venueCount: venues.length,
     usedCityFallback: results.usedCityFallback,
   });
   const title = intentDetailTitle(intent, activity.name, location.title);
@@ -180,7 +191,7 @@ export async function generateIntentMetadata(
     intent,
     activity.name,
     location.title,
-    results.venues.length,
+    venues.length,
     metaDescriptionExtras(enrichment, intent),
   );
   const canonical = intentPath(
@@ -375,18 +386,24 @@ export async function IntentSeoPage({
     listLocationsForActivity(intent, activity),
     intent === "watch" ? loadWatchCityFixtures() : Promise.resolve([]),
   ]);
+  const venues =
+    intent === "watch" ? dedupeVenuesBySlug(results.venues) : results.venues;
 
   const enrichment = scopeWatchEnrichment(
-    buildIntentEnrichment(intent, results.venues),
+    buildIntentEnrichment(intent, venues),
     intent,
-    results.venues,
+    venues,
     fixtures,
     activity.sportSlug,
   );
   const guideCitySlug = location.parentSlug || location.slug;
-  const guideLink =
+  const relatedGuides =
     intent === "watch"
-      ? watchRelatedGuideLink(fixtures, activity.sportSlug, guideCitySlug)
+      ? watchRelatedGuides(activity.sportSlug, guideCitySlug)
+      : [];
+  const calendarLinks =
+    intent === "watch"
+      ? watchCalendarSideLinks(activity.sportSlug, guideCitySlug)
       : null;
   const heading = intentDetailHeading(intent, activity.name, location.title);
   const title = intentDetailTitle(intent, activity.name, location.title);
@@ -394,14 +411,14 @@ export async function IntentSeoPage({
     intent,
     activity.name,
     location.title,
-    results.venues.length,
+    venues.length,
     metaDescriptionExtras(enrichment, intent),
   );
   const introParagraphs = buildIntentIntroParagraphs({
     intent,
     activity,
     locationTitle: location.title,
-    venueCount: results.venues.length,
+    venueCount: venues.length,
     usedCityFallback: results.usedCityFallback,
     cityTitle: results.cityTitle,
     enrichment,
@@ -410,7 +427,7 @@ export async function IntentSeoPage({
     intent,
     activity,
     locationTitle: location.title,
-    venueCount: results.venues.length,
+    venueCount: venues.length,
   });
   const jsonLd = buildIntentJsonLd({
     intent,
@@ -420,7 +437,7 @@ export async function IntentSeoPage({
     activityName: activity.name,
     locationSlug: location.slug,
     locationTitle: location.title,
-    venues: results.venues.map((venue) => ({
+    venues: venues.map((venue) => ({
       name: venue.name,
       slug: venue.slug,
     })),
@@ -432,7 +449,7 @@ export async function IntentSeoPage({
     pageType: intent === "watch" ? "watch_city_sport" : "play_city_sport",
     sport: activity.sportSlug || activity.slug,
     city: location.slug,
-    venueCount: results.venues.length,
+    venueCount: venues.length,
   });
   const related = nearby
     .filter((item) => item.slug !== location.slug)
@@ -457,39 +474,59 @@ export async function IntentSeoPage({
         locationSlug={location.slug}
         heading={heading}
         introParagraphs={introParagraphs}
-        venueCount={results.venues.length}
+        venueCount={venues.length}
         amenityStats={enrichment.amenityStats}
         matrix={matrix}
         sourcePage={intentPath(intent, activity.slug, location.slug)}
       />
-      <IntentHighlights
-        intent={intent}
-        amenityStats={enrichment.amenityStats}
-        screenings={enrichment.screeningHighlights}
-        verifiedCount={enrichment.verifiedCount}
-        calendarEmpty={
-          intent === "watch"
-            ? {
-                message: watchScreeningEmptyCopy(activity.name),
-                eventsHref: watchEventsHref(activity.sportSlug),
-                guideHref: guideLink?.href ?? "/guides",
-                guideLabel: guideLink?.label ?? "Guides",
-              }
-            : null
-        }
-      />
+      {/*
+        Calendar and venue cards are rendered here, before FAQ, from data
+        already awaited above. Do not wrap the list in Suspense — a hole
+        streams FAQ ahead of the cards.
+      */}
+      {intent === "watch" ? (
+        <WatchCityCalendar
+          sportName={activity.name}
+          cityTitle={location.title}
+          venueCount={venues.length}
+          rows={enrichment.screeningHighlights.flatMap((row) =>
+            row.venueSlug
+              ? [
+                  {
+                    title: row.title,
+                    venueName: row.venueName,
+                    venueSlug: row.venueSlug,
+                    startsAt: row.startsAt,
+                    href: row.href ?? null,
+                  },
+                ]
+              : [],
+          )}
+          eventsHref={watchEventsHref(activity.sportSlug)}
+          relatedGuide={calendarLinks?.guide ?? null}
+          crossSportGuide={calendarLinks?.crossSport ?? null}
+        />
+      ) : (
+        <IntentHighlights
+          intent={intent}
+          amenityStats={enrichment.amenityStats}
+          verifiedCount={enrichment.verifiedCount}
+        />
+      )}
       <IntentVenuesSection
         intent={intent}
-        venues={results.venues}
+        venues={venues}
         activityName={activity.name}
         activitySlug={activity.slug}
         sportSlug={activity.sportSlug}
         fixtures={fixtures}
+        matrix={matrix}
         locationTitle={location.title}
         usedCityFallback={results.usedCityFallback}
         suburbTitle={results.suburbTitle}
         cityTitle={results.cityTitle}
         related={related}
+        relatedGuides={relatedGuides}
         locationSlug={location.slug}
         sourcePage={intentPath(intent, activity.slug, location.slug)}
       />

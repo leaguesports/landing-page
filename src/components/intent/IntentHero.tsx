@@ -65,7 +65,12 @@ export function IntentHero({
             <li className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200">
               {venueCount} {venueCount === 1 ? "venue" : "venues"}
             </li>
-            {amenityStats.slice(0, 4).map((stat) => (
+            {(intent === "watch"
+              ? amenityStats.filter(
+                  (stat) => stat.key === "screens" || stat.key === "parking",
+                )
+              : amenityStats.slice(0, 4)
+            ).map((stat) => (
               <li
                 key={stat.key}
                 className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-medium ${
@@ -74,7 +79,11 @@ export function IntentHero({
                     : "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
                 }`}
               >
-                {stat.label}
+                {intent === "watch"
+                  ? stat.key === "screens"
+                    ? `${stat.count} with screens`
+                    : `${stat.count} with parking`
+                  : stat.label}
               </li>
             ))}
             <li className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-400">

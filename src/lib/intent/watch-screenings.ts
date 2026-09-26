@@ -1,15 +1,57 @@
-import {
-  eventsListHref,
-  fixtureMatchesEventsSport,
-} from "../events/scope.ts";
+import { eventsListHref } from "../events/scope.ts";
 import { guideHref, isGuideSlug } from "../guides/slugs.ts";
 import type { IntentScreeningHighlight } from "./enrichment.ts";
 import { resolveSportSlug } from "../sports/catalog.ts";
-import { normalizeFixtureKey, type UpcomingFixture } from "../sports/events-feed.ts";
+import {
+  FIXTURE_TIMEZONE,
+  formatFixtureWhen,
+  normalizeFixtureKey,
+  type UpcomingFixture,
+} from "../sports/events-feed.ts";
 import {
   mergeVenueUpcomingScreenings,
   type MergeVenueScreeningsOptions,
 } from "../sports/events-path.ts";
+
+/** Compact calendar cap on `/watch/{sport}/{city}` (~5–8). */
+export const WATCH_CITY_CALENDAR_LIMIT = 6;
+
+export type WatchGuideLink = {
+  href: string;
+  label: string;
+};
+
+/**
+ * Published Watch pack. Fixture `relatedGuide` slugs are not enough: an empty
+ * rugby calendar still needs the city guide, and an unknown slug must not
+ * become a `/guides` index link.
+ */
+const SPORT_CITY_GUIDES: Record<string, { slug: string; label: string }> = {
+  "rugby|johannesburg": {
+    slug: "where-to-watch-rugby-johannesburg",
+    label: "Where to Watch Rugby & the Springboks in Johannesburg",
+  },
+  "cricket|johannesburg": {
+    slug: "where-to-watch-cricket-johannesburg",
+    label: "Where to Watch Cricket & the Proteas in Johannesburg",
+  },
+  "motorsport|johannesburg": {
+    slug: "where-to-watch-f1-johannesburg",
+    label: "Where to Watch F1 & Motorsport in Johannesburg",
+  },
+};
+
+/** Cross-sport city hub. One link max, and only when this page is not already it. */
+const CITY_WATCH_PACKS: Record<string, { slug: string; label: string }> = {
+  johannesburg: {
+    slug: "best-sports-bars-johannesburg",
+    label: "The 7 Best Sports Bars in Johannesburg for Every Fan",
+  },
+  "cape-town": {
+    slug: "best-sports-bars-cape-town",
+    label: "Best Sports Bars in Cape Town",
+  },
+};
 
 type WatchVenue = {
   name: string;
@@ -22,6 +64,7 @@ type WatchVenue = {
 
 export type WatchCalendarRow = IntentScreeningHighlight & {
   venueSlug: string;
+  href: string | null;
 };
 
 /** Hub sports this venue actually broadcasts, aliases collapsed. */
@@ -53,7 +96,7 @@ export function watchCalendarScreenings(
   fixtures: readonly UpcomingFixture[],
   sportSlug: string,
   now: Date = new Date(),
-  limit = 3,
+  limit = WATCH_CITY_CALENDAR_LIMIT,
 ): WatchCalendarRow[] {
   const sport = sportSlug.trim();
   if (!sport) return [];
@@ -86,6 +129,7 @@ export function watchCalendarScreenings(
         venueName,
         venueSlug,
         startsAt: item.startsAt,
+        href: item.href ?? null,
       });
     }
   }
@@ -109,52 +153,176 @@ export function watchScreeningEmptyCopy(sportName: string): string {
   return `No upcoming ${name} screenings listed yet`;
 }
 
+export function watchScreeningEmptyBody(
+  sportName: string,
+  cityTitle: string,
+  venueCount: number,
+): string {
+  const sport = sportName.trim().toLowerCase() || "this sport";
+  const city = cityTitle.trim() || "this city";
+  const count = Number.isFinite(venueCount) ? Math.max(0, Math.trunc(venueCount)) : 0;
+  const noun = count === 1 ? "venue" : "venues";
+  return `We still list ${count} ${noun} in ${city} tagged for ${sport}. Open a venue for address and amenities, or check Events for other fixtures.`;
+}
+
 export function watchEventsHref(sportSlug: string): string {
   return eventsListHref({ sport: sportSlug });
 }
 
-function cityNeedles(citySlug: string): string[] {
-  if (!citySlug) return [];
-  if (citySlug === "johannesburg") return ["johannesburg", "joburg"];
-  return [citySlug];
+function normalizeWatchCity(citySlug: string | null | undefined): string {
+  const city = (citySlug ?? "").trim().toLowerCase();
+  if (city === "joburg" || city === "jozi") return "johannesburg";
+  if (city === "cape town" || city === "capetown") return "cape-town";
+  return city;
 }
 
-function guideRank(slug: string, sportSlug: string, citySlug: string): number {
-  const haystack = slug.toLowerCase();
-  const sportHit = Boolean(sportSlug) && haystack.includes(sportSlug);
-  const cityHit = cityNeedles(citySlug).some((needle) => haystack.includes(needle));
-  if (sportHit && cityHit) return 0;
-  if (sportHit) return 1;
-  if (cityHit) return 2;
-  return 3;
+function normalizeWatchSport(sportSlug: string | null | undefined): string {
+  const resolved = resolveSportSlug(sportSlug) || (sportSlug ?? "").trim().toLowerCase();
+  if (resolved === "f1" || resolved === "formula-1") return "motorsport";
+  if (resolved === "football") return "soccer";
+  return resolved;
+}
+
+function toGuideLink(guide: { slug: string; label: string }): WatchGuideLink | null {
+  if (!isGuideSlug(guide.slug)) return null;
+  return { href: guideHref(guide.slug), label: guide.label };
 }
 
 /**
- * Guide link for the empty calendar. Prefer a fixture guide whose slug
- * matches this sport and city, then any guide for the sport. Falls back
- * to the guides index when CMS has not linked one.
+ * 1–3 guide links for this sport and city. Sport guide first, then the
+ * cross-sport city pack. Unmapped cities return nothing (no `/guides` fallback).
  */
-export function watchRelatedGuideLink(
-  fixtures: readonly UpcomingFixture[],
+export function watchRelatedGuides(
   sportSlug: string,
   citySlug?: string | null,
-): { href: string; label: string } {
-  const sport = sportSlug.trim().toLowerCase();
-  const city = (citySlug ?? "").trim().toLowerCase();
-  const guides = fixtures.filter(
-    (item) =>
-      fixtureMatchesEventsSport(item, sport) &&
-      item.relatedGuide?.slug &&
-      isGuideSlug(item.relatedGuide.slug),
-  );
-  guides.sort(
-    (a, b) =>
-      guideRank(a.relatedGuide!.slug, sport, city) -
-      guideRank(b.relatedGuide!.slug, sport, city),
-  );
-  const guide = guides[0]?.relatedGuide;
-  if (guide && isGuideSlug(guide.slug)) {
-    return { href: guideHref(guide.slug), label: guide.title };
+): WatchGuideLink[] {
+  const sport = normalizeWatchSport(sportSlug);
+  const city = normalizeWatchCity(citySlug);
+  const links: WatchGuideLink[] = [];
+  const seen = new Set<string>();
+
+  function push(guide: { slug: string; label: string } | undefined) {
+    if (!guide || links.length >= 3) return;
+    const link = toGuideLink(guide);
+    if (!link || seen.has(guide.slug)) return;
+    seen.add(guide.slug);
+    links.push(link);
   }
-  return { href: "/guides", label: "Guides" };
+
+  push(SPORT_CITY_GUIDES[`${sport}|${city}`]);
+  push(CITY_WATCH_PACKS[city]);
+  return links;
+}
+
+/** First mapped guide, or null when this sport/city has no Watch pack entry. */
+export function watchRelatedGuideLink(
+  sportSlug: string,
+  citySlug?: string | null,
+): WatchGuideLink | null {
+  return watchRelatedGuides(sportSlug, citySlug)[0] ?? null;
+}
+
+/**
+ * Empty-calendar links. Browse Events is separate. The sport guide is the
+ * related guide; the city pack is the one cross-sport hub, omitted when it
+ * is already the related guide or when no pack exists.
+ */
+export function watchCalendarSideLinks(
+  sportSlug: string,
+  citySlug?: string | null,
+): { guide: WatchGuideLink | null; crossSport: WatchGuideLink | null } {
+  const sport = normalizeWatchSport(sportSlug);
+  const city = normalizeWatchCity(citySlug);
+  const sportGuide = SPORT_CITY_GUIDES[`${sport}|${city}`];
+  const cityPack = CITY_WATCH_PACKS[city];
+  const guide = watchRelatedGuideLink(sportSlug, citySlug);
+  const cross =
+    sportGuide && cityPack && sportGuide.slug !== cityPack.slug
+      ? toGuideLink(cityPack)
+      : null;
+  return { guide, crossSport: cross };
+}
+
+/** `venue · date · time` stamp for a compact calendar row. */
+export function formatWatchCalendarStamp(startsAt: string): string | null {
+  const parsed = new Date(startsAt);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const date = parsed.toLocaleDateString("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: FIXTURE_TIMEZONE,
+  });
+  const time = parsed.toLocaleTimeString("en-ZA", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: FIXTURE_TIMEZONE,
+  });
+  if (!date || !time) return null;
+  return `${date} · ${time}`;
+}
+
+/**
+ * One meta line. Next screening for this sport wins; otherwise up to three
+ * amenity words. No line when the venue has neither.
+ */
+export function watchVenueMetaLine(input: {
+  sportName: string;
+  nextTitle?: string | null;
+  nextStartsAt?: string | null;
+  hasScreens?: boolean;
+  hasParking?: boolean;
+  hasLiveAudio?: boolean;
+  now?: Date;
+}): string | null {
+  const title = input.nextTitle?.trim() ?? "";
+  if (title) {
+    const sport = input.sportName.trim().toLowerCase() || "sport";
+    const when = input.nextStartsAt
+      ? formatFixtureWhen(input.nextStartsAt, input.now ?? new Date())
+      : null;
+    return when
+      ? `Next ${sport} screening · ${title} · ${when}`
+      : `Next ${sport} screening · ${title}`;
+  }
+
+  const amenities: string[] = [];
+  if (input.hasScreens) amenities.push("Screens");
+  if (input.hasParking) amenities.push("Parking");
+  if (input.hasLiveAudio) amenities.push("Live audio");
+  if (amenities.length === 0) return null;
+  return amenities.slice(0, 3).join(" · ");
+}
+
+function venueHasHero(venue: { hero_image?: unknown }): boolean {
+  const image = venue.hero_image;
+  if (!image || typeof image !== "object") return false;
+  return Boolean((image as { asset?: unknown }).asset);
+}
+
+/** One card per slug. A later duplicate replaces the first only when it has a photo. */
+export function dedupeVenuesBySlug<
+  T extends { slug?: string | null; hero_image?: unknown },
+>(venues: readonly T[]): T[] {
+  const indexBySlug = new Map<string, number>();
+  const out: T[] = [];
+  for (const venue of venues) {
+    const slug = venue.slug?.trim().toLowerCase() ?? "";
+    if (!slug) {
+      out.push(venue);
+      continue;
+    }
+    const existing = indexBySlug.get(slug);
+    if (existing === undefined) {
+      indexBySlug.set(slug, out.length);
+      out.push(venue);
+      continue;
+    }
+    const current = out[existing];
+    if (current && !venueHasHero(current) && venueHasHero(venue)) {
+      out[existing] = venue;
+    }
+  }
+  return out;
 }

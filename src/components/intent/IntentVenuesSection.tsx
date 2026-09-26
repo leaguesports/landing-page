@@ -1,13 +1,29 @@
 import { VenueDirectoryCard } from "@/app/venues/_components/VenueDirectoryCard";
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
+import { VenueListCard } from "@/components/venues/VenueListCard";
+import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
+import { guideVenueMarkInitial } from "@/lib/guides/venueMedia";
 import type { IntentKind } from "@/lib/intent/paths";
 import { intentPath } from "@/lib/intent/paths";
-import { venueBroadcastSportSlugs } from "@/lib/intent/watch-screenings";
+import {
+  dedupeVenuesBySlug,
+  venueBroadcastSportSlugs,
+  watchVenueMetaLine,
+  type WatchGuideLink,
+} from "@/lib/intent/watch-screenings";
 import { mergeVenueUpcomingScreenings } from "@/lib/sports/events-path";
 import type { UpcomingFixture } from "@/lib/sports/events-feed";
+import { sanityImageUrl } from "@/lib/venues/photo";
 import type { VenueDetail } from "@/services/venues";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import Link from "next/link";
+
+function watchHubPhoto(venue: VenueDetail): string | null {
+  const image = venue.hero_image;
+  if (!image || typeof image !== "object") return null;
+  if (!(image as { asset?: unknown }).asset) return null;
+  return sanityImageUrl(image, { width: 112, height: 112 }) ?? null;
+}
 
 type IntentVenuesSectionProps = {
   intent: IntentKind;
@@ -18,10 +34,12 @@ type IntentVenuesSectionProps = {
   suburbTitle?: string | null;
   cityTitle?: string | null;
   related?: { slug: string; title: string }[];
+  relatedGuides?: WatchGuideLink[];
   activitySlug: string;
   /** Hub sport used to scope the next-screening line. */
   sportSlug?: string | null;
   fixtures?: UpcomingFixture[];
+  matrix?: CtaMatrix | null;
   locationSlug: string;
   sourcePage: string;
 };
@@ -35,9 +53,11 @@ export function IntentVenuesSection({
   suburbTitle,
   cityTitle,
   related = [],
+  relatedGuides = [],
   activitySlug,
   sportSlug = null,
   fixtures = [],
+  matrix = null,
   locationSlug,
   sourcePage,
 }: IntentVenuesSectionProps) {
@@ -46,6 +66,8 @@ export function IntentVenuesSection({
   const fallbackCity = cityTitle ?? "this city";
   const verb = intent === "watch" ? "Watch" : "Play";
   const now = new Date();
+  const listedVenues =
+    intent === "watch" ? dedupeVenuesBySlug(venues) : venues;
 
   return (
     <section
@@ -60,11 +82,13 @@ export function IntentVenuesSection({
             Venues
           </p>
           <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
-            {verb} {activityName} in {locationTitle}
+            {intent === "watch"
+              ? `${activityName} venues in ${locationTitle}`
+              : `${verb} ${activityName} in ${locationTitle}`}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
             {intent === "watch"
-              ? "Restaurants, bars & fan zones screening live sport"
+              ? `Bars and fan zones tagged for ${activityName}.`
               : "Courts and clubs hosting this sport"}
           </p>
         </header>
@@ -86,26 +110,67 @@ export function IntentVenuesSection({
           </div>
         ) : null}
 
-        {venues.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-            {venues.map((venue) => (
-              <VenueDirectoryCard
-                key={venue._id}
-                venue={venue}
-                intent={intent}
-                nextScreening={
-                  intent === "watch"
-                    ? mergeVenueUpcomingScreenings(venue, fixtures, now, {
-                        sportSlug,
-                        broadcastSlugs: venueBroadcastSportSlugs(
-                          venue.broadcasts,
-                        ),
-                      })[0] ?? null
-                    : null
-                }
-              />
-            ))}
-          </div>
+        {listedVenues.length > 0 ? (
+          intent === "watch" && matrix ? (
+            <div
+              className="grid grid-cols-1 gap-3 lg:grid-cols-2"
+              data-watch-venue-list=""
+            >
+              {listedVenues.map((venue) => {
+                const next = mergeVenueUpcomingScreenings(venue, fixtures, now, {
+                  sportSlug,
+                  broadcastSlugs: venueBroadcastSportSlugs(venue.broadcasts),
+                })[0];
+                const suburb = venue.address.suburb?.trim() ?? "";
+                const venueSlug = venue.slug?.trim() ?? "";
+                return (
+                  <VenueListCard
+                    key={venueSlug || venue._id}
+                    variant="watch-hub"
+                    name={venue.name}
+                    suburb={suburb}
+                    slug={venueSlug || null}
+                    initial={guideVenueMarkInitial(suburb, venue.name)}
+                    photoSrc={watchHubPhoto(venue)}
+                    meta={watchVenueMetaLine({
+                      sportName: activityName,
+                      nextTitle: next?.title,
+                      nextStartsAt: next?.startsAt,
+                      hasScreens: Boolean(venue.has_big_screens),
+                      hasParking: Boolean(venue.has_parking),
+                      hasLiveAudio: Boolean(venue.has_live_audio),
+                      now,
+                    })}
+                    matrix={matrix}
+                    sport={sportSlug}
+                    city={locationSlug}
+                    pageSlug={venueSlug || sourcePage}
+                    pageType="watch_city_sport"
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+              {listedVenues.map((venue) => (
+                <VenueDirectoryCard
+                  key={venue._id}
+                  venue={venue}
+                  intent={intent}
+                  nextScreening={
+                    intent === "watch"
+                      ? mergeVenueUpcomingScreenings(venue, fixtures, now, {
+                          sportSlug,
+                          broadcastSlugs: venueBroadcastSportSlugs(
+                            venue.broadcasts,
+                          ),
+                        })[0] ?? null
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             <div className="rounded-3xl border border-white/8 bg-[#141814] px-6 py-12 text-center">
@@ -132,6 +197,26 @@ export function IntentVenuesSection({
             />
           </div>
         )}
+
+        {intent === "watch" && relatedGuides.length > 0 ? (
+          <div className="mt-10" data-watch-related-guides="">
+            <h2 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
+              Related guides
+            </h2>
+            <ul className="mt-4 space-y-2">
+              {relatedGuides.map((guide) => (
+                <li key={guide.href}>
+                  <Link
+                    href={guide.href}
+                    className="text-sm font-medium text-sky-300 hover:text-white"
+                  >
+                    {guide.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {related.length > 0 ? (
           <div className="mt-12">
