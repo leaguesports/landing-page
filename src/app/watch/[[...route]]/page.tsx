@@ -2,10 +2,11 @@ import {
   generateIntentMetadata,
   IntentSeoPage,
 } from "@/components/intent/IntentSeoPage";
+import { isWatchFixturesView } from "@/lib/intent/watch-fixture-card";
 import type { Metadata } from "next";
 
 type WatchPageParams = { route?: string[] };
-type WatchSearchParams = { fixture?: string | string[] };
+type WatchSearchParams = { fixture?: string | string[]; view?: string | string[] };
 
 function firstParam(value: string | string[] | undefined): string | null {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -36,6 +37,7 @@ export default async function WatchPage({
       intent="watch"
       route={route}
       initialFixture={firstParam(query.fixture)}
+      fixturesView={isWatchFixturesView(firstParam(query.view))}
     />
   );
 }
