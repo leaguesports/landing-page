@@ -110,7 +110,7 @@ export function VenueListCard({
                 <ConversionCtaLink
                   cta={{
                     id: "open_venue",
-                    label: "Open venue \u2192",
+                    label: "Open venue →",
                     href: `/venues/${slug}`,
                   }}
                   matrix={matrix}
@@ -166,7 +166,7 @@ export function VenueListCard({
           <ConversionCtaLink
             cta={{
               id: "open_venue",
-              label: "Open venue \u2192",
+              label: "Open venue →",
               href: `/venues/${slug}`,
             }}
             matrix={matrix}
