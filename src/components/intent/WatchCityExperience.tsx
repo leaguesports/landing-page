@@ -1,18 +1,27 @@
 "use client";
 
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
+import { WatchFixtureCard } from "@/components/intent/WatchFixtureCard";
 import { VenueListCard } from "@/components/venues/VenueListCard";
 import { distanceKm, useGeolocation } from "@/hooks/useGeolocation";
 import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
+import {
+  groupWatchFixturesByDay,
+  watchAllFixturesHref,
+  watchCarouselFixtures,
+  watchFixtureSelectionDetail,
+  watchSportMicroLabel,
+  watchStripCompetition,
+} from "@/lib/intent/watch-fixture-card";
 import {
   filterWatchHubCards,
   sortWatchHubCards,
   watchPlaceLine,
   watchShowingLabel,
-  type WatchHubBucket,
   type WatchHubCardModel,
   type WatchHubFixtureRow,
 } from "@/lib/intent/watch-hub";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
@@ -35,8 +44,9 @@ export type WatchCityExperienceProps = {
   cityHubHref: string | null;
   suburbChips: string[];
   sportChips: { slug: string; name: string; href: string }[];
-  buckets: WatchHubBucket[];
   fixtureRows: WatchHubFixtureRow[];
+  /** `?view=fixtures` — date-grouped fat cards instead of the carousel. */
+  fixturesView: boolean;
   cards: WatchHubCardModel[];
   todayYmd: string | null;
   centroid: { latitude: number; longitude: number } | null;
@@ -69,8 +79,8 @@ export function WatchCityExperience({
   cityHubHref,
   suburbChips,
   sportChips,
-  buckets,
   fixtureRows,
+  fixturesView,
   cards,
   todayYmd,
   centroid,
@@ -84,6 +94,7 @@ export function WatchCityExperience({
   sourcePage,
 }: WatchCityExperienceProps) {
   const venuesRef = useRef<HTMLElement | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [suburb, setSuburb] = useState<string | null>(null);
   const [fixtureKey, setFixtureKey] = useState<string | null>(initialFixtureKey);
   const geo = useGeolocation();
@@ -126,6 +137,35 @@ export function WatchCityExperience({
   const upcomingLabel = sportName?.trim()
     ? `Upcoming ${sportName.trim().toLowerCase()}`
     : "Upcoming sport";
+  const carouselRows = watchCarouselFixtures(fixtureRows);
+  const dayGroups = groupWatchFixturesByDay(fixtureRows);
+  const stripCompetition = watchStripCompetition(carouselRows);
+  const sportCount = new Set(
+    fixtureRows.map((row) => row.sportSlug).filter((slug): slug is string => Boolean(slug)),
+  ).size;
+  const showSportMicro = mode === "city" && sportCount > 1;
+  const allFixturesHref = watchAllFixturesHref(sourcePage);
+  const selectionDetail = selected
+    ? watchFixtureSelectionDetail({
+        count: visible.length,
+        title: selected.title,
+        homeCode: selected.face.home?.shortCode,
+        awayCode: selected.face.away?.shortCode,
+      })
+    : null;
+
+  function sportLabelFor(row: WatchHubFixtureRow): string | null {
+    if (!showSportMicro) return null;
+    return watchSportMicroLabel(row.sportName);
+  }
+
+  function scrollCarousel(direction: -1 | 1) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>("[data-watch-fixture-card]");
+    const delta = (card?.offsetWidth ?? 280) + 12;
+    el.scrollBy({ left: direction * delta, behavior: "smooth" });
+  }
 
   function onFixture(key: string) {
     const next = fixtureKey === key ? null : key;
@@ -253,70 +293,113 @@ export function WatchCityExperience({
         <div className="mx-auto max-w-7xl">
           {fixtureRows.length > 0 ? (
             <>
-              <h2
-                id="watch-fixtures"
-                className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400"
-              >
-                {upcomingLabel}
-              </h2>
-              <div className="mt-4 space-y-5">
-                {buckets.map((bucket) => (
-                  <div key={bucket.id} data-watch-bucket={bucket.id}>
-                    <h3 className="text-sm font-semibold text-white">{bucket.label}</h3>
-                    <div className="mt-2 space-y-3">
-                      {bucket.groups.map((group) => (
-                        <div key={group.name ?? `${bucket.id}-flat`}>
-                          {group.name ? (
-                            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300/90">
-                              {group.name}
-                            </p>
-                          ) : null}
-                          <ul className="space-y-2">
-                            {group.rows.map((row) => {
-                              const pressed = row.key === fixtureKey;
-                              const count = row.venueSlugs.length;
-                              const countLabel =
-                                count === 1 ? "1 venue" : `${count} venues`;
-                              const meta = [
-                                row.kickoffLabel,
-                                count > 0 ? countLabel : null,
-                                mode === "city" && row.sportName ? row.sportName : null,
-                                pressed ? "Selected" : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ");
-                              return (
-                                <li key={row.key}>
-                                  <button
-                                    type="button"
-                                    aria-pressed={pressed}
-                                    data-watch-fixture={row.key}
-                                    onClick={() => onFixture(row.key)}
-                                    className={`w-full rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
-                                      pressed
-                                        ? "border-emerald-400 bg-[#141814]"
-                                        : "border-white/8 bg-[#141814] hover:border-white/16"
-                                    }`}
-                                  >
-                                    <span className="block font-display text-base leading-tight tracking-wide text-white sm:text-lg">
-                                      {row.title}
-                                    </span>
-                                    {meta ? (
-                                      <span className="mt-0.5 block text-xs text-zinc-400">
-                                        {meta}
-                                      </span>
-                                    ) : null}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      ))}
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <h2
+                    id="watch-fixtures"
+                    className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400"
+                  >
+                    {upcomingLabel}
+                  </h2>
+                  {!fixturesView && stripCompetition ? (
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                      {stripCompetition}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {!fixturesView && carouselRows.length > 1 ? (
+                    <div className="hidden items-center gap-1 md:flex">
+                      <button
+                        type="button"
+                        aria-label="Previous fixtures"
+                        onClick={() => scrollCarousel(-1)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-white hover:bg-white hover:text-zinc-950"
+                      >
+                        <ChevronLeft className="h-4 w-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Next fixtures"
+                        onClick={() => scrollCarousel(1)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-white hover:bg-white hover:text-zinc-950"
+                      >
+                        <ChevronRight className="h-4 w-4" aria-hidden />
+                      </button>
                     </div>
-                  </div>
-                ))}
+                  ) : null}
+                  {fixturesView ? (
+                    <Link
+                      href={sourcePage}
+                      className="text-sm font-semibold text-emerald-300 hover:text-white"
+                    >
+                      Show less
+                    </Link>
+                  ) : (
+                    <Link
+                      href={allFixturesHref}
+                      data-watch-view-all=""
+                      className="text-sm font-semibold text-emerald-300 hover:text-white"
+                    >
+                      View all →
+                    </Link>
+                  )}
+                </div>
               </div>
+
+              {fixturesView ? (
+                <div className="mt-4 max-w-xl space-y-6" data-watch-fixture-strip="all">
+                  {dayGroups.map((group) => (
+                    <div key={group.id} data-watch-fixture-day={group.id}>
+                      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                        {group.label}
+                      </h3>
+                      <div className="mt-2 space-y-3">
+                        {group.rows.map((row) => (
+                          <div key={row.key}>
+                            {row.competition ? (
+                              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                                {row.competition}
+                              </p>
+                            ) : null}
+                            <WatchFixtureCard
+                              fixtureKey={row.key}
+                              title={row.title}
+                              face={row.face}
+                              sportLabel={sportLabelFor(row)}
+                              pressed={row.key === fixtureKey}
+                              onSelect={() => onFixture(row.key)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  ref={scrollerRef}
+                  className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  data-watch-fixture-strip="carousel"
+                >
+                  {carouselRows.map((row) => (
+                    <div
+                      key={row.key}
+                      data-watch-fixture-card=""
+                      className="w-[82%] shrink-0 snap-start md:w-[calc((100%-1.5rem)/3)]"
+                    >
+                      <WatchFixtureCard
+                        fixtureKey={row.key}
+                        title={row.title}
+                        face={row.face}
+                        sportLabel={sportLabelFor(row)}
+                        pressed={row.key === fixtureKey}
+                        onSelect={() => onFixture(row.key)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -356,7 +439,7 @@ export function WatchCityExperience({
         <div className="sticky top-28 z-30 border-b border-emerald-400/30 bg-[#0c0f0c]/95 px-4 py-2 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <p className="min-w-0 truncate text-sm text-white">
-              <span className="text-emerald-300">Showing</span> {selected.title}
+              <span className="text-emerald-300">Showing</span> {selectionDetail}
             </p>
             <button
               type="button"
@@ -382,9 +465,11 @@ export function WatchCityExperience({
               {venueHeading}
             </h2>
             <p className="text-sm text-zinc-400">
-              {filtering
-                ? `Showing ${visible.length} of ${cards.length}`
-                : `${cards.length} ${cards.length === 1 ? "venue" : "venues"}`}
+              {selected && selectionDetail
+                ? `Showing ${selectionDetail}`
+                : filtering
+                  ? `Showing ${visible.length} of ${cards.length}`
+                  : `${cards.length} ${cards.length === 1 ? "venue" : "venues"}`}
               {selected ? (
                 <>
                   {" · "}
@@ -420,6 +505,7 @@ export function WatchCityExperience({
                 <VenueListCard
                   key={card.slug}
                   variant="watch-hub"
+                  quietSelected={Boolean(selected)}
                   name={card.name}
                   suburb={card.suburb}
                   slug={card.slug}

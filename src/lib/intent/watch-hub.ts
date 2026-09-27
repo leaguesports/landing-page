@@ -10,6 +10,10 @@ import {
   normalizeFixtureKey,
   type UpcomingFixture,
 } from "../sports/events-feed.ts";
+import {
+  buildWatchFixtureFace,
+  type WatchFixtureFace,
+} from "./watch-fixture-card.ts";
 import { mergeVenueUpcomingScreenings } from "../sports/events-path.ts";
 import {
   formatWatchCalendarStamp,
@@ -86,6 +90,8 @@ export type WatchHubFixtureRow = {
   sportSlug: string | null;
   sportName: string | null;
   eventSlug: string | null;
+  /** Pill-sandwich face. Title-parsed sides are marked `sidesSource: "title"`. */
+  face: WatchFixtureFace;
 };
 
 export type WatchHubBucket = {
@@ -578,6 +584,8 @@ export function buildWatchHubModel(input: {
     fixtureByKey.set(normalizeFixtureKey(fixture.title, fixture.startsAt), fixture);
   }
 
+  const venueNames = new Map<string, string>();
+
   type Acc = {
     key: string;
     title: string;
@@ -586,6 +594,7 @@ export function buildWatchHubModel(input: {
     competition: string | null;
     sportSlug: string | null;
     eventSlug: string | null;
+    teams: UpcomingFixture["teams"];
   };
   const grouped = new Map<string, Acc>();
 
@@ -595,6 +604,7 @@ export function buildWatchHubModel(input: {
     const slug = venue.slug.trim();
     const name = venue.name.trim();
     if (!slug || !name) continue;
+    venueNames.set(slug, name);
     const broadcasts = venueBroadcastSportSlugs(venue.broadcasts);
     const screenings = mergeVenueUpcomingScreenings(
       {
@@ -626,6 +636,7 @@ export function buildWatchHubModel(input: {
           competition: competitionLabel(match?.competition, match?.series),
           sportSlug: match?.sportSlug ?? null,
           eventSlug: match?.slug ?? null,
+          teams: match?.teams ?? [],
         });
       } else {
         existing.venueSlugs.add(slug);
@@ -634,6 +645,9 @@ export function buildWatchHubModel(input: {
         }
         if (!existing.eventSlug && match?.slug) existing.eventSlug = match.slug;
         if (!existing.sportSlug && match?.sportSlug) existing.sportSlug = match.sportSlug;
+        if ((existing.teams?.length ?? 0) === 0 && match?.teams?.length) {
+          existing.teams = match.teams;
+        }
       }
     }
 
@@ -680,6 +694,13 @@ export function buildWatchHubModel(input: {
       sportSlug: row.sportSlug,
       sportName: row.sportSlug ? activityDisplayName(row.sportSlug) : null,
       eventSlug: row.eventSlug,
+      face: buildWatchFixtureFace({
+        title: row.title,
+        startsAt: row.startsAt,
+        teams: row.teams,
+        venueSlugs: [...row.venueSlugs],
+        venueNames,
+      }),
     }))
     .sort((a, b) => byKickoff(a, b) || a.title.localeCompare(b.title, "en"));
 

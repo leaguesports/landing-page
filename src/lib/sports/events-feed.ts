@@ -36,6 +36,11 @@ export type FixtureFaq = {
 
 export type FixtureTeam = {
   name: string;
+  /** Optional 3-letter code. Watch hubs derive one when this is absent. */
+  shortCode?: string | null;
+  /** Hex colour. Missing or non-hex → slate on the watch card. */
+  primaryColour?: string | null;
+  secondaryColour?: string | null;
 };
 
 export type FixtureHostVenue = {
@@ -128,7 +133,7 @@ export const EVENT_CMS_PROJECTION = `"id": _id,
   seoIntro,
   localAngle,
   "faqs": faqs[]{ question, answer },
-  "teams": teams[]{ name },
+  "teams": teams[]{ name, shortCode, primaryColour, secondaryColour },
   "hostVenue": hostVenue->{
     name,
     "slug": slug.current,
@@ -257,9 +262,23 @@ function parseTeams(value: unknown): FixtureTeam[] {
   const teams: FixtureTeam[] = [];
   for (const item of value) {
     if (!item || typeof item !== "object") continue;
-    const name = asString((item as { name?: unknown }).name);
+    const row = item as {
+      name?: unknown;
+      shortCode?: unknown;
+      primaryColour?: unknown;
+      secondaryColour?: unknown;
+    };
+    const name = asString(row.name);
     if (!name) continue;
-    teams.push({ name });
+    const shortCode = asString(row.shortCode) || null;
+    const primaryColour = asString(row.primaryColour) || null;
+    const secondaryColour = asString(row.secondaryColour) || null;
+    teams.push({
+      name,
+      ...(shortCode ? { shortCode } : {}),
+      ...(primaryColour ? { primaryColour } : {}),
+      ...(secondaryColour ? { secondaryColour } : {}),
+    });
   }
   return teams;
 }

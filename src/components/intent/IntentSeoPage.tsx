@@ -167,6 +167,7 @@ function FanzoWatchHub({
   matrix,
   sourcePage,
   initialFixture,
+  fixturesView,
   usedCityFallback,
   fallbackSuburb,
   fallbackCity,
@@ -187,6 +188,7 @@ function FanzoWatchHub({
   matrix: CtaMatrix;
   sourcePage: string;
   initialFixture: string | null;
+  fixturesView: boolean;
   usedCityFallback: boolean;
   fallbackSuburb: string | null;
   fallbackCity: string | null;
@@ -234,8 +236,8 @@ function FanzoWatchHub({
               }))
             : []
         }
-        buckets={model.buckets}
         fixtureRows={model.fixtureRows}
+        fixturesView={fixturesView}
         cards={model.cards}
         todayYmd={model.todayYmd}
         centroid={watchCityCentroid(guideCitySlug)}
@@ -300,10 +302,12 @@ async function watchCityMetadata(location: IntentLocation): Promise<Metadata> {
 async function WatchOnlyCityPage({
   location,
   initialFixture,
+  fixturesView,
   siteUrl,
 }: {
   location: IntentLocation;
   initialFixture: string | null;
+  fixturesView: boolean;
   siteUrl: string;
 }) {
   const [venueRows, fixtures] = await Promise.all([
@@ -361,6 +365,7 @@ async function WatchOnlyCityPage({
         })}
         sourcePage={sourcePage}
         initialFixture={initialFixture}
+        fixturesView={fixturesView}
         usedCityFallback={false}
         fallbackSuburb={null}
         fallbackCity={null}
@@ -528,10 +533,12 @@ export async function IntentSeoPage({
   intent,
   route,
   initialFixture = null,
+  fixturesView = false,
 }: {
   intent: IntentKind;
   route: string[] | undefined;
   initialFixture?: string | null;
+  fixturesView?: boolean;
 }) {
   const resolved = resolveIntentRoute(route);
   const siteUrl = getSiteBaseUrl();
@@ -607,6 +614,7 @@ export async function IntentSeoPage({
           <WatchOnlyCityPage
             location={location}
             initialFixture={initialFixture}
+            fixturesView={fixturesView}
             siteUrl={siteUrl}
           />
         );
@@ -787,6 +795,7 @@ export async function IntentSeoPage({
           matrix={matrix}
           sourcePage={intentPath(intent, activity.slug, location.slug)}
           initialFixture={initialFixture}
+          fixturesView={fixturesView}
           usedCityFallback={results.usedCityFallback}
           fallbackSuburb={results.suburbTitle}
           fallbackCity={results.cityTitle}
