@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   WATCH_FIXTURE_CAROUSEL_LIMIT,
   WATCH_FIXTURE_SLATE,
+  WATCH_FIXTURE_SLATE_AWAY,
   buildWatchFixtureFace,
   deriveWatchShortCode,
   formatWatchFixtureClock,
@@ -34,8 +35,8 @@ describe("watch fixture pill sandwich", () => {
     assert.equal(face.sidesSource, "title");
     assert.equal(face.home?.shortCode, "ORL");
     assert.equal(face.away?.shortCode, "KAI");
-    assert.equal(face.home?.primaryColour, null);
-    assert.equal(face.away?.primaryColour, null);
+    assert.equal(face.home?.primaryColour, "#000000");
+    assert.equal(face.away?.primaryColour, "#ffd200");
     assert.equal(face.topPill, "SAT 31 OCT · 15:30");
     assert.equal(face.centre.kind, "kickoff");
     assert.equal(face.centre.label, "15:30");
@@ -193,5 +194,187 @@ describe("watch fixture pill sandwich", () => {
     assert.equal(isWatchFixturesView("calendar"), false);
     assert.equal(watchFixtureInk("#ffd200"), "#0c0f0c");
     assert.equal(watchFixtureInk(WATCH_FIXTURE_SLATE), "#ffffff");
+  });
+});
+
+const CURATED_NAMES = [
+  "Springboks",
+  "Wallabies",
+  "All Blacks",
+  "England",
+  "Ireland",
+  "Lions",
+  "Bulls",
+  "Sharks",
+  "Stormers",
+  "Griquas",
+  "Pumas",
+  "Kaizer Chiefs",
+  "Orlando Pirates",
+  "Mamelodi Sundowns",
+  "Chippa United",
+  "Golden Arrows",
+  "Durban City",
+  "Polokwane City",
+  "Arsenal",
+  "Brentford",
+  "Chelsea",
+  "Everton",
+  "Fulham",
+  "Leeds United",
+  "Liverpool",
+  "Manchester City",
+  "Manchester United",
+  "Newcastle United",
+  "Sunderland",
+  "Tottenham Hotspur",
+  "Proteas",
+  "South Africa",
+  "India",
+  "Namibia",
+  "Joburg Super Kings",
+  "MI Cape Town",
+] as const;
+
+describe("curated team colours", () => {
+  it("fills title-parsed Springboks vs Wallabies from the kit map", () => {
+    const face = buildWatchFixtureFace({
+      title: "Springboks vs Wallabies",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(face.sidesSource, "title");
+    assert.equal(face.home?.shortCode, "SPR");
+    assert.equal(face.away?.shortCode, "WAL");
+    assert.equal(face.home?.primaryColour, "#007a33");
+    assert.equal(face.away?.primaryColour, "#fdb913");
+    assert.equal(watchFixtureFill(face.home?.primaryColour, "home"), "#007a33");
+    assert.equal(watchFixtureFill(face.away?.primaryColour, "away"), "#fdb913");
+
+    const boks = buildWatchFixtureFace({
+      title: "Boks vs Wallabies",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(boks.home?.shortCode, "SPR");
+    assert.equal(boks.home?.primaryColour, "#007a33");
+  });
+
+  it("matches case, diacritics, and All-Blacks punctuation", () => {
+    const face = buildWatchFixtureFace({
+      title: "sprïngboks vs All-Blacks",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(face.home?.shortCode, "SPR");
+    assert.equal(face.home?.primaryColour, "#007a33");
+    assert.equal(face.away?.shortCode, "NZL");
+    assert.equal(face.away?.primaryColour, "#111111");
+    assert.notEqual(face.away?.shortCode, "ALL");
+  });
+
+  it("uses conventional codes when the first three letters would collide", () => {
+    const clubs = buildWatchFixtureFace({
+      title: "Manchester City vs Manchester United",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(clubs.home?.shortCode, "MCI");
+    assert.equal(clubs.home?.primaryColour, "#6cabdd");
+    assert.equal(clubs.away?.shortCode, "MUN");
+    assert.equal(clubs.away?.primaryColour, "#da291c");
+    assert.equal(watchFixtureFill(clubs.home?.primaryColour, "home"), "#6cabdd");
+
+    const derby = buildWatchFixtureFace({
+      title: "Mamelodi Sundowns vs Arsenal FC",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(derby.home?.shortCode, "SUN");
+    assert.equal(derby.home?.primaryColour, "#ffe500");
+    assert.equal(derby.away?.shortCode, "ARS");
+    assert.equal(derby.away?.primaryColour, "#ef0107");
+  });
+
+  it("uses the map when CMS colour is blank, and keeps a CMS hex unchanged", () => {
+    const face = buildWatchFixtureFace({
+      title: "Ignored vs title",
+      startsAt: kickoff,
+      teams: [
+        { name: "Chelsea", primaryColour: "#112233", shortCode: "CFC" },
+        { name: "Kaizer Chiefs", shortCode: "CHI", primaryColour: "   " },
+      ],
+      venueSlugs: [],
+    });
+    assert.equal(face.sidesSource, "cms");
+    assert.equal(face.home?.shortCode, "CFC");
+    assert.equal(face.home?.primaryColour, "#112233");
+    assert.equal(face.away?.shortCode, "CHI");
+    assert.equal(face.away?.primaryColour, "#ffd200");
+  });
+
+  it("leaves an unmatched name on slate", () => {
+    const face = buildWatchFixtureFace({
+      title: "Leinster vs Munster",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(face.home?.shortCode, "LEI");
+    assert.equal(face.home?.primaryColour, null);
+    assert.equal(face.away?.primaryColour, null);
+    assert.equal(watchFixtureFill(face.home?.primaryColour, "home"), WATCH_FIXTURE_SLATE);
+    assert.equal(
+      watchFixtureFill(face.away?.primaryColour, "away"),
+      WATCH_FIXTURE_SLATE_AWAY,
+    );
+  });
+
+  it("maps Proteas, South Africa, and SA20 sides", () => {
+    const test = buildWatchFixtureFace({
+      title: "Proteas vs India",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(test.home?.shortCode, "RSA");
+    assert.equal(test.home?.primaryColour, "#007a4d");
+    assert.equal(test.away?.shortCode, "IND");
+    assert.equal(test.away?.primaryColour, "#0033a0");
+
+    const country = buildWatchFixtureFace({
+      title: "South Africa vs Namibia",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(country.home?.shortCode, "RSA");
+    assert.equal(country.home?.primaryColour, "#007a4d");
+    assert.equal(country.away?.shortCode, "NAM");
+
+    const sa20 = buildWatchFixtureFace({
+      title: "Joburg Super Kings vs MI Cape Town",
+      startsAt: kickoff,
+      venueSlugs: [],
+    });
+    assert.equal(sa20.home?.shortCode, "JSK");
+    assert.equal(sa20.home?.primaryColour, "#f9cd05");
+    assert.equal(sa20.away?.shortCode, "MCT");
+    assert.equal(sa20.away?.primaryColour, "#004ba0");
+  });
+
+  it("resolves every listed side to a kit fill and a three-letter code", () => {
+    for (const name of CURATED_NAMES) {
+      const face = buildWatchFixtureFace({
+        title: `${name} vs Leinster`,
+        startsAt: kickoff,
+        venueSlugs: [],
+      });
+      assert.equal(face.home?.name, name);
+      assert.match(face.home?.shortCode ?? "", /^[A-Z]{3}$/);
+      assert.match(face.home?.primaryColour ?? "", /^#[0-9a-f]{6}$/);
+      assert.equal(face.away?.primaryColour, null);
+      assert.notEqual(
+        watchFixtureFill(face.home?.primaryColour, "home"),
+        WATCH_FIXTURE_SLATE,
+      );
+    }
   });
 });
