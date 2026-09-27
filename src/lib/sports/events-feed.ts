@@ -80,3 +80,36 @@ export type UpcomingFixture = {
   seoDescription?: string | null;
   updatedAt?: string | null;
 };
+
+export type EventsScreeningVenueRow = {
+  name?: unknown;
+  slug?: unknown;
+  city?: unknown;
+  citySlug?: unknown;
+  broadcasts?: Array<{ name?: unknown; slug?: unknown }> | null;
+  upcoming_screenings?: Array<{ title?: unknown; startsAt?: unknown }> | null;
+};
+
+export type EventsCmsEventRow = {
+  id?: unknown;
+  title?: unknown;
+  slug?: unknown;
+  series?: unknown;
+  sport?: unknown;
+  dateTime?: unknown;
+  startsAt?: unknown;
+  startDateTime?: unknown;
+  featured?: unknown;
+  track?: unknown;
+  competition?: unknown;
+  broadcastInfo?: unknown;
+  teams?: unknown;
+  hostVenue?: unknown;
+  seoIntro?: unknown;
+  localAngle?: unknown;
+  faqs?: unknown;
+  relatedGuide?: unknown;
+  seoTitle?: unknown;
+  seoDescription?: unknown;
+  updatedAt?: unknown;
+};
