@@ -35,6 +35,7 @@ export function VenueListCard({
   city,
   pageSlug,
   pageType,
+  quietSelected = false,
 }: {
   variant: "guide" | "watch-hub";
   name: string;
@@ -58,15 +59,20 @@ export function VenueListCard({
   city: string | null;
   pageSlug: string;
   pageType: Extract<PageType, "guide" | "watch_city_sport">;
+  /** Quiet edge when this row is inside a selected fixture filter. */
+  quietSelected?: boolean;
 }) {
   if (variant === "watch-hub") {
     const line = placeLine?.trim() || suburb.trim();
     const cueLine = cues.filter(Boolean).slice(0, 4).join(" · ");
     return (
       <article
-        className="rounded-2xl border border-white/8 bg-[#141814] p-3 sm:p-3.5"
+        className={`rounded-2xl border bg-[#141814] p-3 sm:p-3.5 ${
+          quietSelected ? "border-emerald-400/40" : "border-white/8"
+        }`}
         data-venue-list-card="watch-hub"
         data-watch-venue-card={slug ?? ""}
+        data-watch-venue-selected={quietSelected ? "" : undefined}
         data-suburb={suburb}
       >
         <div className="flex items-start gap-3">
@@ -104,7 +110,7 @@ export function VenueListCard({
                 <ConversionCtaLink
                   cta={{
                     id: "open_venue",
-                    label: "Open venue →",
+                    label: "Open venue \u2192",
                     href: `/venues/${slug}`,
                   }}
                   matrix={matrix}
@@ -160,7 +166,7 @@ export function VenueListCard({
           <ConversionCtaLink
             cta={{
               id: "open_venue",
-              label: "Open venue →",
+              label: "Open venue \u2192",
               href: `/venues/${slug}`,
             }}
             matrix={matrix}
