@@ -161,6 +161,13 @@ describe("watch hub fixture buckets", () => {
       "beer-park-sandton",
       "cescos-randburg",
     ]);
+    assert.equal(model.fixtureRows[0]?.face.topPill, "SAT 31 OCT · 15:30");
+    assert.equal(model.fixtureRows[0]?.face.centre.kind, "kickoff");
+    assert.equal(model.fixtureRows[0]?.face.centre.label, "15:30");
+    assert.equal(model.fixtureRows[0]?.face.home?.shortCode, "ORL");
+    assert.equal(model.fixtureRows[0]?.face.away?.shortCode, "KAI");
+    assert.equal(model.fixtureRows[0]?.face.bottomPill, "2 venues screening");
+    assert.equal(model.fixtureRows[0]?.face.sidesSource, "title");
     assert.equal(
       model.fixtureRows.some((row) => /sharks|grand prix/i.test(row.title)),
       false,
@@ -181,7 +188,62 @@ describe("watch hub fixture buckets", () => {
     );
     assert.equal(model.buckets[0]?.groups[0]?.name, "URC");
     assert.equal(model.fixtureRows[0]?.venueSlugs.length, 1);
+    assert.equal(model.fixtureRows[0]?.face.bottomPill, "Beer Park Sandton");
+    assert.equal(model.fixtureRows[0]?.face.centre.kind, "kickoff");
     assert.equal(model.weekendVenueCount, 1);
+  });
+
+  it("omits the strip when a sport has no upcoming screenings", () => {
+    const model = buildWatchHubModel({
+      venues: [troy],
+      fixtures,
+      sportSlug: "rugby",
+      now: saturday,
+    });
+    assert.equal(model.fixtureRows.length, 0);
+    assert.equal(model.buckets.length, 0);
+  });
+
+  it("plugs an FT centre cluster without keeping the kickoff clock", () => {
+    const finished: UpcomingFixture = {
+      ...sharks,
+      result: { status: "FT", homeScore: 27, awayScore: 26 },
+    };
+    const model = buildWatchHubModel({
+      venues: [beer],
+      fixtures: [finished],
+      sportSlug: "rugby",
+      now: saturday,
+    });
+    const face = model.fixtureRows[0]?.face;
+    assert.equal(face?.centre.kind, "score");
+    assert.equal(face?.centre.label, "27–FT–26");
+    assert.equal(face?.topPill.includes("15:00"), false);
+    assert.equal(face?.topPill.endsWith("FT"), true);
+    assert.equal(face?.home?.shortCode, "SHA");
+    assert.equal(face?.away?.shortCode, "LIO");
+  });
+
+  it("uses CMS short codes when teams are present", () => {
+    const seeded: UpcomingFixture = {
+      ...derby,
+      teams: [
+        { name: "Orlando Pirates", shortCode: "OPA", primaryColour: "#0b5c3a" },
+        { name: "Kaizer Chiefs", shortCode: "CHI", primaryColour: "not-a-colour" },
+      ],
+    };
+    const model = buildWatchHubModel({
+      venues: [beer],
+      fixtures: [seeded],
+      sportSlug: "soccer",
+      now: saturday,
+    });
+    const face = model.fixtureRows[0]?.face;
+    assert.equal(face?.sidesSource, "cms");
+    assert.equal(face?.home?.shortCode, "OPA");
+    assert.equal(face?.home?.primaryColour, "#0b5c3a");
+    assert.equal(face?.away?.shortCode, "CHI");
+    assert.equal(face?.away?.primaryColour, null);
   });
 
   it("lists cross-sport buckets on the city hub and only shows buckets with rows", () => {
