@@ -1,4 +1,5 @@
 import { FIXTURE_TIMEZONE, fixtureCalendarDay } from "../sports/events-feed.ts";
+import { lookupWatchTeamBrand } from "./watch-team-colours.ts";
 
 /**
  * Pill-sandwich presentation for Watch hub fixtures.
@@ -6,13 +7,15 @@ import { FIXTURE_TIMEZONE, fixtureCalendarDay } from "../sports/events-feed.ts";
  * Team sides prefer CMS `teams[]` (name, optional shortCode / colours).
  * When those are missing, home/away are parsed from "A vs B" in the title.
  * That title parse is fragile — it is not a club code, and it must not invent
- * a crest. Missing colour stays null so the card can paint neutral slate.
+ * a crest. A blank primary colour falls back to a curated name → kit map.
+ * A non-empty CMS value that is not a hex stays unset. Unmatched names stay
+ * null so the card can paint neutral slate.
  * The centre cluster is either the kickoff clock or `score–FT–score`, never both.
  */
 
 export const WATCH_FIXTURE_CAROUSEL_LIMIT = 8;
 
-/** Neutral fills when a side has no CMS colour. Not a team brand. */
+/** Neutral fills when a side has no usable colour. Not a team brand. */
 export const WATCH_FIXTURE_SLATE = "#3a4658";
 export const WATCH_FIXTURE_SLATE_AWAY = "#2c3646";
 
@@ -104,11 +107,15 @@ export function deriveWatchShortCode(name: string): string {
   return letters.slice(0, 3).toUpperCase();
 }
 
-function resolveShortCode(raw: string | null | undefined, name: string): string {
+function resolveShortCode(
+  raw: string | null | undefined,
+  name: string,
+  curated?: string,
+): string {
   const letters = (raw ?? "").replace(/[^A-Za-z]/g, "").toUpperCase();
   if (letters.length >= 3) return letters.slice(0, 3);
   if (letters.length > 0) return letters;
-  return deriveWatchShortCode(name);
+  return curated || deriveWatchShortCode(name);
 }
 
 /** Hex only. Anything else (names, urls, gradients) is missing colour → slate. */
@@ -235,10 +242,15 @@ function sideFrom(
   name: string,
   hint: WatchFixtureTeamHint | null | undefined,
 ): WatchFixtureSide {
+  const brand = lookupWatchTeamBrand(name);
+  const rawPrimary = hint?.primaryColour;
+  const cmsColourProvided = Boolean((rawPrimary ?? "").trim());
   return {
     name,
-    shortCode: resolveShortCode(hint?.shortCode, name),
-    primaryColour: normaliseWatchTeamColour(hint?.primaryColour),
+    shortCode: resolveShortCode(hint?.shortCode, name, brand?.shortCode),
+    primaryColour: cmsColourProvided
+      ? normaliseWatchTeamColour(rawPrimary)
+      : normaliseWatchTeamColour(brand?.primaryColour),
     secondaryColour: normaliseWatchTeamColour(hint?.secondaryColour),
   };
 }
