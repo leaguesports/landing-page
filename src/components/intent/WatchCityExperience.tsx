@@ -271,7 +271,7 @@ export function WatchCityExperience({
                 }`}
                 aria-pressed={geo.status === "ready"}
               >
-                {geo.status === "loading" ? "Locating\u2026" : "Near me"}
+                {geo.status === "loading" ? "Locating…" : "Near me"}
               </button>
             </div>
           ) : null}
@@ -472,7 +472,7 @@ export function WatchCityExperience({
                   : `${cards.length} ${cards.length === 1 ? "venue" : "venues"}`}
               {selected ? (
                 <>
-                  {" \u00b7 "}
+                  {" · "}
                   <button
                     type="button"
                     onClick={clearFixture}
