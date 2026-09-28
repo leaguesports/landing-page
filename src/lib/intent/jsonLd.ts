@@ -1,3 +1,4 @@
+import { faqAnswerPlainText } from "../faq/answer.ts";
 import type { IntentFaq } from "./copy.ts";
 import type { IntentKind } from "./paths.ts";
 import { intentPath } from "./paths.ts";
@@ -102,7 +103,7 @@ export function buildIntentJsonLd(input: IntentJsonLdInput) {
         name: faq.question,
         acceptedAnswer: {
           "@type": "Answer",
-          text: faq.answer,
+          text: faqAnswerPlainText(faq.answer),
         },
       })),
     });

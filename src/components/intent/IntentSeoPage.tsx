@@ -319,6 +319,7 @@ async function WatchOnlyCityPage({
   const description = watchCityHubDescription(location.title, venues.length);
   const faqs = watchCityHubFaqs({
     cityTitle: location.title,
+    citySlug: location.slug,
     venueCount: venues.length,
   });
   const jsonLd = buildIntentJsonLd({
@@ -726,6 +727,7 @@ export async function IntentSeoPage({
     intent,
     activity,
     locationTitle: location.title,
+    locationSlug: location.slug,
     venueCount: venues.length,
   });
   const jsonLd = buildIntentJsonLd({

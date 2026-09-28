@@ -1,4 +1,5 @@
 import type { GuideFaq } from "../../data/guides/faqs.ts";
+import { faqAnswerPlainText } from "../faq/answer.ts";
 
 export const GUIDE_JSON_LD_SITE_URL = "https://leaguesports.co.za";
 
@@ -90,7 +91,7 @@ function leagueSportsOrg(siteUrl: string, withLogo: boolean): OrganizationJsonLd
 }
 
 function stripHtml(text: string): string {
-  return text.replace(/<[^>]*>/g, "").trim();
+  return faqAnswerPlainText(text);
 }
 
 export function buildFaqPageJsonLd(

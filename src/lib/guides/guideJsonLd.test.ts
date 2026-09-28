@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   GUIDE_FAQS_BY_SLUG,
   JOBURG_PADEL_GUIDE_SLUG,
+  JOBURG_RUGBY_WATCH_GUIDE_SLUG,
+  JOBURG_SPORTS_BARS_GUIDE_SLUG,
   getGuideFaqs,
 } from "../../data/guides/faqs.ts";
 import {
@@ -184,5 +186,50 @@ describe("buildGuideJsonLd", () => {
       faqPage?.mainEntity[0]?.acceptedAnswer.text,
       "A racket sport. Book a court.",
     );
+  });
+
+  it("builds FAQPage for the Joburg sports-bar and rugby watch guides", () => {
+    const sportsBars = getGuideFaqs(JOBURG_SPORTS_BARS_GUIDE_SLUG);
+    const rugby = getGuideFaqs(JOBURG_RUGBY_WATCH_GUIDE_SLUG);
+    assert.ok(sportsBars.length >= 8);
+    assert.ok(rugby.length >= 4);
+
+    const sportsQuestions = sportsBars.map((faq) => faq.question);
+    assert.ok(sportsQuestions.some((question) => /sports bars near me/i.test(question)));
+    assert.ok(sportsQuestions.some((question) => /Sandton/.test(question)));
+    assert.ok(sportsQuestions.some((question) => /Midrand/.test(question)));
+    assert.ok(sportsQuestions.some((question) => /Rosebank/.test(question)));
+    assert.ok(sportsQuestions.some((question) => /screens/i.test(question)));
+    assert.ok(sportsQuestions.some((question) => /book/i.test(question)));
+    assert.ok(sportsQuestions.some((question) => /opening hours/i.test(question)));
+
+    const hours = sportsBars.find((faq) => /opening hours/i.test(faq.question));
+    assert.match(hours?.answer ?? "", /Cesco/);
+    assert.match(hours?.answer ?? "", /Monday–Saturday/);
+    assert.doesNotMatch(hours?.answer ?? "", /\b\d{1,2}:\d{2}\b/);
+    assert.doesNotMatch(hours?.answer ?? "", /\b\d{1,2}\s?(am|pm)\b/i);
+
+    const rugbyQuestions = rugby.map((faq) => faq.question);
+    assert.ok(rugbyQuestions.some((question) => /rugby near me/i.test(question)));
+    assert.ok(rugbyQuestions.some((question) => /sports bars near me/i.test(question)));
+    assert.doesNotMatch(rugby.map((faq) => faq.answer).join(" "), /\b\d{1,2}:\d{2}\b/);
+
+    for (const [slug, faqs] of [
+      [JOBURG_SPORTS_BARS_GUIDE_SLUG, sportsBars],
+      [JOBURG_RUGBY_WATCH_GUIDE_SLUG, rugby],
+    ] as const) {
+      const jsonLd = buildGuideJsonLd({
+        title: slug,
+        description: "Guide",
+        slug,
+        faqs,
+      });
+      const faqPage = findJsonLdNode(jsonLd, "FAQPage");
+      assert.equal(faqPage?.mainEntity.length, faqs.length);
+      assert.equal(faqPage?.["@id"], `https://leaguesports.co.za/guides/${slug}#faq`);
+      const schemaText = faqPage?.mainEntity.map((entity) => entity.acceptedAnswer.text).join(" ");
+      assert.match(schemaText ?? "", /Bench Warmers|Benchwarmers|The Troyeville/);
+      assert.doesNotMatch(schemaText ?? "", /\]\(|<a /);
+    }
   });
 });
