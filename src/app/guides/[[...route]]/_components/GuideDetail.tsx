@@ -1,3 +1,4 @@
+import { FaqAnswerText } from "@/components/faq/FaqAnswerText";
 import { ConversionKit } from "@/components/conversion/ConversionKit";
 import { CtaPair } from "@/components/conversion/CtaPair";
 import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
@@ -60,7 +61,7 @@ function GuideFaqSection({ faqs }: { faqs: GuideFaq[] }) {
                 {faq.question}
               </h3>
               <p className="text-balance text-base font-medium leading-[1.75] text-zinc-300 sm:text-lg">
-                {faq.answer}
+                <FaqAnswerText text={faq.answer} />
               </p>
             </article>
           ))}

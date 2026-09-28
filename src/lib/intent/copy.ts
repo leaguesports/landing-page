@@ -86,17 +86,42 @@ export function intentLandingDescription(intent: IntentKind): string {
     : "Find courts, clubs, and pitches near you. Pick a sport, then choose your suburb.";
 }
 
+function isJohannesburg(title: string, slug?: string | null): boolean {
+  if (slug?.trim().toLowerCase() === "johannesburg") return true;
+  return title.trim().toLowerCase() === "johannesburg";
+}
+
+function rugbyJohannesburgNearMeFaqs(venueCount: number): IntentFaq[] {
+  const count = Number.isFinite(venueCount) ? Math.max(0, Math.trunc(venueCount)) : 0;
+  const listed =
+    count > 0
+      ? `This page lists ${count} ${count === 1 ? "venue" : "venues"} tagged for rugby in Johannesburg.`
+      : "This page is still adding bars tagged for rugby in Johannesburg.";
+  return [
+    {
+      question: "Where can I watch rugby near me in Johannesburg?",
+      answer: `${listed} Ranked pubs from the Ellis Park corridor in Troyeville through Illovo, Fourways, Sandton and Rosebank are in the [where to watch rugby in Johannesburg](/guides/where-to-watch-rugby-johannesburg) guide. For multi-sport bars, use the [best sports bars in Johannesburg](/guides/best-sports-bars-johannesburg).`,
+    },
+    {
+      question: "Where are sports bars near me for a rugby watch in Joburg?",
+      answer:
+        "Start with the venues on this page, then the [Johannesburg sports-bar guide](/guides/best-sports-bars-johannesburg) for Rosebank, Sandton, Midrand, Illovo, Fourways and Troyeville. The [rugby watch guide](/guides/where-to-watch-rugby-johannesburg) is the rugby-first shortlist.",
+    },
+  ];
+}
+
 export function intentDetailFaqs(input: {
   intent: IntentKind;
   activity: IntentActivity;
   locationTitle: string;
   venueCount: number;
+  locationSlug?: string | null;
 }): IntentFaq[] {
   const { intent, activity, locationTitle, venueCount } = input;
   const verb = intent === "watch" ? "watch" : "play";
   const placeNoun = intent === "watch" ? "bars and fan zones" : "courts and clubs";
 
-  return [
+  const faqs: IntentFaq[] = [
     {
       question: `Where can I ${verb} ${activity.name} in ${locationTitle}?`,
       answer:
@@ -122,6 +147,16 @@ export function intentDetailFaqs(input: {
           : `Follow venues you play at and keep your athlete profile up to date so friends and rematches are easier to organise.`,
     },
   ];
+
+  if (
+    intent === "watch" &&
+    activity.slug === "rugby" &&
+    isJohannesburg(locationTitle, input.locationSlug)
+  ) {
+    faqs.push(...rugbyJohannesburgNearMeFaqs(venueCount));
+  }
+
+  return faqs;
 }
 
 export function watchCityHubDescription(
@@ -140,13 +175,14 @@ export function watchCityHubDescription(
 export function watchCityHubFaqs(input: {
   cityTitle: string;
   venueCount: number;
+  citySlug?: string | null;
 }): IntentFaq[] {
   const city = input.cityTitle.trim() || "this city";
   const count = Number.isFinite(input.venueCount)
     ? Math.max(0, Math.trunc(input.venueCount))
     : 0;
   const noun = count === 1 ? "venue" : "venues";
-  return [
+  const faqs: IntentFaq[] = [
     {
       question: `Where can I watch sport in ${city}?`,
       answer:
@@ -165,4 +201,21 @@ export function watchCityHubFaqs(input: {
         "Yes. Use List your venue and submit the bar or fan zone so it can be tagged for the sports it shows.",
     },
   ];
+
+  if (isJohannesburg(city, input.citySlug)) {
+    faqs.push(
+      {
+        question: "Where can I find sports bars near me in Johannesburg?",
+        answer:
+          "Pick a fixture on this page to see which bars are showing it, or open the [best sports bars in Johannesburg](/guides/best-sports-bars-johannesburg) for Rosebank, Sandton, Midrand and the other ranked suburbs. [Watch rugby in Johannesburg](/watch/rugby/johannesburg) is the rugby near-me hub.",
+      },
+      {
+        question: "Where can I watch rugby near me in Johannesburg?",
+        answer:
+          "Rugby screenings for this city are on [Watch rugby in Johannesburg](/watch/rugby/johannesburg). The [where to watch rugby guide](/guides/where-to-watch-rugby-johannesburg) covers Troyeville, Illovo, Fourways, Sandton and Rosebank.",
+      },
+    );
+  }
+
+  return faqs;
 }

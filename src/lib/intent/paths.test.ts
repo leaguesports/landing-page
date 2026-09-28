@@ -13,6 +13,7 @@ import {
   intentDetailFaqs,
   intentDetailHeading,
   intentDetailTitle,
+  watchCityHubFaqs,
 } from "./copy.ts";
 import {
   buildIntentEnrichment,
@@ -163,6 +164,54 @@ describe("intent copy", () => {
     assert.equal(faqs.length, 3);
     assert.match(faqs[0]?.answer ?? "", /2 venues/);
   });
+
+  it("adds rugby near-me FAQs on the Johannesburg watch hub only", () => {
+    const joburg = intentDetailFaqs({
+      intent: "watch",
+      activity: buildIntentActivity({ slug: "rugby", name: "Rugby" }),
+      locationTitle: "Johannesburg",
+      locationSlug: "johannesburg",
+      venueCount: 4,
+    });
+    assert.equal(joburg.length, 5);
+    assert.ok(joburg.some((faq) => /rugby near me/i.test(faq.question)));
+    assert.ok(joburg.some((faq) => /sports bars near me/i.test(faq.question)));
+    assert.match(
+      joburg.map((faq) => faq.answer).join(" "),
+      /\/guides\/where-to-watch-rugby-johannesburg/,
+    );
+    assert.match(
+      joburg.map((faq) => faq.answer).join(" "),
+      /\/guides\/best-sports-bars-johannesburg/,
+    );
+
+    const sandton = intentDetailFaqs({
+      intent: "watch",
+      activity: buildIntentActivity({ slug: "rugby", name: "Rugby" }),
+      locationTitle: "Sandton",
+      locationSlug: "sandton",
+      venueCount: 2,
+    });
+    assert.equal(sandton.length, 3);
+  });
+
+  it("adds sports-bar and rugby near-me FAQs on the Joburg city watch hub", () => {
+    const faqs = watchCityHubFaqs({
+      cityTitle: "Johannesburg",
+      citySlug: "johannesburg",
+      venueCount: 6,
+    });
+    assert.equal(faqs.length, 5);
+    assert.ok(faqs.some((faq) => /sports bars near me/i.test(faq.question)));
+    assert.ok(faqs.some((faq) => /watch rugby near me/i.test(faq.question)));
+
+    const capeTown = watchCityHubFaqs({
+      cityTitle: "Cape Town",
+      citySlug: "cape-town",
+      venueCount: 2,
+    });
+    assert.equal(capeTown.length, 3);
+  });
 });
 
 describe("intent enrichment", () => {
@@ -279,6 +328,40 @@ describe("buildIntentJsonLd", () => {
     assert.ok(types.includes("CollectionPage"));
     assert.ok(types.includes("ItemList"));
     assert.ok(types.includes("FAQPage"));
+
+    const faqPage = jsonLd["@graph"].find(
+      (node) => node["@type"] === "FAQPage",
+    ) as {
+      mainEntity: { acceptedAnswer: { text: string } }[];
+    };
+    const linked = buildIntentJsonLd({
+      intent: "watch",
+      title: "Watch Rugby in Johannesburg",
+      description: "Find venues screening rugby in Johannesburg.",
+      activitySlug: "rugby",
+      activityName: "Rugby",
+      locationSlug: "johannesburg",
+      locationTitle: "Johannesburg",
+      faqs: intentDetailFaqs({
+        intent: "watch",
+        activity: buildIntentActivity({ slug: "rugby", name: "Rugby" }),
+        locationTitle: "Johannesburg",
+        locationSlug: "johannesburg",
+        venueCount: 4,
+      }),
+      siteUrl: "https://leaguesports.co.za",
+    });
+    const linkedFaq = linked["@graph"].find(
+      (node) => node["@type"] === "FAQPage",
+    ) as {
+      mainEntity: { name: string; acceptedAnswer: { text: string } }[];
+    };
+    const nearMe = linkedFaq.mainEntity.find((entity) =>
+      /rugby near me/i.test(entity.name),
+    );
+    assert.match(nearMe?.acceptedAnswer.text ?? "", /where to watch rugby in Johannesburg/);
+    assert.doesNotMatch(nearMe?.acceptedAnswer.text ?? "", /\]\(/);
+    assert.ok(faqPage);
 
     const crumbs = jsonLd["@graph"].find(
       (node) => node["@type"] === "BreadcrumbList",

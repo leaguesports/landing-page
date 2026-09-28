@@ -1,3 +1,4 @@
+import { FaqAnswerText } from "@/components/faq/FaqAnswerText";
 import type { FixtureRelatedLink } from "@/lib/events/links";
 import type { FixtureFaq } from "@/lib/sports/events-feed";
 import Link from "next/link";
@@ -68,7 +69,7 @@ export function FixtureFaqSection({ faqs }: { faqs: FixtureFaq[] }) {
                 {faq.question}
               </h3>
               <p className="text-base font-medium leading-[1.75] text-zinc-300 sm:text-lg">
-                {faq.answer}
+                <FaqAnswerText text={faq.answer} />
               </p>
             </article>
           ))}

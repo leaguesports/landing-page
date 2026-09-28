@@ -1,3 +1,4 @@
+import { FaqAnswerText } from "@/components/faq/FaqAnswerText";
 import type { IntentFaq } from "@/lib/intent/copy";
 import type { IntentKind } from "@/lib/intent/paths";
 
@@ -29,7 +30,7 @@ export function IntentFaqSection({ intent, faqs }: IntentFaqSectionProps) {
             >
               <dt className="text-base font-medium text-white">{faq.question}</dt>
               <dd className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {faq.answer}
+                <FaqAnswerText text={faq.answer} />
               </dd>
             </div>
           ))}

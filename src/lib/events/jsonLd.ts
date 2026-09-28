@@ -1,3 +1,4 @@
+import { faqAnswerPlainText } from "../faq/answer.ts";
 import {
   completeFixtureFaqs,
   fixturePlainText,
@@ -436,7 +437,7 @@ export function buildEventFaqPageJsonLd(
       name: faq.question,
       acceptedAnswer: {
         "@type": "Answer",
-        text: faq.answer,
+        text: faqAnswerPlainText(faq.answer),
       },
     })),
   };

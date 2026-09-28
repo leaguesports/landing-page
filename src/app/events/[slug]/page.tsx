@@ -13,7 +13,8 @@ import {
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
 import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
 import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
-import { indexableFixtureFaqs, isFixtureIndexable } from "@/lib/events/index-bar";
+import { resolveFixturePageFaqs } from "@/lib/events/fixtureFaqs";
+import { isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
 import {
@@ -178,7 +179,7 @@ export default async function EventFixturePage({ params }: PageProps) {
     teams: fixture.teams,
     startsAt: kickoff,
   });
-  const faqs = indexableFixtureFaqs(fixture);
+  const faqs = resolveFixturePageFaqs(fixture.slug, fixture.faqs);
   const intro = fixture.seoIntro?.trim() || null;
   const localAngle = fixture.localAngle?.trim() || null;
   const related = upcoming.filter((item) => item.slug !== fixture.slug);
