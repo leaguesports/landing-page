@@ -34,6 +34,11 @@ export type CtaMatrixInput = {
   guideIntent?: "play" | "watch" | null;
   venueCount?: number;
   hasScorecard?: boolean;
+  /**
+   * Venue pages only. False hides the "Find fixtures" primary (climbing,
+   * karting, and other non-events sports). Omitted keeps today's CTA.
+   */
+  supportsFixtures?: boolean;
   hasDirections?: boolean;
   hasWhatsApp?: boolean;
   whatsAppHref?: string | null;
@@ -285,11 +290,27 @@ function venuePrimary(input: CtaMatrixInput): ConversionCta {
       }),
     };
   }
+  if (input.supportsFixtures === false) {
+    return venueSecondary(input);
+  }
   return {
     id: "find_fixtures",
     label: "Find fixtures",
     href: eventsListHref({ sport: parseEventsSportParam(input.sport) }),
   };
+}
+
+/** Drop a secondary that repeats the primary after a fixture CTA is removed. */
+export function distinctMatrixCtas(matrix: CtaMatrix): ConversionCta[] {
+  const { primary, secondary } = matrix;
+  if (
+    primary.id === secondary.id &&
+    primary.href === secondary.href &&
+    primary.label === secondary.label
+  ) {
+    return [primary];
+  }
+  return [primary, secondary];
 }
 
 function venueSecondary(input: CtaMatrixInput): ConversionCta {

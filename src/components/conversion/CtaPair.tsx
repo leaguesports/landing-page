@@ -4,6 +4,7 @@ import { track } from "@/lib/analytics/track";
 import type { CtaSlot } from "@/lib/analytics/track";
 import {
   ctaAnalyticsParams,
+  distinctMatrixCtas,
   type ConversionCta,
   type CtaMatrix,
 } from "@/lib/conversion/cta-matrix";
@@ -104,28 +105,23 @@ export function CtaPair({
   slug?: string | null;
   className?: string;
 }) {
+  const ctas = distinctMatrixCtas(matrix);
+
   return (
     <div className={`flex flex-wrap gap-3 ${className}`.trim()}>
-      <ConversionCtaLink
-        cta={matrix.primary}
-        matrix={matrix}
-        slot={slot}
-        tone={tone}
-        variant="primary"
-        sport={sport}
-        city={city}
-        slug={slug}
-      />
-      <ConversionCtaLink
-        cta={matrix.secondary}
-        matrix={matrix}
-        slot={slot}
-        tone={tone}
-        variant="secondary"
-        sport={sport}
-        city={city}
-        slug={slug}
-      />
+      {ctas.map((cta, index) => (
+        <ConversionCtaLink
+          key={`${cta.id}-${index}`}
+          cta={cta}
+          matrix={matrix}
+          slot={slot}
+          tone={tone}
+          variant={index === 0 ? "primary" : "secondary"}
+          sport={sport}
+          city={city}
+          slug={slug}
+        />
+      ))}
     </div>
   );
 }

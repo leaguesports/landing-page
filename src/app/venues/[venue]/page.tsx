@@ -3,7 +3,6 @@ import {
   VenueUtilityBadges,
 } from "@/components/VenueUtilityBadges";
 import { ConversionKit } from "@/components/conversion/ConversionKit";
-import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
@@ -23,6 +22,14 @@ import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { toGolfVenueOption } from "@/lib/golf/venue-options";
 import { isVenueClaimable, hasVenueWhatsAppContact, resolveVenueWhatsAppCta } from "@/lib/venues/contact-cta";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
+import {
+  venueShowsFindFixtures,
+  venueShowsLeaderboards,
+  venueShowsMatchHistory,
+  venueShowsPlaySports,
+  venueShowsSportsSection,
+  venueSupportsPlayResults,
+} from "@/lib/venues/play-chrome";
 import {
   venueAmenitiesDescription,
   venueDetailMetaDescription,
@@ -315,7 +322,13 @@ export default async function VenuePage({ params, searchParams }: Props) {
   );
   const primaryQuickStart = quickStartActivities[0];
   const supportsWatch = venueSupportsWatch(venue);
+  const supportsPlayResults = venueSupportsPlayResults(venue);
+  const showMatchHistory = venueShowsMatchHistory(venue);
+  const showLeaderboards = venueShowsLeaderboards(venue);
   const showWatchSports = venueHasBroadcasts(venue);
+  const showPlaySports = venueShowsPlaySports(venue);
+  const showSportsSection = venueShowsSportsSection(venue);
+  const showFindFixtures = venueShowsFindFixtures(venue, supportsWatch);
   const showAmenities = venueShowsAmenitiesSection(venue);
   const navLinks = venueDetailNavLinks({
     hasQuickStart: quickStartActivities.length > 0,
@@ -332,6 +345,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
     city: citySlug || null,
     venueSlug: venue.slug,
     hasScorecard: quickStartActivities.length > 0,
+    supportsFixtures: showFindFixtures,
     hasDirections: true,
     directionsHref: mapsSearchUrl,
     hasWhatsApp: hasVenueWhatsAppContact(venue) && whatsApp.kind === "whatsapp",
@@ -476,28 +490,34 @@ export default async function VenuePage({ params, searchParams }: Props) {
           </section>
         ) : null}
 
-        <VenueMatchHistory
-          venueName={venue.name}
-          venueCmsId={venue._id}
-          startHref={primaryQuickStart?.href}
-        />
+        {showMatchHistory ? (
+          <VenueMatchHistory
+            venueName={venue.name}
+            venueCmsId={venue._id}
+            startHref={primaryQuickStart?.href}
+          />
+        ) : null}
 
-        <VenueFriendsPlayed
-          venueId={venue._id}
-          venueName={venue.name}
-          venueSlug={venue.slug}
-          primarySport={primaryQuickStart?.sportSlug ?? null}
-          startHref={primaryQuickStart?.href}
-        />
+        {supportsPlayResults ? (
+          <VenueFriendsPlayed
+            venueId={venue._id}
+            venueName={venue.name}
+            venueSlug={venue.slug}
+            primarySport={primaryQuickStart?.sportSlug ?? null}
+            startHref={primaryQuickStart?.href}
+          />
+        ) : null}
 
-        <VenueLeaderboardSection
-          venueId={venue._id}
-          venueName={venue.name}
-          playHref={venueLeaderboardPlayHref(primaryQuickStart?.sportSlug)}
-          sport={primaryQuickStart?.sportSlug ?? null}
-          initialBoard={initialBoard}
-          initialWindow={initialWindow}
-        />
+        {showLeaderboards ? (
+          <VenueLeaderboardSection
+            venueId={venue._id}
+            venueName={venue.name}
+            playHref={venueLeaderboardPlayHref(primaryQuickStart?.sportSlug)}
+            sport={primaryQuickStart?.sportSlug ?? null}
+            initialBoard={initialBoard}
+            initialWindow={initialWindow}
+          />
+        ) : null}
 
         {/* About */}
         <section
@@ -516,39 +536,38 @@ export default async function VenuePage({ params, searchParams }: Props) {
           </div>
         </section>
 
-        {/* Sports */}
-        <section
-          id="sports"
-          className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              label="Sports"
-              title="Sports at this venue"
-              description={venueSportsSectionDescription(venue)}
-            />
+        {showSportsSection ? (
+          <section
+            id="sports"
+            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
+          >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <SectionHeader
+                label="Sports"
+                title="Sports at this venue"
+                description={venueSportsSectionDescription(venue)}
+              />
 
-            <div
-              className={`grid gap-4 sm:gap-5 ${showWatchSports ? "sm:grid-cols-2" : ""}`}
-            >
-              {showWatchSports ? (
-                <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                  <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                    Watch
-                  </h3>
-                  <VenueSportChips
-                    intent="watch"
-                    items={venue.broadcasts}
-                    venue={venue}
-                  />
-                </div>
-              ) : null}
-              <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                  Play
-                </h3>
-                {venue.sports.length > 0 ? (
-                  <>
+              <div
+                className={`grid gap-4 sm:gap-5 ${showWatchSports && showPlaySports ? "sm:grid-cols-2" : ""}`}
+              >
+                {showWatchSports ? (
+                  <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+                      Watch
+                    </h3>
+                    <VenueSportChips
+                      intent="watch"
+                      items={venue.broadcasts}
+                      venue={venue}
+                    />
+                  </div>
+                ) : null}
+                {showPlaySports ? (
+                  <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+                      Play
+                    </h3>
                     <VenueSportChips
                       intent="play"
                       items={venue.sports}
@@ -568,42 +587,34 @@ export default async function VenuePage({ params, searchParams }: Props) {
                         ))}
                       </div>
                     ) : null}
-                  </>
-                ) : (
-                  <CoverageNotify
-                    sport={null}
-                    city={citySlug || null}
-                    cityName={venue.address.city || venue.address.suburb}
-                    sourcePage={`/venues/${venue.slug}`}
-                    pageType="venue"
-                    showRoadmap
-                    trackFallbackOnView
-                  />
-                )}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                {supportsWatch ? (
+                  <Link
+                    href="/watch"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
+                  >
+                    Find places to watch <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                ) : null}
+                {supportsWatch && showPlaySports ? (
+                  <span className="hidden text-zinc-700 sm:inline">|</span>
+                ) : null}
+                {showPlaySports ? (
+                  <Link
+                    href="/play"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
+                  >
+                    Find places to play <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                ) : null}
               </div>
             </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              {supportsWatch ? (
-                <Link
-                  href="/watch"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
-                >
-                  Find places to watch <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              ) : null}
-              {supportsWatch ? (
-                <span className="hidden text-zinc-700 sm:inline">|</span>
-              ) : null}
-              <Link
-                href="/play"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
-              >
-                Find places to play <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         {showAmenities ? (
           <section

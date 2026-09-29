@@ -121,13 +121,7 @@ describe("venueDetailNavLinks", () => {
       hasQuickStart: false,
       venue: karting,
     }).map((link) => link.label);
-    assert.deepEqual(labels, [
-      "About",
-      "Match history",
-      "Leaderboards",
-      "Sports",
-      "Location",
-    ]);
+    assert.deepEqual(labels, ["About", "Sports", "Location"]);
   });
 
   it("keeps weekend and amenities jumps for a sports bar", () => {
@@ -137,6 +131,8 @@ describe("venueDetailNavLinks", () => {
     }).map((link) => link.label);
     assert.ok(labels.includes("This weekend"));
     assert.ok(labels.includes("Amenities"));
+    assert.equal(labels.includes("Match history"), false);
+    assert.equal(labels.includes("Leaderboards"), false);
     assert.equal(labels[0], "Quick start");
   });
 });
