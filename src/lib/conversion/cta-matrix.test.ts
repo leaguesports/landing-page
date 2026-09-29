@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   createFlowHref,
   ctaAnalyticsParams,
+  distinctMatrixCtas,
   isScorecardSport,
   selectCtaMatrix,
   startMatchLabel,
@@ -163,6 +164,20 @@ describe("selectCtaMatrix", () => {
     assert.equal(fixtures.primary.label, "Find fixtures");
     assert.equal(fixtures.primary.href, "/events?sport=soccer");
     assert.equal(fixtures.secondary.label, "Inquire on WhatsApp");
+
+    const karting = selectCtaMatrix({
+      pageType: "venue",
+      sport: "karting",
+      supportsFixtures: false,
+      hasDirections: true,
+      directionsHref: "https://maps.example/karting",
+    });
+    assert.notEqual(karting.primary.id, "find_fixtures");
+    assert.equal(karting.primary.label, "Get directions");
+    assert.deepEqual(
+      distinctMatrixCtas(karting).map((cta) => cta.label),
+      ["Get directions"],
+    );
   });
 
   it("keeps page_type=guide and cta_slot=inline on guide in-body CTAs", () => {

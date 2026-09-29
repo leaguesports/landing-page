@@ -1,7 +1,7 @@
 "use client";
 
 import { ConversionCtaLink, type CtaPairTone } from "@/components/conversion/CtaPair";
-import type { CtaMatrix } from "@/lib/conversion/cta-matrix";
+import { distinctMatrixCtas, type CtaMatrix } from "@/lib/conversion/cta-matrix";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -80,32 +80,26 @@ export function StickyCtaBar({
         className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-white/12 bg-[#141814]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur-xl sm:gap-3 sm:px-4"
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto scrollbar-hide">
-          <ConversionCtaLink
-            cta={matrix.primary}
-            matrix={matrix}
-            slot="sticky"
-            tone={tone}
-            variant="primary"
-            sport={sport}
-            city={city}
-            slug={slug}
-            className={
-              tone === "watch"
-                ? "inline-flex h-11 min-w-max flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-white px-3 text-[13px] font-semibold text-zinc-950 hover:bg-sky-400 hover:text-white sm:flex-none sm:px-5 sm:text-sm"
-                : "inline-flex h-11 min-w-max flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-emerald-400 px-3 text-[13px] font-semibold text-zinc-950 hover:bg-emerald-300 sm:flex-none sm:px-5 sm:text-sm"
-            }
-          />
-          <ConversionCtaLink
-            cta={matrix.secondary}
-            matrix={matrix}
-            slot="sticky"
-            tone={tone}
-            variant="secondary"
-            sport={sport}
-            city={city}
-            slug={slug}
-            className="inline-flex h-11 min-w-max shrink items-center justify-center whitespace-nowrap rounded-full border border-white/12 px-3 text-[13px] font-medium text-white hover:bg-white hover:text-zinc-950 sm:flex-none sm:px-5 sm:text-sm"
-          />
+          {distinctMatrixCtas(matrix).map((cta, index) => (
+            <ConversionCtaLink
+              key={`${cta.id}-${index}`}
+              cta={cta}
+              matrix={matrix}
+              slot="sticky"
+              tone={tone}
+              variant={index === 0 ? "primary" : "secondary"}
+              sport={sport}
+              city={city}
+              slug={slug}
+              className={
+                index === 0
+                  ? tone === "watch"
+                    ? "inline-flex h-11 min-w-max flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-white px-3 text-[13px] font-semibold text-zinc-950 hover:bg-sky-400 hover:text-white sm:flex-none sm:px-5 sm:text-sm"
+                    : "inline-flex h-11 min-w-max flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-emerald-400 px-3 text-[13px] font-semibold text-zinc-950 hover:bg-emerald-300 sm:flex-none sm:px-5 sm:text-sm"
+                  : "inline-flex h-11 min-w-max shrink items-center justify-center whitespace-nowrap rounded-full border border-white/12 px-3 text-[13px] font-medium text-white hover:bg-white hover:text-zinc-950 sm:flex-none sm:px-5 sm:text-sm"
+              }
+            />
+          ))}
         </div>
         <button
           type="button"

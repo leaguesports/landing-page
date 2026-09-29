@@ -7,6 +7,13 @@
  * upcoming screenings. No new CMS flags.
  */
 
+import {
+  venueShowsLeaderboards,
+  venueShowsMatchHistory,
+  venueShowsSportsSection,
+  type VenuePlayChromeInput,
+} from "./play-chrome.ts";
+
 export type VenueWatchBroadcast = {
   _id?: string | null;
   name?: string | null;
@@ -171,7 +178,7 @@ export type VenueNavLink = { label: string; href: string };
 
 export function venueDetailNavLinks(input: {
   hasQuickStart: boolean;
-  venue: VenueWatchChromeInput;
+  venue: VenueWatchChromeInput & VenuePlayChromeInput;
 }): VenueNavLink[] {
   const supportsWatch = venueSupportsWatch(input.venue);
   const links: VenueNavLink[] = [];
@@ -182,11 +189,15 @@ export function venueDetailNavLinks(input: {
   if (supportsWatch) {
     links.push({ label: "This weekend", href: "#weekend" });
   }
-  links.push(
-    { label: "Match history", href: "#match-history" },
-    { label: "Leaderboards", href: "#leaderboards" },
-    { label: "Sports", href: "#sports" },
-  );
+  if (venueShowsMatchHistory(input.venue)) {
+    links.push({ label: "Match history", href: "#match-history" });
+  }
+  if (venueShowsLeaderboards(input.venue)) {
+    links.push({ label: "Leaderboards", href: "#leaderboards" });
+  }
+  if (venueShowsSportsSection(input.venue)) {
+    links.push({ label: "Sports", href: "#sports" });
+  }
   if (venueShowsAmenitiesSection(input.venue)) {
     links.push({ label: "Amenities", href: "#amenities" });
   }
