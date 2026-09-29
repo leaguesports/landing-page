@@ -1,4 +1,5 @@
 import { venueScreeningEmptyCopy } from "@/lib/venues/contact-cta";
+import { venueSupportsWatch } from "@/lib/venues/watch-chrome";
 import {
   mergeVenueUpcomingScreenings,
   type VenueScreeningDisplay,
@@ -28,14 +29,20 @@ export async function VenueMatchSchedule({
     slug: string;
     phone?: string | null;
     whatsapp?: string | null;
+    broadcasts?:
+      | { _id?: string | null; name?: string | null; slug?: string | null }[]
+      | null;
     upcoming_screenings?:
       | { title?: string | null; startsAt?: string | null; setupTags?: string[] }[]
       | null;
   } | null;
   screenings?: VenueScreeningDisplay[] | null;
 }) {
+  const source = venue ?? { slug: "", upcoming_screenings: screenings };
+  if (!venueSupportsWatch(source)) return null;
+
   const items = mergeVenueUpcomingScreenings(
-    venue ?? { slug: "", upcoming_screenings: screenings },
+    source,
     await getUpcomingFixtures({ limit: 48 }),
   );
 

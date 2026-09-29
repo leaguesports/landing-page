@@ -2,6 +2,7 @@ import {
   resolveVenueWhatsAppCta,
   type VenueContactFields,
 } from "@/lib/venues/contact-cta";
+import { venueAmenityShown } from "@/lib/venues/watch-chrome";
 import {
   Beer,
   Car,
@@ -57,14 +58,20 @@ export function VenueUtilityBadges({
   venue,
   className = "",
   compact = false,
+  supportsWatch = true,
 }: {
   venue: VenueUtilityFlags;
   className?: string;
   compact?: boolean;
+  /**
+   * Broadcast amenities (big screens, live commentary) only belong on venues
+   * that actually screen sport. Defaults on so directory cards stay unchanged.
+   */
+  supportsWatch?: boolean;
 }) {
   const badges: BadgeDef[] = [];
 
-  if (venue.has_generator_backup) {
+  if (venueAmenityShown("has_generator_backup", venue.has_generator_backup, supportsWatch)) {
     badges.push({
       key: "generator",
       label: "Generator / Inverter Backup",
@@ -74,7 +81,7 @@ export function VenueUtilityBadges({
       tone: "power",
     });
   }
-  if (venue.has_big_screens) {
+  if (venueAmenityShown("has_big_screens", venue.has_big_screens, supportsWatch)) {
     badges.push({
       key: "screens",
       label: "HD Big Screens",
@@ -84,7 +91,7 @@ export function VenueUtilityBadges({
       tone: "av",
     });
   }
-  if (venue.has_live_audio) {
+  if (venueAmenityShown("has_live_audio", venue.has_live_audio, supportsWatch)) {
     badges.push({
       key: "audio",
       label: "Live Commentary On",
@@ -94,7 +101,7 @@ export function VenueUtilityBadges({
       tone: "av",
     });
   }
-  if (venue.has_craft_drafts) {
+  if (venueAmenityShown("has_craft_drafts", venue.has_craft_drafts, supportsWatch)) {
     badges.push({
       key: "drafts",
       label: "Draft Beer",
@@ -104,7 +111,7 @@ export function VenueUtilityBadges({
       tone: "amenity",
     });
   }
-  if (venue.has_food_menu) {
+  if (venueAmenityShown("has_food_menu", venue.has_food_menu, supportsWatch)) {
     badges.push({
       key: "food",
       label: "Food Menu",
@@ -114,7 +121,7 @@ export function VenueUtilityBadges({
       tone: "amenity",
     });
   }
-  if (venue.has_outdoor_area) {
+  if (venueAmenityShown("has_outdoor_area", venue.has_outdoor_area, supportsWatch)) {
     badges.push({
       key: "outdoor",
       label: "Outdoor Area",
@@ -124,7 +131,7 @@ export function VenueUtilityBadges({
       tone: "amenity",
     });
   }
-  if (venue.has_parking) {
+  if (venueAmenityShown("has_parking", venue.has_parking, supportsWatch)) {
     badges.push({
       key: "parking",
       label: "On-site Parking",
