@@ -23,6 +23,16 @@ import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { toGolfVenueOption } from "@/lib/golf/venue-options";
 import { isVenueClaimable, hasVenueWhatsAppContact, resolveVenueWhatsAppCta } from "@/lib/venues/contact-cta";
 import { venueQuickStartActivities } from "@/lib/venues/quick-start";
+import {
+  venueAmenitiesDescription,
+  venueDetailMetaDescription,
+  venueDetailNavLinks,
+  venueFollowBlurb,
+  venueHasBroadcasts,
+  venueShowsAmenitiesSection,
+  venueSportsSectionDescription,
+  venueSupportsWatch,
+} from "@/lib/venues/watch-chrome";
 import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
 import { VenueClaimBar } from "./_components/VenueClaimBar";
 import { VenueFollowButton } from "./_components/VenueFollowButton";
@@ -122,21 +132,6 @@ const venueAboutPortableTextComponents = {
   },
 } satisfies PortableTextComponents;
 
-const BASE_NAV_LINKS = [
-  { label: "About", href: "#about" },
-  { label: "This weekend", href: "#weekend" },
-  { label: "Match history", href: "#match-history" },
-  { label: "Leaderboards", href: "#leaderboards" },
-  { label: "Sports", href: "#sports" },
-  { label: "Amenities", href: "#amenities" },
-  { label: "Location", href: "#location" },
-];
-
-function venueNavLinks(hasQuickStart: boolean) {
-  if (!hasQuickStart) return BASE_NAV_LINKS;
-  return [{ label: "Quick start", href: "#quick-start" }, ...BASE_NAV_LINKS];
-}
-
 type Props = {
   params: Promise<{ venue: string }>;
   searchParams: Promise<{ board?: string | string[]; window?: string | string[] }>;
@@ -191,9 +186,7 @@ export async function generateMetadata({
   const baseUrl = getBaseUrl();
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
   const suburb = venue.address.suburb;
-  const description = suburb
-    ? `${venue.name} in ${suburb} — screens, amenities, and matchday details on LeagueSports.`
-    : `${venue.name} — screens, amenities, and matchday details on LeagueSports.`;
+  const description = venueDetailMetaDescription(venue, suburb);
   const ogImage = venueOgImageUrl(venue, 1200, 630);
 
   return {
@@ -321,7 +314,13 @@ export default async function VenuePage({ params, searchParams }: Props) {
     toGolfVenueOption(venue),
   );
   const primaryQuickStart = quickStartActivities[0];
-  const navLinks = venueNavLinks(quickStartActivities.length > 0);
+  const supportsWatch = venueSupportsWatch(venue);
+  const showWatchSports = venueHasBroadcasts(venue);
+  const showAmenities = venueShowsAmenitiesSection(venue);
+  const navLinks = venueDetailNavLinks({
+    hasQuickStart: quickStartActivities.length > 0,
+    venue,
+  });
   const citySlug = (venue.address.city || venue.address.suburb || "")
     .trim()
     .toLowerCase()
@@ -421,7 +420,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
             </div>
 
             <div className="mt-6">
-              <VenueUtilityBadges venue={venue} />
+              <VenueUtilityBadges venue={venue} supportsWatch={supportsWatch} />
             </div>
 
             <div className="mt-6">
@@ -458,23 +457,24 @@ export default async function VenuePage({ params, searchParams }: Props) {
           activities={quickStartActivities}
         />
 
-        {/* Weekend hub */}
-        <section
-          id="weekend"
-          className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              label="This weekend"
-              title="What's on"
-              description="Screenings and who's heading down"
-            />
-            <div className="grid max-w-3xl gap-5">
-              <VenueMatchSchedule venue={venue} />
-              <VenueAttendanceCounter venueSlug={venue.slug} />
+        {supportsWatch ? (
+          <section
+            id="weekend"
+            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
+          >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <SectionHeader
+                label="This weekend"
+                title="What's on"
+                description="Screenings and who's heading down"
+              />
+              <div className="grid max-w-3xl gap-5">
+                <VenueMatchSchedule venue={venue} />
+                <VenueAttendanceCounter venueSlug={venue.slug} />
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <VenueMatchHistory
           venueName={venue.name}
@@ -525,31 +525,24 @@ export default async function VenuePage({ params, searchParams }: Props) {
             <SectionHeader
               label="Sports"
               title="Sports at this venue"
-              description="Watch and play what's on offer"
+              description={venueSportsSectionDescription(venue)}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
-              <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                  Watch
-                </h3>
-                {venue.broadcasts.length > 0 ? (
+            <div
+              className={`grid gap-4 sm:gap-5 ${showWatchSports ? "sm:grid-cols-2" : ""}`}
+            >
+              {showWatchSports ? (
+                <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                  <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+                    Watch
+                  </h3>
                   <VenueSportChips
                     intent="watch"
                     items={venue.broadcasts}
                     venue={venue}
                   />
-                ) : (
-                  <CoverageNotify
-                    sport={null}
-                    city={citySlug || null}
-                    cityName={venue.address.city || venue.address.suburb}
-                    sourcePage={`/venues/${venue.slug}`}
-                    pageType="venue"
-                    showRoadmap
-                  />
-                )}
-              </div>
+                </div>
+              ) : null}
               <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
                 <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
                   Play
@@ -591,13 +584,17 @@ export default async function VenuePage({ params, searchParams }: Props) {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/watch"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
-              >
-                Find places to watch <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-              <span className="hidden text-zinc-700 sm:inline">|</span>
+              {supportsWatch ? (
+                <Link
+                  href="/watch"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
+                >
+                  Find places to watch <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              ) : null}
+              {supportsWatch ? (
+                <span className="hidden text-zinc-700 sm:inline">|</span>
+              ) : null}
               <Link
                 href="/play"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
@@ -608,22 +605,26 @@ export default async function VenuePage({ params, searchParams }: Props) {
           </div>
         </section>
 
-        {/* Amenities */}
-        <section
-          id="amenities"
-          className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              label="Amenities"
-              title="Amenities"
-              description="Power, screens, and on-site facilities"
-            />
-            <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-              <VenueUtilityBadges venue={venue} />
+        {showAmenities ? (
+          <section
+            id="amenities"
+            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
+          >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <SectionHeader
+                label="Amenities"
+                title="Amenities"
+                description={venueAmenitiesDescription(venue)}
+              />
+              <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
+                <VenueUtilityBadges
+                  venue={venue}
+                  supportsWatch={supportsWatch}
+                />
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         {/* Location */}
         <section
@@ -688,8 +689,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
                   Stay close to {venue.name}
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-500">
-                  Follow this venue to keep it on your list, or browse more
-                  screenings and places to play nearby.
+                  {venueFollowBlurb(venue)}
                 </p>
               </div>
 
