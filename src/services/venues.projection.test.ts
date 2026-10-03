@@ -21,6 +21,7 @@ describe("VENUE_PROJECTION", () => {
       "amenities.has_generator_backup",
       "contact.phone",
       "contactInfo.phone",
+      "contactInfo.email",
       "claim_status",
       "upcoming_screenings",
       "broadcasts",
@@ -245,13 +246,16 @@ describe("mapVenueRow", () => {
     assert.equal(mapVenueRow({ ...base, slug: null }), null);
   });
 
-  it("prefers WhatsApp over phone for the contact CTA", () => {
+  it("keeps phone and WhatsApp as the fields the record has", () => {
     const venue = mapVenueRow({
       ...base,
       phone: "0211234567",
       whatsapp: "0820000000",
+      email: "  hello@example.co.za  ",
     });
-    assert.equal(venue?.phone, "0820000000");
+    assert.equal(venue?.phone, "0211234567");
+    assert.equal(venue?.whatsapp, "0820000000");
+    assert.equal(venue?.email, "hello@example.co.za");
   });
 
   it("normalizes missing portable-text description to an empty array", () => {
