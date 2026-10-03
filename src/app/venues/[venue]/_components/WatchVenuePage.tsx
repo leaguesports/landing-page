@@ -1,5 +1,6 @@
 import { loadEventKickoffs } from "@/lib/venues/event-kickoffs";
 import {
+  venueContactLinks,
   venueCustomerAbout,
   venueGoodForLabels,
   venueHoursLine,
@@ -16,6 +17,7 @@ import type { VenueDetail } from "@/services/venues";
 import {
   FocusedVenueShell,
   VenueAbout,
+  VenueContactRow,
   VenueDirectionsFollow,
   VenueGoodFor,
   VenueHeading,
@@ -53,6 +55,7 @@ export async function WatchVenuePage({
         <VenueGoodFor labels={venueGoodForLabels(venue, true)} />
         <VenueAbout text={venueCustomerAbout(venue.description)} />
         <VenueScreensLine line={venueWatchScreensLine(venue)} />
+        <VenueContactRow links={venueContactLinks(venue)} />
         <VenueLocation venue={venue} />
         <VenueHours line={venueHoursLine(venue)} />
         <VenueDirectionsFollow

@@ -1,5 +1,6 @@
 import { lookupVenueLockedResults } from "@/lib/venues/locked-results";
 import {
+  venueContactLinks,
   venueCustomerAbout,
   venueDistinctPlaySports,
   venueHoursLine,
@@ -13,6 +14,7 @@ import Link from "next/link";
 import {
   FocusedVenueShell,
   VenueAbout,
+  VenueContactRow,
   VenueDirectionsFollow,
   VenueHeading,
   VenueHours,
@@ -66,6 +68,7 @@ export async function PlayVenuePage({
 
         <VenueSinglePhoto venue={venue} name={name} />
         <VenueAbout text={venueCustomerAbout(venue.description)} />
+        <VenueContactRow links={venueContactLinks(venue)} />
         <VenueLocation venue={venue} />
         <VenueHours line={venueHoursLine(venue)} />
 

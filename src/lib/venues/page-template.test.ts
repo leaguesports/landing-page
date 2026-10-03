@@ -4,6 +4,7 @@ import type { GolfCourseCms } from "../../types/golf-round.ts";
 import {
   classifyVenuePage,
   venueAddressLine,
+  venueContactLinks,
   venueCourtFacility,
   venueCustomerAbout,
   venueDistinctPlaySports,
@@ -351,6 +352,72 @@ describe("customer about and play facts", () => {
     assert.equal(venueHoursLine({}), null);
     assert.equal(venueHoursLine({ hours: "   " }), null);
     assert.equal(venueHoursLine({ hours: "Tue–Sun 11:00–23:00" }), "Tue–Sun 11:00–23:00");
+  });
+
+  it("omits contact when the record has no phone, email, website, or WhatsApp", () => {
+    assert.deepEqual(venueContactLinks(benchwarmers), []);
+    assert.deepEqual(venueContactLinks(actionPadel), []);
+    assert.deepEqual(
+      venueContactLinks({
+        name: "Action Padel Century City",
+        phone: "  ",
+        whatsapp: null,
+        email: "not-an-email",
+        website: "javascript:alert(1)",
+      }),
+      [],
+    );
+    const fromAbout = venueContactLinks({
+      name: "Action Padel Century City",
+      phone: null,
+      whatsapp: null,
+      email: null,
+      website: null,
+    });
+    assert.equal(
+      fromAbout.some((link) => /playtomic|book/i.test(link.href + link.label)),
+      false,
+    );
+  });
+
+  it("links only the contact fields the record actually has", () => {
+    const links = venueContactLinks({
+      name: "Courtside",
+      phone: "021 123 4567",
+      email: "hello@courtside.co.za",
+      website: "courtside.co.za",
+      whatsapp: "0820000000",
+    });
+    assert.deepEqual(
+      links.map((link) => link.kind),
+      ["phone", "email", "website", "whatsapp"],
+    );
+    assert.equal(links[0]?.href, "tel:+27211234567");
+    assert.equal(links[0]?.label, "021 123 4567");
+    assert.equal(links[1]?.href, "mailto:hello@courtside.co.za");
+    assert.equal(links[2]?.href, "https://courtside.co.za/");
+    assert.equal(links[2]?.label, "courtside.co.za");
+    assert.match(links[3]?.href ?? "", /^https:\/\/wa\.me\/27820000000/);
+    assert.equal(links[3]?.label, "WhatsApp");
+
+    const whatsappOnly = venueContactLinks({
+      name: "Courtside",
+      whatsapp: "0820000000",
+    });
+    assert.deepEqual(
+      whatsappOnly.map((link) => link.kind),
+      ["whatsapp"],
+    );
+    assert.equal(
+      venueContactLinks({ name: "Courtside", phone: "021 123 4567" }).some(
+        (link) => link.kind === "whatsapp",
+      ),
+      false,
+    );
+    assert.equal(
+      links.some((link) => /claim|playtomic|book a/i.test(link.label)),
+      false,
+    );
   });
 
   it("opens match create with the venue and its one sport", () => {

@@ -1,5 +1,8 @@
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
-import { venueAddressLine } from "@/lib/venues/page-template";
+import {
+  venueAddressLine,
+  type VenueContactLink,
+} from "@/lib/venues/page-template";
 import {
   isRemoteVenuePhoto,
   venuePhotoUrl,
@@ -116,6 +119,38 @@ export function VenueGoodFor({ labels }: { labels: string[] }) {
 export function VenueScreensLine({ line }: { line: string | null }) {
   if (!line) return null;
   return <p className="text-sm leading-relaxed text-zinc-400">{line}</p>;
+}
+
+export function VenueContactRow({ links }: { links: VenueContactLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <section aria-labelledby="venue-contact">
+      <h2
+        id="venue-contact"
+        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+      >
+        Contact
+      </h2>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {links.map((link) => {
+          const external = link.kind === "website" || link.kind === "whatsapp";
+          return (
+            <li key={link.kind}>
+              <a
+                href={link.href}
+                {...(external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+                className="inline-flex min-h-10 items-center rounded-full border border-white/15 px-4 text-sm font-semibold text-white hover:border-white/40"
+              >
+                {link.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
 
 export function VenueLocation({

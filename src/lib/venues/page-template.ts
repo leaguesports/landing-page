@@ -31,6 +31,10 @@ import {
   type VenuePlayChromeInput,
 } from "./play-chrome.ts";
 import { venueQuickStartActivities } from "./quick-start.ts";
+import {
+  buildVenueWhatsAppUrl,
+  normalizePhoneForWhatsApp,
+} from "./contact-cta.ts";
 
 export type VenuePageTemplate = "watch" | "play" | "default";
 
@@ -344,6 +348,79 @@ export function venuePlayFactsLine(
   const parts = [facility, sportName.trim(), amenities].filter(Boolean);
   if (parts.length === 0) return null;
   return `${parts.join(". ")}.`;
+}
+
+export type VenueContactLink = {
+  kind: "phone" | "email" | "website" | "whatsapp";
+  href: string;
+  label: string;
+};
+
+function cleanContact(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function websiteHref(value: string): string | null {
+  const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname.includes(".")) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function websiteLabel(href: string): string {
+  try {
+    return new URL(href).hostname.replace(/^www\./i, "");
+  } catch {
+    return "Website";
+  }
+}
+
+/**
+ * Contact row for Watch and one-sport Play.
+ *
+ * Reads the same fields the venue query already coalesces: phone, WhatsApp,
+ * website, and email. No booking URL exists on the venue record, so this
+ * never adds one and never turns about-copy into a link. Empty records
+ * return no links — the row is omitted.
+ */
+export function venueContactLinks(venue: {
+  name?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  website?: string | null;
+}): VenueContactLink[] {
+  const links: VenueContactLink[] = [];
+  const phone = cleanContact(venue.phone);
+  const phoneDial = normalizePhoneForWhatsApp(phone);
+  if (phone && phoneDial) {
+    links.push({ kind: "phone", href: `tel:+${phoneDial}`, label: phone });
+  }
+
+  const email = cleanContact(venue.email);
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    links.push({ kind: "email", href: `mailto:${email}`, label: email });
+  }
+
+  const site = websiteHref(cleanContact(venue.website));
+  if (site) {
+    links.push({ kind: "website", href: site, label: websiteLabel(site) });
+  }
+
+  const whatsapp = cleanContact(venue.whatsapp);
+  const whatsappHref = whatsapp
+    ? buildVenueWhatsAppUrl(whatsapp, venue.name?.trim() || "the venue")
+    : null;
+  if (whatsappHref) {
+    links.push({ kind: "whatsapp", href: whatsappHref, label: "WhatsApp" });
+  }
+
+  return links;
 }
 
 /** Hours only when the venue record already has a text value. Never guessed. */

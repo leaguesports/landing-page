@@ -101,7 +101,7 @@ export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
     name: venue.name,
     image: image || undefined,
     url: venue.website?.trim() || pageUrl,
-    telephone: venue.phone || undefined,
+    telephone: venue.whatsapp?.trim() || venue.phone?.trim() || undefined,
     address: {
       "@type": "PostalAddress",
       streetAddress: venue.address.street || undefined,
