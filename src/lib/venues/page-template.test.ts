@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { GolfCourseCms } from "../../types/golf-round.ts";
 import {
   classifyVenuePage,
+  venueAddressLine,
   venueCourtFacility,
   venueCustomerAbout,
   venueDistinctPlaySports,
@@ -13,6 +14,7 @@ import {
   venueShortDisplayName,
   venueStartMatchHref,
   venueWatchPlace,
+  venueWatchScreensLine,
   type VenueTemplateInput,
 } from "./page-template.ts";
 
@@ -274,16 +276,75 @@ describe("customer about and play facts", () => {
     assert.equal(venuePlayFactsLine(venue, "Padel"), "Padel. Food, outdoor, parking.");
   });
 
-  it("lists watch amenities once, including screens this bar has", () => {
+  it("keeps the full Benchwarmers customer paragraph", () => {
+    const about = venueCustomerAbout(
+      "Rosebank’s loud multi-screen sports bar for nights when rugby, soccer and F1 overlap. Screens everywhere, generator backup, live commentary and a full food-and-draft setup with outdoor seating and on-site parking. LeagueSports flagship Watch pick for Springboks Tests and Grand Prix weekends—book early on big fixtures.",
+    );
+    assert.equal(
+      about,
+      "Rosebank’s loud multi-screen sports bar for nights when rugby, soccer and F1 overlap. Screens everywhere, generator backup, live commentary and a full food-and-draft setup with outdoor seating and on-site parking. LeagueSports flagship Watch pick for Springboks Tests and Grand Prix weekends—book early on big fixtures.",
+    );
+  });
+
+  it("lists every live amenity label once", () => {
     assert.deepEqual(venueGoodForLabels(benchwarmers, true), [
-      "Generator",
-      "Big screen",
-      "Sound on",
-      "Draft beer",
-      "Food",
-      "Outdoor",
-      "Parking",
+      "Generator / Inverter Backup",
+      "HD Big Screens",
+      "Live Commentary On",
+      "Draft Beer",
+      "Food Menu",
+      "Outdoor Area",
+      "On-site Parking",
     ]);
+    assert.deepEqual(venueGoodForLabels(actionPadel, false), [
+      "Food Menu",
+      "Outdoor Area",
+      "On-site Parking",
+    ]);
+  });
+
+  it("writes the street address and the sports this bar screens", () => {
+    assert.equal(
+      venueAddressLine({
+        street: "2 Bolton Road",
+        suburb: "Rosebank",
+        city: "Johannesburg",
+        province: "Gauteng",
+      }),
+      "2 Bolton Road, Rosebank, Johannesburg, Gauteng",
+    );
+    assert.equal(
+      venueAddressLine({
+        street: "Century Boulevard (Fives Futbol), Century City",
+        suburb: "Century City",
+        city: "Cape Town",
+        province: "Western Cape",
+      }),
+      "Century Boulevard (Fives Futbol), Century City, Cape Town, Western Cape",
+    );
+    assert.equal(venueAddressLine({ street: "  ", suburb: "" }), null);
+    assert.equal(
+      venueWatchScreensLine(benchwarmers),
+      "Screens Soccer, Rugby, and Golf.",
+    );
+    assert.equal(
+      venueWatchScreensLine({
+        broadcasts: [
+          { name: "Motorsport" },
+          { name: "Soccer" },
+          { name: "Golf" },
+          { name: "Rugby" },
+        ],
+      }),
+      "Screens Motorsport, Soccer, Golf, and Rugby.",
+    );
+    assert.equal(venueWatchScreensLine(actionPadel), null);
+    assert.equal(
+      venueWatchScreensLine({
+        broadcasts: [{ name: "Golf" }, { name: " golf " }],
+      }),
+      "Screens Golf.",
+    );
   });
 
   it("hides hours unless the venue record has them", () => {

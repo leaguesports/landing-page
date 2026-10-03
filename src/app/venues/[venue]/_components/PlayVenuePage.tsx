@@ -16,6 +16,7 @@ import {
   VenueDirectionsFollow,
   VenueHeading,
   VenueHours,
+  VenueLocation,
   VenueSinglePhoto,
 } from "./FocusedVenueSections";
 
@@ -64,6 +65,8 @@ export async function PlayVenuePage({
         ) : null}
 
         <VenueSinglePhoto venue={venue} name={name} />
+        <VenueAbout text={venueCustomerAbout(venue.description)} />
+        <VenueLocation venue={venue} />
         <VenueHours line={venueHoursLine(venue)} />
 
         {results.length > 0 ? (
@@ -96,7 +99,6 @@ export async function PlayVenuePage({
           </section>
         ) : null}
 
-        <VenueAbout text={venueCustomerAbout(venue.description)} />
         <VenueDirectionsFollow
           venueCmsId={venue._id}
           venueName={venue.name}

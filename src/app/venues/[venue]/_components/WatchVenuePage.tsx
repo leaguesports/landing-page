@@ -5,6 +5,7 @@ import {
   venueHoursLine,
   venueShortDisplayName,
   venueWatchPlace,
+  venueWatchScreensLine,
 } from "@/lib/venues/page-template";
 import {
   buildWatchVenueWeek,
@@ -19,6 +20,8 @@ import {
   VenueGoodFor,
   VenueHeading,
   VenueHours,
+  VenueLocation,
+  VenueScreensLine,
   VenueSinglePhoto,
 } from "./FocusedVenueSections";
 import { VenueWeekFixtures } from "./VenueWeekFixtures";
@@ -48,8 +51,10 @@ export async function WatchVenuePage({
         <VenueWeekFixtures days={week.days} cards={week.cards} />
         <VenueSinglePhoto venue={venue} name={name} />
         <VenueGoodFor labels={venueGoodForLabels(venue, true)} />
-        <VenueHours line={venueHoursLine(venue)} />
         <VenueAbout text={venueCustomerAbout(venue.description)} />
+        <VenueScreensLine line={venueWatchScreensLine(venue)} />
+        <VenueLocation venue={venue} />
+        <VenueHours line={venueHoursLine(venue)} />
         <VenueDirectionsFollow
           venueCmsId={venue._id}
           venueName={venue.name}

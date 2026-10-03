@@ -45,14 +45,22 @@ export type VenueTemplateInput = VenueWatchChromeInput &
 
 const SEO_NAME_SUFFIXES = ["sports bar", "sport bar", "sportsbar"] as const;
 
-const AMENITY_LABELS: readonly { key: ListedAmenityKey; label: string }[] = [
-  { key: "has_generator_backup", label: "Generator" },
-  { key: "has_big_screens", label: "Big screen" },
-  { key: "has_live_audio", label: "Sound on" },
-  { key: "has_craft_drafts", label: "Draft beer" },
-  { key: "has_food_menu", label: "Food" },
-  { key: "has_outdoor_area", label: "Outdoor" },
-  { key: "has_parking", label: "Parking" },
+/**
+ * Same labels as the live venue badges (`VenueUtilityBadges`).
+ * `phrase` is the short word used once inside a Play facts sentence.
+ */
+const AMENITY_LABELS: readonly {
+  key: ListedAmenityKey;
+  label: string;
+  phrase: string;
+}[] = [
+  { key: "has_generator_backup", label: "Generator / Inverter Backup", phrase: "generator" },
+  { key: "has_big_screens", label: "HD Big Screens", phrase: "big screens" },
+  { key: "has_live_audio", label: "Live Commentary On", phrase: "live commentary" },
+  { key: "has_craft_drafts", label: "Draft Beer", phrase: "draft beer" },
+  { key: "has_food_menu", label: "Food Menu", phrase: "food" },
+  { key: "has_outdoor_area", label: "Outdoor Area", phrase: "outdoor" },
+  { key: "has_parking", label: "On-site Parking", phrase: "parking" },
 ];
 
 /** Editorial leftovers that must not reach the customer paragraph. */
@@ -254,10 +262,70 @@ export function venueGoodForLabels(
   ).map((item) => item.label);
 }
 
-function amenityPhrase(labels: readonly string[]): string | null {
-  if (labels.length === 0) return null;
-  const [first, ...rest] = labels;
-  return [first, ...rest.map((label) => label.toLowerCase())].join(", ");
+function amenityPhrase(venue: VenueTemplateInput, supportsWatch: boolean): string | null {
+  const phrases = AMENITY_LABELS.filter((item) =>
+    venueAmenityShown(item.key, venue[item.key], supportsWatch),
+  ).map((item) => item.phrase);
+  if (phrases.length === 0) return null;
+  const [first, ...rest] = phrases;
+  return [first ? first.charAt(0).toUpperCase() + first.slice(1) : "", ...rest].join(", ");
+}
+
+/**
+ * Street, suburb, city, province. Skips blanks and a place already written
+ * (live Action Padel repeats Century City in the street and the suburb).
+ */
+export function venueAddressLine(
+  address?: {
+    street?: string | null;
+    suburb?: string | null;
+    city?: string | null;
+    province?: string | null;
+  } | null,
+): string | null {
+  const parts = [
+    address?.street,
+    address?.suburb,
+    address?.city,
+    address?.province,
+  ]
+    .map((part) => part?.trim() || "")
+    .filter(Boolean);
+  const kept: string[] = [];
+  for (const part of parts) {
+    const segments = kept
+      .join(", ")
+      .split(",")
+      .map((segment) => segment.trim().toLowerCase())
+      .filter(Boolean);
+    if (segments.includes(part.toLowerCase())) continue;
+    kept.push(part);
+  }
+  return kept.length > 0 ? kept.join(", ") : null;
+}
+
+/** Quiet line of broadcast sports this venue actually screens. No links. */
+export function venueWatchScreensLine(
+  venue: Pick<VenueTemplateInput, "broadcasts">,
+): string | null {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const item of venue.broadcasts ?? []) {
+    const name = item?.name?.trim() ?? "";
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+  if (names.length === 0) return null;
+  const list =
+    names.length === 1
+      ? names[0]!
+      : names.length === 2
+        ? `${names[0]} and ${names[1]}`
+        : `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+  return `Screens ${list}.`;
 }
 
 /**
@@ -272,7 +340,7 @@ export function venuePlayFactsLine(
   const facility =
     venueCourtFacility(venue.description) ??
     (sport?.key === "golf" ? venueGolfHoles(venue.golfCourse) : null);
-  const amenities = amenityPhrase(venueGoodForLabels(venue, false));
+  const amenities = amenityPhrase(venue, false);
   const parts = [facility, sportName.trim(), amenities].filter(Boolean);
   if (parts.length === 0) return null;
   return `${parts.join(". ")}.`;

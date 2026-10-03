@@ -1,11 +1,13 @@
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { venueAddressLine } from "@/lib/venues/page-template";
 import {
   isRemoteVenuePhoto,
   venuePhotoUrl,
 } from "@/lib/venues/photo";
-import { resolveVenueImage } from "@/services/venues";
+import { hasVenueCoordinates, resolveVenueImage } from "@/services/venues";
 import type { VenueDetail } from "@/services/venues";
 import { VenueFollowButton } from "./VenueFollowButton";
+import { VenueMap } from "./VenueMap";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
@@ -107,6 +109,38 @@ export function VenueGoodFor({ labels }: { labels: string[] }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+export function VenueScreensLine({ line }: { line: string | null }) {
+  if (!line) return null;
+  return <p className="text-sm leading-relaxed text-zinc-400">{line}</p>;
+}
+
+export function VenueLocation({
+  venue,
+}: {
+  venue: Pick<VenueDetail, "name" | "address" | "latitude" | "longitude">;
+}) {
+  const line = venueAddressLine(venue.address);
+  const mapped = hasVenueCoordinates(venue);
+  if (!line && !mapped) return null;
+
+  return (
+    <section aria-labelledby="venue-location">
+      <h2
+        id="venue-location"
+        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+      >
+        Location
+      </h2>
+      {line ? <p className="mt-2 text-sm leading-relaxed text-zinc-300">{line}</p> : null}
+      {mapped ? (
+        <div className="mt-4">
+          <VenueMap lat={venue.latitude} lng={venue.longitude} name={venue.name} />
+        </div>
+      ) : null}
     </section>
   );
 }
