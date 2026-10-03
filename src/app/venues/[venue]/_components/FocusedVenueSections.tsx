@@ -7,10 +7,9 @@ import {
   isRemoteVenuePhoto,
   venuePhotoUrl,
 } from "@/lib/venues/photo";
-import { hasVenueCoordinates, resolveVenueImage } from "@/services/venues";
+import { resolveVenueImage } from "@/services/venues";
 import type { VenueDetail } from "@/services/venues";
 import { VenueFollowButton } from "./VenueFollowButton";
-import { VenueMap } from "./VenueMap";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
@@ -153,14 +152,14 @@ export function VenueContactRow({ links }: { links: VenueContactLink[] }) {
   );
 }
 
+/** Street address only. Directions is the maps link. No embedded map. */
 export function VenueLocation({
   venue,
 }: {
-  venue: Pick<VenueDetail, "name" | "address" | "latitude" | "longitude">;
+  venue: Pick<VenueDetail, "address">;
 }) {
   const line = venueAddressLine(venue.address);
-  const mapped = hasVenueCoordinates(venue);
-  if (!line && !mapped) return null;
+  if (!line) return null;
 
   return (
     <section aria-labelledby="venue-location">
@@ -170,12 +169,7 @@ export function VenueLocation({
       >
         Location
       </h2>
-      {line ? <p className="mt-2 text-sm leading-relaxed text-zinc-300">{line}</p> : null}
-      {mapped ? (
-        <div className="mt-4">
-          <VenueMap lat={venue.latitude} lng={venue.longitude} name={venue.name} />
-        </div>
-      ) : null}
+      <p className="mt-2 text-sm leading-relaxed text-zinc-300">{line}</p>
     </section>
   );
 }
