@@ -52,6 +52,9 @@ import { VenueMap } from "./_components/VenueMap";
 import { VenueQuickStart } from "./_components/VenueQuickStart";
 import { VenueSportChips } from "./_components/VenueSportChips";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
+import { PlayVenuePage } from "./_components/PlayVenuePage";
+import { WatchVenuePage } from "./_components/WatchVenuePage";
+import { classifyVenuePage } from "@/lib/venues/page-template";
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import {
   ChevronRight,
@@ -304,6 +307,17 @@ export default async function VenuePage({ params, searchParams }: Props) {
   const baseUrl = getBaseUrl();
   const pageUrl = `${baseUrl}/venues/${venue.slug}`;
   const jsonLd = buildVenueJsonLd(venue, pageUrl);
+  const template = classifyVenuePage(venue);
+  if (template === "watch") {
+    return (
+      <WatchVenuePage venue={venue} mapsUrl={mapsSearchUrl} jsonLd={jsonLd} />
+    );
+  }
+  if (template === "play") {
+    return (
+      <PlayVenuePage venue={venue} mapsUrl={mapsSearchUrl} jsonLd={jsonLd} />
+    );
+  }
   const suburbLine = [venue.address.suburb, venue.address.city]
     .filter(Boolean)
     .join(", ");
