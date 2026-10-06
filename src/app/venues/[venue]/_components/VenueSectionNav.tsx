@@ -116,7 +116,7 @@ export function VenueSectionNav({
     >
       <ul
         ref={listRef}
-        className="mx-auto flex max-w-7xl gap-3 overflow-x-auto px-4 sm:px-6 lg:px-8"
+        className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8"
       >
         {tabs.map((tab) => {
           const current = tab.id === active;
@@ -129,7 +129,7 @@ export function VenueSectionNav({
                   event.preventDefault();
                   select(tab.id);
                 }}
-                className={`inline-flex min-h-12 items-center gap-2 border-b-2 px-4 text-sm font-medium whitespace-nowrap ${
+                className={`inline-flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${
                   current
                     ? "border-zinc-950 text-zinc-950"
                     : "border-transparent text-zinc-500 hover:text-zinc-950"

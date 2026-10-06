@@ -74,7 +74,7 @@ function Block({
   return (
     <section
       id={id}
-      className="mt-8 scroll-mt-36 border-t border-zinc-200 pt-8 sm:mt-10"
+      className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8 sm:mt-10"
       aria-labelledby={`${id}-title`}
     >
       <h2 id={`${id}-title`} className="font-display text-3xl tracking-wide text-zinc-950">
@@ -224,19 +224,13 @@ export async function VenueProfile({
   const showHistory = showPlay && venueShowsMatchHistory(venue);
   const showBoards = showPlay && venueShowsLeaderboards(venue);
   const primarySport = primaryStart?.sportSlug ?? null;
-  const bookingLine =
-    contacts.length > 0 && showPlay && startLinks.length > 0
-      ? `Reserve with ${headings.shortName}, or start a scorecard here.`
-      : showPlay && startLinks.length > 0
-        ? `Start a scorecard at ${headings.shortName}.`
-        : `Reserve with ${headings.shortName}.`;
   const sectionTabs = [
     about.length > 0 ? { id: "about", label: "About" } : null,
     showBook ? { id: "book", label: "Book" } : null,
     showPlay ? { id: "play", label: "Play" } : null,
     showWatch && week ? { id: "fixtures", label: "Fixtures" } : null,
-    sports.length > 0 ? { id: "sports", label: "Sports" } : null,
     faqs.length > 0 ? { id: "questions", label: "Questions" } : null,
+    sports.length > 0 ? { id: "sports", label: "Sports" } : null,
     showHistory ? { id: "match-history", label: "Results" } : null,
     venueSupportsPlayResults(venue) ? { id: "friends-played", label: "Friends" } : null,
     showBoards ? { id: "leaderboards", label: "Boards" } : null,
@@ -252,7 +246,7 @@ export async function VenueProfile({
       />
       <div className="min-h-screen bg-white pb-24 text-zinc-950">
         <article>
-          <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 pt-8 pb-8 sm:px-6 sm:pt-12 sm:pb-10 lg:px-8">
           <header>
             <nav aria-label="Breadcrumb" className="text-sm text-zinc-500">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -349,47 +343,72 @@ export async function VenueProfile({
 
           {showBook ? (
             <Block id="book" title={headings.book}>
-              <p className="text-base leading-relaxed text-zinc-700">{bookingLine}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
                 {showPlay
-                  ? startLinks.map((link, index) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={index === 0 ? PRIMARY : OUTLINE}
-                      >
-                        {link.label}
-                      </Link>
-                    ))
+                  ? startLinks.map((link) => {
+                      const title = link.sportSlug
+                        ? link.sportSlug
+                            .replace(/-/g, " ")
+                            .replace(/\b\w/g, (letter) => letter.toUpperCase())
+                        : link.label;
+                      return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="flex items-center justify-between gap-4 py-4 transition-colors hover:text-emerald-800"
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-base font-semibold text-zinc-950">
+                              {title}
+                            </span>
+                            <span className="mt-0.5 block text-sm leading-relaxed text-zinc-600">
+                              {link.label} at {headings.shortName}.
+                            </span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
+                        </Link>
+                      </li>
+                      );
+                    })
                   : null}
-                {contacts.map((link) => (
-                  <a
-                    key={link.kind}
-                    href={link.href}
-                    className={OUTLINE}
-                    {...(link.kind === "phone" || link.kind === "email"
-                      ? {}
-                      : { target: "_blank", rel: "noopener noreferrer" })}
-                  >
-                    {link.kind === "phone" ? (
-                      <Phone className="mr-1.5 h-4 w-4" aria-hidden />
-                    ) : link.kind === "email" ? (
-                      <Mail className="mr-1.5 h-4 w-4" aria-hidden />
-                    ) : link.kind === "whatsapp" ? (
-                      <MessageCircle className="mr-1.5 h-4 w-4" aria-hidden />
-                    ) : (
-                      <Globe className="mr-1.5 h-4 w-4" aria-hidden />
-                    )}
-                    {link.kind === "phone"
-                      ? "Call to book"
+                {contacts.map((link) => {
+                  const title =
+                    link.kind === "phone"
+                      ? "Call"
                       : link.kind === "email"
-                        ? "Email to book"
+                        ? "Email"
                         : link.kind === "whatsapp"
                           ? "WhatsApp"
-                          : "Visit website"}
-                  </a>
-                ))}
-              </div>
+                          : "Website";
+                  const description =
+                    link.kind === "phone"
+                      ? `Call ${headings.shortName} to reserve.`
+                      : link.kind === "email"
+                        ? `Email ${headings.shortName} to reserve.`
+                        : link.kind === "whatsapp"
+                          ? `Message ${headings.shortName} on WhatsApp to reserve.`
+                          : `Visit the ${headings.shortName} website.`;
+                  return (
+                    <li key={link.kind}>
+                      <a
+                        href={link.href}
+                        className="flex items-center justify-between gap-4 py-4 transition-colors hover:text-emerald-800"
+                        {...(link.kind === "phone" || link.kind === "email"
+                          ? {}
+                          : { target: "_blank", rel: "noopener noreferrer" })}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-base font-semibold text-zinc-950">{title}</span>
+                          <span className="mt-0.5 block text-sm leading-relaxed text-zinc-600">
+                            {description}
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
             </Block>
           ) : null}
 
@@ -433,6 +452,19 @@ export async function VenueProfile({
             </Block>
           ) : null}
 
+          {faqs.length > 0 ? (
+            <Block id="questions" title={headings.faq}>
+              <dl className="space-y-3">
+                {faqs.map((faq) => (
+                  <div key={faq.question} className="rounded-2xl border border-zinc-200 px-4 py-4">
+                    <dt className="text-sm font-semibold text-zinc-950">{faq.question}</dt>
+                    <dd className="mt-1 text-sm leading-relaxed text-zinc-600">{faq.answer}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Block>
+          ) : null}
+
           {sports.length > 0 ? (
             <Block id="sports" title={headings.sports}>
               <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
@@ -457,22 +489,9 @@ export async function VenueProfile({
               </ul>
             </Block>
           ) : null}
-
-          {faqs.length > 0 ? (
-            <Block id="questions" title={headings.faq}>
-              <dl className="space-y-3">
-                {faqs.map((faq) => (
-                  <div key={faq.question} className="rounded-2xl border border-zinc-200 px-4 py-4">
-                    <dt className="text-sm font-semibold text-zinc-950">{faq.question}</dt>
-                    <dd className="mt-1 text-sm leading-relaxed text-zinc-600">{faq.answer}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Block>
-          ) : null}
           </div>
 
-          <aside className="lg:sticky lg:top-36">
+          <aside className="lg:sticky lg:top-40">
             <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
               {lines.length > 0 ? (
                 <address className="text-sm not-italic leading-relaxed text-zinc-700">
@@ -549,7 +568,7 @@ export async function VenueProfile({
         ) : null}
 
         {nearby.length > 0 ? (
-          <section id="nearby" className="scroll-mt-36 border-t border-zinc-200 py-12 sm:py-16">
+          <section id="nearby" className="scroll-mt-40 border-t border-zinc-200 py-12 sm:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h2
                 id="nearby-title"
