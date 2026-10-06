@@ -50,21 +50,21 @@ export type VenueTemplateInput = VenueWatchChromeInput &
 const SEO_NAME_SUFFIXES = ["sports bar", "sport bar", "sportsbar"] as const;
 
 /**
- * Same labels as the live venue badges (`VenueUtilityBadges`).
- * `phrase` is the short word used once inside a Play facts sentence.
+ * Short Watch chips. `phrase` stays the Play facts sentence.
+ * A chip appears only when that amenity flag is set.
  */
 const AMENITY_LABELS: readonly {
   key: ListedAmenityKey;
   label: string;
   phrase: string;
 }[] = [
-  { key: "has_generator_backup", label: "Generator / Inverter Backup", phrase: "generator" },
-  { key: "has_big_screens", label: "HD Big Screens", phrase: "big screens" },
-  { key: "has_live_audio", label: "Live Commentary On", phrase: "live commentary" },
-  { key: "has_craft_drafts", label: "Draft Beer", phrase: "draft beer" },
-  { key: "has_food_menu", label: "Food Menu", phrase: "food" },
-  { key: "has_outdoor_area", label: "Outdoor Area", phrase: "outdoor" },
-  { key: "has_parking", label: "On-site Parking", phrase: "parking" },
+  { key: "has_generator_backup", label: "Backup", phrase: "generator" },
+  { key: "has_big_screens", label: "Screens", phrase: "big screens" },
+  { key: "has_live_audio", label: "Commentary", phrase: "live commentary" },
+  { key: "has_craft_drafts", label: "Draft", phrase: "draft beer" },
+  { key: "has_food_menu", label: "Food", phrase: "food" },
+  { key: "has_outdoor_area", label: "Terrace", phrase: "outdoor" },
+  { key: "has_parking", label: "Parking", phrase: "parking" },
 ];
 
 /** Editorial leftovers that must not reach the customer paragraph. */
@@ -217,12 +217,30 @@ export function isPublishNote(sentence: string): boolean {
   return PUBLISH_NOTE.test(sentence);
 }
 
-/** One customer paragraph. Publish notes are dropped, not rewritten. */
+/** Drop a phone number written into the sentence. Leaves court counts and clock times. */
+function stripPhoneNumbers(sentence: string): string {
+  const stripped = sentence.replace(/(?:\+|00)?\d[\d\s()./-]{6,}\d/g, (match) => {
+    const digits = match.replace(/\D/g, "");
+    return digits.length >= 9 ? " " : match;
+  });
+  return stripped
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
+/**
+ * First customer sentence only. Later sentences stay off the page.
+ * Publish notes are dropped. Phone numbers inside that sentence are removed.
+ */
 export function venueCustomerAbout(description: unknown): string | null {
   const kept = sentences(venueAboutPlain(description)).filter(
     (sentence) => !isPublishNote(sentence),
   );
-  const text = kept.join(" ").replace(/\s+/g, " ").trim();
+  const first = kept[0];
+  if (!first) return null;
+  const text = stripPhoneNumbers(first).replace(/\s+/g, " ").trim();
   return text || null;
 }
 
@@ -399,17 +417,7 @@ export function venueContactLinks(venue: {
   const phone = cleanContact(venue.phone);
   const phoneDial = normalizePhoneForWhatsApp(phone);
   if (phone && phoneDial) {
-    links.push({ kind: "phone", href: `tel:+${phoneDial}`, label: phone });
-  }
-
-  const email = cleanContact(venue.email);
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    links.push({ kind: "email", href: `mailto:${email}`, label: email });
-  }
-
-  const site = websiteHref(cleanContact(venue.website));
-  if (site) {
-    links.push({ kind: "website", href: site, label: websiteLabel(site) });
+    links.push({ kind: "phone", href: `tel:+${phoneDial}`, label: "Call" });
   }
 
   const whatsapp = cleanContact(venue.whatsapp);
@@ -420,7 +428,23 @@ export function venueContactLinks(venue: {
     links.push({ kind: "whatsapp", href: whatsappHref, label: "WhatsApp" });
   }
 
+  const site = websiteHref(cleanContact(venue.website));
+  if (site) {
+    links.push({ kind: "website", href: site, label: websiteLabel(site) });
+  }
+
+  const email = cleanContact(venue.email);
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    links.push({ kind: "email", href: `mailto:${email}`, label: email });
+  }
+
   return links;
+}
+
+/** Play primary action. "Start padel" for that venue's one sport. */
+export function venueStartMatchLabel(sportName: string): string {
+  const sport = sportName.trim().toLowerCase();
+  return sport ? `Start ${sport}` : "Start";
 }
 
 /** Hours only when the venue record already has a text value. Never guessed. */

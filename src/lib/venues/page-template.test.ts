@@ -14,6 +14,7 @@ import {
   venuePlayPlace,
   venueShortDisplayName,
   venueStartMatchHref,
+  venueStartMatchLabel,
   venueWatchPlace,
   venueWatchScreensLine,
   type VenueTemplateInput,
@@ -242,8 +243,12 @@ describe("venue short name and place", () => {
 describe("customer about and play facts", () => {
   it("strips publish notes and states padel facts once", () => {
     const about = venueCustomerAbout(actionPadel.description);
-    assert.match(about ?? "", /oldest public padel venues/);
+    assert.equal(
+      about,
+      "Action Padel Century City — 2 outdoor courts at Fives Futbol, Century City.",
+    );
     assert.equal(about?.toLowerCase().includes("playtomic"), false);
+    assert.equal(about?.includes("oldest"), false);
     assert.equal(about?.toLowerCase().includes("no confirmed"), false);
     assert.equal(
       venueCourtFacility(actionPadel.description),
@@ -277,31 +282,58 @@ describe("customer about and play facts", () => {
     assert.equal(venuePlayFactsLine(venue, "Padel"), "Padel. Food, outdoor, parking.");
   });
 
-  it("keeps the full Benchwarmers customer paragraph", () => {
+  it("keeps only the first customer sentence", () => {
     const about = venueCustomerAbout(
       "Rosebank’s loud multi-screen sports bar for nights when rugby, soccer and F1 overlap. Screens everywhere, generator backup, live commentary and a full food-and-draft setup with outdoor seating and on-site parking. LeagueSports flagship Watch pick for Springboks Tests and Grand Prix weekends—book early on big fixtures.",
     );
     assert.equal(
       about,
-      "Rosebank’s loud multi-screen sports bar for nights when rugby, soccer and F1 overlap. Screens everywhere, generator backup, live commentary and a full food-and-draft setup with outdoor seating and on-site parking. LeagueSports flagship Watch pick for Springboks Tests and Grand Prix weekends—book early on big fixtures.",
+      "Rosebank’s loud multi-screen sports bar for nights when rugby, soccer and F1 overlap.",
     );
   });
 
-  it("lists every live amenity label once", () => {
+  it("drops later sentences, including a booking line and phone numbers", () => {
+    const about = venueCustomerAbout(
+      "Illovo Hog's Head for multi-match Joburg Saturdays—screens throughout plus a terrace when Premier League, rugby and soccer stack up. Book the Dining Room or Open Deck on the site. Hours from 11:00 til late; WhatsApp +27 76 282 1177 (landline 011 268 0871). Draft beer, food, outdoor area and parking.",
+    );
+    assert.equal(
+      about,
+      "Illovo Hog's Head for multi-match Joburg Saturdays—screens throughout plus a terrace when Premier League, rugby and soccer stack up.",
+    );
+    assert.equal(about?.includes("Book the Dining"), false);
+    assert.equal(about?.includes("282 1177"), false);
+    assert.equal(about?.includes("011 268"), false);
+  });
+
+  it("strips a phone number written into the first sentence", () => {
+    assert.equal(
+      venueCustomerAbout("Call the bar on 011 268 0871 before kickoff. Book the deck."),
+      "Call the bar on before kickoff.",
+    );
+  });
+
+  it("lists every set amenity once, as a short chip", () => {
     assert.deepEqual(venueGoodForLabels(benchwarmers, true), [
-      "Generator / Inverter Backup",
-      "HD Big Screens",
-      "Live Commentary On",
-      "Draft Beer",
-      "Food Menu",
-      "Outdoor Area",
-      "On-site Parking",
+      "Backup",
+      "Screens",
+      "Commentary",
+      "Draft",
+      "Food",
+      "Terrace",
+      "Parking",
     ]);
     assert.deepEqual(venueGoodForLabels(actionPadel, false), [
-      "Food Menu",
-      "Outdoor Area",
-      "On-site Parking",
+      "Food",
+      "Terrace",
+      "Parking",
     ]);
+    assert.deepEqual(
+      venueGoodForLabels(
+        { ...benchwarmers, has_parking: false, has_outdoor_area: false },
+        true,
+      ),
+      ["Backup", "Screens", "Commentary", "Draft", "Food"],
+    );
   });
 
   it("writes the street address and the sports this bar screens", () => {
@@ -390,15 +422,16 @@ describe("customer about and play facts", () => {
     });
     assert.deepEqual(
       links.map((link) => link.kind),
-      ["phone", "email", "website", "whatsapp"],
+      ["phone", "whatsapp", "website", "email"],
     );
     assert.equal(links[0]?.href, "tel:+27211234567");
-    assert.equal(links[0]?.label, "021 123 4567");
-    assert.equal(links[1]?.href, "mailto:hello@courtside.co.za");
+    assert.equal(links[0]?.label, "Call");
+    assert.match(links[1]?.href ?? "", /^https:\/\/wa\.me\/27820000000/);
+    assert.equal(links[1]?.label, "WhatsApp");
     assert.equal(links[2]?.href, "https://courtside.co.za/");
     assert.equal(links[2]?.label, "courtside.co.za");
-    assert.match(links[3]?.href ?? "", /^https:\/\/wa\.me\/27820000000/);
-    assert.equal(links[3]?.label, "WhatsApp");
+    assert.equal(links[3]?.href, "mailto:hello@courtside.co.za");
+    assert.equal(links[3]?.label, "hello@courtside.co.za");
 
     const whatsappOnly = venueContactLinks({
       name: "Courtside",
@@ -418,6 +451,11 @@ describe("customer about and play facts", () => {
       links.some((link) => /claim|playtomic|book a/i.test(link.label)),
       false,
     );
+  });
+
+  it("names the play button for that venue's one sport", () => {
+    assert.equal(venueStartMatchLabel("Padel"), "Start padel");
+    assert.equal(venueStartMatchLabel(" Golf "), "Start golf");
   });
 
   it("opens match create with the venue and its one sport", () => {

@@ -8,6 +8,7 @@ import {
   venuePlayPlace,
   venueShortDisplayName,
   venueStartMatchHref,
+  venueStartMatchLabel,
 } from "@/lib/venues/page-template";
 import type { VenueDetail } from "@/services/venues";
 import Link from "next/link";
@@ -50,20 +51,12 @@ export async function PlayVenuePage({
             href={startHref}
             className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-[var(--color-brand)] px-4 text-base font-semibold text-zinc-950 hover:bg-emerald-300"
           >
-            Start a match
+            {venueStartMatchLabel(sport?.name ?? "")}
           </Link>
         ) : null}
 
         {facts ? (
-          <section aria-labelledby="venue-here">
-            <h2
-              id="venue-here"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
-            >
-              Here
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-200">{facts}</p>
-          </section>
+          <p className="text-sm leading-relaxed text-zinc-200">{facts}</p>
         ) : null}
 
         <VenueSinglePhoto venue={venue} name={name} />

@@ -7,7 +7,6 @@ import {
 } from "@/lib/intent/watch-fixture-card";
 import {
   VENUE_WEEK_EMPTY,
-  watchFixtureDetailLine,
   type WatchVenueFixtureCard,
   type WatchVenueSide,
 } from "@/lib/venues/watch-week";
@@ -27,32 +26,48 @@ function Initials({ side }: { side: WatchVenueSide }) {
 }
 
 function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
-  const detail = watchFixtureDetailLine(card.clock, card.cues);
   const paired = Boolean(card.home && card.away);
+  const clock = card.clock ? (
+    <span className="block text-center font-display text-5xl leading-none tracking-wide text-white">
+      {card.clock}
+    </span>
+  ) : null;
   const body = (
     <>
       {paired && card.home && card.away ? (
         <span className="grid grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-center gap-3">
           <Initials side={card.home} />
-          <span className="text-center text-base font-semibold leading-snug text-white">
-            {card.title}
-          </span>
+          {clock ?? (
+            <span className="text-center text-base font-semibold leading-snug text-white">
+              {card.title}
+            </span>
+          )}
           <Initials side={card.away} />
         </span>
       ) : (
-        <span className="block text-center text-base font-semibold leading-snug text-white">
+        clock ?? (
+          <span className="block text-center text-base font-semibold leading-snug text-white">
+            {card.title}
+          </span>
+        )
+      )}
+      {clock ? (
+        <span className="mt-3 block text-center text-sm font-semibold text-white">
           {card.title}
         </span>
-      )}
-      {detail ? (
-        <span className="mt-3 block text-center text-sm text-zinc-400">
-          {detail}
+      ) : null}
+      {card.cues.length > 0 ? (
+        <span className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-semibold text-white">
+          {card.cues.map((cue) => (
+            <span key={cue}>{cue}</span>
+          ))}
         </span>
       ) : null}
     </>
   );
   const className =
-    "block rounded-3xl border border-white/10 bg-[#141814] px-4 py-4 transition-colors hover:border-white/20";
+    "block rounded-3xl border border-white/10 bg-[#141814] px-4 py-5 transition-colors hover:border-white/20";
+  const label = [card.title, card.clock, ...card.cues].filter(Boolean).join(", ");
 
   if (!card.href) {
     return (
@@ -67,7 +82,7 @@ function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
       href={card.href}
       className={className}
       data-fixture-clock={card.clock}
-      aria-label={`${card.title}, ${detail}`}
+      aria-label={label}
     >
       {body}
     </Link>

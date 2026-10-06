@@ -1,4 +1,5 @@
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import type { VenueGalleryImage } from "@/lib/venues/gallery";
 import {
   venueAddressLine,
   type VenueContactLink,
@@ -57,36 +58,44 @@ export function VenueHeading({
   );
 }
 
+export type { VenueGalleryImage };
+
+/**
+ * Hero photo only. No dashed placeholder when the venue has no `hero_image`.
+ * A later gallery (`VenueGalleryImage[]`, alt + credit) belongs in `after`,
+ * immediately under this photo. This pass does not render that gallery.
+ */
 export function VenueSinglePhoto({
   venue,
   name,
+  after,
 }: {
-  venue: Pick<VenueDetail, "hero_image" | "sports">;
+  venue: Pick<VenueDetail, "hero_image">;
   name: string;
+  after?: ReactNode;
 }) {
-  const source = resolveVenueImage(venue);
-  const url = source ? venuePhotoUrl(venue, { width: 1200, height: 675 }) : null;
-  if (!url || !isRemoteVenuePhoto(url)) {
-    return (
-      <div
-        className="flex aspect-[16/10] items-center justify-center rounded-3xl border border-dashed border-white/15 bg-[#1a1f1a] px-6 text-center text-sm text-zinc-400"
-        role="img"
-        aria-label="No photo of this venue yet"
-      >
-        No photo of this venue yet
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-[#141814]">
+  const heroOnly = { hero_image: venue.hero_image, sports: [] as VenueDetail["sports"] };
+  const source = resolveVenueImage(heroOnly);
+  const url = source ? venuePhotoUrl(heroOnly, { width: 1600, height: 1000 }) : null;
+  const photo = url && isRemoteVenuePhoto(url) ? (
+    <div className="relative -mx-4 aspect-[5/4] min-h-72 overflow-hidden sm:-mx-6 sm:aspect-[16/9] sm:min-h-[22rem]">
       <Image
         src={url}
         alt={name}
         fill
+        priority
         className="object-cover"
-        sizes="(min-width: 640px) 36rem, 100vw"
+        sizes="100vw"
       />
+    </div>
+  ) : null;
+
+  if (!photo && !after) return null;
+
+  return (
+    <div data-venue-hero>
+      {photo}
+      {after}
     </div>
   );
 }
@@ -94,24 +103,16 @@ export function VenueSinglePhoto({
 export function VenueGoodFor({ labels }: { labels: string[] }) {
   if (labels.length === 0) return null;
   return (
-    <section aria-labelledby="venue-good-for">
-      <h2
-        id="venue-good-for"
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
-      >
-        Good for
-      </h2>
-      <ul className="mt-3 flex flex-wrap gap-2">
-        {labels.map((label) => (
-          <li
-            key={label}
-            className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-200"
-          >
-            {label}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <ul className="flex flex-wrap gap-2" aria-label="Good for">
+      {labels.map((label) => (
+        <li
+          key={label}
+          className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-200"
+        >
+          {label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -123,32 +124,23 @@ export function VenueScreensLine({ line }: { line: string | null }) {
 export function VenueContactRow({ links }: { links: VenueContactLink[] }) {
   if (links.length === 0) return null;
   return (
-    <section aria-labelledby="venue-contact">
-      <h2
-        id="venue-contact"
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
-      >
-        Contact
-      </h2>
-      <ul className="mt-3 flex flex-wrap gap-2">
-        {links.map((link) => {
-          const external = link.kind === "website" || link.kind === "whatsapp";
-          return (
-            <li key={link.kind}>
-              <a
-                href={link.href}
-                {...(external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                className="inline-flex min-h-10 items-center rounded-full border border-white/15 px-4 text-sm font-semibold text-white hover:border-white/40"
-              >
-                {link.label}
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Contact">
+      {links.map((link) => {
+        const external = link.kind === "website" || link.kind === "whatsapp";
+        return (
+          <a
+            key={link.kind}
+            href={link.href}
+            {...(external
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
+            className="text-sm font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"
+          >
+            {link.label}
+          </a>
+        );
+      })}
+    </div>
   );
 }
 
