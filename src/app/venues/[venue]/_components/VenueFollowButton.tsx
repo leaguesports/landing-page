@@ -16,6 +16,8 @@ type VenueFollowButtonProps = {
   venueSlug: string;
   /** visual variant for hero vs footer CTA */
   variant?: "primary" | "secondary";
+  /** Square neon control on Scoreboard venue pages. */
+  appearance?: "default" | "scoreboard";
   className?: string;
 };
 
@@ -26,6 +28,7 @@ export function VenueFollowButton({
   venueName,
   venueSlug,
   variant = "primary",
+  appearance = "default",
   className = "",
 }: VenueFollowButtonProps) {
   const pathname = usePathname();
@@ -90,14 +93,23 @@ export function VenueFollowButton({
 
   const busy = authLoading || pending || (isAuthenticated && !statusReady);
   const isFollowing = isAuthenticated && remoteStatus === "following";
-  const label = !isAuthenticated
-    ? "Follow venue"
-    : isFollowing
-      ? "Following"
-      : "Follow venue";
+  const label =
+    appearance === "scoreboard"
+      ? !isAuthenticated
+        ? "Follow"
+        : isFollowing
+          ? "Following"
+          : "Follow"
+      : !isAuthenticated
+        ? "Follow venue"
+        : isFollowing
+          ? "Following"
+          : "Follow venue";
 
   const baseClass =
-    variant === "primary"
+    appearance === "scoreboard"
+      ? "inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-none border-2 border-[#C6FF00] bg-[#C6FF00] px-4 font-display text-2xl uppercase tracking-wide text-black transition-colors hover:bg-white disabled:opacity-60"
+      : variant === "primary"
       ? isFollowing
         ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 px-5 py-2.5 text-sm font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/25 disabled:opacity-60"
         : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[var(--color-brand)] disabled:opacity-60"

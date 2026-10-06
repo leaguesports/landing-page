@@ -13,11 +13,13 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
+const NEON = "#C6FF00";
+
 function Initials({ side }: { side: WatchVenueSide }) {
   const fill = normaliseWatchTeamColour(side.colour) ?? WATCH_FIXTURE_SLATE;
   return (
     <span
-      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl font-display text-2xl tracking-[0.08em]"
+      className="flex h-16 w-16 shrink-0 items-center justify-center border-2 border-[#333] font-display text-3xl tracking-[0.08em]"
       style={{ backgroundColor: fill, color: watchFixtureInk(fill) }}
     >
       {side.code}
@@ -28,50 +30,49 @@ function Initials({ side }: { side: WatchVenueSide }) {
 function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
   const paired = Boolean(card.home && card.away);
   const clock = card.clock ? (
-    <span className="block text-center font-display text-5xl leading-none tracking-wide text-white">
+    <span
+      className="block font-display text-6xl leading-none tracking-wide sm:text-7xl"
+      style={{ color: NEON, textShadow: `0 0 14px ${NEON}` }}
+    >
       {card.clock}
     </span>
   ) : null;
   const body = (
-    <>
-      {paired && card.home && card.away ? (
-        <span className="grid grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-center gap-3">
-          <Initials side={card.home} />
-          {clock ?? (
-            <span className="text-center text-base font-semibold leading-snug text-white">
-              {card.title}
-            </span>
-          )}
-          <Initials side={card.away} />
-        </span>
-      ) : (
-        clock ?? (
-          <span className="block text-center text-base font-semibold leading-snug text-white">
+    <span className="grid md:grid-cols-[auto_minmax(0,1fr)_auto]">
+      <span className="flex items-center justify-center border-b-2 border-[#333] px-5 py-4 md:border-b-0 md:border-r-2">
+        {clock ?? (
+          <span className="font-display text-3xl uppercase tracking-wide text-white">
             {card.title}
           </span>
-        )
-      )}
-      {clock ? (
-        <span className="mt-3 block text-center text-sm font-semibold text-white">
-          {card.title}
-        </span>
-      ) : null}
-      {card.cues.length > 0 ? (
-        <span className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          {card.cues.map((cue) => (
-            <span
-              key={cue}
-              className="inline-flex items-center rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300"
-            >
-              {cue}
-            </span>
-          ))}
-        </span>
-      ) : null}
-    </>
+        )}
+      </span>
+      <span className="flex flex-col items-center justify-center gap-3 px-4 py-5">
+        {paired && card.home && card.away ? (
+          <span className="flex items-center gap-4">
+            <Initials side={card.home} />
+            <span className="font-display text-2xl text-[#666]">VS</span>
+            <Initials side={card.away} />
+          </span>
+        ) : null}
+        {clock ? (
+          <span className="text-center font-display text-xl uppercase tracking-wide text-white">
+            {card.title}
+          </span>
+        ) : null}
+      </span>
+      <span className="flex flex-wrap items-center justify-center gap-2 border-t-2 border-[#333] px-4 py-4 md:border-t-0 md:border-l-2">
+        {card.cues.map((cue) => (
+          <span
+            key={cue}
+            className="inline-flex border-2 border-[#C6FF00] px-2 py-1 font-display text-sm uppercase tracking-wide text-[#C6FF00]"
+          >
+            {cue}
+          </span>
+        ))}
+      </span>
+    </span>
   );
-  const className =
-    "block rounded-2xl border border-white/10 bg-[#141a17] px-5 py-6 transition-colors hover:border-white/20";
+  const className = "block border-2 border-[#333] bg-black text-white";
   const label = [card.title, card.clock, ...card.cues].filter(Boolean).join(", ");
 
   if (!card.href) {
@@ -105,25 +106,25 @@ export function VenueWeekFixtures({
   const visible = cards.filter((card) => card.dayId === dayId);
 
   return (
-    <section id="week" className="scroll-mt-28" aria-labelledby="venue-this-week">
-      <header className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-          This week
-        </p>
-        <h2
-          id="venue-this-week"
-          className="mt-2 font-display text-3xl uppercase tracking-wide text-white sm:text-4xl"
-        >
-          What&apos;s on
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500">Screenings at this venue</p>
-      </header>
+    <section id="week" aria-labelledby="venue-this-week">
+      <p
+        id="venue-this-week"
+        className="font-display text-3xl uppercase tracking-[0.18em] text-[#C6FF00]"
+      >
+        This week
+      </p>
 
       {days.length === 0 ? (
-        <p className="text-sm text-zinc-300">{VENUE_WEEK_EMPTY}</p>
+        <p className="mt-4 border-2 border-[#333] px-4 py-6 text-sm text-[#C8C8C8]">
+          {VENUE_WEEK_EMPTY}
+        </p>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Days with a screening">
+          <div
+            className="mt-4 flex flex-wrap"
+            role="group"
+            aria-label="Days with a screening"
+          >
             {days.map((day) => {
               const selected = day.id === dayId;
               return (
@@ -132,10 +133,10 @@ export function VenueWeekFixtures({
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setDayId(day.id)}
-                  className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm font-semibold ${
+                  className={`min-h-11 border-2 px-4 font-display text-xl uppercase tracking-wide ${
                     selected
-                      ? "bg-[var(--color-brand)] text-zinc-950"
-                      : "border border-white/12 text-zinc-300 hover:border-white hover:text-white"
+                      ? "border-[#C6FF00] bg-[#C6FF00] text-black"
+                      : "border-[#333] bg-black text-white hover:border-[#C6FF00]"
                   }`}
                 >
                   {day.chip}
@@ -143,7 +144,7 @@ export function VenueWeekFixtures({
               );
             })}
           </div>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-3">
             {visible.map((card) => (
               <FixtureCard key={card.id} card={card} />
             ))}

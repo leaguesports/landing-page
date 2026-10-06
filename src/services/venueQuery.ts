@@ -1,6 +1,10 @@
 import type { TypedObject } from "@portabletext/types";
 import type { SanityImageSource } from "@sanity/image-url";
 import type { GolfCourseCms } from "@/types/golf-round";
+import {
+  mapVenueGallery,
+  type VenueGalleryImage,
+} from "../lib/venues/gallery.ts";
 
 export type VenueScreening = {
   title: string;
@@ -17,6 +21,8 @@ export type Venue = {
   description: TypedObject[];
   /** Venue hero photo (targeted schema field `hero_image`). */
   hero_image?: SanityImageSource | null;
+  /** Optional Sanity `gallery` images. Empty when the venue has none. */
+  gallery?: VenueGalleryImage[];
   address: {
     street: string;
     suburb: string;
@@ -71,6 +77,7 @@ export type VenueRow = {
   slug: string | null;
   description: TypedObject[] | null;
   hero_image?: SanityImageSource | null;
+  gallery?: unknown;
   address: Venue["address"] | null;
   sports: Venue["sports"] | null;
   broadcasts: Venue["broadcasts"] | null;
@@ -140,6 +147,14 @@ export const VENUE_PROJECTION = `
   "slug": slug.current,
   description,
   hero_image,
+  gallery[]{
+    alt,
+    credit,
+    asset->{
+      _id,
+      url
+    }
+  },
   "phone": coalesce(contact.phone, contactInfo.phone, phone),
   "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp, whatsapp),
   "email": coalesce(contact.email, contactInfo.email, email),
@@ -270,6 +285,7 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
     slug: row.slug,
     description: asPortableText(row.description),
     hero_image: row.hero_image ?? null,
+    gallery: mapVenueGallery(row.gallery),
     address: row.address ?? {
       street: "",
       suburb: "",

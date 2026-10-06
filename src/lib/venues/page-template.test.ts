@@ -16,6 +16,7 @@ import {
   venueShortDisplayName,
   venueStartMatchHref,
   venueStartMatchLabel,
+  venueUsesPadelScoreboard,
   venueWatchPlace,
   venueWatchScreensLine,
   type VenueTemplateInput,
@@ -198,6 +199,46 @@ describe("classifyVenuePage", () => {
         golfCourse: playableCourse(),
       }),
       "default",
+    );
+  });
+
+  it("puts Irene and Wingate on Play Scoreboard even when they also host golf", () => {
+    const wingate: VenueTemplateInput = {
+      name: "Wingate Park Country Club",
+      slug: "wingate-park-country-club",
+      broadcasts: [{ name: "Golf", slug: "golf" }],
+      sports: [
+        { name: "Padel", slug: "padel" },
+        { name: "Golf", slug: "golf" },
+      ],
+      golfCourse: playableCourse(),
+      upcoming_screenings: [
+        { title: "Some screening", startsAt: "2026-10-31T13:30:00.000Z" },
+      ],
+    };
+    assert.equal(venueUsesPadelScoreboard(wingate), true);
+    assert.equal(classifyVenuePage(wingate), "play");
+    assert.equal(
+      classifyVenuePage({
+        name: "Irene Country Club",
+        slug: "something-else",
+        sports: [
+          { name: "Padel", slug: "padel" },
+          { name: "Golf", slug: "golf" },
+        ],
+        broadcasts: [],
+        golfCourse: playableCourse(),
+      }),
+      "play",
+    );
+    assert.equal(
+      classifyVenuePage({
+        slug: "irene-country-club",
+        sports: [{ name: "Golf", slug: "golf" }],
+        broadcasts: [],
+        golfCourse: playableCourse(),
+      }),
+      "play",
     );
   });
 

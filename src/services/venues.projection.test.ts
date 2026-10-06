@@ -59,6 +59,13 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
   });
 
+  it("projects the Sanity gallery with alt, credit, and the asset", () => {
+    assert.match(
+      VENUE_PROJECTION,
+      /gallery\[\]\{\s*alt,\s*credit,\s*asset->\{/,
+    );
+  });
+
   it("projects sport slugs for Watch and Play chips", () => {
     assert.match(
       VENUE_PROJECTION,
@@ -261,6 +268,20 @@ describe("mapVenueRow", () => {
   it("normalizes missing portable-text description to an empty array", () => {
     const venue = mapVenueRow({ ...base, description: null });
     assert.deepEqual(venue?.description, []);
+  });
+
+  it("maps gallery tiles and ignores a missing gallery", () => {
+    const venue = mapVenueRow({
+      ...base,
+      gallery: [
+        { alt: "Night court", credit: "Club", asset: { _id: "image-night" } },
+        { alt: "", asset: { _id: "image-skip" } },
+      ],
+    });
+    assert.equal(venue?.gallery?.length, 1);
+    assert.equal(venue?.gallery?.[0]?.alt, "Night court");
+    assert.equal(venue?.gallery?.[0]?.credit, "Club");
+    assert.equal(mapVenueRow(base)?.gallery?.length, 0);
   });
 
   it("maps golfCourse when present", () => {

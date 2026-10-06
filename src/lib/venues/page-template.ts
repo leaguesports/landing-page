@@ -126,7 +126,27 @@ export function venueDistinctPlaySports(
   return keys.map((key) => ({ key, name: sportDisplayName(key, venue) }));
 }
 
+/**
+ * Irene and Wingate are multi-sport on the product brief, but this
+ * Scoreboard slice shows them as Play with Start padel only.
+ */
+const SCOREBOARD_PADEL_SLUGS = new Set([
+  "irene-country-club",
+  "wingate-park-country-club",
+]);
+
+export function venueUsesPadelScoreboard(venue: {
+  slug?: string | null;
+  name?: string | null;
+}): boolean {
+  const slug = venue.slug?.trim().toLowerCase() ?? "";
+  if (SCOREBOARD_PADEL_SLUGS.has(slug)) return true;
+  const name = venue.name?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
+  return name === "irene country club" || name === "wingate park country club";
+}
+
 export function classifyVenuePage(venue: VenueTemplateInput): VenuePageTemplate {
+  if (venueUsesPadelScoreboard(venue)) return "play";
   const screens = venueSupportsWatch(venue);
   const playCount = venueDistinctPlaySports(venue).length;
   if (screens && playCount > 0) return "default";
