@@ -1,4 +1,5 @@
 import { eventsListHref } from "../events/scope.ts";
+import { isSafeFaqHref } from "../faq/answer.ts";
 import { guideHref, isGuideSlug } from "../guides/slugs.ts";
 import type { IntentScreeningHighlight } from "./enrichment.ts";
 import { resolveSportSlug } from "../sports/catalog.ts";
@@ -169,11 +170,35 @@ export function watchEventsHref(sportSlug: string): string {
   return eventsListHref({ sport: sportSlug });
 }
 
-function normalizeWatchCity(citySlug: string | null | undefined): string {
+/** Aliases that are the same metro. First entry is the directory slug Content should store. */
+const WATCH_CITY_ALIAS_GROUPS: readonly (readonly string[])[] = [
+  ["johannesburg", "joburg", "jozi", "jhb"],
+  ["cape-town", "cape town", "capetown", "cpt"],
+  ["durban", "dbn"],
+  ["pretoria", "pta", "tshwane"],
+];
+
+/** `joburg` / `jhb` → `johannesburg`, `cpt` → `cape-town`. Other slugs pass through. */
+export function canonicalWatchCitySlug(citySlug: string | null | undefined): string {
   const city = (citySlug ?? "").trim().toLowerCase();
-  if (city === "joburg" || city === "jozi") return "johannesburg";
-  if (city === "cape town" || city === "capetown") return "cape-town";
+  for (const group of WATCH_CITY_ALIAS_GROUPS) {
+    if (group.includes(city)) return group[0] ?? city;
+  }
   return city;
+}
+
+/** Every stored spelling of this city, so a `joburg` doc still matches `/johannesburg`. */
+export function watchCitySlugCandidates(citySlug: string | null | undefined): string[] {
+  const city = (citySlug ?? "").trim().toLowerCase();
+  if (!city) return [];
+  for (const group of WATCH_CITY_ALIAS_GROUPS) {
+    if (group.includes(city)) return [...group];
+  }
+  return [city];
+}
+
+function normalizeWatchCity(citySlug: string | null | undefined): string {
+  return canonicalWatchCitySlug(citySlug);
 }
 
 function normalizeWatchSport(sportSlug: string | null | undefined): string {
@@ -188,14 +213,41 @@ function toGuideLink(guide: { slug: string; label: string }): WatchGuideLink | n
   return { href: guideHref(guide.slug), label: guide.label };
 }
 
+const METRO_LINK_LIMIT = 6;
+
+/**
+ * CMS related links. Internal paths and leaguesports.co.za only.
+ * `/events` is allowed — these are not limited to guide slugs.
+ */
+export function metroRelatedLinks(
+  links: readonly { href?: string | null; label?: string | null }[] | null | undefined,
+): WatchGuideLink[] {
+  const out: WatchGuideLink[] = [];
+  const seen = new Set<string>();
+  for (const link of links ?? []) {
+    const href = link.href?.trim() ?? "";
+    const label = link.label?.trim() ?? "";
+    if (!href || !label || !isSafeFaqHref(href) || seen.has(href)) continue;
+    seen.add(href);
+    out.push({ href, label });
+    if (out.length >= METRO_LINK_LIMIT) break;
+  }
+  return out;
+}
+
 /**
  * 1–3 guide links for this sport and city. Sport guide first, then the
  * cross-sport city pack. Unmapped cities return nothing (no `/guides` fallback).
+ * A published metroPage `relatedLinks` list replaces the hardcoded pack.
  */
 export function watchRelatedGuides(
   sportSlug: string,
   citySlug?: string | null,
+  metroLinks?: readonly { href?: string | null; label?: string | null }[] | null,
 ): WatchGuideLink[] {
+  const fromMetro = metroRelatedLinks(metroLinks);
+  if (fromMetro.length > 0) return fromMetro;
+
   const sport = normalizeWatchSport(sportSlug);
   const city = normalizeWatchCity(citySlug);
   const links: WatchGuideLink[] = [];
@@ -218,8 +270,9 @@ export function watchRelatedGuides(
 export function watchRelatedGuideLink(
   sportSlug: string,
   citySlug?: string | null,
+  metroLinks?: readonly { href?: string | null; label?: string | null }[] | null,
 ): WatchGuideLink | null {
-  return watchRelatedGuides(sportSlug, citySlug)[0] ?? null;
+  return watchRelatedGuides(sportSlug, citySlug, metroLinks)[0] ?? null;
 }
 
 /**
@@ -230,7 +283,16 @@ export function watchRelatedGuideLink(
 export function watchCalendarSideLinks(
   sportSlug: string,
   citySlug?: string | null,
+  metroLinks?: readonly { href?: string | null; label?: string | null }[] | null,
 ): { guide: WatchGuideLink | null; crossSport: WatchGuideLink | null } {
+  const fromMetro = metroRelatedLinks(metroLinks);
+  if (fromMetro.length > 0) {
+    return {
+      guide: fromMetro[0] ?? null,
+      crossSport: fromMetro[1] ?? null,
+    };
+  }
+
   const sport = normalizeWatchSport(sportSlug);
   const city = normalizeWatchCity(citySlug);
   const sportGuide = SPORT_CITY_GUIDES[`${sport}|${city}`];

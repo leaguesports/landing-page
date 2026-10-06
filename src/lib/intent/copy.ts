@@ -110,13 +110,29 @@ function rugbyJohannesburgNearMeFaqs(venueCount: number): IntentFaq[] {
   ];
 }
 
+function publishedMetroFaqs(faqs: readonly { question?: string | null; answer?: string | null }[] | null | undefined): IntentFaq[] {
+  const out: IntentFaq[] = [];
+  for (const item of faqs ?? []) {
+    const question = item.question?.trim() ?? "";
+    const answer = item.answer?.trim() ?? "";
+    if (!question || !answer) continue;
+    out.push({ question, answer });
+  }
+  return out;
+}
+
 export function intentDetailFaqs(input: {
   intent: IntentKind;
   activity: IntentActivity;
   locationTitle: string;
   venueCount: number;
   locationSlug?: string | null;
+  /** Published metroPage FAQs. A non-empty list replaces the template, including near-me extras. */
+  metroFaqs?: readonly { question?: string | null; answer?: string | null }[] | null;
 }): IntentFaq[] {
+  const custom = publishedMetroFaqs(input.metroFaqs);
+  if (custom.length > 0) return custom;
+
   const { intent, activity, locationTitle, venueCount } = input;
   const verb = intent === "watch" ? "watch" : "play";
   const placeNoun = intent === "watch" ? "bars and fan zones" : "courts and clubs";
