@@ -1,6 +1,10 @@
 import type { TypedObject } from "@portabletext/types";
 import type { SanityImageSource } from "@sanity/image-url";
 import type { GolfCourseCms } from "@/types/golf-round";
+import {
+  mapVenueGallery,
+  type VenueGalleryImage,
+} from "../lib/venues/gallery.ts";
 
 export type VenueScreening = {
   title: string;
@@ -17,6 +21,8 @@ export type Venue = {
   description: TypedObject[];
   /** Venue hero photo (targeted schema field `hero_image`). */
   hero_image?: SanityImageSource | null;
+  /** Optional Sanity `gallery` images. Empty when the venue has none. */
+  gallery?: VenueGalleryImage[];
   address: {
     street: string;
     suburb: string;
@@ -50,7 +56,12 @@ export type Venue = {
   rating?: number | null;
   latitude?: number | null;
   longitude?: number | null;
+  /** Voice number from `contact` / `contactInfo` / top-level `phone`. */
   phone?: string | null;
+  /** Dedicated WhatsApp number. Not copied onto `phone`. */
+  whatsapp?: string | null;
+  /** `contactInfo.email`, with the same contact coalesce as phone. */
+  email?: string | null;
   website?: string | null;
   upcoming_screenings?: VenueScreening[] | null;
   /** Hole-by-hole golf scorecard when the venue hosts golf. */
@@ -66,6 +77,7 @@ export type VenueRow = {
   slug: string | null;
   description: TypedObject[] | null;
   hero_image?: SanityImageSource | null;
+  gallery?: unknown;
   address: Venue["address"] | null;
   sports: Venue["sports"] | null;
   broadcasts: Venue["broadcasts"] | null;
@@ -83,6 +95,7 @@ export type VenueRow = {
   longitude?: number | null;
   phone?: string | null;
   whatsapp?: string | null;
+  email?: string | null;
   website?: string | null;
   upcoming_screenings?: VenueScreening[] | null;
   golfCourse?: GolfCourseCms | null;
@@ -134,8 +147,17 @@ export const VENUE_PROJECTION = `
   "slug": slug.current,
   description,
   hero_image,
+  gallery[]{
+    alt,
+    credit,
+    asset->{
+      _id,
+      url
+    }
+  },
   "phone": coalesce(contact.phone, contactInfo.phone, phone),
   "whatsapp": coalesce(contact.whatsapp, contactInfo.whatsapp, whatsapp),
+  "email": coalesce(contact.email, contactInfo.email, email),
   "website": coalesce(contact.website, contactInfo.website, website),
   "has_generator_backup": coalesce(amenities.has_generator_backup, has_generator_backup),
   "has_big_screens": coalesce(amenities.has_big_screens, has_big_screens),
@@ -263,6 +285,7 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
     slug: row.slug,
     description: asPortableText(row.description),
     hero_image: row.hero_image ?? null,
+    gallery: mapVenueGallery(row.gallery),
     address: row.address ?? {
       street: "",
       suburb: "",
@@ -285,8 +308,9 @@ export function mapVenueRow(row: VenueRow): VenueDetail | null {
     rating: row.rating ?? null,
     latitude: row.latitude ?? null,
     longitude: row.longitude ?? null,
-    // WhatsApp CTA uses `phone`; prefer the dedicated WhatsApp number when set.
-    phone: row.whatsapp || row.phone || null,
+    phone: row.phone?.trim() || null,
+    whatsapp: row.whatsapp?.trim() || null,
+    email: row.email?.trim() || null,
     website: row.website ?? null,
     upcoming_screenings: (row.upcoming_screenings ?? []).filter(
       (s) => s?.title && s?.startsAt,

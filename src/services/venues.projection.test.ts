@@ -21,6 +21,7 @@ describe("VENUE_PROJECTION", () => {
       "amenities.has_generator_backup",
       "contact.phone",
       "contactInfo.phone",
+      "contactInfo.email",
       "claim_status",
       "upcoming_screenings",
       "broadcasts",
@@ -56,6 +57,13 @@ describe("VENUE_PROJECTION", () => {
     assert.match(VENUE_PROJECTION, /"broadcasts": broadcasts\[\]->/);
     assert.match(VENUE_PROJECTION, /"sports": sports\[\]->/);
     assert.match(VENUE_PROJECTION, /"slug": slug\.current/);
+  });
+
+  it("projects the Sanity gallery with alt, credit, and the asset", () => {
+    assert.match(
+      VENUE_PROJECTION,
+      /gallery\[\]\{\s*alt,\s*credit,\s*asset->\{/,
+    );
   });
 
   it("projects sport slugs for Watch and Play chips", () => {
@@ -245,18 +253,35 @@ describe("mapVenueRow", () => {
     assert.equal(mapVenueRow({ ...base, slug: null }), null);
   });
 
-  it("prefers WhatsApp over phone for the contact CTA", () => {
+  it("keeps phone and WhatsApp as the fields the record has", () => {
     const venue = mapVenueRow({
       ...base,
       phone: "0211234567",
       whatsapp: "0820000000",
+      email: "  hello@example.co.za  ",
     });
-    assert.equal(venue?.phone, "0820000000");
+    assert.equal(venue?.phone, "0211234567");
+    assert.equal(venue?.whatsapp, "0820000000");
+    assert.equal(venue?.email, "hello@example.co.za");
   });
 
   it("normalizes missing portable-text description to an empty array", () => {
     const venue = mapVenueRow({ ...base, description: null });
     assert.deepEqual(venue?.description, []);
+  });
+
+  it("maps gallery tiles and ignores a missing gallery", () => {
+    const venue = mapVenueRow({
+      ...base,
+      gallery: [
+        { alt: "Night court", credit: "Club", asset: { _id: "image-night" } },
+        { alt: "", asset: { _id: "image-skip" } },
+      ],
+    });
+    assert.equal(venue?.gallery?.length, 1);
+    assert.equal(venue?.gallery?.[0]?.alt, "Night court");
+    assert.equal(venue?.gallery?.[0]?.credit, "Club");
+    assert.equal(mapVenueRow(base)?.gallery?.length, 0);
   });
 
   it("maps golfCourse when present", () => {
