@@ -57,16 +57,21 @@ function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
         </span>
       ) : null}
       {card.cues.length > 0 ? (
-        <span className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-semibold text-white">
+        <span className="mt-3 flex flex-wrap items-center justify-center gap-2">
           {card.cues.map((cue) => (
-            <span key={cue}>{cue}</span>
+            <span
+              key={cue}
+              className="inline-flex items-center rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300"
+            >
+              {cue}
+            </span>
           ))}
         </span>
       ) : null}
     </>
   );
   const className =
-    "block rounded-3xl border border-white/10 bg-[#141814] px-4 py-5 transition-colors hover:border-white/20";
+    "block rounded-2xl border border-white/10 bg-[#141a17] px-5 py-6 transition-colors hover:border-white/20";
   const label = [card.title, card.clock, ...card.cues].filter(Boolean).join(", ");
 
   if (!card.href) {
@@ -100,19 +105,25 @@ export function VenueWeekFixtures({
   const visible = cards.filter((card) => card.dayId === dayId);
 
   return (
-    <section aria-labelledby="venue-this-week">
-      <h2
-        id="venue-this-week"
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
-      >
-        This week
-      </h2>
+    <section id="week" className="scroll-mt-28" aria-labelledby="venue-this-week">
+      <header className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+          This week
+        </p>
+        <h2
+          id="venue-this-week"
+          className="mt-2 font-display text-3xl uppercase tracking-wide text-white sm:text-4xl"
+        >
+          What&apos;s on
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">Screenings at this venue</p>
+      </header>
 
       {days.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-300">{VENUE_WEEK_EMPTY}</p>
+        <p className="text-sm text-zinc-300">{VENUE_WEEK_EMPTY}</p>
       ) : (
         <>
-          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Days with a screening">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Days with a screening">
             {days.map((day) => {
               const selected = day.id === dayId;
               return (
@@ -121,10 +132,10 @@ export function VenueWeekFixtures({
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setDayId(day.id)}
-                  className={`min-h-10 rounded-full px-4 text-sm font-semibold ${
+                  className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm font-semibold ${
                     selected
-                      ? "bg-white text-zinc-950"
-                      : "border border-white/15 text-zinc-300 hover:border-white/30 hover:text-white"
+                      ? "bg-[var(--color-brand)] text-zinc-950"
+                      : "border border-white/12 text-zinc-300 hover:border-white hover:text-white"
                   }`}
                 >
                   {day.chip}
@@ -132,7 +143,7 @@ export function VenueWeekFixtures({
               );
             })}
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
             {visible.map((card) => (
               <FixtureCard key={card.id} card={card} />
             ))}

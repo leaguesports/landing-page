@@ -63,7 +63,7 @@ const AMENITY_LABELS: readonly {
   { key: "has_live_audio", label: "Commentary", phrase: "live commentary" },
   { key: "has_craft_drafts", label: "Draft", phrase: "draft beer" },
   { key: "has_food_menu", label: "Food", phrase: "food" },
-  { key: "has_outdoor_area", label: "Terrace", phrase: "outdoor" },
+  { key: "has_outdoor_area", label: "Outdoor", phrase: "outdoor" },
   { key: "has_parking", label: "Parking", phrase: "parking" },
 ];
 
@@ -351,6 +351,23 @@ export function venueWatchScreensLine(
 }
 
 /**
+ * Play amenities as the same short chips as Watch, led by the court or
+ * hole count when the record has one. The sport name stays on the Start
+ * button, so it is not repeated here.
+ */
+export function venuePlayChips(venue: VenueTemplateInput): string[] {
+  const sport = venueDistinctPlaySports(venue)[0];
+  const facility =
+    venueCourtFacility(venue.description) ??
+    (sport?.key === "golf" ? venueGolfHoles(venue.golfCourse) : null);
+  const sportName = sport?.name.trim().toLowerCase() ?? "";
+  const amenities = venueGoodForLabels(venue, false).filter(
+    (label) => label.trim().toLowerCase() !== sportName,
+  );
+  return [...(facility ? [facility] : []), ...amenities];
+}
+
+/**
  * One facts line: facility (if known), the one sport, amenities once.
  * "2 outdoor courts. Padel. Food, outdoor, parking."
  */
@@ -390,14 +407,6 @@ function websiteHref(value: string): string | null {
   }
 }
 
-function websiteLabel(href: string): string {
-  try {
-    return new URL(href).hostname.replace(/^www\./i, "");
-  } catch {
-    return "Website";
-  }
-}
-
 /**
  * Contact row for Watch and one-sport Play.
  *
@@ -428,14 +437,14 @@ export function venueContactLinks(venue: {
     links.push({ kind: "whatsapp", href: whatsappHref, label: "WhatsApp" });
   }
 
-  const site = websiteHref(cleanContact(venue.website));
-  if (site) {
-    links.push({ kind: "website", href: site, label: websiteLabel(site) });
-  }
-
   const email = cleanContact(venue.email);
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    links.push({ kind: "email", href: `mailto:${email}`, label: email });
+    links.push({ kind: "email", href: `mailto:${email}`, label: "Email" });
+  }
+
+  const site = websiteHref(cleanContact(venue.website));
+  if (site) {
+    links.push({ kind: "website", href: site, label: "Website" });
   }
 
   return links;

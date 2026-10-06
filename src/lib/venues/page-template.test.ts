@@ -10,6 +10,7 @@ import {
   venueDistinctPlaySports,
   venueGoodForLabels,
   venueHoursLine,
+  venuePlayChips,
   venuePlayFactsLine,
   venuePlayPlace,
   venueShortDisplayName,
@@ -319,12 +320,12 @@ describe("customer about and play facts", () => {
       "Commentary",
       "Draft",
       "Food",
-      "Terrace",
+      "Outdoor",
       "Parking",
     ]);
     assert.deepEqual(venueGoodForLabels(actionPadel, false), [
       "Food",
-      "Terrace",
+      "Outdoor",
       "Parking",
     ]);
     assert.deepEqual(
@@ -422,16 +423,16 @@ describe("customer about and play facts", () => {
     });
     assert.deepEqual(
       links.map((link) => link.kind),
-      ["phone", "whatsapp", "website", "email"],
+      ["phone", "whatsapp", "email", "website"],
+    );
+    assert.deepEqual(
+      links.map((link) => link.label),
+      ["Call", "WhatsApp", "Email", "Website"],
     );
     assert.equal(links[0]?.href, "tel:+27211234567");
-    assert.equal(links[0]?.label, "Call");
     assert.match(links[1]?.href ?? "", /^https:\/\/wa\.me\/27820000000/);
-    assert.equal(links[1]?.label, "WhatsApp");
-    assert.equal(links[2]?.href, "https://courtside.co.za/");
-    assert.equal(links[2]?.label, "courtside.co.za");
-    assert.equal(links[3]?.href, "mailto:hello@courtside.co.za");
-    assert.equal(links[3]?.label, "hello@courtside.co.za");
+    assert.equal(links[2]?.href, "mailto:hello@courtside.co.za");
+    assert.equal(links[3]?.href, "https://courtside.co.za/");
 
     const whatsappOnly = venueContactLinks({
       name: "Courtside",
@@ -450,6 +451,53 @@ describe("customer about and play facts", () => {
     assert.equal(
       links.some((link) => /claim|playtomic|book a/i.test(link.label)),
       false,
+    );
+  });
+
+  it("shows play amenities as short chips, without the sport name", () => {
+    assert.deepEqual(venuePlayChips(actionPadel), [
+      "2 outdoor courts",
+      "Food",
+      "Outdoor",
+      "Parking",
+    ]);
+    const rbClub: VenueTemplateInput = {
+      name: "RB Club Melrose Arch",
+      slug: "rb-club-melrose-arch",
+      broadcasts: [],
+      sports: [{ name: "Padel", slug: "padel" }],
+      has_food_menu: true,
+      has_outdoor_area: true,
+      has_parking: true,
+      description: "RB Club Melrose Arch has 8 outdoor courts beside the mall.",
+    };
+    assert.deepEqual(venuePlayChips(rbClub), [
+      "8 outdoor courts",
+      "Food",
+      "Outdoor",
+      "Parking",
+    ]);
+    assert.equal(
+      venuePlayChips(rbClub).some((chip) => chip.toLowerCase() === "padel"),
+      false,
+    );
+    assert.deepEqual(
+      venuePlayChips({
+        ...actionPadel,
+        description: "A padel club with a terrace.",
+        golfCourse: playableCourse(),
+      }),
+      ["Food", "Outdoor", "Parking"],
+    );
+    assert.deepEqual(
+      venuePlayChips({
+        slug: "city-golf",
+        sports: [{ name: "Golf", slug: "golf" }],
+        broadcasts: [],
+        golfCourse: playableCourse(),
+        has_parking: true,
+      }),
+      ["18 holes", "Parking"],
     );
   });
 

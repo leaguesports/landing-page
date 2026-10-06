@@ -1,13 +1,13 @@
 import { loadEventKickoffs } from "@/lib/venues/event-kickoffs";
 import {
+  venueAddressLine,
   venueContactLinks,
   venueCustomerAbout,
-  venueGoodForLabels,
   venueHoursLine,
   venueShortDisplayName,
   venueWatchPlace,
-  venueWatchScreensLine,
 } from "@/lib/venues/page-template";
+import { venueHasVisibleAmenities } from "@/lib/venues/watch-chrome";
 import {
   buildWatchVenueWeek,
   screeningListingDays,
@@ -17,14 +17,13 @@ import type { VenueDetail } from "@/services/venues";
 import {
   FocusedVenueShell,
   VenueAbout,
-  VenueContactRow,
-  VenueDirectionsFollow,
-  VenueGoodFor,
-  VenueHeading,
-  VenueHours,
+  VenueActionCard,
+  VenueAmenityPanel,
+  VenueColumns,
+  VenueHero,
   VenueLocation,
-  VenueScreensLine,
-  VenueSinglePhoto,
+  VenueSection,
+  VenueSportNames,
 } from "./FocusedVenueSections";
 import { VenueWeekFixtures } from "./VenueWeekFixtures";
 
@@ -45,26 +44,74 @@ export async function WatchVenuePage({
   const week = buildWatchVenueWeek({ venue, fixtures, events });
   const name = venueShortDisplayName(venue.name, venue.address);
   const place = venueWatchPlace(venue.address);
+  const about = venueCustomerAbout(venue.description);
+  const address = venueAddressLine(venue.address);
+  const hours = venueHoursLine(venue);
+  const sports = (venue.broadcasts ?? [])
+    .map((sport) => ({
+      _id: sport._id,
+      name: sport.name?.trim() ?? "",
+    }))
+    .filter((sport) => sport.name);
+  const showAmenities = venueHasVisibleAmenities(venue, true);
 
   return (
     <FocusedVenueShell template="watch" slug={venue.slug} jsonLd={jsonLd}>
-      <div className="space-y-8">
-        <VenueHeading name={name} place={place} />
-        <VenueWeekFixtures days={week.days} cards={week.cards} />
-        <VenueSinglePhoto venue={venue} name={name} />
-        <VenueGoodFor labels={venueGoodForLabels(venue, true)} />
-        <VenueAbout text={venueCustomerAbout(venue.description)} />
-        <VenueScreensLine line={venueWatchScreensLine(venue)} />
-        <VenueContactRow links={venueContactLinks(venue)} />
-        <VenueLocation venue={venue} />
-        <VenueHours line={venueHoursLine(venue)} />
-        <VenueDirectionsFollow
-          venueCmsId={venue._id}
-          venueName={venue.name}
-          venueSlug={venue.slug}
-          mapsUrl={mapsUrl}
-        />
-      </div>
+      <VenueHero venue={venue} name={name} place={place} />
+      <VenueColumns
+        aside={
+          <VenueActionCard
+            venue={venue}
+            links={venueContactLinks(venue)}
+            mapsUrl={mapsUrl}
+          />
+        }
+        main={
+          <>
+            <VenueWeekFixtures days={week.days} cards={week.cards} />
+            {about ? (
+              <VenueSection id="about" eyebrow="About" title={name}>
+                <VenueAbout text={about} />
+              </VenueSection>
+            ) : null}
+            {sports.length > 0 ? (
+              <VenueSection
+                id="sports"
+                eyebrow="Sports"
+                title="On the screens"
+                subtitle="Broadcast at this venue"
+              >
+                <VenueSportNames sports={sports} />
+              </VenueSection>
+            ) : null}
+            {showAmenities ? (
+              <VenueSection
+                id="amenities"
+                eyebrow="Amenities"
+                title="Amenities"
+                subtitle="Power, screens, and on-site facilities"
+              >
+                <VenueAmenityPanel venue={venue} supportsWatch />
+              </VenueSection>
+            ) : null}
+            {hours ? (
+              <VenueSection id="hours" eyebrow="Hours" title="Hours">
+                <p className="text-sm text-zinc-300">{hours}</p>
+              </VenueSection>
+            ) : null}
+            {address ? (
+              <VenueSection
+                id="location"
+                eyebrow="Location"
+                title="Location"
+                subtitle={place || undefined}
+              >
+                <VenueLocation name={name} venue={venue} mapsUrl={mapsUrl} />
+              </VenueSection>
+            ) : null}
+          </>
+        }
+      />
     </FocusedVenueShell>
   );
 }
