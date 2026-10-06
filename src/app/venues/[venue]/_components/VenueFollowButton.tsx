@@ -116,8 +116,8 @@ export function VenueFollowButton({
         ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 px-5 py-2.5 text-sm font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/25 disabled:opacity-60"
         : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[var(--color-brand)] disabled:opacity-60"
       : isFollowing
-        ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/40 bg-[var(--color-brand)]/10 px-8 py-2.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/20 disabled:opacity-60"
-        : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:opacity-60";
+        ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-5 py-2.5 text-sm font-medium text-emerald-900 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+        : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-950 disabled:opacity-60";
 
   const shell =
     appearance === "scoreboard"
@@ -144,7 +144,7 @@ export function VenueFollowButton({
           {error}
         </p>
       ) : appearance === "scoreboard" ? null : !isAuthenticated && !authLoading ? (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="sr-only">
           Sign in to save this venue to your list.
         </p>
       ) : null}

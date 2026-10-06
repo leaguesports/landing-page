@@ -1,32 +1,23 @@
-import { resolveVenueImage, type VenueDetail } from "@/services/venues";
-import {
-  DEFAULT_MAP_CENTER,
-  SUBURB_COORDINATES,
-} from "@/data/coordinates";
+import { SUBURB_COORDINATES } from "@/data/coordinates";
 import { toSlug } from "@/data/suburbs";
 import { sanityImageUrl } from "@/lib/venues/photo";
+import {
+  hasVenueCoordinates,
+  resolveVenueImage,
+  type VenueDetail,
+} from "@/services/venues";
+import {
+  venueProfileCrumbs,
+  venueProfileDescription,
+  venueProfileFaqs,
+  venueProfileKind,
+  type VenueProfileKind,
+} from "@/lib/venues/profile-seo";
 
-function resolveCoords(venue: VenueDetail): [number, number] | null {
-  if (
-    typeof venue.latitude === "number" &&
-    typeof venue.longitude === "number" &&
-    !Number.isNaN(venue.latitude) &&
-    !Number.isNaN(venue.longitude)
-  ) {
-    return [venue.latitude, venue.longitude];
-  }
-
+function suburbFallback(venue: VenueDetail): [number, number] | null {
   const suburb = venue.address.suburb?.trim();
-  if (suburb) {
-    const key = toSlug(suburb);
-    if (SUBURB_COORDINATES[key]) return SUBURB_COORDINATES[key];
-  }
-
-  return null;
-}
-
-function resolveImage(venue: VenueDetail): string | undefined {
-  return sanityImageUrl(resolveVenueImage(venue), { width: 1200, height: 630 });
+  if (!suburb) return null;
+  return SUBURB_COORDINATES[toSlug(suburb)] ?? null;
 }
 
 type AmenityFeature = {
@@ -35,13 +26,29 @@ type AmenityFeature = {
   value: true;
 };
 
+function schemaType(kind: VenueProfileKind): string | string[] {
+  if (kind === "watch") return "BarOrPub";
+  if (kind === "play") return "SportsActivityLocation";
+  if (kind === "hybrid") return ["SportsActivityLocation", "BarOrPub"];
+  return "LocalBusiness";
+}
+
+function sameAs(website: string | null | undefined): string | undefined {
+  const value = website?.trim() ?? "";
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.includes(".")) return `https://${value}`;
+  return undefined;
+}
+
 export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
-  const coords = resolveCoords(venue);
-  const [lat, lng] = coords ?? DEFAULT_MAP_CENTER;
-  const image = resolveImage(venue);
+  const kind = venueProfileKind(venue);
+  const image = sanityImageUrl(resolveVenueImage(venue), { width: 1200, height: 630 });
+  const coords = hasVenueCoordinates(venue)
+    ? ([venue.latitude, venue.longitude] as const)
+    : suburbFallback(venue);
 
   const amenityFeature: AmenityFeature[] = [];
-
   if (venue.has_generator_backup) {
     amenityFeature.push({
       "@type": "LocationFeatureSpecification",
@@ -92,16 +99,17 @@ export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
     });
   }
 
-  const hasPlaySports = (venue.sports?.length ?? 0) > 0;
-  const schemaType = hasPlaySports ? "SportsActivityLocation" : "BarOrPub";
-
-  return {
-    "@context": "https://schema.org",
-    "@type": schemaType,
+  const origin = new URL(pageUrl).origin;
+  const crumbs = venueProfileCrumbs(venue);
+  const website = sameAs(venue.website);
+  const place = {
+    "@type": schemaType(kind),
     name: venue.name,
+    description: venueProfileDescription(venue),
     image: image || undefined,
-    url: venue.website?.trim() || pageUrl,
-    telephone: venue.whatsapp?.trim() || venue.phone?.trim() || undefined,
+    url: pageUrl,
+    sameAs: website,
+    telephone: venue.phone?.trim() || venue.whatsapp?.trim() || undefined,
     address: {
       "@type": "PostalAddress",
       streetAddress: venue.address.street || undefined,
@@ -110,19 +118,45 @@ export function buildVenueJsonLd(venue: VenueDetail, pageUrl: string) {
       postalCode: venue.address.postcode || undefined,
       addressCountry: venue.address.country || "ZA",
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: lat,
-      longitude: lng,
-    },
+    geo: coords
+      ? {
+          "@type": "GeoCoordinates",
+          latitude: coords[0],
+          longitude: coords[1],
+        }
+      : undefined,
     amenityFeature: amenityFeature.length > 0 ? amenityFeature : undefined,
-    aggregateRating:
-      typeof venue.rating === "number"
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: venue.rating,
-            bestRating: 5,
-          }
-        : undefined,
+  };
+
+  const faqs = venueProfileFaqs(venue);
+  const graph: object[] = [
+    place,
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: crumbs.map((crumb, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: crumb.name,
+        item: index === crumbs.length - 1 ? pageUrl : new URL(crumb.path, origin).toString(),
+      })),
+    },
+  ];
+  if (faqs.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      mainEntity: faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    });
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": graph,
   };
 }

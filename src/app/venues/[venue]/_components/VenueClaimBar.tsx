@@ -8,13 +8,11 @@ export function VenueClaimBar({
   venueSlug: string;
 }) {
   return (
-    <section
-      aria-label="Claim this venue"
-      className="border-t border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
-    >
-      <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/12 bg-[#141814] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5">
+    <section aria-label="Claim this venue" className="border-t border-zinc-200 py-12 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-white">
+          <p className="text-sm font-medium text-zinc-950">
             Do you manage {venueName}?
           </p>
           <p className="mt-1 text-xs leading-relaxed text-zinc-400 sm:text-sm">
@@ -28,6 +26,7 @@ export function VenueClaimBar({
         >
           Claim Profile
         </Link>
+        </div>
       </div>
     </section>
   );

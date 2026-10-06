@@ -1,0 +1,503 @@
+import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
+import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
+import { toGolfVenueOption } from "@/lib/golf/venue-options";
+import { isVenueClaimable } from "@/lib/venues/contact-cta";
+import { scoreboardHeroImage } from "@/lib/venues/gallery";
+import {
+  venueContactLinks,
+  venueHoursLine,
+  venuePlayPlace,
+  venueUsesPadelScoreboard,
+} from "@/lib/venues/page-template";
+import { padelNewHref, venueQuickStartActivities } from "@/lib/venues/quick-start";
+import {
+  venueShowsLeaderboards,
+  venueShowsMatchHistory,
+  venueSupportsPlayResults,
+} from "@/lib/venues/play-chrome";
+import { isRemoteVenuePhoto, sanityImageUrl } from "@/lib/venues/photo";
+import {
+  venueDirectoryLinks,
+  venueFacilityChips,
+  venueProfileAbout,
+  venueProfileCrumbs,
+  venueProfileEyebrow,
+  venueProfileFaqs,
+  venueProfileHeadings,
+  venueProfileKind,
+  venueProfileLede,
+} from "@/lib/venues/profile-seo";
+import type { VenueLockedResult } from "@/lib/venues/locked-results";
+import type { WatchVenueWeek } from "@/lib/venues/watch-week";
+import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
+import { hasVenueCoordinates, type VenueDetail } from "@/services/venues";
+import type { NearbyVenueCard } from "@/services/venues";
+import { MapPin, Star } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { VenueClaimBar } from "./VenueClaimBar";
+import { VenueFixtureRows } from "./VenueFixtureRows";
+import { VenueFollowButton } from "./VenueFollowButton";
+import { VenueFriendsPlayed } from "./VenueFriendsPlayed";
+import { VenueMap } from "./VenueMap";
+import { VenueMatchHistory } from "./VenueMatchHistory";
+
+const PRIMARY =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[var(--color-brand-dim)]";
+const FILLED =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800";
+const OUTLINE =
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950";
+
+function Block({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      className="mt-8 border-t border-zinc-200 pt-8 sm:mt-10"
+      aria-labelledby={`${id}-title`}
+    >
+      <h2 id={`${id}-title`} className="font-display text-3xl tracking-wide text-zinc-950">
+        {title}
+      </h2>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function addressLines(venue: VenueDetail): string[] {
+  const { street, suburb, city, province, postcode } = venue.address;
+  const lines: string[] = [];
+  const streetLine = street?.trim() ?? "";
+  const suburbLine = suburb?.trim() ?? "";
+  const cityLine = [city?.trim(), postcode?.trim()].filter(Boolean).join(" ");
+  const provinceLine = province?.trim() ?? "";
+  if (streetLine) lines.push(streetLine);
+  if (suburbLine && suburbLine.toLowerCase() !== streetLine.toLowerCase()) {
+    lines.push(suburbLine);
+  }
+  if (cityLine && cityLine.toLowerCase() !== suburbLine.toLowerCase()) {
+    lines.push(cityLine);
+  }
+  if (
+    provinceLine &&
+    provinceLine.toLowerCase() !== city?.trim().toLowerCase() &&
+    provinceLine.toLowerCase() !== suburbLine.toLowerCase()
+  ) {
+    lines.push(provinceLine);
+  }
+  return lines;
+}
+
+function VenuePhoto({
+  src,
+  alt,
+  priority = false,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  sizes: string;
+}) {
+  if (isRemoteVenuePhoto(src)) {
+    return (
+      <Image src={src} alt={alt} fill priority={priority} className="object-cover" sizes={sizes} />
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
+  );
+}
+
+function VenuePhotos({ venue, place }: { venue: VenueDetail; place: string }) {
+  const hero = scoreboardHeroImage(venue);
+  const heroUrl = hero ? sanityImageUrl(hero, { width: 1600, height: 900 }) : undefined;
+  const thumbs = (venue.gallery ?? [])
+    .map((item) => ({
+      alt: item.alt?.trim() || venue.name,
+      url: sanityImageUrl(item.image, { width: 800, height: 600 }),
+    }))
+    .filter((item): item is { alt: string; url: string } => Boolean(item.url));
+  const main = heroUrl ?? thumbs[0]?.url;
+  if (!main) return null;
+  const alt = `${venue.name}${place ? ` in ${place}` : ""}`;
+  const usingGalleryHero = hero === venue.gallery?.[0]?.image;
+  const rest = (usingGalleryHero ? thumbs.slice(1) : thumbs).slice(0, 4);
+  const frame = "relative overflow-hidden rounded-2xl bg-zinc-100";
+
+  if (rest.length === 0) {
+    return (
+      <div className={`${frame} mt-8 aspect-[2/1]`}>
+        <VenuePhoto src={main} alt={alt} priority sizes="(min-width: 1280px) 1152px, 100vw" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 grid items-stretch gap-2 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+      <div className={`${frame} aspect-[16/10] lg:aspect-auto lg:min-h-72`}>
+        <VenuePhoto src={main} alt={alt} priority sizes="(min-width: 1024px) 760px, 100vw" />
+      </div>
+      <ul className="grid grid-cols-2 gap-2">
+        {rest.map((thumb) => (
+          <li key={thumb.url} className={`${frame} aspect-[4/3]`}>
+            <VenuePhoto src={thumb.url} alt={thumb.alt} sizes="(min-width: 1024px) 280px, 50vw" />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export async function VenueProfile({
+  venue,
+  mapsUrl,
+  jsonLd,
+  week,
+  nearby,
+  results,
+  initialBoard,
+  initialWindow,
+}: {
+  venue: VenueDetail;
+  mapsUrl: string;
+  jsonLd: unknown;
+  week: WatchVenueWeek | null;
+  nearby: NearbyVenueCard[];
+  results: VenueLockedResult[];
+  initialBoard?: string;
+  initialWindow?: string;
+}) {
+  const kind = venueProfileKind(venue);
+  const headings = venueProfileHeadings(venue);
+  const place = venuePlayPlace(venue.address);
+  const lines = addressLines(venue);
+  const about = venueProfileAbout(venue.description);
+  const chips = venueFacilityChips(venue);
+  const sports = venueDirectoryLinks(venue);
+  const faqs = venueProfileFaqs(venue);
+  const hours = venueHoursLine(venue);
+  const crumbs = venueProfileCrumbs(venue);
+  const contacts = venueContactLinks(venue);
+  const activities = venueQuickStartActivities(toGolfVenueOption(venue));
+  const startLinks = activities.map((activity) => ({
+    href: activity.href,
+    label: activity.cta,
+    sportSlug: activity.sportSlug,
+  }));
+  if (
+    venueUsesPadelScoreboard(venue) &&
+    !startLinks.some((link) => link.href.includes("/padel/"))
+  ) {
+    startLinks.unshift({
+      href: padelNewHref(venue.slug),
+      label: "Start padel match",
+      sportSlug: "padel",
+    });
+  }
+  const primaryStart = kind === "play" || kind === "hybrid" ? startLinks[0] : undefined;
+  const showWatch = kind === "watch" || kind === "hybrid";
+  const showPlay = (kind === "play" || kind === "hybrid") && (primaryStart || results.length > 0);
+  const showHistory = showPlay && venueShowsMatchHistory(venue);
+  const showBoards = showPlay && venueShowsLeaderboards(venue);
+  const primarySport = primaryStart?.sportSlug ?? null;
+
+  return (
+    <div data-venue-kind={kind}>
+      <DeepLinkLand pageType="venue" slug={venue.slug} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen bg-white pb-24 text-zinc-950">
+        <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+          <header>
+            <nav aria-label="Breadcrumb" className="text-sm text-zinc-500">
+              <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {crumbs.map((crumb, index) => {
+                  const last = index === crumbs.length - 1;
+                  return (
+                    <li key={crumb.path} className="flex items-center gap-2">
+                      {index > 0 ? <span aria-hidden>/</span> : null}
+                      {last ? (
+                        <span className="text-zinc-800">{headings.shortName}</span>
+                      ) : (
+                        <Link href={crumb.path} className="hover:text-zinc-950">
+                          {crumb.name}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+
+            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
+              {venueProfileEyebrow(venue)}
+            </p>
+            <h1 className="mt-2 font-display text-5xl tracking-wide text-zinc-950 sm:text-7xl">
+              {headings.shortName}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-zinc-600">
+              {typeof venue.rating === "number" ? (
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-800">
+                  <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" aria-hidden />
+                  <span>{venue.rating.toFixed(1)}</span>
+                </p>
+              ) : null}
+              {venue.is_verified ? (
+                <p className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800">
+                  Verified
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={FILLED}
+              >
+                <MapPin className="mr-1.5 h-4 w-4" aria-hidden />
+                Directions
+              </a>
+              {contacts.map((link) => (
+                <a
+                  key={link.kind}
+                  href={link.href}
+                  className={OUTLINE}
+                  {...(link.kind === "phone" || link.kind === "email"
+                    ? {}
+                    : { target: "_blank", rel: "noopener noreferrer" })}
+                >
+                  {link.label}
+                </a>
+              ))}
+              <VenueFollowButton
+                venueCmsId={venue._id}
+                venueName={venue.name}
+                venueSlug={venue.slug}
+                variant="secondary"
+              />
+            </div>
+          </header>
+
+          <VenuePhotos venue={venue} place={place} />
+
+          <div className="mt-10 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-x-12">
+          <div className="min-w-0">
+          <p className="text-lg leading-relaxed text-zinc-700">{venueProfileLede(venue)}</p>
+
+          {showWatch && week ? (
+            <Block id="fixtures" title={headings.fixtures}>
+              <VenueFixtureRows days={week.days} cards={week.cards} />
+            </Block>
+          ) : null}
+
+          {showPlay ? (
+            <Block id="play" title={headings.play}>
+              {startLinks.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {startLinks.map((link, index) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={index === 0 ? PRIMARY : OUTLINE}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+              {results.length > 0 ? (
+                <ul className="mt-4 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200">
+                  {results.map((result) => (
+                    <li key={result.id}>
+                      <Link href={result.href} className="block px-4 py-3.5 hover:bg-zinc-50">
+                        {result.when ? (
+                          <span className="block text-xs font-semibold uppercase tracking-wider text-emerald-800">
+                            {result.when}
+                          </span>
+                        ) : null}
+                        <span className="mt-1 block text-sm text-zinc-950">{result.summary}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </Block>
+          ) : null}
+
+          {about.length > 0 ? (
+            <Block id="about" title={headings.about}>
+              <div className="space-y-4 text-base leading-relaxed text-zinc-700">
+                {about.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </Block>
+          ) : null}
+
+          {sports.length > 0 ? (
+            <Block id="sports" title={headings.sports}>
+              <ul className="flex flex-wrap gap-2">
+                {sports.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="inline-flex rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-[var(--color-brand)]"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {faqs.length > 0 ? (
+            <Block id="questions" title={headings.faq}>
+              <dl className="space-y-3">
+                {faqs.map((faq) => (
+                  <div key={faq.question} className="rounded-2xl border border-zinc-200 px-4 py-4">
+                    <dt className="text-sm font-semibold text-zinc-950">{faq.question}</dt>
+                    <dd className="mt-1 text-sm leading-relaxed text-zinc-600">{faq.answer}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Block>
+          ) : null}
+          </div>
+
+          <aside className="lg:sticky lg:top-24">
+            <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+              {lines.length > 0 ? (
+                <address className="text-sm not-italic leading-relaxed text-zinc-700">
+                  {lines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </address>
+              ) : null}
+              {chips.length > 0 ? (
+                <ul className={`${lines.length > 0 ? "mt-4" : ""} flex flex-wrap gap-2`}>
+                  {chips.map((chip) => (
+                    <li
+                      key={chip}
+                      className="rounded-full bg-white px-3 py-1 text-sm text-zinc-800 ring-1 ring-zinc-200"
+                    >
+                      {chip}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {hours ? (
+                <p className="mt-4 text-sm leading-relaxed text-zinc-700">
+                  <span className="font-semibold text-zinc-950">Hours. </span>
+                  {hours}
+                </p>
+              ) : null}
+              {hasVenueCoordinates(venue) ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+                  <VenueMap lat={venue.latitude} lng={venue.longitude} name={venue.name} />
+                </div>
+              ) : null}
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${OUTLINE} mt-4`}
+              >
+                Get directions
+              </a>
+            </div>
+          </aside>
+          </div>
+        </article>
+
+        {showHistory ? (
+          <VenueMatchHistory
+            venueName={venue.name}
+            venueCmsId={venue._id}
+            startHref={primaryStart?.href}
+          />
+        ) : null}
+
+        {venueSupportsPlayResults(venue) ? (
+          <VenueFriendsPlayed
+            venueId={venue._id}
+            venueName={venue.name}
+            venueSlug={venue.slug}
+            primarySport={primarySport}
+            startHref={primaryStart?.href}
+          />
+        ) : null}
+
+        {showBoards ? (
+          <VenueLeaderboardSection
+            venueId={venue._id}
+            venueName={venue.name}
+            playHref={venueLeaderboardPlayHref(primarySport)}
+            sport={primarySport}
+            initialBoard={initialBoard}
+            initialWindow={initialWindow}
+          />
+        ) : null}
+
+        {nearby.length > 0 ? (
+          <section id="nearby" className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <h2
+                id="nearby-title"
+                className="font-display text-3xl tracking-wide text-zinc-950 sm:text-4xl"
+              >
+                {headings.nearby}
+              </h2>
+              <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {nearby.map((item) => {
+                  const itemPlace = [item.suburb, item.city].filter(Boolean).join(", ");
+                  return (
+                    <li key={item.slug}>
+                      <Link
+                        href={`/venues/${item.slug}`}
+                        className="block rounded-2xl border border-zinc-200 px-4 py-3.5 transition-colors hover:border-zinc-950"
+                      >
+                        <span className="block text-sm font-semibold text-zinc-950">{item.name}</span>
+                        {itemPlace ? (
+                          <span className="mt-0.5 block text-xs text-zinc-500">
+                            {itemPlace}
+                            {typeof item.rating === "number" ? ` · ${item.rating.toFixed(1)}` : ""}
+                          </span>
+                        ) : typeof item.rating === "number" ? (
+                          <span className="mt-0.5 block text-xs text-zinc-500">
+                            {item.rating.toFixed(1)}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </section>
+        ) : null}
+
+        {isVenueClaimable(venue) ? (
+          <VenueClaimBar venueName={venue.name} venueSlug={venue.slug} />
+        ) : null}
+      </div>
+    </div>
+  );
+}

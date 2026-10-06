@@ -5,8 +5,8 @@ type HeaderTuple = { key: string; value: string };
  *
  * CSP is intentionally compatible with Next.js inline hydration scripts,
  * Google Analytics (`@next/third-parties/google`), next/image remote
- * patterns, CARTO tiles on venue maps, Ably websockets, and Google OAuth
- * as a top-level redirect (not an iframe). `unsafe-eval` is omitted.
+ * patterns, OpenStreetMap tiles on venue maps, Ably websockets, and Google
+ * OAuth as a top-level redirect (not an iframe). `unsafe-eval` is omitted.
  *
  * Venue photos are `cdn.sanity.io` (`hero_image`, then Play sport image)
  * or the same-origin placeholder (`img-src 'self'`). Do not add
@@ -43,7 +43,7 @@ export function getSecurityHeaders(
       "https://img.redbull.com",
       "https://media.formula1.com",
       "https://*.googleusercontent.com",
-      "https://*.basemaps.cartocdn.com",
+      "https://tile.openstreetmap.org",
       "https://www.googletagmanager.com",
       "https://www.google-analytics.com",
       ...(nodeEnv !== "production" ? ["http://localhost:3002"] : []),

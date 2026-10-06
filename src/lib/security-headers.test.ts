@@ -25,7 +25,8 @@ describe("getSecurityHeaders img-src", () => {
     assert.match(csp, /img-src[^;]*'self'/);
     assert.match(csp, /img-src[^;]*https:\/\/cdn\.sanity\.io/);
     assert.match(csp, /img-src[^;]*https:\/\/media\.formula1\.com/);
-    assert.match(csp, /img-src[^;]*https:\/\/\*\.googleusercontent\.com/);
+    assert.match(csp, /img-src[^;]*https:\/\/tile\.openstreetmap\.org/);
+    assert.doesNotMatch(csp, /cartocdn/);
     assert.equal(VENUE_PLACEHOLDER_IMAGE.startsWith("/"), true);
     assert.doesNotMatch(VENUE_PLACEHOLDER_IMAGE, /astratic|unsplash/i);
   });

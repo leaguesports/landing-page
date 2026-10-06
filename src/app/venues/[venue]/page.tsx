@@ -1,146 +1,33 @@
-import {
-  VenueContactActions,
-  VenueUtilityBadges,
-} from "@/components/VenueUtilityBadges";
-import { ConversionKit } from "@/components/conversion/ConversionKit";
-import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
-import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
-import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
+import { sanityImageUrl } from "@/lib/venues/photo";
+import { PLAY_RESULTS_SPORT_SLUGS } from "@/lib/venues/play-chrome";
 import {
-  isRemoteVenuePhoto,
-  sanityImageUrl,
-  venuePhotoUrl,
-} from "@/lib/venues/photo";
+  venueProfileDescription,
+  venueProfileKeywords,
+  venueProfileKind,
+  venueProfileTitle,
+} from "@/lib/venues/profile-seo";
+import { loadEventKickoffs } from "@/lib/venues/event-kickoffs";
+import { lookupVenueLockedResults } from "@/lib/venues/locked-results";
+import { venueDistinctPlaySports } from "@/lib/venues/page-template";
+import {
+  buildWatchVenueWeek,
+  screeningListingDays,
+} from "@/lib/venues/watch-week";
+import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
+import { getUpcomingFixtures } from "@/services/events";
 import {
   getVenueBySlug,
-  hasVenueCoordinates,
+  listNearbyVenues,
   resolveVenueImage,
   type VenueDetail,
 } from "@/services/venues";
-import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
-import { toGolfVenueOption } from "@/lib/golf/venue-options";
-import { isVenueClaimable, hasVenueWhatsAppContact, resolveVenueWhatsAppCta } from "@/lib/venues/contact-cta";
-import { venueQuickStartActivities } from "@/lib/venues/quick-start";
-import {
-  venueShowsFindFixtures,
-  venueShowsLeaderboards,
-  venueShowsMatchHistory,
-  venueShowsPlaySports,
-  venueShowsSportsSection,
-  venueSupportsPlayResults,
-} from "@/lib/venues/play-chrome";
-import {
-  venueAmenitiesDescription,
-  venueDetailMetaDescription,
-  venueDetailNavLinks,
-  venueFollowBlurb,
-  venueHasBroadcasts,
-  venueShowsAmenitiesSection,
-  venueSportsSectionDescription,
-  venueSupportsWatch,
-} from "@/lib/venues/watch-chrome";
-import { VenueAttendanceCounter } from "./_components/VenueAttendanceCounter";
-import { VenueClaimBar } from "./_components/VenueClaimBar";
-import { VenueFollowButton } from "./_components/VenueFollowButton";
-import { VenueFriendsPlayed } from "./_components/VenueFriendsPlayed";
-import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
-import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
-import { VenueMatchHistory } from "./_components/VenueMatchHistory";
-import { VenueMatchSchedule } from "./_components/VenueMatchSchedule";
-import { VenueMap } from "./_components/VenueMap";
-import { VenueQuickStart } from "./_components/VenueQuickStart";
-import { VenueSportChips } from "./_components/VenueSportChips";
-import { buildVenueJsonLd } from "./_components/venueJsonLd";
-import { PlayVenuePage } from "./_components/PlayVenuePage";
-import { WatchVenuePage } from "./_components/WatchVenuePage";
-import { classifyVenuePage } from "@/lib/venues/page-template";
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
-import {
-  ChevronRight,
-  Flag,
-  MapPin,
-  Star,
-  Zap,
-} from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Image from "next/image";
-import Link from "next/link";
 import { after } from "next/server";
-
-const venueAboutPortableTextComponents = {
-  block: {
-    normal: ({ children }) => (
-      <p className="mb-5 text-balance text-base font-medium leading-[1.75] text-zinc-300 last:mb-0 sm:text-lg">
-        {children}
-      </p>
-    ),
-    h2: ({ children }) => (
-      <h3 className="mb-3 mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)] first:mt-0">
-        {children}
-      </h3>
-    ),
-    h3: ({ children }) => (
-      <h3 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-zinc-400 first:mt-0">
-        {children}
-      </h3>
-    ),
-    blockquote: ({ children }) => (
-      <blockquote className="my-6 border-l-4 border-[var(--color-brand)]/70 py-1 pl-5 text-base italic leading-relaxed text-zinc-400 sm:text-lg">
-        {children}
-      </blockquote>
-    ),
-  },
-  list: {
-    bullet: ({ children }) => (
-      <ul className="my-6 space-y-4 sm:my-8">{children}</ul>
-    ),
-    number: ({ children }) => (
-      <ol className="my-6 list-decimal space-y-3 pl-5 text-zinc-300 marker:font-semibold marker:text-[var(--color-brand)] sm:my-8 sm:pl-6">
-        {children}
-      </ol>
-    ),
-  },
-  listItem: {
-    bullet: ({ children }) => (
-      <li className="flex gap-3.5 text-base font-medium leading-[1.65] text-zinc-300 sm:text-lg">
-        <span
-          className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-brand)]"
-          aria-hidden
-        />
-        <span className="min-w-0 flex-1 [&_strong]:text-white">
-          {children}
-        </span>
-      </li>
-    ),
-    number: ({ children }) => (
-      <li className="text-base font-medium leading-relaxed text-zinc-300 sm:text-lg [&_strong]:text-white">
-        {children}
-      </li>
-    ),
-  },
-  marks: {
-    strong: ({ children }) => (
-      <strong className="font-semibold text-white">{children}</strong>
-    ),
-    em: ({ children }) => <em className="italic text-zinc-200">{children}</em>,
-    link: ({ children, value }) => {
-      const href =
-        value && typeof value === "object" && "href" in value
-          ? String((value as { href?: string }).href ?? "#")
-          : "#";
-      return (
-        <Link
-          href={href}
-          className="font-semibold text-[var(--color-brand)] underline decoration-[var(--color-brand)]/35 underline-offset-[3px] transition-colors hover:text-[var(--color-brand-dim)]"
-        >
-          {children}
-        </Link>
-      );
-    },
-  },
-} satisfies PortableTextComponents;
+import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
+import { buildVenueJsonLd } from "./_components/venueJsonLd";
+import { VenueProfile } from "./_components/VenueProfile";
 
 type Props = {
   params: Promise<{ venue: string }>;
@@ -157,12 +44,8 @@ function getBaseUrl(): string {
   return "https://leaguesports.co.za";
 }
 
-function venueOgImageUrl(
-  venue: Pick<VenueDetail, "hero_image" | "sports">,
-  width: number,
-  height: number,
-): string | undefined {
-  return sanityImageUrl(resolveVenueImage(venue), { width, height });
+function venueOgImageUrl(venue: Pick<VenueDetail, "hero_image" | "sports">): string | undefined {
+  return sanityImageUrl(resolveVenueImage(venue), { width: 1200, height: 630 });
 }
 
 function buildMapsUrl(venue: VenueDetail): string {
@@ -178,6 +61,10 @@ function buildMapsUrl(venue: VenueDetail): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query || venue.name)}`;
 }
 
+function firstQuery(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -191,24 +78,16 @@ export async function generateMetadata({
       robots: { index: false, follow: false },
     };
   }
-  const title = `${venue.name}`;
-  const canonicalPath = `/venues/${venue.slug}`;
-  const baseUrl = getBaseUrl();
-  const canonicalUrl = `${baseUrl}${canonicalPath}`;
-  const suburb = venue.address.suburb;
-  const description = venueDetailMetaDescription(venue, suburb);
-  const ogImage = venueOgImageUrl(venue, 1200, 630);
+
+  const title = venueProfileTitle(venue);
+  const description = venueProfileDescription(venue);
+  const canonicalUrl = `${getBaseUrl()}/venues/${venue.slug}`;
+  const ogImage = venueOgImageUrl(venue);
 
   return {
     title,
     description,
-    keywords: [
-      venue.name,
-      suburb,
-      "Venues",
-      "Sports",
-      "LeagueSports",
-    ].filter(Boolean) as string[],
+    keywords: venueProfileKeywords(venue),
     openGraph: {
       title,
       description,
@@ -226,66 +105,14 @@ export async function generateMetadata({
       description,
       ...(ogImage ? { images: [ogImage] } : {}),
     },
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    alternates: { canonical: canonicalUrl },
+    robots: { index: true, follow: true },
   };
-}
-
-function Breadcrumbs({ venue }: { venue: Pick<VenueDetail, "name"> }) {
-  return (
-    <nav
-      className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500"
-      aria-label="Breadcrumb"
-    >
-      <Link href="/" className="transition-colors hover:text-white">
-        Home
-      </Link>
-      <ChevronRight className="h-3 w-3 shrink-0 text-zinc-600" />
-      <Link href="/venues" className="transition-colors hover:text-white">
-        Venues
-      </Link>
-      <ChevronRight className="h-3 w-3 shrink-0 text-zinc-600" />
-      <span className="text-zinc-400">{venue.name}</span>
-    </nav>
-  );
-}
-
-function SectionHeader({
-  label,
-  title,
-  description,
-}: {
-  label: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <header className="mb-8 sm:mb-10">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-        {label}
-      </p>
-      <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-2 text-sm text-zinc-500">{description}</p>
-      ) : null}
-    </header>
-  );
 }
 
 export default async function VenuePage({ params, searchParams }: Props) {
   const { venue: venueSlug } = await params;
   const query = await searchParams;
-  const initialBoard = Array.isArray(query.board) ? query.board[0] : query.board;
-  const initialWindow = Array.isArray(query.window)
-    ? query.window[0]
-    : query.window;
   const venue = await getVenueBySlug(venueSlug);
   if (!venue) {
     return (
@@ -303,443 +130,43 @@ export default async function VenuePage({ params, searchParams }: Props) {
     ),
   );
 
+  const kind = venueProfileKind(venue);
   const mapsSearchUrl = buildMapsUrl(venue);
-  const baseUrl = getBaseUrl();
-  const pageUrl = `${baseUrl}/venues/${venue.slug}`;
-  const jsonLd = buildVenueJsonLd(venue, pageUrl);
-  const template = classifyVenuePage(venue);
-  if (template === "watch") {
-    return (
-      <WatchVenuePage venue={venue} mapsUrl={mapsSearchUrl} jsonLd={jsonLd} />
-    );
-  }
-  if (template === "play") {
-    return (
-      <PlayVenuePage venue={venue} mapsUrl={mapsSearchUrl} jsonLd={jsonLd} />
-    );
-  }
-  const suburbLine = [venue.address.suburb, venue.address.city]
-    .filter(Boolean)
-    .join(", ");
-  const showClaimBar = isVenueClaimable(venue);
-  const addressLine = [
-    venue.address.street,
-    venue.address.suburb,
-    venue.address.city,
-    venue.address.province,
-  ]
-    .filter(Boolean)
-    .join(", ");
-  const heroImageUrl = venuePhotoUrl(venue, { width: 1920, height: 1080 });
-  const quickStartActivities = venueQuickStartActivities(
-    toGolfVenueOption(venue),
+  const pageUrl = `${getBaseUrl()}/venues/${venue.slug}`;
+  const showWatch = kind === "watch" || kind === "hybrid";
+  const playSports = venueDistinctPlaySports(venue).filter((sport) =>
+    (PLAY_RESULTS_SPORT_SLUGS as readonly string[]).includes(sport.key),
   );
-  const primaryQuickStart = quickStartActivities[0];
-  const supportsWatch = venueSupportsWatch(venue);
-  const supportsPlayResults = venueSupportsPlayResults(venue);
-  const showMatchHistory = venueShowsMatchHistory(venue);
-  const showLeaderboards = venueShowsLeaderboards(venue);
-  const showWatchSports = venueHasBroadcasts(venue);
-  const showPlaySports = venueShowsPlaySports(venue);
-  const showSportsSection = venueShowsSportsSection(venue);
-  const showFindFixtures = venueShowsFindFixtures(venue, supportsWatch);
-  const showAmenities = venueShowsAmenitiesSection(venue);
-  const navLinks = venueDetailNavLinks({
-    hasQuickStart: quickStartActivities.length > 0,
-    venue,
-  });
-  const citySlug = (venue.address.city || venue.address.suburb || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-");
-  const whatsApp = resolveVenueWhatsAppCta(venue);
-  const matrix = selectCtaMatrix({
-    pageType: "venue",
-    sport: primaryQuickStart?.sportSlug ?? venue.sports[0]?.slug ?? null,
-    city: citySlug || null,
-    venueSlug: venue.slug,
-    hasScorecard: quickStartActivities.length > 0,
-    supportsFixtures: showFindFixtures,
-    hasDirections: true,
-    directionsHref: mapsSearchUrl,
-    hasWhatsApp: hasVenueWhatsAppContact(venue) && whatsApp.kind === "whatsapp",
-    whatsAppHref: whatsApp.kind === "whatsapp" ? whatsApp.href : null,
-  });
+
+  const [week, nearby, resultLists] = await Promise.all([
+    showWatch
+      ? (async () => {
+          const days = screeningListingDays(venue.upcoming_screenings);
+          const [fixtures, events] = await Promise.all([
+            getUpcomingFixtures({ limit: 48 }),
+            loadEventKickoffs(days),
+          ]);
+          return buildWatchVenueWeek({ venue, fixtures, events });
+        })()
+      : Promise.resolve(null),
+    listNearbyVenues({
+      slug: venue.slug,
+      city: venue.address.city,
+      suburb: venue.address.suburb,
+    }),
+    Promise.all(playSports.map((sport) => lookupVenueLockedResults(venue._id, sport.key))),
+  ]);
 
   return (
-    <div>
-      <DeepLinkLand pageType="venue" slug={venue.slug} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      <div className="min-h-screen bg-[#0c0f0c] pb-24 text-white">
-        <nav className="sticky top-16 z-40 border-b border-white/6 bg-[#0c0f0c]/80 backdrop-blur-xl">
-          <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 overflow-x-auto px-4 scrollbar-hide sm:px-6 lg:px-8">
-            <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--color-brand)] px-3.5 py-1.5 text-xs font-semibold text-zinc-950">
-              Venue
-            </span>
-            <span className="hidden max-w-48 truncate text-sm text-zinc-400 sm:inline">
-              {venue.name}
-            </span>
-
-            <div className="ml-auto flex items-center gap-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="shrink-0 rounded-full px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-white/6 hover:text-white"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-white/5">
-          {isRemoteVenuePhoto(heroImageUrl) ? (
-            <Image
-              src={heroImageUrl}
-              alt=""
-              fill
-              priority
-              className="object-cover"
-              sizes="100vw"
-            />
-          ) : (
-            // Same-origin SVG placeholder — next/image does not optimize SVG.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImageUrl}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-          <div className="absolute inset-0 bg-linear-to-t from-[#0c0f0c] via-[#0c0f0c]/80 to-[#0c0f0c]/45" />
-
-          <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-            <div className="mb-6">
-              <Breadcrumbs venue={venue} />
-            </div>
-
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-              Venue
-            </p>
-            <h1 className="font-display text-5xl tracking-wide text-white sm:text-6xl lg:text-7xl">
-              {venue.name}
-            </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              {suburbLine ? (
-                <p className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
-                  <MapPin className="h-4 w-4 shrink-0 text-[var(--color-brand)]" />
-                  {suburbLine}
-                </p>
-              ) : null}
-              {typeof venue.rating === "number" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-300">
-                  <Star className="h-3.5 w-3.5 fill-amber-300" aria-hidden />
-                  {venue.rating.toFixed(1)}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="mt-6">
-              <VenueUtilityBadges venue={venue} supportsWatch={supportsWatch} />
-            </div>
-
-            <div className="mt-6">
-              <ConversionKit
-                matrix={matrix}
-                tone="play"
-                sport={primaryQuickStart?.sportSlug}
-                city={citySlug || null}
-                slug={venue.slug}
-                sourcePage={`/venues/${venue.slug}`}
-                pageKey={`venue:${venue.slug}`}
-                pageType="venue"
-                showSticky
-                showFallback={false}
-              />
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-start gap-3">
-              <VenueFollowButton
-                venueCmsId={venue._id}
-                venueName={venue.name}
-                venueSlug={venue.slug}
-              />
-              <VenueContactActions
-                venue={venue}
-                directionsUrl={mapsSearchUrl}
-              />
-            </div>
-          </div>
-        </section>
-
-        <VenueQuickStart
-          venueName={venue.name}
-          activities={quickStartActivities}
-        />
-
-        {supportsWatch ? (
-          <section
-            id="weekend"
-            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-          >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <SectionHeader
-                label="This weekend"
-                title="What's on"
-                description="Screenings and who's heading down"
-              />
-              <div className="grid max-w-3xl gap-5">
-                <VenueMatchSchedule venue={venue} />
-                <VenueAttendanceCounter venueSlug={venue.slug} />
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {showMatchHistory ? (
-          <VenueMatchHistory
-            venueName={venue.name}
-            venueCmsId={venue._id}
-            startHref={primaryQuickStart?.href}
-          />
-        ) : null}
-
-        {supportsPlayResults ? (
-          <VenueFriendsPlayed
-            venueId={venue._id}
-            venueName={venue.name}
-            venueSlug={venue.slug}
-            primarySport={primaryQuickStart?.sportSlug ?? null}
-            startHref={primaryQuickStart?.href}
-          />
-        ) : null}
-
-        {showLeaderboards ? (
-          <VenueLeaderboardSection
-            venueId={venue._id}
-            venueName={venue.name}
-            playHref={venueLeaderboardPlayHref(primaryQuickStart?.sportSlug)}
-            sport={primaryQuickStart?.sportSlug ?? null}
-            initialBoard={initialBoard}
-            initialWindow={initialWindow}
-          />
-        ) : null}
-
-        {/* About */}
-        <section
-          id="about"
-          className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeader label="About" title={venue.name} />
-
-            <div className="rounded-3xl border border-white/8 bg-[#141814] p-6 sm:p-8">
-              <PortableText
-                value={venue.description}
-                components={venueAboutPortableTextComponents}
-              />
-            </div>
-          </div>
-        </section>
-
-        {showSportsSection ? (
-          <section
-            id="sports"
-            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-          >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <SectionHeader
-                label="Sports"
-                title="Sports at this venue"
-                description={venueSportsSectionDescription(venue)}
-              />
-
-              <div
-                className={`grid gap-4 sm:gap-5 ${showWatchSports && showPlaySports ? "sm:grid-cols-2" : ""}`}
-              >
-                {showWatchSports ? (
-                  <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                      Watch
-                    </h3>
-                    <VenueSportChips
-                      intent="watch"
-                      items={venue.broadcasts}
-                      venue={venue}
-                    />
-                  </div>
-                ) : null}
-                {showPlaySports ? (
-                  <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                    <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                      Play
-                    </h3>
-                    <VenueSportChips
-                      intent="play"
-                      items={venue.sports}
-                      venue={venue}
-                    />
-                    {quickStartActivities.length > 0 ? (
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {quickStartActivities.map((activity) => (
-                          <Link
-                            key={activity.id}
-                            href={activity.href}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-                          >
-                            <Zap className="h-4 w-4" aria-hidden />
-                            {activity.cta}
-                          </Link>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                {supportsWatch ? (
-                  <Link
-                    href="/watch"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
-                  >
-                    Find places to watch <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                ) : null}
-                {supportsWatch && showPlaySports ? (
-                  <span className="hidden text-zinc-700 sm:inline">|</span>
-                ) : null}
-                {showPlaySports ? (
-                  <Link
-                    href="/play"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:text-white"
-                  >
-                    Find places to play <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {showAmenities ? (
-          <section
-            id="amenities"
-            className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-          >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <SectionHeader
-                label="Amenities"
-                title="Amenities"
-                description={venueAmenitiesDescription(venue)}
-              />
-              <div className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-                <VenueUtilityBadges
-                  venue={venue}
-                  supportsWatch={supportsWatch}
-                />
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {/* Location */}
-        <section
-          id="location"
-          className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              label="Location"
-              title="Location"
-              description="Area & maps"
-            />
-
-            <div className="max-w-2xl rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6">
-              <div className="mb-5 flex items-start gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-brand)]" />
-                <div>
-                  <p className="font-display text-2xl leading-tight tracking-wide text-white">
-                    {venue.name}
-                  </p>
-                  {addressLine ? (
-                    <p className="mt-1 text-sm text-zinc-400">{addressLine}</p>
-                  ) : null}
-                </div>
-              </div>
-              {hasVenueCoordinates(venue) ? (
-                <div className="mb-5">
-                  <VenueMap
-                    lat={venue.latitude}
-                    lng={venue.longitude}
-                    name={venue.name}
-                  />
-                </div>
-              ) : null}
-              <a
-                href={mapsSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-              >
-                <MapPin className="h-4 w-4" />
-                Get Directions
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA banner */}
-        <section className="relative overflow-hidden border-t border-white/5 py-16 sm:py-20">
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-950/25 via-[#0c0f0c] to-[#0c0f0c]" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-start justify-between gap-8 rounded-3xl border border-white/8 bg-[#141814] p-6 sm:flex-row sm:items-center sm:p-8">
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <Flag className="h-4 w-4 text-[var(--color-brand)]" />
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                    Stay in the loop
-                  </span>
-                </div>
-                <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                  Stay close to {venue.name}
-                </h2>
-                <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-500">
-                  {venueFollowBlurb(venue)}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 flex-col gap-3">
-                <VenueFollowButton
-                  venueCmsId={venue._id}
-                  venueName={venue.name}
-                  venueSlug={venue.slug}
-                  variant="secondary"
-                />
-                <Link
-                  href="/venues"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-8 py-2.5 text-sm font-medium text-zinc-950 transition-colors hover:bg-[var(--color-brand)]"
-                >
-                  Browse all venues
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {showClaimBar ? (
-          <VenueClaimBar venueName={venue.name} venueSlug={venue.slug} />
-        ) : null}
-      </div>
-    </div>
+    <VenueProfile
+      venue={venue}
+      mapsUrl={mapsSearchUrl}
+      jsonLd={buildVenueJsonLd(venue, pageUrl)}
+      week={week}
+      nearby={nearby}
+      results={resultLists.flat()}
+      initialBoard={firstQuery(query.board)}
+      initialWindow={firstQuery(query.window)}
+    />
   );
 }

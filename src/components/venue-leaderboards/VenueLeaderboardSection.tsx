@@ -29,14 +29,14 @@ export function VenueLeaderboardSection({
   return (
     <section
       id="leaderboards"
-      className="scroll-mt-28 border-t border-white/5 py-12 sm:py-16"
+      className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header className="mb-8 sm:mb-10">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-800">
             Boards
           </p>
-          <h2 className="font-display text-3xl tracking-wide text-white sm:text-4xl">
+          <h2 className="font-display text-3xl tracking-wide text-zinc-950 sm:text-4xl">
             Leaderboards
           </h2>
           <p className="mt-2 max-w-xl text-sm text-zinc-500">
