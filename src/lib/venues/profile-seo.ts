@@ -48,7 +48,9 @@ export type VenueCrumb = {
 
 export type VenueDirectoryLink = {
   href: string;
+  /** Short sitelink label — the sport name, not a full sentence. */
   label: string;
+  description: string;
 };
 
 const AMENITY_PHRASE: Record<string, string> = {
@@ -413,10 +415,10 @@ export function venueDirectoryLinks(venue: VenueProfileInput): VenueDirectoryLin
   const kind = venueProfileKind(venue);
   const links: VenueDirectoryLink[] = [];
   const seen = new Set<string>();
-  const push = (href: string, label: string) => {
+  const push = (href: string, label: string, description: string) => {
     if (seen.has(href)) return;
     seen.add(href);
-    links.push({ href, label });
+    links.push({ href, label, description });
   };
 
   if (kind === "watch" || kind === "hybrid") {
@@ -427,7 +429,10 @@ export function venueDirectoryLinks(venue: VenueProfileInput): VenueDirectoryLin
       if (!slug || !sport) continue;
       push(
         intentPath("watch", slug, citySlug),
-        cityName ? `Watch ${sport} in ${cityName}` : `Watch ${sport}`,
+        sport,
+        cityName
+          ? `Find bars and fan zones screening ${sport} in ${cityName}.`
+          : `Choose an area to see bars and fan zones screening ${sport} across South Africa.`,
       );
     }
   }
@@ -436,7 +441,10 @@ export function venueDirectoryLinks(venue: VenueProfileInput): VenueDirectoryLin
     for (const sport of venueDistinctPlaySports(venue)) {
       push(
         intentPath("play", sport.key, citySlug),
-        cityName ? `Play ${sport.name} in ${cityName}` : `Play ${sport.name}`,
+        sport.name,
+        cityName
+          ? `Find courts and clubs for ${sport.name} in ${cityName}.`
+          : `Choose an area to see courts and clubs hosting ${sport.name} across South Africa.`,
       );
     }
   }
@@ -449,6 +457,7 @@ export function venueProfileHeadings(venue: VenueProfileInput): {
   about: string;
   fixtures: string;
   play: string;
+  book: string;
   location: string;
   nearby: string;
   sports: string;
@@ -466,6 +475,7 @@ export function venueProfileHeadings(venue: VenueProfileInput): {
     about: place ? `About ${shortName} in ${place}` : `About ${shortName}`,
     fixtures: `Upcoming fixtures at ${shortName}`,
     play: `Play at ${shortName}`,
+    book: `Book at ${shortName}`,
     location: `Where to find ${shortName}`,
     nearby: `Venues near ${shortName}`,
     sports:

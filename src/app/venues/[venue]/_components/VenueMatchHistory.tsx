@@ -24,7 +24,7 @@ export async function VenueMatchHistory({
   return (
     <section
       id="match-history"
-      className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16"
+      className="scroll-mt-36 border-t border-zinc-200 py-12 sm:py-16"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header className="mb-8 sm:mb-10">

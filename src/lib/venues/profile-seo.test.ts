@@ -107,9 +107,18 @@ describe("venue profile copy", () => {
       "/watch/soccer/johannesburg",
       "/watch/rugby/johannesburg",
     ]);
+    assert.deepEqual(
+      venueDirectoryLinks(sportsBar).map((link) => link.label),
+      ["Soccer", "Rugby"],
+    );
+    assert.match(
+      venueDirectoryLinks(sportsBar)[0]?.description ?? "",
+      /screening Soccer in Johannesburg/,
+    );
     assert.deepEqual(venueDirectoryLinks(court).map((link) => link.href), [
       "/play/padel/cape-town",
     ]);
+    assert.equal(venueDirectoryLinks(court)[0]?.label, "Padel");
     assert.equal(
       venueProfileAbout(sportsBar.description).some((line) => /playtomic/i.test(line)),
       false,
