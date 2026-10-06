@@ -251,17 +251,19 @@ function stripPhoneNumbers(sentence: string): string {
 }
 
 /**
- * First customer sentence only. Later sentences stay off the page.
- * Publish notes are dropped. Phone numbers inside that sentence are removed.
+ * Customer sentences with publish notes and phone numbers removed.
+ * `venueCustomerAbout` is the first of these. The venue profile may show more.
  */
+export function venueCustomerSentences(description: unknown): string[] {
+  return sentences(venueAboutPlain(description))
+    .filter((sentence) => !isPublishNote(sentence))
+    .map((sentence) => stripPhoneNumbers(sentence).replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/** First customer sentence. */
 export function venueCustomerAbout(description: unknown): string | null {
-  const kept = sentences(venueAboutPlain(description)).filter(
-    (sentence) => !isPublishNote(sentence),
-  );
-  const first = kept[0];
-  if (!first) return null;
-  const text = stripPhoneNumbers(first).replace(/\s+/g, " ").trim();
-  return text || null;
+  return venueCustomerSentences(description)[0] ?? null;
 }
 
 /**

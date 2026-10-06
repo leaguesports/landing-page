@@ -111,7 +111,7 @@ function EntryRow({
     >
       <span
         className={`w-7 shrink-0 text-center font-display tabular-nums ${
-          highlight ? "text-lg text-amber-200" : "text-xs text-zinc-500"
+          highlight ? "text-lg text-amber-800" : "text-xs text-zinc-500"
         }`}
       >
         {entry.rank || "—"}
@@ -125,7 +125,7 @@ function EntryRow({
         <p
           className={`truncate ${
             highlight
-              ? "font-display text-xl tracking-wide text-white"
+              ? "font-display text-xl tracking-wide text-zinc-950"
               : "text-sm font-medium text-white"
           }`}
         >
@@ -134,7 +134,7 @@ function EntryRow({
         {stats ? (
           <p
             className={`mt-0.5 tabular-nums ${
-              highlight ? "text-sm text-amber-100/80" : "text-xs text-zinc-500"
+              highlight ? "text-sm text-amber-900/80" : "text-xs text-zinc-500"
             }`}
           >
             {stats}
@@ -143,7 +143,7 @@ function EntryRow({
       </div>
       {highlight ? (
         <Trophy
-          className="h-5 w-5 shrink-0 text-amber-300"
+          className="h-5 w-5 shrink-0 text-amber-700"
           aria-hidden
         />
       ) : null}
@@ -188,7 +188,7 @@ function RecordList({
       <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
         {title}
       </h4>
-      <ol className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8">
+      <ol className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8 bg-[#141814]">
         {children}
       </ol>
     </div>
@@ -207,7 +207,7 @@ function RecordsBoard({ records }: { records: VenueLeaderboardRecords }) {
     <div className="space-y-8">
       {golfGross.length > 0 || golfNet.length > 0 ? (
         <div className="space-y-5">
-          <h3 className="font-display text-xl tracking-wide text-white">Golf</h3>
+          <h3 className="font-display text-xl tracking-wide text-zinc-950">Golf</h3>
           <RecordList title="Best gross by tee" empty={golfGross.length === 0}>
             {golfGross.map((row) => (
               <TeeRecordRow
@@ -229,7 +229,7 @@ function RecordsBoard({ records }: { records: VenueLeaderboardRecords }) {
 
       {padelWins.length > 0 || padelStreak.length > 0 ? (
         <div className="space-y-5">
-          <h3 className="font-display text-xl tracking-wide text-white">
+          <h3 className="font-display text-xl tracking-wide text-zinc-950">
             Padel
           </h3>
           <RecordList title="Most wins" empty={padelWins.length === 0}>
@@ -247,7 +247,7 @@ function RecordsBoard({ records }: { records: VenueLeaderboardRecords }) {
 
       {dartsWins.length > 0 || dartsStreak.length > 0 ? (
         <div className="space-y-5">
-          <h3 className="font-display text-xl tracking-wide text-white">
+          <h3 className="font-display text-xl tracking-wide text-zinc-950">
             Darts
           </h3>
           <RecordList title="Most wins" empty={dartsWins.length === 0}>
@@ -443,7 +443,7 @@ export function VenueLeaderboard({
   return (
     <div className={className}>
       {error ? (
-        <p className="mb-4 text-sm text-red-300" role="alert">
+        <p className="mb-4 text-sm text-red-700" role="alert">
           {error}
         </p>
       ) : null}
@@ -469,7 +469,7 @@ export function VenueLeaderboard({
                 className={
                   active
                     ? "inline-flex min-h-11 items-center rounded-full bg-emerald-400 px-4 text-sm font-semibold text-zinc-950"
-                    : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-4 text-sm font-medium text-zinc-300 hover:border-white/20 hover:text-white"
+                    : "inline-flex min-h-11 items-center rounded-full border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 hover:border-zinc-950 hover:text-zinc-950"
                 }
               >
                 {VENUE_LEADERBOARD_TAB_LABELS[board]}
@@ -496,7 +496,7 @@ export function VenueLeaderboard({
                 className={
                   active
                     ? "inline-flex min-h-10 items-center rounded-full bg-white px-4 text-xs font-semibold text-zinc-950"
-                    : "inline-flex min-h-10 items-center rounded-full border border-white/12 px-4 text-xs font-medium text-zinc-400 hover:text-white"
+                    : "inline-flex min-h-10 items-center rounded-full border border-zinc-300 bg-white px-4 text-xs font-medium text-zinc-700 hover:border-zinc-950 hover:text-zinc-950"
                 }
               >
                 {VENUE_LEADERBOARD_WINDOW_LABELS[window]}
