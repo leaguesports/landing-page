@@ -108,7 +108,9 @@ export function VenueFollowButton({
 
   const baseClass =
     appearance === "scoreboard"
-      ? "inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-none border-2 border-[#C6FF00] bg-[#C6FF00] px-4 font-display text-2xl uppercase tracking-wide text-black transition-colors hover:bg-white disabled:opacity-60"
+      ? isFollowing
+        ? "inline-flex h-full min-h-12 w-full items-center justify-center gap-2 rounded-none bg-[#C6FF00] px-2 font-display text-base uppercase tracking-wide text-black transition-colors hover:bg-white disabled:opacity-60 sm:px-3 sm:text-xl"
+        : "inline-flex h-full min-h-12 w-full items-center justify-center gap-2 rounded-none bg-transparent px-2 font-display text-base uppercase tracking-wide text-[#C6FF00] transition-colors hover:bg-[#C6FF00] hover:text-black disabled:opacity-60 sm:px-3 sm:text-xl"
       : variant === "primary"
       ? isFollowing
         ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 px-5 py-2.5 text-sm font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/25 disabled:opacity-60"
@@ -117,8 +119,13 @@ export function VenueFollowButton({
         ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/40 bg-[var(--color-brand)]/10 px-8 py-2.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/20 disabled:opacity-60"
         : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:opacity-60";
 
+  const shell =
+    appearance === "scoreboard"
+      ? `flex h-full min-h-12 min-w-0 flex-col border-y-2 border-r-2 border-[#C6FF00] ${className}`
+      : className;
+
   return (
-    <div className={className}>
+    <div className={shell}>
       <button
         type="button"
         onClick={handleClick}
@@ -136,8 +143,7 @@ export function VenueFollowButton({
         <p className="mt-2 text-xs text-rose-300" role="alert">
           {error}
         </p>
-      ) : null}
-      {!isAuthenticated && !authLoading ? (
+      ) : appearance === "scoreboard" ? null : !isAuthenticated && !authLoading ? (
         <p className="mt-2 text-xs text-zinc-500">
           Sign in to save this venue to your list.
         </p>

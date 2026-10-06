@@ -29,23 +29,32 @@ function Initials({ side }: { side: WatchVenueSide }) {
 
 function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
   const paired = Boolean(card.home && card.away);
-  const clock = card.clock ? (
-    <span
-      className="block font-display text-6xl leading-none tracking-wide sm:text-7xl"
-      style={{ color: NEON, textShadow: `0 0 14px ${NEON}` }}
-    >
-      {card.clock}
-    </span>
-  ) : null;
+  const showClock = Boolean(card.clock);
+  const cues = card.cues.filter((cue) => cue.trim());
+  const columns =
+    showClock && cues.length > 0
+      ? "md:grid-cols-[auto_minmax(0,1fr)_auto]"
+      : showClock
+        ? "md:grid-cols-[auto_minmax(0,1fr)]"
+        : cues.length > 0
+          ? "md:grid-cols-[minmax(0,1fr)_auto]"
+          : "";
   const body = (
-    <span className="grid md:grid-cols-[auto_minmax(0,1fr)_auto]">
-      <span className="flex items-center justify-center border-b-2 border-[#333] px-5 py-4 md:border-b-0 md:border-r-2">
-        {clock ?? (
-          <span className="font-display text-3xl uppercase tracking-wide text-white">
-            {card.title}
+    <span className={`grid ${columns}`}>
+      {showClock ? (
+        <span className="flex flex-col items-center justify-center border-b-2 border-[#333] px-5 py-4 md:border-b-0 md:border-r-2">
+          <span className="font-display text-sm uppercase tracking-[0.22em] text-[#C6FF00]">
+            Kick-off
           </span>
-        )}
-      </span>
+          <span
+            className="mt-1 font-display text-6xl leading-none tracking-wide sm:text-7xl"
+            style={{ color: NEON, textShadow: `0 0 14px ${NEON}` }}
+          >
+            {card.clock}
+          </span>
+          <span className="mt-2 h-0.5 w-16 bg-[#C6FF00]" />
+        </span>
+      ) : null}
       <span className="flex flex-col items-center justify-center gap-3 px-4 py-5">
         {paired && card.home && card.away ? (
           <span className="flex items-center gap-4">
@@ -54,22 +63,22 @@ function FixtureCard({ card }: { card: WatchVenueFixtureCard }) {
             <Initials side={card.away} />
           </span>
         ) : null}
-        {clock ? (
-          <span className="text-center font-display text-xl uppercase tracking-wide text-white">
-            {card.title}
-          </span>
-        ) : null}
+        <span className="text-center font-display text-xl uppercase tracking-wide text-white">
+          {card.title}
+        </span>
       </span>
-      <span className="flex flex-wrap items-center justify-center gap-2 border-t-2 border-[#333] px-4 py-4 md:border-t-0 md:border-l-2">
-        {card.cues.map((cue) => (
-          <span
-            key={cue}
-            className="inline-flex border-2 border-[#C6FF00] px-2 py-1 font-display text-sm uppercase tracking-wide text-[#C6FF00]"
-          >
-            {cue}
-          </span>
-        ))}
-      </span>
+      {cues.length > 0 ? (
+        <span className="flex flex-wrap items-center justify-center gap-2 border-t-2 border-[#333] px-4 py-4 md:border-t-0 md:border-l-2">
+          {cues.map((cue) => (
+            <span
+              key={cue}
+              className="inline-flex bg-[#C6FF00] px-2 py-1 font-display text-sm uppercase tracking-wide text-black"
+            >
+              {cue}
+            </span>
+          ))}
+        </span>
+      ) : null}
     </span>
   );
   const className = "block border-2 border-[#333] bg-black text-white";

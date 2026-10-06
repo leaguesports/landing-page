@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mapVenueGallery, VENUE_GALLERY_LIMIT } from "./gallery.ts";
+import {
+  mapVenueGallery,
+  scoreboardHeroImage,
+  VENUE_GALLERY_LIMIT,
+} from "./gallery.ts";
 
 describe("mapVenueGallery", () => {
   it("keeps alt and credit and drops tiles without them", () => {
@@ -39,5 +43,29 @@ describe("mapVenueGallery", () => {
   it("returns nothing when gallery is missing", () => {
     assert.deepEqual(mapVenueGallery(undefined), []);
     assert.deepEqual(mapVenueGallery(null), []);
+  });
+});
+
+describe("scoreboardHeroImage", () => {
+  const hero = { asset: { _ref: "image-hero-1600x900-jpg" } };
+  const gallery = [{ image: { _id: "image-gallery-1600x900-jpg" }, alt: "Club" }];
+  const sports = [{ image: { asset: { _ref: "image-sport-800x800-jpg" } } }];
+
+  it("uses hero_image ahead of the gallery", () => {
+    assert.equal(
+      scoreboardHeroImage({ hero_image: hero, gallery, sports }),
+      hero,
+    );
+  });
+
+  it("falls back to gallery[0] and ignores sport art", () => {
+    assert.deepEqual(
+      scoreboardHeroImage({ hero_image: null, gallery, sports }),
+      gallery[0]?.image,
+    );
+    assert.equal(
+      scoreboardHeroImage({ hero_image: {}, gallery: [], sports }),
+      null,
+    );
   });
 });

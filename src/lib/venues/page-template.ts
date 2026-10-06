@@ -387,6 +387,97 @@ export function venuePlayChips(venue: VenueTemplateInput): string[] {
   return [...(facility ? [facility] : []), ...amenities];
 }
 
+export type VenuePlayStats = {
+  /** Neon numeral. Null when the record does not state a court or hole count. */
+  count: string | null;
+  /** Outdoor, Indoor, Covered, or Holes. Null when that word is not stated. */
+  setting: string | null;
+  /** Real amenity words only. No sport name, no "Here", no blanks. */
+  amenities: string[];
+};
+
+function titleWord(value: string): string {
+  const word = value.trim().toLowerCase();
+  if (!word) return "";
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function parsePlayFacility(facility: string | null): {
+  count: string | null;
+  setting: string | null;
+} {
+  if (!facility) return { count: null, setting: null };
+  const rich = facility.match(/^(\d+)\s+(indoor|outdoor|covered)\s+courts?$/i);
+  if (rich?.[1] && rich[2]) {
+    return { count: rich[1], setting: titleWord(rich[2]) };
+  }
+  const holes = facility.match(/^(\d+)\s+holes$/i);
+  if (holes?.[1]) return { count: holes[1], setting: "Holes" };
+  const courts = facility.match(/^(\d+)\s+courts?$/i);
+  if (courts?.[1]) return { count: courts[1], setting: null };
+  return { count: null, setting: null };
+}
+
+/**
+ * Flush stats strip under Start {sport}.
+ * A padel Scoreboard passes padel so golf holes never become a second sport.
+ */
+export function venuePlayStats(
+  venue: VenueTemplateInput,
+  sport?: { key?: string | null; name?: string | null } | null,
+): VenuePlayStats {
+  const key = sport?.key?.trim().toLowerCase() || null;
+  const facility =
+    venueCourtFacility(venue.description) ??
+    (key === "golf" ? venueGolfHoles(venue.golfCourse) : null);
+  const parsed = parsePlayFacility(facility);
+  const blocked = new Set(
+    [key ?? "", sport?.name ?? "", ...venueDistinctPlaySports(venue).flatMap((item) => [item.key, item.name])]
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0 && value !== "here"),
+  );
+  const amenities = venueGoodForLabels(venue, false).filter((label) => {
+    const word = label.trim();
+    return word.length > 0 && word.toLowerCase() !== "here" && !blocked.has(word.toLowerCase());
+  });
+  return {
+    count: parsed.count,
+    setting: parsed.setting,
+    amenities,
+  };
+}
+
+export type ScoreboardContactCell = {
+  kind: VenueContactLink["kind"] | "directions" | "follow";
+  label: string;
+  /** Share of the contact row. Directions is the wide neon cell. */
+  weight: 1 | 2;
+};
+
+/**
+ * Contact row with no empty slots. Directions is ~2fr when a maps link exists.
+ * Follow is the ghost cell. Website reads as Site.
+ */
+export function scoreboardContactCells(
+  links: readonly VenueContactLink[],
+  hasDirections: boolean,
+): ScoreboardContactCell[] {
+  const cells: ScoreboardContactCell[] = [];
+  for (const link of links) {
+    if (!link.href.trim() || !link.label.trim()) continue;
+    cells.push({
+      kind: link.kind,
+      label: link.kind === "website" ? "Site" : link.label,
+      weight: 1,
+    });
+  }
+  if (hasDirections) {
+    cells.push({ kind: "directions", label: "Directions", weight: 2 });
+  }
+  cells.push({ kind: "follow", label: "Follow", weight: 1 });
+  return cells;
+}
+
 /**
  * One facts line: facility (if known), the one sport, amenities once.
  * "2 outdoor courts. Padel. Food, outdoor, parking."

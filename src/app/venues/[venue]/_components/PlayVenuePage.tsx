@@ -2,13 +2,11 @@ import { toGolfVenueOption } from "@/lib/golf/venue-options";
 import { lookupVenueLockedResults } from "@/lib/venues/locked-results";
 import {
   venueContactLinks,
-  venueCourtFacility,
   venueCustomerAbout,
   venueDistinctPlaySports,
-  venueGolfHoles,
-  venueGoodForLabels,
   venueHoursLine,
   venuePlayPlace,
+  venuePlayStats,
   venueShortDisplayName,
   venueStartMatchLabel,
   venueUsesPadelScoreboard,
@@ -20,18 +18,12 @@ import {
   FocusedVenueShell,
   ScoreboardAbout,
   ScoreboardBand,
+  ScoreboardBody,
   ScoreboardContact,
   ScoreboardGallery,
   ScoreboardPhoto,
   ScoreboardStats,
 } from "./FocusedVenueSections";
-
-function splitCount(label: string | null): { count: string; caption: string } | null {
-  if (!label) return null;
-  const match = label.match(/^(\d+)\s+(.+)$/);
-  if (!match?.[1] || !match[2]) return null;
-  return { count: match[1], caption: match[2] };
-}
 
 export async function PlayVenuePage({
   venue,
@@ -67,15 +59,8 @@ export async function PlayVenuePage({
   const place = venuePlayPlace(venue.address);
   const about = venueCustomerAbout(venue.description);
   const hours = venueHoursLine(venue);
-  const facility = padelSlice
-    ? venueCourtFacility(venue.description)
-    : venueCourtFacility(venue.description) ??
-      (sport?.key === "golf" ? venueGolfHoles(venue.golfCourse) : null);
-  const stat = splitCount(facility);
-  const sportName = (sport?.name ?? "").trim().toLowerCase();
-  const amenities = venueGoodForLabels(venue, false).filter(
-    (label) => label.trim().toLowerCase() !== sportName,
-  );
+  const stats = venuePlayStats(venue, sport);
+  const showBoard = Boolean(about || hours);
 
   return (
     <FocusedVenueShell template="play" slug={venue.slug} jsonLd={jsonLd}>
@@ -88,33 +73,35 @@ export async function PlayVenuePage({
           {startLabel}
         </Link>
       ) : null}
-      <div className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
-        <ScoreboardStats
-          count={stat?.count ?? null}
-          caption={stat?.caption ?? null}
-          labels={amenities}
-        />
+      <ScoreboardStats
+        count={stats.count}
+        setting={stats.setting}
+        labels={stats.amenities}
+      />
+      <ScoreboardBody>
         <ScoreboardPhoto venue={venue} stamp="THE CLUB" />
         <ScoreboardGallery images={venue.gallery ?? []} />
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-          <div className="space-y-8">
-            {about ? (
-              <div>
-                <p className="mb-3 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
-                  About
-                </p>
-                <ScoreboardAbout text={about} />
-              </div>
-            ) : null}
-            {hours ? (
-              <div>
-                <p className="mb-3 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
-                  Hours
-                </p>
-                <p className="text-sm text-[#C8C8C8]">{hours}</p>
-              </div>
-            ) : null}
-          </div>
+        <div className={showBoard ? "grid items-start gap-5 lg:grid-cols-2 lg:gap-8" : undefined}>
+          {showBoard ? (
+            <div className="min-w-0 space-y-5">
+              {about ? (
+                <div>
+                  <p className="mb-2 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
+                    About
+                  </p>
+                  <ScoreboardAbout text={about} />
+                </div>
+              ) : null}
+              {hours ? (
+                <div>
+                  <p className="mb-2 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
+                    Hours
+                  </p>
+                  <p className="text-sm text-[#C8C8C8]">{hours}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <ScoreboardContact
             venue={venue}
             links={venueContactLinks(venue)}
@@ -145,7 +132,7 @@ export async function PlayVenuePage({
             </ul>
           </section>
         ) : null}
-      </div>
+      </ScoreboardBody>
     </FocusedVenueShell>
   );
 }

@@ -1,23 +1,36 @@
-import { BrandMark } from "@/components/BrandMark";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import {
   mapVenueGallery,
+  scoreboardHeroImage,
   type VenueGalleryImage,
 } from "@/lib/venues/gallery";
-import { type VenueContactLink } from "@/lib/venues/page-template";
-import { isRemoteVenuePhoto, sanityImageUrl, venuePhotoUrl } from "@/lib/venues/photo";
+import {
+  scoreboardContactCells,
+  type VenueContactLink,
+} from "@/lib/venues/page-template";
+import { isRemoteVenuePhoto, sanityImageUrl } from "@/lib/venues/photo";
 import type { VenueDetail } from "@/services/venues";
 import { Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { VenueFollowButton } from "./VenueFollowButton";
 
 export type { VenueGalleryImage };
 export { mapVenueGallery };
 
-const CELL =
-  "flex min-h-14 items-center justify-center gap-2 border-2 border-[#333] bg-black px-3 font-display text-xl uppercase tracking-wide text-white transition-colors hover:border-[#C6FF00] hover:text-[#C6FF00]";
+const ROW =
+  "flex h-full min-h-12 min-w-0 items-center justify-center gap-1.5 border-y-2 border-r-2 px-2 font-display text-base uppercase tracking-wide transition-colors sm:gap-2 sm:px-3 sm:text-xl";
+const CELL = `${ROW} border-[#333] bg-black text-white hover:border-[#C6FF00] hover:text-[#C6FF00]`;
+const NEON_CELL = `${ROW} border-[#C6FF00] bg-[#C6FF00] text-black hover:bg-white`;
+
+/** Section rhythm: ~20px on mobile, ~28px from the lg breakpoint. */
+export function ScoreboardBody({ children }: { children: ReactNode }) {
+  return (
+    <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:px-6 lg:space-y-7 lg:px-8 lg:py-7">
+      {children}
+    </div>
+  );
+}
 
 export function FocusedVenueShell({
   template,
@@ -53,19 +66,13 @@ export function ScoreboardBand({
 }) {
   return (
     <header className="bg-black">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <BrandMark className="h-8 w-8" size={32} />
-            <span className="font-display text-2xl tracking-wide text-white">
-              LEAGUE<span className="text-[#C6FF00]">SPORTS</span>
-            </span>
-          </Link>
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="flex justify-end">
           <span className="border-2 border-[#C6FF00] px-2 py-0.5 font-display text-sm tracking-[0.2em] text-[#C6FF00]">
             {mode === "watch" ? "WATCH" : "PLAY"}
           </span>
         </div>
-        <h1 className="mt-5 font-display text-6xl uppercase leading-none tracking-wide text-white sm:text-7xl lg:text-8xl">
+        <h1 className="mt-3 font-display text-6xl uppercase leading-none tracking-wide text-white sm:text-7xl lg:text-8xl">
           {name}
         </h1>
         {place ? (
@@ -84,11 +91,14 @@ export function ScoreboardPhoto({
   venue,
   stamp,
 }: {
-  venue: Pick<VenueDetail, "hero_image" | "sports">;
+  venue: Pick<VenueDetail, "hero_image" | "gallery" | "sports">;
   stamp: "THE VENUE" | "THE CLUB";
 }) {
-  const url = venuePhotoUrl(venue, { width: 1600, height: 900 });
-  if (!isRemoteVenuePhoto(url)) return null;
+  const source = scoreboardHeroImage(venue);
+  const url = source
+    ? sanityImageUrl(source, { width: 1600, height: 900 })
+    : undefined;
+  if (!url || !isRemoteVenuePhoto(url)) return null;
 
   return (
     <figure className="relative border-2 border-[#333] bg-black">
@@ -103,13 +113,16 @@ export function ScoreboardPhoto({
 }
 
 export function ScoreboardAmenities({ labels }: { labels: string[] }) {
-  if (labels.length === 0) return null;
+  const items = labels.map((label) => label.trim()).filter(Boolean);
+  if (items.length === 0) return null;
   return (
-    <ul className="grid grid-cols-2 sm:grid-cols-3" aria-label="Good for">
-      {labels.map((label) => (
+    <ul className="flex" aria-label="Amenities">
+      {items.map((label, index) => (
         <li
           key={label}
-          className="border-2 border-[#1D1D1D] px-3 py-4 text-center font-display text-xl uppercase tracking-wide text-white"
+          className={`flex min-h-12 min-w-0 flex-1 items-center justify-center border-y-2 border-r-2 border-[#333] px-2 py-3 text-center font-display text-lg uppercase tracking-wide text-white sm:text-xl ${
+            index === 0 ? "border-l-2" : ""
+          }`}
         >
           {label}
         </li>
@@ -118,37 +131,41 @@ export function ScoreboardAmenities({ labels }: { labels: string[] }) {
   );
 }
 
+/** Flush strip under the Start bar. Only real cells, sharing the row. */
 export function ScoreboardStats({
   count,
-  caption,
+  setting,
   labels,
 }: {
   count: string | null;
-  caption: string | null;
+  setting: string | null;
   labels: string[];
 }) {
-  if (!count && labels.length === 0) return null;
+  const amenities = labels.map((label) => label.trim()).filter(Boolean);
+  if (!count && amenities.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 border-2 border-[#333] sm:grid-cols-4">
+    <div className="flex w-full bg-black">
       {count ? (
-        <div className="border-2 border-[#333] px-4 py-4">
+        <div className="flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center border-2 border-[#333] px-2 py-2">
           <p
-            className="font-display text-6xl leading-none text-[#C6FF00]"
+            className="font-display text-5xl leading-none text-[#C6FF00] sm:text-6xl"
             style={{ textShadow: "0 0 14px #C6FF00" }}
           >
             {count}
           </p>
-          {caption ? (
-            <p className="mt-2 font-display text-sm uppercase tracking-[0.16em] text-white">
-              {caption}
+          {setting ? (
+            <p className="mt-1 font-display text-sm uppercase tracking-[0.16em] text-white">
+              {setting}
             </p>
           ) : null}
         </div>
       ) : null}
-      {labels.map((label) => (
+      {amenities.map((label, index) => (
         <div
           key={label}
-          className="flex items-center justify-center border-2 border-[#333] px-3 py-4 text-center font-display text-xl uppercase tracking-wide text-white"
+          className={`flex min-h-16 min-w-0 flex-1 items-center justify-center border-y-2 border-r-2 border-[#333] px-2 py-3 text-center font-display text-lg uppercase tracking-wide text-white sm:text-xl ${
+            count || index > 0 ? "" : "border-l-2"
+          }`}
         >
           {label}
         </div>
@@ -173,13 +190,44 @@ export function ScoreboardContact({
   links: VenueContactLink[];
   mapsUrl: string;
 }) {
+  const cells = scoreboardContactCells(links, Boolean(mapsUrl));
+  const columns = cells.map((cell) => `minmax(0,${cell.weight}fr)`).join(" ");
   return (
     <div aria-label="Contact">
       <p className="font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
         Contact
       </p>
-      <div className="mt-4 grid grid-cols-2">
-        {links.map((link) => {
+      <div className="mt-3 grid" style={{ gridTemplateColumns: columns }}>
+        {cells.map((cell, index) => {
+          const edge = index === 0 ? "border-l-2" : "";
+          if (cell.kind === "follow") {
+            return (
+              <VenueFollowButton
+                key="follow"
+                venueCmsId={venue._id}
+                venueName={venue.name}
+                venueSlug={venue.slug}
+                appearance="scoreboard"
+                className={`min-w-0 ${edge}`}
+              />
+            );
+          }
+          if (cell.kind === "directions") {
+            return (
+              <a
+                key="directions"
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${NEON_CELL} ${edge}`}
+              >
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                Directions
+              </a>
+            );
+          }
+          const link = links.find((item) => item.kind === cell.kind);
+          if (!link) return null;
           const external = link.kind === "website" || link.kind === "whatsapp";
           const Icon = contactIcon(link.kind);
           return (
@@ -187,32 +235,13 @@ export function ScoreboardContact({
               key={link.kind}
               href={link.href}
               {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className={CELL}
+              className={`${CELL} ${edge}`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden />
-              {link.label}
+              {cell.label}
             </a>
           );
         })}
-        {mapsUrl ? (
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CELL}
-          >
-            <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-            Directions
-          </a>
-        ) : null}
-      </div>
-      <div className="mt-3">
-        <VenueFollowButton
-          venueCmsId={venue._id}
-          venueName={venue.name}
-          venueSlug={venue.slug}
-          appearance="scoreboard"
-        />
       </div>
     </div>
   );
