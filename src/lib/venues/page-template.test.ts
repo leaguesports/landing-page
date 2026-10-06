@@ -12,6 +12,8 @@ import {
   venueHoursLine,
   venuePlayChips,
   venuePlayFactsLine,
+  venuePlayStats,
+  scoreboardContactCells,
   venuePlayPlace,
   venueShortDisplayName,
   venueStartMatchHref,
@@ -539,6 +541,95 @@ describe("customer about and play facts", () => {
         has_parking: true,
       }),
       ["18 holes", "Parking"],
+    );
+  });
+
+  it("builds the flush play stats strip from real counts and amenities", () => {
+    assert.deepEqual(venuePlayStats(actionPadel, { key: "padel", name: "Padel" }), {
+      count: "2",
+      setting: "Outdoor",
+      amenities: ["Food", "Outdoor", "Parking"],
+    });
+    assert.equal(
+      venuePlayStats(actionPadel, { key: "padel", name: "Padel" }).amenities.includes(
+        "Padel",
+      ),
+      false,
+    );
+    assert.equal(
+      venuePlayStats(actionPadel, { key: "padel", name: "Padel" }).amenities.includes(
+        "Here",
+      ),
+      false,
+    );
+
+    const wingate: VenueTemplateInput = {
+      name: "Wingate Park Country Club",
+      slug: "wingate-park-country-club",
+      broadcasts: [{ name: "Golf", slug: "golf" }],
+      sports: [
+        { name: "Padel", slug: "padel" },
+        { name: "Golf", slug: "golf" },
+      ],
+      golfCourse: playableCourse(),
+      has_food_menu: true,
+      has_outdoor_area: true,
+      has_parking: true,
+      description: "Country club with padel and an 18-hole course.",
+    };
+    const wingateStats = venuePlayStats(wingate, { key: "padel", name: "Padel" });
+    assert.equal(wingateStats.count, null);
+    assert.deepEqual(wingateStats.amenities, ["Food", "Outdoor", "Parking"]);
+    assert.equal(wingateStats.amenities.includes("Golf"), false);
+    assert.equal(wingateStats.amenities.includes("Padel"), false);
+
+    assert.deepEqual(
+      venuePlayStats(
+        {
+          slug: "city-golf",
+          sports: [{ name: "Golf", slug: "golf" }],
+          broadcasts: [],
+          golfCourse: playableCourse(),
+          has_parking: true,
+        },
+        { key: "golf", name: "Golf" },
+      ),
+      { count: "18", setting: "Holes", amenities: ["Parking"] },
+    );
+
+    assert.deepEqual(
+      venuePlayStats(
+        {
+          ...actionPadel,
+          has_food_menu: false,
+          has_outdoor_area: false,
+          has_parking: false,
+          description: "A padel club with a terrace.",
+        },
+        { key: "padel", name: "Padel" },
+      ),
+      { count: null, setting: null, amenities: [] },
+    );
+  });
+
+  it("shares the contact row across real cells only", () => {
+    const links = venueContactLinks({
+      name: "Courtside",
+      phone: "021 123 4567",
+      website: "courtside.co.za",
+    });
+    assert.deepEqual(scoreboardContactCells(links, true), [
+      { kind: "phone", label: "Call", weight: 1 },
+      { kind: "website", label: "Site", weight: 1 },
+      { kind: "directions", label: "Directions", weight: 2 },
+      { kind: "follow", label: "Follow", weight: 1 },
+    ]);
+    assert.deepEqual(scoreboardContactCells([], false), [
+      { kind: "follow", label: "Follow", weight: 1 },
+    ]);
+    assert.equal(
+      scoreboardContactCells(links, true).some((cell) => cell.label === "Email"),
+      false,
     );
   });
 

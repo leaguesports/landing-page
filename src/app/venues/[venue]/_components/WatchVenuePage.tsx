@@ -18,6 +18,7 @@ import {
   ScoreboardAbout,
   ScoreboardAmenities,
   ScoreboardBand,
+  ScoreboardBody,
   ScoreboardContact,
   ScoreboardPhoto,
 } from "./FocusedVenueSections";
@@ -42,41 +43,44 @@ export async function WatchVenuePage({
   const place = venueWatchPlace(venue.address);
   const about = venueCustomerAbout(venue.description);
   const hours = venueHoursLine(venue);
-  const amenities = venueGoodForLabels(venue, true);
+  const amenities = venueGoodForLabels(venue, true).filter((label) => label.trim());
+  const showBoard = Boolean(about || hours || amenities.length > 0);
 
   return (
     <FocusedVenueShell template="watch" slug={venue.slug} jsonLd={jsonLd}>
       <ScoreboardBand mode="watch" name={name} place={place} />
-      <div className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
+      <ScoreboardBody>
         <VenueWeekFixtures days={week.days} cards={week.cards} />
         <ScoreboardPhoto venue={venue} stamp="THE VENUE" />
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-          <div className="space-y-8">
-            <ScoreboardAmenities labels={amenities} />
-            {about ? (
-              <div>
-                <p className="mb-3 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
-                  About
-                </p>
-                <ScoreboardAbout text={about} />
-              </div>
-            ) : null}
-            {hours ? (
-              <div>
-                <p className="mb-3 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
-                  Hours
-                </p>
-                <p className="text-sm text-[#C8C8C8]">{hours}</p>
-              </div>
-            ) : null}
-          </div>
+        <div className={showBoard ? "grid items-start gap-5 lg:grid-cols-2 lg:gap-8" : undefined}>
+          {showBoard ? (
+            <div className="min-w-0 space-y-5">
+              <ScoreboardAmenities labels={amenities} />
+              {about ? (
+                <div>
+                  <p className="mb-2 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
+                    About
+                  </p>
+                  <ScoreboardAbout text={about} />
+                </div>
+              ) : null}
+              {hours ? (
+                <div>
+                  <p className="mb-2 font-display text-2xl uppercase tracking-[0.18em] text-[#C6FF00]">
+                    Hours
+                  </p>
+                  <p className="text-sm text-[#C8C8C8]">{hours}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <ScoreboardContact
             venue={venue}
             links={venueContactLinks(venue)}
             mapsUrl={mapsUrl}
           />
         </div>
-      </div>
+      </ScoreboardBody>
     </FocusedVenueShell>
   );
 }
