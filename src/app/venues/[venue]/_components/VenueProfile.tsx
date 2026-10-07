@@ -82,7 +82,7 @@ function Block({
       className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8 sm:mt-10"
       aria-labelledby={`${id}-title`}
     >
-      <h2 id={`${id}-title`} className="font-display text-3xl tracking-wide text-zinc-950">
+      <h2 id={`${id}-title`} className="max-w-full font-display text-3xl tracking-wide text-zinc-950">
         {title}
       </h2>
       <div className="mt-4">{children}</div>
@@ -336,8 +336,8 @@ export async function VenueProfile({
           <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 sm:pb-12 lg:px-8">
           <VenuePhotos venue={venue} place={place} />
 
-          <div className="mt-10 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-x-12">
-          <div className="min-w-0">
+          <div className="mt-10 grid w-full min-w-0 grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-x-12">
+          <div className="min-w-0 overflow-x-clip">
           <p className="text-lg leading-relaxed text-zinc-700">{venueProfileLede(venue)}</p>
 
           {about.length > 0 ? (
