@@ -1,12 +1,65 @@
 import { HomeScorecardPreview } from "@/components/home/HomeScorecardPreview";
-import { venueDirectoryHref } from "@/lib/search/venueSearch";
 import {
-  fixtureWatchHref,
-  tonightFixtureTeasers,
-} from "@/lib/sports/events-path";
-import type { UpcomingFixture } from "@/lib/sports/events-feed";
-import { MapPin, Trophy, Tv } from "lucide-react";
+  buildWatchFixtureFace,
+  formatWatchFixtureDateStamp,
+  watchFixtureFill,
+  watchFixtureInk,
+  type WatchFixtureSide,
+} from "@/lib/intent/watch-fixture-card";
+import { venueDirectoryHref } from "@/lib/search/venueSearch";
+import { fixtureWatchHref } from "@/lib/sports/events-path";
+import {
+  sortUpcomingFixtures,
+  type UpcomingFixture,
+} from "@/lib/sports/events-feed";
+import { ArrowUpRight, ChevronRight, MapPin, Trophy } from "lucide-react";
 import Link from "next/link";
+
+const TRENDING_LIMIT = 8;
+
+/** Featured fixtures first, then the soonest on the calendar. */
+function trendingFixtures(fixtures: UpcomingFixture[]): UpcomingFixture[] {
+  const sorted = sortUpcomingFixtures(fixtures);
+  const featured = sorted.filter((item) => item.featured);
+  const rest = sorted.filter((item) => !item.featured);
+  return [...featured, ...rest].slice(0, TRENDING_LIMIT);
+}
+
+function sportLabel(slug: string | null): string | null {
+  if (!slug) return null;
+  return slug.replace(/-/g, " ");
+}
+
+function TeamBadge({
+  side,
+  role,
+}: {
+  side: WatchFixtureSide;
+  role: "home" | "away";
+}) {
+  const fill = watchFixtureFill(side.primaryColour, role);
+  const ink = watchFixtureInk(fill);
+  return (
+    <span
+      className="inline-flex h-7 w-11 shrink-0 items-center justify-center rounded-md text-[11px] font-bold tracking-wide"
+      style={{ backgroundColor: fill, color: ink }}
+    >
+      {side.shortCode}
+    </span>
+  );
+}
+
+function fixtureFace(fixture: UpcomingFixture) {
+  const venueNames: Record<string, string> = {};
+  for (const venue of fixture.venues) venueNames[venue.slug] = venue.name;
+  return buildWatchFixtureFace({
+    title: fixture.title,
+    startsAt: fixture.startsAt ?? "",
+    teams: fixture.teams,
+    venueSlugs: fixture.venues.map((venue) => venue.slug),
+    venueNames,
+  });
+}
 
 const CHECK = (
   <svg
@@ -30,111 +83,129 @@ export function HomeValueSections({
 }: {
   fixtures?: UpcomingFixture[];
 }) {
-  const tonight = tonightFixtureTeasers(fixtures);
+  const trending = trendingFixtures(fixtures);
 
   return (
     <>
       <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/4 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-sky-500/10 blur-3xl" />
-        </div>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            <div className="order-2 space-y-4 lg:order-1">
-              <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#141814]">
-                <div className="border-b border-white/8 px-5 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
-                    {tonight.heading}
-                  </p>
-                  <p className="mt-1 font-display text-2xl tracking-wide text-white">
-                    Where to watch
-                  </p>
-                </div>
-                {tonight.items.length > 0 ? (
-                  <ul className="divide-y divide-white/8">
-                    {tonight.items.map((fixture) => {
-                      const venueCount = fixture.venues.length;
-                      return (
-                        <li key={fixture.slug}>
-                          <Link
-                            href={fixtureWatchHref(fixture)}
-                            className="flex items-start justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/4"
-                          >
-                            <div className="min-w-0">
-                              {fixture.sportSlug ? (
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-400">
-                                  {fixture.sportSlug.replace(/-/g, " ")}
-                                </p>
-                              ) : null}
-                              <p className="mt-1 text-sm font-medium text-white">
-                                {fixture.title}
-                              </p>
-                            </div>
-                            <span className="shrink-0 text-xs text-zinc-500">
-                              {venueCount > 0
-                                ? `${venueCount} venue${venueCount === 1 ? "" : "s"}`
-                                : "On the calendar"}
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="px-5 py-6">
-                    <p className="text-sm leading-relaxed text-zinc-400">
-                      Upcoming fixtures appear here once they are on the Events
-                      calendar.
-                    </p>
-                    <Link
-                      href="/events"
-                      className="mt-4 inline-flex min-h-10 items-center text-sm font-medium text-sky-300 hover:text-white"
-                    >
-                      See events
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="order-1 space-y-6 lg:order-2">
-              <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
-                <Tv className="h-4 w-4 text-sky-400" aria-hidden />
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
-                  Watch
-                </span>
-              </div>
-              <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-                Find a screen for the big game
-              </h2>
-              <p className="max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                Browse pubs and sports bars screening soccer, rugby, cricket,
-                and motorsport across Cape Town, Johannesburg, Durban, and
-                Pretoria.
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
+                Watch
               </p>
-              <ul className="space-y-3 text-zinc-300">
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>Fixture-first discovery by sport and city</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>Venue pages with screens, vibes, and directions</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  {CHECK}
-                  <span>
-                    Follow venues so upcoming games surface on your hub
-                  </span>
-                </li>
-              </ul>
+              <h2 className="mt-2 font-display text-4xl tracking-wide text-white sm:text-5xl">
+                Trending events
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                The next fixtures on the calendar. Open one to find a screen.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <Link
+                href="/events"
+                className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-zinc-300 transition-colors hover:text-white"
+              >
+                All events
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
               <Link
                 href={venueDirectoryHref({ intent: "watch" })}
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                className="inline-flex min-h-10 items-center text-sm font-medium text-sky-300 transition-colors hover:text-white"
               >
                 Browse watch venues
               </Link>
             </div>
           </div>
+
+          {trending.length > 0 ? (
+            <ul className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {trending.map((fixture) => {
+                const sport = sportLabel(fixture.sportSlug);
+                const face = fixtureFace(fixture);
+                const paired = Boolean(face.home && face.away);
+                const date = fixture.startsAt
+                  ? formatWatchFixtureDateStamp(fixture.startsAt)
+                  : null;
+                return (
+                  <li
+                    key={fixture.slug}
+                    className="w-[82%] shrink-0 snap-start sm:w-[22rem] lg:w-[calc((100%-2rem)/3.15)]"
+                  >
+                    <Link
+                      href={fixtureWatchHref(fixture)}
+                      className="group flex h-full min-h-56 flex-col rounded-2xl border border-white/10 bg-[#141814] p-5 transition-colors hover:border-white/30"
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="text-base font-semibold tabular-nums text-white">
+                          {face.centre.label || "–"}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          {fixture.featured ? (
+                            <span className="rounded-full bg-sky-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-200">
+                              Featured
+                            </span>
+                          ) : null}
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-400">
+                            {sport ?? "Event"}
+                          </span>
+                        </span>
+                      </span>
+
+                      {paired && face.home && face.away ? (
+                        <span className="mt-4 space-y-2">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <TeamBadge side={face.home} role="home" />
+                            <span className="truncate text-sm font-semibold text-white">
+                              {face.home.name}
+                            </span>
+                          </span>
+                          <span className="block pl-[3.25rem] text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            vs
+                          </span>
+                          <span className="flex min-w-0 items-center gap-2">
+                            <TeamBadge side={face.away} role="away" />
+                            <span className="truncate text-sm font-semibold text-white">
+                              {face.away.name}
+                            </span>
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="mt-4 line-clamp-3 font-display text-3xl leading-none tracking-wide text-white">
+                          {fixture.title}
+                        </span>
+                      )}
+
+                      {date ? (
+                        <span className="mt-3 text-sm text-zinc-400">{date}</span>
+                      ) : null}
+
+                      <span className="mt-auto flex items-center justify-between gap-3 pt-6 text-sm text-zinc-300">
+                        <span>{face.bottomPill ?? "On the calendar"}</span>
+                        <ChevronRight
+                          className="h-4 w-4 shrink-0 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-white"
+                          aria-hidden
+                        />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-white/10 bg-[#141814] px-5 py-6">
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Upcoming fixtures appear here once they are on the Events
+                calendar.
+              </p>
+              <Link
+                href="/events"
+                className="mt-4 inline-flex min-h-10 items-center text-sm font-medium text-sky-300 hover:text-white"
+              >
+                See events
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

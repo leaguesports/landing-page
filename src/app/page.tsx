@@ -214,16 +214,16 @@ async function MarketingHome() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/venues"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-100"
               >
                 Find a venue
               </Link>
               <Link
                 href="/athletes"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-12 items-center px-2 text-sm font-medium text-zinc-300 transition-colors hover:text-white"
               >
                 Athlete tools
               </Link>
