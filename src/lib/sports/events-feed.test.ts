@@ -9,6 +9,10 @@ import {
   EVENTS_CMS_QUERY,
   EVENTS_SCREENINGS_ON_DAY_QUERY,
   EVENTS_SCREENINGS_QUERY,
+  EVENTS_WATCH_VENUES_FOR_EVENT_QUERY,
+  eventIdentitySlugs,
+  screeningMatchesEvent,
+  watchVenuesListingEvent,
   findFixtureBySlug,
   fixtureCalendarDay,
   fixtureSlugFromTitle,
@@ -41,6 +45,11 @@ describe("events feed queries", () => {
     assert.match(EVENTS_SCREENINGS_ON_DAY_QUERY, /address\.city->title/);
     assert.doesNotMatch(EVENTS_SCREENINGS_ON_DAY_QUERY, /order\(_updatedAt/);
     assert.match(EVENTS_CMS_ON_DAY_QUERY, /\$dayEnd/);
+    assert.match(EVENTS_WATCH_VENUES_FOR_EVENT_QUERY, /count\(broadcasts\) > 0/);
+    assert.match(EVENTS_WATCH_VENUES_FOR_EVENT_QUERY, /upcoming_screenings/);
+    assert.match(EVENTS_WATCH_VENUES_FOR_EVENT_QUERY, /\$title/);
+    assert.match(EVENTS_WATCH_VENUES_FOR_EVENT_QUERY, /\$dayStart/);
+    assert.match(EVENTS_WATCH_VENUES_FOR_EVENT_QUERY, /\$startsAt/);
   });
 
   it("uses coalesce(startDateTime, startsAt, f1Details.dateTime) and does not require F1-only kickoff", () => {
@@ -647,5 +656,103 @@ describe("formatFixtureWhen + upcomingNotBeforeIso", () => {
   it("computes the GROQ notBefore watermark from grace", () => {
     const now = new Date("2026-09-05T12:00:00.000Z");
     assert.equal(upcomingNotBeforeIso(now), "2026-09-05T06:00:00.000Z");
+  });
+});
+
+describe("watchVenuesListingEvent", () => {
+  const singapore = {
+    title: "Singapore Grand Prix",
+    startsAt: "2026-10-11T12:00:00.000Z",
+    slug: "singapore-grand-prix",
+    id: "f1-2026-singapore-grand-prix",
+  };
+
+  it("collects slug identity from the public slug, title, and series-year id", () => {
+    const slugs = eventIdentitySlugs(singapore);
+    assert.ok(slugs.includes("singapore-grand-prix"));
+    assert.equal(slugs.includes("f1-2026-singapore-grand-prix"), false);
+  });
+
+  it("lists watch venues whose screenings match title and kickoff day", () => {
+    const venues = watchVenuesListingEvent(
+      [
+        {
+          name: "Ridgeway Racebar",
+          slug: "ridgeway-racebar",
+          broadcasts: [{ slug: "motorsport" }],
+          upcoming_screenings: [
+            { title: "Singapore Grand Prix", startsAt: "2026-10-11T12:00:00Z" },
+          ],
+        },
+        {
+          name: "Time Out Sports Bar",
+          slug: "time-out-sports-bar",
+          broadcasts: [{ name: "Motorsport", slug: "motorsport" }],
+          upcoming_screenings: [
+            {
+              title: "Singapore Grand Prix",
+              startsAt: "2026-10-11T12:00:00Z",
+            },
+          ],
+        },
+        {
+          name: "Kyalami Karting",
+          slug: "kyalami-karting",
+          broadcasts: [],
+          upcoming_screenings: [
+            { title: "Singapore Grand Prix", startsAt: "2026-10-11T12:00:00Z" },
+          ],
+        },
+        {
+          name: "The Local",
+          slug: "the-local",
+          broadcasts: [{ slug: "rugby" }],
+          upcoming_screenings: [
+            {
+              title: "Springboks vs All Blacks",
+              startsAt: "2026-10-11T12:00:00Z",
+            },
+          ],
+        },
+      ],
+      singapore,
+    );
+
+    assert.deepEqual(
+      venues.map((venue) => venue.slug),
+      ["ridgeway-racebar", "time-out-sports-bar"],
+    );
+  });
+
+  it("matches a screening by slug when the event title is longer", () => {
+    assert.equal(
+      screeningMatchesEvent(
+        { title: "Singapore Grand Prix", startsAt: "2026-10-11T12:00:00Z" },
+        {
+          title: "Formula 1 Singapore Grand Prix",
+          startsAt: "2026-10-11T12:00:00Z",
+          slug: "singapore-grand-prix",
+          id: "f1-2026-singapore-grand-prix",
+        },
+      ),
+      true,
+    );
+  });
+
+  it("keeps a repeat fixture on another day off this event", () => {
+    assert.equal(
+      screeningMatchesEvent(
+        {
+          title: "Springboks vs All Blacks",
+          startsAt: "2026-09-13T16:00:00.000Z",
+        },
+        {
+          title: "Springboks vs All Blacks",
+          startsAt: "2026-09-06T16:00:00.000Z",
+          slug: "springboks-vs-all-blacks",
+        },
+      ),
+      false,
+    );
   });
 });
