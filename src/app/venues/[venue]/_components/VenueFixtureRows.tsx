@@ -1,25 +1,91 @@
 "use client";
 
-import { VENUE_WEEK_EMPTY, type WatchVenueFixtureCard } from "@/lib/venues/watch-week";
+import {
+  parseWatchFixtureTitle,
+  watchFixtureFill,
+  watchFixtureInk,
+} from "@/lib/intent/watch-fixture-card";
+import { VENUE_WEEK_EMPTY, type WatchVenueFixtureCard, type WatchVenueSide } from "@/lib/venues/watch-week";
+import { ChevronRight, Monitor, Volume2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+
+function TeamBadge({ side, role }: { side: WatchVenueSide; role: "home" | "away" }) {
+  const fill = watchFixtureFill(side.colour, role);
+  const ink = watchFixtureInk(fill);
+  return (
+    <span
+      className="inline-flex h-7 w-11 shrink-0 items-center justify-center rounded-md text-[11px] font-bold tracking-wide"
+      style={{ backgroundColor: fill, color: ink }}
+    >
+      {side.code}
+    </span>
+  );
+}
+
+function Cue({ label }: { label: string }) {
+  const Icon = /sound/i.test(label) ? Volume2 : /screen/i.test(label) ? Monitor : null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600">
+      {Icon ? <Icon className="h-3 w-3" aria-hidden /> : null}
+      {label}
+    </span>
+  );
+}
 
 function FixtureRow({ card }: { card: WatchVenueFixtureCard }) {
   const cues = card.cues.filter((cue) => cue.trim());
+  const names = card.home && card.away ? parseWatchFixtureTitle(card.title) : null;
+  const paired = Boolean(card.home && card.away && names);
+
+  let matchup: ReactNode;
+  if (paired && card.home && card.away && names) {
+    matchup = (
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <TeamBadge side={card.home} role="home" />
+          <span className="truncate text-sm font-semibold text-zinc-950">{names.home}</span>
+        </span>
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+          vs
+        </span>
+        <span className="flex min-w-0 items-center gap-2">
+          <TeamBadge side={card.away} role="away" />
+          <span className="truncate text-sm font-semibold text-zinc-950">{names.away}</span>
+        </span>
+      </span>
+    );
+  } else {
+    matchup = (
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-950">{card.title}</span>
+    );
+  }
+
+  const className =
+    "group block w-full min-w-0 rounded-2xl border border-zinc-200 bg-white px-4 py-4";
   const body = (
     <>
-      <span className="w-14 shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-zinc-950">
-        {card.clock || "–"}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-zinc-950">{card.title}</span>
-        {cues.length > 0 ? (
-          <span className="mt-0.5 block text-xs text-zinc-500">{cues.join(" · ")}</span>
+      <span className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-base font-semibold tabular-nums text-zinc-950">{card.clock || "–"}</span>
+          {cues.map((cue) => (
+            <Cue key={cue} label={cue} />
+          ))}
+        </span>
+        {card.href ? (
+          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-zinc-950">
+            See details
+            <ChevronRight
+              className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </span>
         ) : null}
       </span>
+      <span className="mt-3 block">{matchup}</span>
     </>
   );
-  const className = "flex items-start gap-4 px-4 py-3.5";
+
   if (!card.href) {
     return (
       <div className={className} data-fixture-clock={card.clock}>
@@ -27,10 +93,11 @@ function FixtureRow({ card }: { card: WatchVenueFixtureCard }) {
       </div>
     );
   }
+
   return (
     <Link
       href={card.href}
-      className={`${className} transition-colors hover:bg-zinc-50`}
+      className={`${className} transition-colors hover:border-zinc-400 hover:bg-zinc-50`}
       data-fixture-clock={card.clock}
     >
       {body}
@@ -76,9 +143,9 @@ export function VenueFixtureRows({
           })}
         </div>
       ) : null}
-      <ul className={`${days.length > 1 ? "mt-3" : ""} divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white`}>
+      <ul className={`flex min-w-0 flex-col gap-2 ${days.length > 1 ? "mt-3" : ""}`}>
         {visible.map((card) => (
-          <li key={card.id}>
+          <li key={card.id} className="min-w-0">
             <FixtureRow card={card} />
           </li>
         ))}
