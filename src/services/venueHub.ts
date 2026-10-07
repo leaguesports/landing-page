@@ -1,5 +1,12 @@
 import { sanityClient } from "@/sanity/client";
 import {
+  FEATURED_HOME_VENUE_MIN,
+  selectFeaturedHomeVenues,
+  type FeaturedHomeVenue,
+} from "@/lib/venues/featured-home";
+import { scoreboardHeroImage } from "@/lib/venues/gallery";
+import { sanityImageUrl } from "@/lib/venues/photo";
+import {
   VENUE_NAME_SEARCH_FETCH_LIMIT,
   VENUE_NAME_SEARCH_HAYSTACK,
   capVenueNameSearchResults,
@@ -81,6 +88,43 @@ export const VENUE_HUB_RECOMMENDED_QUERY = `*[
   name asc
 ) [0...${VENUE_HUB_RECOMMENDED_FETCH_LIMIT}] {
   ${VENUE_HUB_CARD_PROJECTION}
+}`;
+
+/** Over-fetch before the alt-text filter drops a gallery tile. */
+const FEATURED_HOME_VENUE_FETCH_LIMIT = 24;
+
+export const FEATURED_HOME_VENUES_QUERY = `*[
+  _type == "venue"
+  && defined(slug.current)
+  && defined(name)
+  && (
+    defined(hero_image.asset)
+    || count(gallery[defined(asset)]) > 0
+  )
+] | order(coalesce(rating, 0) desc, name asc) [0...${FEATURED_HOME_VENUE_FETCH_LIMIT}] {
+  _id,
+  name,
+  "slug": slug.current,
+  hero_image,
+  rating,
+  gallery[]{
+    alt,
+    credit,
+    asset->{
+      _id,
+      url
+    }
+  },
+  "address": {
+    "suburb": address.suburb->title,
+    "city": address.city->title
+  },
+  "sports": sports[]-> {
+    _id,
+    name,
+    image,
+    "slug": slug.current
+  }
 }`;
 
 export const VENUE_HUB_CITIES_BY_SLUG_QUERY = `*[
@@ -167,6 +211,59 @@ export async function getRecommendedVenues(options: {
     return dedupeVenuesBySlug(rankRecommendedVenues(mapped)).slice(0, limit);
   } catch (error) {
     console.error("[venues-hub] recommended fetch failed", error);
+    return [];
+  }
+}
+
+function featuredHomePlace(venue: VenueDetail): string | null {
+  const suburb = venue.address.suburb?.trim() ?? "";
+  const city = venue.address.city?.trim() ?? "";
+  if (suburb && city && suburb.toLowerCase() !== city.toLowerCase()) {
+    return `${suburb}, ${city}`;
+  }
+  return suburb || city || null;
+}
+
+function toFeaturedHomeVenue(venue: VenueDetail): FeaturedHomeVenue | null {
+  const image = scoreboardHeroImage(venue);
+  if (!image) return null;
+  const imageUrl = sanityImageUrl(image, { width: 960, height: 600 });
+  if (!imageUrl) return null;
+  const fromGallery = image === venue.gallery?.[0]?.image;
+  const sports = venue.sports
+    .map((sport) => {
+      const name = sport.name?.trim() ?? "";
+      const slug = sport.slug?.trim() || name.toLowerCase().replace(/\s+/g, "-");
+      if (!name || !slug) return null;
+      return { slug, name };
+    })
+    .filter((sport): sport is { slug: string; name: string } => sport !== null)
+    .slice(0, 3);
+  return {
+    slug: venue.slug,
+    name: venue.name,
+    place: featuredHomePlace(venue),
+    sports,
+    imageUrl,
+    imageAlt: (fromGallery ? venue.gallery?.[0]?.alt : venue.name) || venue.name,
+  };
+}
+
+/** Photo venues for the home row. Sport artwork never qualifies. */
+export async function getFeaturedHomeVenues(): Promise<FeaturedHomeVenue[]> {
+  if (!isSanityConfigured()) return [];
+
+  try {
+    const rows = await sanityClient.fetch<VenueRow[]>(FEATURED_HOME_VENUES_QUERY);
+    const mapped = (rows ?? [])
+      .map(mapVenueRow)
+      .filter((venue): venue is VenueDetail => venue !== null);
+    const cards = selectFeaturedHomeVenues(mapped)
+      .map(toFeaturedHomeVenue)
+      .filter((venue): venue is FeaturedHomeVenue => venue !== null);
+    return cards.length >= FEATURED_HOME_VENUE_MIN ? cards : [];
+  } catch (error) {
+    console.error("[home] featured venues fetch failed", error);
     return [];
   }
 }

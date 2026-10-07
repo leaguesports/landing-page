@@ -7,6 +7,9 @@ import SoccerIcon from "./Soccer";
 import GolfIcon from "./Golf";
 import PadelIcon from "./Padel";
 import CricketIcon from "./Cricket";
+import TennisIcon from "./Tennis";
+import SquashIcon from "./Squash";
+import ClimbingIcon from "./Climbing";
 
 /** Props accepted by all sport icon SVG components in this folder. */
 type SportIconProps = {
@@ -47,10 +50,22 @@ const SPORT_ICON_BY_SLUG: Record<string, SportIconComponent> = {
     "racing-sim": MotorsportIcon as SportIconComponent,
     padel: PadelIcon as SportIconComponent,
     cricket: CricketIcon as SportIconComponent,
+    tennis: TennisIcon as SportIconComponent,
+    squash: SquashIcon as SportIconComponent,
+    climbing: ClimbingIcon as SportIconComponent,
+    bouldering: ClimbingIcon as SportIconComponent,
+    "rock-climbing": ClimbingIcon as SportIconComponent,
+    "indoor-climbing": ClimbingIcon as SportIconComponent,
 };
 
 function normalizeSportSlug(slug: string): string {
     return slug.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+/** True when the slug has its own mark. Unknown sports use {@link DefaultIcon}. */
+export function hasSportIcon(sportSlug: string | undefined | null): boolean {
+    if (!sportSlug) return false;
+    return Boolean(SPORT_ICON_BY_SLUG[normalizeSportSlug(sportSlug)]);
 }
 
 /** Icon for a **sport** slug; {@link DefaultIcon} if missing or unknown. Not for series slugs. */
