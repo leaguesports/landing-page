@@ -2,14 +2,17 @@ import { EventsCityFilter } from "@/components/events/EventsCityFilter";
 import { EventsSportFilter } from "@/components/events/EventsSportFilter";
 import { FeaturedFixtureHero } from "@/components/events/FeaturedFixtureHero";
 import { FixtureRow } from "@/components/events/FixtureList";
+import { buildEventsItemListJsonLd, eventsHubKeywords } from "@/lib/events/hub-seo";
 import {
   eventsListCopy,
   eventsListHref,
   eventsSportChips,
+  eventsSportName,
   filterFixturesBySport,
   groupFixturesByDate,
   parseEventsSportParam,
 } from "@/lib/events/scope";
+import { getSiteBaseUrl } from "@/lib/site-url";
 import {
   eventsCityLabel,
   filterFixturesByCity,
@@ -39,6 +42,10 @@ export async function generateMetadata({
   return {
     title: copy.title,
     description: copy.description,
+    keywords: eventsHubKeywords({
+      sportName: eventsSportName(sport),
+      cityName: eventsCityLabel(city),
+    }),
   };
 }
 
@@ -64,11 +71,23 @@ export default async function EventsPage({
     : fixtures;
   const now = new Date();
   const groups = groupFixturesByDate(list, now);
+  const jsonLd = buildEventsItemListJsonLd({
+    name: copy.heading,
+    siteUrl: getSiteBaseUrl(),
+    fixtures,
+  });
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="border-b border-white/5 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto max-w-7xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+            What&apos;s on
+          </p>
           <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
             {copy.heading}
           </h1>

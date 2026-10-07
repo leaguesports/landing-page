@@ -7,10 +7,14 @@ import {
   History,
   Info,
   MapPin,
+  List,
   Medal,
+  Play,
+  Radio,
   Trophy,
   Tv,
   Users,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +30,13 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   "friends-played": Users,
   leaderboards: Award,
   nearby: MapPin,
+  watch: Tv,
+  "where-to-watch": Tv,
+  timetable: CalendarDays,
+  replay: Play,
+  feed: Radio,
+  "prediction-pool": Trophy,
+  more: List,
 };
 
 /** Site header (4rem) plus this bar, with a little air under the tabs. */
@@ -39,8 +50,10 @@ function SectionIcon({ id }: { id: string }) {
 
 export function VenueSectionNav({
   tabs,
+  label = "Venue sections",
 }: {
   tabs: { id: string; label: string }[];
+  label?: string;
 }) {
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   const listRef = useRef<HTMLUListElement>(null);
@@ -111,7 +124,7 @@ export function VenueSectionNav({
 
   return (
     <nav
-      aria-label="Venue sections"
+      aria-label={label}
       className="sticky top-16 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur"
     >
       <ul

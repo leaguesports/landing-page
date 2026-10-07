@@ -27,10 +27,10 @@ function statusClass(status: OpenF1SessionStatus, tone: "event" | "motorsport"):
     if (status === "completed") return "bg-white/8 text-zinc-500";
     return "bg-white/8 text-zinc-300";
   }
-  if (status === "live") return "bg-emerald-500/15 text-emerald-300";
-  if (status === "cancelled") return "bg-red-500/15 text-red-300";
-  if (status === "completed") return "bg-white/8 text-zinc-500";
-  return "bg-white/8 text-zinc-300";
+  if (status === "live") return "bg-emerald-50 text-emerald-800";
+  if (status === "cancelled") return "bg-red-50 text-red-700";
+  if (status === "completed") return "bg-zinc-100 text-zinc-500";
+  return "bg-zinc-100 text-zinc-700";
 }
 
 export function OpenF1CountryFlag({
@@ -61,6 +61,7 @@ export function OpenF1WeekendSection({
   replayHref,
   now,
   tone = "event",
+  embedded = false,
 }: {
   weekend: OpenF1Weekend;
   calendarHref?: string;
@@ -68,6 +69,8 @@ export function OpenF1WeekendSection({
   replayHref?: string | null;
   now?: Date;
   tone?: "event" | "motorsport";
+  /** Drop the page-width chrome when the section sits inside the event article. */
+  embedded?: boolean;
 }) {
   const clock = now ?? new Date();
   const { meeting, sessions } = weekend;
@@ -87,12 +90,14 @@ export function OpenF1WeekendSection({
       id="weekend-timetable"
       aria-labelledby="openf1-weekend-heading"
       className={
-        motorsport
-          ? "scroll-mt-24 py-12 sm:py-20 px-4 sm:px-6 lg:px-8"
-          : "scroll-mt-24 border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+        embedded
+          ? "scroll-mt-40"
+          : motorsport
+            ? "scroll-mt-24 py-12 sm:py-20 px-4 sm:px-6 lg:px-8"
+            : "scroll-mt-24 border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
       }
     >
-      <div className="mx-auto max-w-7xl">
+      <div className={embedded ? undefined : "mx-auto max-w-7xl"}>
         <div className="flex flex-wrap items-center gap-3">
           <OpenF1CountryFlag meeting={meeting} className="h-5 w-9" />
           <p
@@ -110,7 +115,7 @@ export function OpenF1WeekendSection({
           className={
             motorsport
               ? "mt-2 text-xl sm:text-2xl font-black italic uppercase text-white"
-              : "mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl"
+              : "mt-2 font-display text-3xl tracking-wide text-zinc-950"
           }
         >
           Practice, qualifying &amp; race
@@ -119,7 +124,7 @@ export function OpenF1WeekendSection({
           className={
             motorsport
               ? "mt-2 max-w-2xl text-zinc-500 font-bold uppercase tracking-widest text-xs sm:text-sm"
-              : "mt-3 max-w-2xl text-base leading-relaxed text-zinc-400"
+              : "mt-3 max-w-2xl text-base leading-relaxed text-zinc-600"
           }
         >
           {meeting.meetingOfficialName}. {circuit}
@@ -131,7 +136,7 @@ export function OpenF1WeekendSection({
             className={
               motorsport
                 ? "mt-4 text-sm font-bold uppercase tracking-widest text-red-400"
-                : "mt-4 text-sm font-medium text-red-300"
+                : "mt-4 text-sm font-medium text-red-700"
             }
           >
             This meeting is marked cancelled in the official timetable.
@@ -143,7 +148,7 @@ export function OpenF1WeekendSection({
             className={
               motorsport
                 ? "mt-8 max-w-md overflow-hidden rounded-lg border border-white/10 bg-black/40 p-4 sm:p-6"
-                : "mt-8 max-w-md overflow-hidden rounded-2xl border border-white/8 bg-[#141814] p-4 sm:p-6"
+                : "mt-8 max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6"
             }
           >
             <Image
@@ -169,7 +174,7 @@ export function OpenF1WeekendSection({
                 className={
                   motorsport
                     ? "rounded-lg border border-white/10 bg-white/2 p-4 sm:p-5"
-                    : "rounded-2xl border border-white/8 bg-[#141814] px-4 py-5 sm:px-5"
+                    : "rounded-2xl border border-zinc-200 px-4 py-5 sm:px-5"
                 }
               >
                 <h3
@@ -192,7 +197,7 @@ export function OpenF1WeekendSection({
                       >
                         <div className="min-w-0">
                           <p
-                            className={`text-sm font-medium text-white sm:text-base ${status === "cancelled" ? "line-through opacity-70" : ""}`}
+                            className={`text-sm font-medium sm:text-base ${motorsport ? "text-white" : "text-zinc-950"} ${status === "cancelled" ? "line-through opacity-70" : ""}`}
                           >
                             {session.sessionName}
                           </p>
@@ -226,7 +231,7 @@ export function OpenF1WeekendSection({
             className={
               motorsport
                 ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                : "inline-flex min-h-11 items-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950"
             }
           >
             Full F1 calendar
@@ -237,7 +242,7 @@ export function OpenF1WeekendSection({
               className={
                 motorsport
                   ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                  : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  : "inline-flex min-h-11 items-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950"
               }
             >
               Race hub
@@ -249,7 +254,7 @@ export function OpenF1WeekendSection({
               className={
                 motorsport
                   ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                  : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                  : "inline-flex min-h-11 items-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950"
               }
             >
               Race replay

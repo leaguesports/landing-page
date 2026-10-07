@@ -9,7 +9,7 @@ import {
   isMotorsportSport,
   prefersMatchScoreBoard,
 } from "../../types/fixture-feed.ts";
-import { isSafeRelativeHref, isValidFixtureSlug, normalizeFixtureSlug } from "./slug.ts";
+import { isValidFixtureSlug, normalizeFixtureSlug } from "./slug.ts";
 
 type FeedState = {
   board: FixtureLiveBoard | null;
@@ -94,30 +94,17 @@ function seedMotorsportBoard(
   };
 }
 
-function seedItems(
-  slug: string,
-  board: FixtureLiveBoard | null,
-  venueCount: number,
-  sportSlug: string | null,
-): FixtureFeedItem[] {
-  const items: FixtureFeedItem[] = [];
-  const watchHref =
-    venueCount > 0
-      ? `/events/${slug}#where-to-watch`
-      : sportSlug
-        ? `/venues?intent=watch&sport=${encodeURIComponent(sportSlug)}`
-        : "/venues?intent=watch";
+function isSeedFiller(item: FixtureFeedItem): boolean {
+  if (item.kind === "venue_nudge") return true;
+  return (
+    item.kind === "moment" &&
+    item.authorKind === "system" &&
+    item.body.startsWith("Fixture feed is open")
+  );
+}
 
-  items.push({
-    id: newId("sys"),
-    fixtureSlug: slug,
-    kind: "moment",
-    authorKind: "system",
-    authorLabel: "LeagueSports",
-    body: "Fixture feed is open — follow for desk updates and where to watch nearby.",
-    createdAt: nowIso(-45 * 60 * 1000),
-    reactionCount: 0,
-  });
+function seedItems(slug: string, board: FixtureLiveBoard | null): FixtureFeedItem[] {
+  const items: FixtureFeedItem[] = [];
 
   // Only attach score moments once a real (non-scheduled) board exists.
   if (board?.kind === "match_score" && board.status !== "scheduled") {
@@ -150,23 +137,6 @@ function seedItems(
       reactionCount: 0,
     });
   }
-
-  const safeWatchHref = isSafeRelativeHref(watchHref) ? watchHref : "/venues?intent=watch";
-  items.push({
-    id: newId("venue"),
-    fixtureSlug: slug,
-    kind: "venue_nudge",
-    authorKind: "system",
-    authorLabel: "Watch nearby",
-    body:
-      venueCount > 0
-        ? `${venueCount} venue${venueCount === 1 ? "" : "s"} listed for this screening — grab a spot before kickoff buzz peaks.`
-        : "Find a bar or fan zone screening this one near you.",
-    createdAt: nowIso(-3 * 60 * 1000),
-    reactionCount: 0,
-    ctaHref: safeWatchHref,
-    ctaLabel: venueCount > 0 ? "See venues" : "Browse Watch",
-  });
 
   return items.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -203,6 +173,7 @@ export function ensureFixtureFeed(input: EnsureFeedInput): FixtureFeedSnapshot {
 
   const existing = store.get(slug);
   if (existing) {
+    existing.items = existing.items.filter((item) => !isSeedFiller(item));
     return {
       fixtureSlug: slug,
       board: existing.board,
@@ -223,7 +194,7 @@ export function ensureFixtureFeed(input: EnsureFeedInput): FixtureFeedSnapshot {
     board = seedMatchBoard(input.title, status);
   }
 
-  const items = seedItems(slug, board, input.venueCount, input.sportSlug);
+  const items = seedItems(slug, board);
   store.set(slug, { board, items });
   trimStore();
   return { fixtureSlug: slug, board, items: [...items] };

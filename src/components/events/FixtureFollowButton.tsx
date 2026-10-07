@@ -15,6 +15,8 @@ type FixtureFollowButtonProps = {
   className?: string;
   /** Primary is the filled watch CTA; follow is secondary on fixture pages. */
   variant?: "primary" | "secondary";
+  /** Outline button on light pages, matching venue follow. */
+  surface?: "dark" | "light";
 };
 
 type FollowStatus = "idle" | "loading" | "following" | "not_following";
@@ -23,6 +25,7 @@ export function FixtureFollowButton({
   slug,
   className = "",
   variant = "secondary",
+  surface = "dark",
 }: FixtureFollowButtonProps) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading: authLoading, signIn } = useAuth();
@@ -86,10 +89,16 @@ export function FixtureFollowButton({
   const primaryClass =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white disabled:opacity-60";
   const secondaryClass =
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950 disabled:opacity-60";
+    surface === "light"
+      ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-950 disabled:opacity-60"
+      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950 disabled:opacity-60";
+  const followingClassName =
+    surface === "light"
+      ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-5 py-2.5 text-sm font-medium text-emerald-900 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+      : followingClass;
 
   const buttonClass = isFollowing
-    ? followingClass
+    ? followingClassName
     : variant === "primary"
       ? primaryClass
       : secondaryClass;
@@ -110,7 +119,7 @@ export function FixtureFollowButton({
         {pending ? (isFollowing ? "Updating…" : "Following…") : label}
       </button>
       {!isAuthenticated && !authLoading ? (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className={surface === "light" ? "sr-only" : "mt-2 text-xs text-zinc-500"}>
           Sign in to follow this fixture and find it again when you come back.
         </p>
       ) : null}

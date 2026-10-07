@@ -1,5 +1,5 @@
 import { FixtureLiveChip } from "@/components/events/FixtureLiveChip";
-import { venuePlacesLabel } from "@/lib/events/scope";
+import { eventsSportName, venuePlacesLabel } from "@/lib/events/scope";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import { fixtureWatchHref } from "@/lib/sports/events-path";
 import {
@@ -10,8 +10,7 @@ import { ArrowUpRight, MapPin, Tv } from "lucide-react";
 import Link from "next/link";
 
 function sportLabel(slug: string | null): string | null {
-  if (!slug) return null;
-  return slug.replace(/-/g, " ");
+  return eventsSportName(slug);
 }
 
 export function FixtureRow({
@@ -52,7 +51,13 @@ export function FixtureRow({
                 {sport}
               </span>
             ) : null}
-            {sport && when ? <span aria-hidden>·</span> : null}
+            {fixture.competition ? (
+              <>
+                {sport ? <span aria-hidden>·</span> : null}
+                <span>{fixture.competition}</span>
+              </>
+            ) : null}
+            {(sport || fixture.competition) && when ? <span aria-hidden>·</span> : null}
             {when ? <span>{when}</span> : null}
           </p>
           <h3

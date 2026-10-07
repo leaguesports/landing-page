@@ -1,5 +1,5 @@
 import { FixtureLiveChip } from "@/components/events/FixtureLiveChip";
-import { venuePlacesLabel } from "@/lib/events/scope";
+import { eventsSportName, venuePlacesLabel } from "@/lib/events/scope";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import { fixtureWatchHref } from "@/lib/sports/events-path";
 import {
@@ -10,8 +10,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 function sportLabel(slug: string | null): string | null {
-  if (!slug) return null;
-  return slug.replace(/-/g, " ");
+  return eventsSportName(slug);
 }
 
 export function FeaturedFixtureHero({
@@ -45,7 +44,13 @@ export function FeaturedFixtureHero({
           </p>
           <p className="flex flex-wrap items-baseline gap-x-2 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
             {sport ? <span className="text-sky-300">{sport}</span> : null}
-            {sport && when ? <span aria-hidden>·</span> : null}
+            {fixture.competition ? (
+              <>
+                {sport ? <span aria-hidden>·</span> : null}
+                <span>{fixture.competition}</span>
+              </>
+            ) : null}
+            {(sport || fixture.competition) && when ? <span aria-hidden>·</span> : null}
             {when ? <span>{when}</span> : null}
           </p>
           <h2 className="mt-1 font-display max-w-3xl text-2xl tracking-wide text-white sm:text-3xl">
@@ -77,6 +82,11 @@ export function FeaturedFixtureHero({
           {sport ? (
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-300">
               {sport}
+            </span>
+          ) : null}
+          {fixture.competition ? (
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
+              {fixture.competition}
             </span>
           ) : null}
           {when ? (

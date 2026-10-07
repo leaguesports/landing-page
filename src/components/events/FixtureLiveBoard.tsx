@@ -1,5 +1,7 @@
 "use client";
 
+import { TeamBadge } from "@/components/fixtures/TeamBadge";
+import type { WatchFixtureSide } from "@/lib/intent/watch-fixture-card";
 import type { FixtureLiveBoard } from "@/types/fixture-feed";
 
 function statusLabel(status: FixtureLiveBoard["status"]): string {
@@ -11,9 +13,13 @@ function statusLabel(status: FixtureLiveBoard["status"]): string {
 export function FixtureLiveBoardView({
   board,
   compact = false,
+  homeSide = null,
+  awaySide = null,
 }: {
   board: FixtureLiveBoard | null;
   compact?: boolean;
+  homeSide?: WatchFixtureSide | null;
+  awaySide?: WatchFixtureSide | null;
 }) {
   if (!board) return null;
   const live = board.status === "live";
@@ -24,31 +30,39 @@ export function FixtureLiveBoardView({
         className={
           compact
             ? "flex flex-col gap-1.5"
-            : "rounded-2xl border border-white/10 bg-[#141814] px-4 py-4 sm:px-5"
+            : "rounded-2xl border border-zinc-200 px-4 py-4 sm:px-5"
         }
       >
         <div className="flex min-w-0 items-center justify-between gap-3">
           <p
-            className={`min-w-0 flex-1 truncate font-semibold text-white ${compact ? "text-sm" : "text-base sm:text-lg"}`}
+            className={`flex min-w-0 flex-1 items-center gap-2 font-semibold ${compact ? "text-sm text-white" : "text-base text-zinc-950 sm:text-lg"}`}
           >
-            {board.home.name}
+            {compact || !homeSide ? null : (
+              <TeamBadge code={homeSide.shortCode} colour={homeSide.primaryColour} role="home" />
+            )}
+            <span className="min-w-0 truncate">{board.home.name}</span>
           </p>
+          {board.status === "scheduled" ? null : (
           <div className="flex shrink-0 items-baseline gap-2 font-display tracking-wide">
-            <span className={compact ? "text-xl text-white" : "text-3xl text-white sm:text-4xl"}>
+            <span className={compact ? "text-xl text-white" : "text-3xl text-zinc-950 sm:text-4xl"}>
               {board.home.score}
             </span>
             <span className="text-sm text-zinc-500">–</span>
-            <span className={compact ? "text-xl text-white" : "text-3xl text-white sm:text-4xl"}>
+            <span className={compact ? "text-xl text-white" : "text-3xl text-zinc-950 sm:text-4xl"}>
               {board.away.score}
             </span>
           </div>
+          )}
           <p
-            className={`min-w-0 flex-1 truncate text-right font-semibold text-white ${compact ? "text-sm" : "text-base sm:text-lg"}`}
+            className={`flex min-w-0 flex-1 items-center justify-end gap-2 text-right font-semibold ${compact ? "text-sm text-white" : "text-base text-zinc-950 sm:text-lg"}`}
           >
-            {board.away.name}
+            <span className="min-w-0 truncate">{board.away.name}</span>
+            {compact || !awaySide ? null : (
+              <TeamBadge code={awaySide.shortCode} colour={awaySide.primaryColour} role="away" />
+            )}
           </p>
         </div>
-        <div className={`flex items-center gap-2 ${compact ? "" : "mt-3 border-t border-white/8 pt-3"}`}>
+        <div className={`flex items-center gap-2 ${compact ? "" : "mt-3 border-t border-zinc-200 pt-3"}`}>
           <StatusPill live={live} status={board.status} />
           {board.clock ? (
             <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
@@ -65,11 +79,11 @@ export function FixtureLiveBoardView({
       className={
         compact
           ? "flex flex-col gap-1.5"
-          : "rounded-2xl border border-white/10 bg-[#141814] px-4 py-4 sm:px-5"
+          : "rounded-2xl border border-zinc-200 px-4 py-4 sm:px-5"
       }
     >
       {board.leaders.length === 0 ? (
-        <p className={`text-zinc-400 ${compact ? "text-sm" : "text-base"}`}>
+        <p className={compact ? "text-sm text-zinc-400" : "text-base text-zinc-600"}>
           Grid not out yet
         </p>
       ) : (
@@ -79,10 +93,10 @@ export function FixtureLiveBoardView({
           {board.leaders.slice(0, 3).map((leader) => (
             <li
               key={`${leader.pos}-${leader.driver}`}
-              className={`min-w-0 ${compact ? "text-sm" : "flex flex-1 items-baseline gap-2 border-b border-white/6 pb-2 sm:border-b-0 sm:pb-0"}`}
+              className={`min-w-0 ${compact ? "text-sm" : "flex flex-1 items-baseline gap-2 border-b border-zinc-200 pb-2 sm:border-b-0 sm:pb-0"}`}
             >
               <span className="font-display text-sky-400">P{leader.pos}</span>{" "}
-              <span className="font-semibold text-white">{leader.driver}</span>
+              <span className={`font-semibold ${compact ? "text-white" : "text-zinc-950"}`}>{leader.driver}</span>
               {!compact && leader.gap ? (
                 <span className="text-xs text-zinc-500">{leader.gap}</span>
               ) : null}
@@ -90,7 +104,7 @@ export function FixtureLiveBoardView({
           ))}
         </ol>
       )}
-      <div className={`flex items-center gap-2 ${compact ? "" : "mt-3 border-t border-white/8 pt-3"}`}>
+      <div className={`flex items-center gap-2 ${compact ? "" : "mt-3 border-t border-zinc-200 pt-3"}`}>
         <StatusPill live={live} status={board.status} />
         {board.sessionLabel ? (
           <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">

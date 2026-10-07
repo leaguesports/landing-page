@@ -7,12 +7,15 @@ export function RaceReplaySection({
   title,
   replayHref,
   tone = "event",
+  embedded = false,
 }: {
   sessionKey?: number | null;
   eventSlug?: string | null;
   title: string;
   replayHref?: string | null;
   tone?: "event" | "motorsport";
+  /** Drop the page-width chrome when the section sits inside the event article. */
+  embedded?: boolean;
 }) {
   if (!sessionKey && !eventSlug) return null;
   const motorsport = tone === "motorsport";
@@ -21,12 +24,14 @@ export function RaceReplaySection({
       id="race-replay"
       aria-labelledby="race-replay-heading"
       className={
-        motorsport
-          ? "scroll-mt-24 py-12 sm:py-20 px-4 sm:px-6 lg:px-8"
-          : "scroll-mt-24 border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+        embedded
+          ? "scroll-mt-40"
+          : motorsport
+            ? "scroll-mt-24 py-12 sm:py-20 px-4 sm:px-6 lg:px-8"
+            : "scroll-mt-24 border-b border-white/5 px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
       }
     >
-      <div className="mx-auto max-w-7xl">
+      <div className={embedded ? undefined : "mx-auto max-w-7xl"}>
         <p
           className={
             motorsport
@@ -43,7 +48,7 @@ export function RaceReplaySection({
               className={
                 motorsport
                   ? "mt-2 text-xl sm:text-2xl font-black italic uppercase text-white"
-                  : "mt-2 font-display text-3xl tracking-wide text-white sm:text-4xl"
+                  : "mt-2 font-display text-3xl tracking-wide text-zinc-950"
               }
             >
               {title}
@@ -52,7 +57,7 @@ export function RaceReplaySection({
               className={
                 motorsport
                   ? "mt-2 max-w-2xl text-zinc-500 font-bold uppercase tracking-widest text-xs sm:text-sm"
-                  : "mt-3 max-w-2xl text-base leading-relaxed text-zinc-400"
+                  : "mt-3 max-w-2xl text-base leading-relaxed text-zinc-600"
               }
             >
               Rotate the circuit, follow a car, and scrub yellow flags, safety
@@ -65,7 +70,7 @@ export function RaceReplaySection({
               className={
                 motorsport
                   ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                  : "inline-flex min-h-11 items-center text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                  : "inline-flex min-h-11 items-center text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-950"
               }
             >
               All races
@@ -76,7 +81,7 @@ export function RaceReplaySection({
                 className={
                   motorsport
                     ? "inline-flex min-h-11 items-center text-xs font-black uppercase italic tracking-wider text-zinc-400 hover:text-white"
-                    : "inline-flex min-h-11 items-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
+                    : "inline-flex min-h-11 items-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950"
                 }
               >
                 Full screen

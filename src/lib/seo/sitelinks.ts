@@ -40,8 +40,8 @@ const WATCH_SPORT_LINKS: readonly Sitelink[] = [
 ];
 
 /**
- * Pages linked from the header on every URL.
- * Google builds brand sitelinks from short, repeated nav anchors like these.
+ * Short, repeated site anchors Google can reuse as brand sitelinks.
+ * Watch sports from this list are linked in the footer.
  */
 export const HEADER_SITELINKS: readonly Sitelink[] = [
   ...WATCH_SPORT_LINKS,

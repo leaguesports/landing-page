@@ -1,27 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import HeaderSessionControls from "@/components/HeaderSessionControls";
-import { HEADER_SITELINKS } from "@/lib/seo/sitelinks";
-
-function SectionLinks({
-  className,
-  linkClassName,
-}: {
-  className: string;
-  linkClassName: string;
-}) {
-  return (
-    <ul className={className}>
-      {HEADER_SITELINKS.map((link) => (
-        <li key={link.href} className="shrink-0">
-          <Link href={link.href} className={linkClassName}>
-            {link.title}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export default function Navigation() {
   return (
@@ -45,10 +24,6 @@ export default function Navigation() {
               <span className="text-[var(--color-brand)]">SPORTS</span>
             </span>
           </Link>
-          <SectionLinks
-            className="hidden min-w-0 items-center gap-5 lg:flex"
-            linkClassName="text-sm font-medium text-zinc-300 transition-colors hover:text-white"
-          />
           <HeaderSessionControls />
         </nav>
       </div>
