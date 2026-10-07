@@ -1,1 +1,1 @@
-export { SportIcon } from "./sportIconMap";
+export { hasSportIcon, SportIcon } from "./sportIconMap";

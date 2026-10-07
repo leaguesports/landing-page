@@ -1,15 +1,15 @@
 import { HomeAthleteCta } from "@/components/home/HomeAthleteCta";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { HomeDiscovery } from "@/components/home/HomeDiscovery";
-import { HomeUpcomingEvents } from "@/components/home/HomeUpcomingEvents";
+import { HomeFeaturedVenues } from "@/components/home/HomeFeaturedVenues";
 import { HomeValueSections } from "@/components/home/HomeValueSections";
+import { hasSportIcon, SportIcon } from "@/components/icons/sports";
+import { GUIDE_SPORTS, type GuideSport } from "@/lib/guides/presentation";
 import { buildHomeJsonLd } from "@/lib/home/homeJsonLd";
-import { formatStat } from "@/lib/format-stat";
 import { getServerAuthState } from "@/lib/server-auth";
 import { safeSanityImageUrl } from "@/lib/sanity-image";
-import { selectFeaturedFixture } from "@/lib/sports/events-feed";
 import { getUpcomingFixtures } from "@/services/events";
-import { getHomepageStats } from "@/services/homepageStats";
+import { getFeaturedHomeVenues } from "@/services/venueHub";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -64,60 +64,80 @@ export const metadata: Metadata = {
   ],
 };
 
+const guideChipClassName =
+  "inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300";
+
+function guideCardLabels(guide: Guide): {
+  intent: "play" | "watch" | null;
+  sports: GuideSport[];
+} {
+  const haystack = [guide.slug, guide.title].filter(Boolean).join(" ").toLowerCase();
+  const sports = GUIDE_SPORTS.filter((sport) => haystack.includes(sport));
+  const playHit = /\b(play|court|course|padel|golf|darts|book)\b/.test(haystack);
+  const watchHit = /\b(watch|screening|fixture|broadcast|bars?)\b/.test(haystack);
+  let intent: "play" | "watch" | null = null;
+  if (playHit && !watchHit) intent = "play";
+  else if (watchHit && !playHit) intent = "watch";
+  else if (playHit && watchHit) {
+    intent = /\b(watch|screening|broadcast)\b/.test(haystack) ? "watch" : "play";
+  }
+  return { intent, sports };
+}
+
 function GuideCard({ guide }: { guide: Guide }) {
   if (!isGuideSlug(guide.slug)) return null;
 
   const imageUrl = safeSanityImageUrl(guide.mainImage);
+  const { intent, sports } = guideCardLabels(guide);
 
   return (
     <Link
       href={guideHref(guide.slug)}
-      className="group block overflow-hidden rounded-3xl border border-white/8 bg-[#141814] transition-colors hover:border-white/16"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#141814] transition-colors hover:border-white/30"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-zinc-800">
+      <span className="relative block aspect-[16/10] bg-zinc-900">
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={guide.title}
+            alt=""
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+            sizes="(max-width: 640px) 82vw, 22rem"
           />
-        ) : (
-          <div className="h-full w-full bg-zinc-800" />
-        )}
-        <div className="absolute inset-0 bg-linear-to-t from-[#141814] via-transparent to-transparent" />
-      </div>
-
-      <div className="px-4 py-4 sm:px-5">
-        <h3 className="text-[15px] font-medium leading-snug text-white group-hover:text-[var(--color-brand)]">
+        ) : null}
+      </span>
+      <span className="flex flex-1 flex-col p-5">
+        <span className="line-clamp-3 font-display text-2xl leading-none tracking-wide text-white">
           {guide.title}
-        </h3>
-      </div>
+        </span>
+        {intent || sports.length > 0 ? (
+          <span className="mt-auto flex flex-wrap gap-1.5 pt-4">
+            {intent ? (
+              <span className={guideChipClassName}>
+                {intent === "watch" ? "Watch" : "Play"}
+              </span>
+            ) : null}
+            {sports.map((sport) => (
+              <span key={sport} className={guideChipClassName}>
+                {hasSportIcon(sport) ? (
+                  <SportIcon sportSlug={sport} size={14} color="currentColor" />
+                ) : null}
+                {sport.charAt(0).toUpperCase() + sport.slice(1)}
+              </span>
+            ))}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }
 
 async function MarketingHome() {
-  const [topGuides, stats, upcomingFixtures] = await Promise.all([
+  const [topGuides, upcomingFixtures, featuredVenues] = await Promise.all([
     getTopGuides(),
-    getHomepageStats(),
     getUpcomingFixtures({ limit: 24 }),
+    getFeaturedHomeVenues(),
   ]);
-
-  const featuredFixture = selectFeaturedFixture(upcomingFixtures);
-  const upcomingList = featuredFixture
-    ? upcomingFixtures
-        .filter((item) => item.slug !== featuredFixture.slug)
-        .slice(0, 5)
-    : upcomingFixtures.slice(0, 5);
-
-  const homepageStats = [
-    { value: formatStat(stats.watchVenues), label: "Watch venues", tone: "text-sky-400" },
-    { value: formatStat(stats.playVenues), label: "Play venues", tone: "text-emerald-400" },
-    { value: formatStat(stats.events), label: "Events", tone: "text-white" },
-    { value: formatStat(stats.guides), label: "Guides", tone: "text-zinc-300" },
-  ];
 
   const jsonLd = buildHomeJsonLd(CANONICAL_SITE_URL);
 
@@ -132,52 +152,21 @@ async function MarketingHome() {
 
       <HomeValueSections fixtures={upcomingFixtures} />
 
-      <section className="border-t border-white/5 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 max-w-xl sm:mb-10">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-              Across South Africa
-            </p>
-            <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-              Live inventory
-            </h2>
-            <p className="mt-3 text-sm text-zinc-400 sm:text-base">
-              Exact counts from the directories — venues, events, and guides on
-              LeagueSports today.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-6">
-            {homepageStats.map((stat) => (
-              <div key={stat.label} className="text-center sm:text-left">
-                <p
-                  className={`font-display text-4xl tracking-wide sm:text-5xl ${stat.tone}`}
-                >
-                  {stat.value}
-                </p>
-                <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-500">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeFeaturedVenues venues={featuredVenues} />
 
       <HomeAthleteCta />
 
-      <HomeUpcomingEvents fixtures={upcomingList} featured={featuredFixture} />
-
-      <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-10 flex flex-col gap-4 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
+      <section className="relative border-t border-white/5 bg-[#0c0f0c] py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
                 Editorial
               </p>
-              <h2 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
+              <h2 className="mt-2 font-display text-4xl tracking-wide text-white sm:text-5xl">
                 Top guides
               </h2>
-              <p className="mt-3 text-sm text-zinc-400 sm:text-base">
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
                 Local tips for fans and players across South Africa.
               </p>
             </div>
@@ -185,52 +174,23 @@ async function MarketingHome() {
               href="/guides"
               className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-zinc-300 transition-colors hover:text-white"
             >
-              View all
+              All guides
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+          <ul className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {topGuides.map((guide) => (
-              <GuideCard key={guide._id} guide={guide} />
+              <li
+                key={guide._id}
+                className="w-[82%] shrink-0 snap-start sm:w-[22rem] lg:w-[calc((100%-2rem)/3.15)]"
+              >
+                <GuideCard guide={guide} />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-t border-white/5 bg-[#101410] px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <div className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-[var(--color-brand)]/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-xl">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-                LeagueSports
-              </p>
-              <h2 className="font-display text-5xl tracking-wide text-white sm:text-6xl">
-                Your local sports hub
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                Browse Watch and Play directories, follow fixtures, or open
-                athlete tools to lock live scorecards.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/venues"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:scale-[1.03]"
-              >
-                Find a venue
-              </Link>
-              <Link
-                href="/athletes"
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
-              >
-                Athlete tools
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
