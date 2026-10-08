@@ -8,9 +8,8 @@ import {
   FixtureInternalLinks,
   FixtureIntroSection,
 } from "@/components/events/FixtureSeoSections";
-import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
+import { FixtureLiveBoardView } from "@/components/events/FixtureLiveBoard";
 import { OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
-import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
 import { VenueSectionNav } from "@/app/venues/[venue]/_components/VenueSectionNav";
 import { FeaturedVenueCard } from "@/components/venues/FeaturedVenueCard";
 import { watchFixtureSides } from "@/lib/intent/watch-fixture-card";
@@ -33,9 +32,6 @@ export function EventArticle({
   kickoffLabel,
   weekend,
   kickoff,
-  replaySessionKey,
-  replayEventSlug,
-  replayHref,
   intro,
   localAngle,
   editorialFaqs,
@@ -45,7 +41,6 @@ export function EventArticle({
   matrix,
   feed,
   venueCards,
-  venueCount,
   circuitLine,
   jsonLd,
 }: {
@@ -54,9 +49,6 @@ export function EventArticle({
   kickoffLabel: string | null;
   weekend: OpenF1Weekend | null;
   kickoff: string | null;
-  replaySessionKey?: number | null;
-  replayEventSlug: string | null;
-  replayHref: string | null;
   intro: string | null;
   localAngle: string | null;
   editorialFaqs: FixtureFaq[];
@@ -66,7 +58,6 @@ export function EventArticle({
   matrix: CtaMatrix;
   feed: FixtureFeedSnapshot;
   venueCards: FeaturedHomeVenue[];
-  venueCount: number;
   circuitLine: string | null;
   jsonLd: unknown;
 }) {
@@ -103,9 +94,7 @@ export function EventArticle({
   const watchAllHref = intentPath("watch", fixture.sportSlug);
   const sectionTabs = [
     hasEditorial ? { id: "about", label: "About" } : null,
-    { id: "live-feed", label: "Feed" },
     weekend ? { id: "weekend-timetable", label: "Timetable" } : null,
-    replayEventSlug ? { id: "race-replay", label: "Replay" } : null,
     { id: "where-to-watch", label: "Watch" },
     { id: "prediction-pool", label: "Pool" },
     editorialFaqs.length > 0 ? { id: "questions", label: "Questions" } : null,
@@ -182,39 +171,17 @@ export function EventArticle({
             <div className="min-w-0">
               <FixtureIntroSection title={profile.headings.about} intro={intro} localAngle={localAngle} />
 
-              <section id="live-feed" className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8">
-                <FixtureSocialFeed
-                  slug={fixture.slug}
-                  title={fixture.title}
-                  sportSlug={fixture.sportSlug}
-                  venueCount={venueCount}
-                  initial={feed}
-                  homeSide={sides.home}
-                  awaySide={sides.away}
-                  feedHeading={voice.feedHeading}
-                  feedEmpty={voice.feedEmpty}
-                  replyPlaceholder={voice.replyPlaceholder}
-                />
-              </section>
+              {feed.board ? (
+                <section id="live-feed" className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8">
+                  <FixtureLiveBoardView board={feed.board} homeSide={sides.home} awaySide={sides.away} />
+                </section>
+              ) : null}
 
               {weekend ? (
                 <div className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8">
                   <OpenF1WeekendSection
                     weekend={weekend}
                     eventPageHref={fixture.eventPageHref}
-                    replayHref={replayHref}
-                    embedded
-                  />
-                </div>
-              ) : null}
-
-              {replayEventSlug ? (
-                <div className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8">
-                  <RaceReplaySection
-                    sessionKey={replaySessionKey}
-                    eventSlug={replayEventSlug}
-                    title={`${weekend?.meeting.meetingName ?? fixture.title} replay`}
-                    replayHref={replayHref}
                     embedded
                   />
                 </div>

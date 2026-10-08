@@ -13,7 +13,6 @@ import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { buildFixtureWhatsAppShare } from "@/lib/events/whatsapp-share";
 import { ensureFixtureFeed } from "@/lib/fixtures/feed-store";
 import {
-  eventRaceReplaySlug,
   findOpenF1RaceSession,
   getOpenF1WeekendByEventSlug,
   getOpenF1WeekendForFixture,
@@ -22,7 +21,6 @@ import {
   openF1CircuitImageUrl,
   openF1CircuitLine,
 } from "@/lib/openf1/openf1";
-import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
 import { formatFixtureWhen } from "@/lib/sports/events-feed";
@@ -151,15 +149,6 @@ export default async function EventFixturePage({ params }: PageProps) {
     ? (prefetchedWeekend ?? (await getOpenF1WeekendForFixture(fixture)))
     : null;
   const race = weekend ? findOpenF1RaceSession(weekend.sessions) : null;
-  const replay = weekend ? replayConfigFromWeekend(weekend) : null;
-  const replayEventSlug = eventRaceReplaySlug({
-    slug: fixture.slug,
-    fixture,
-    weekendEventSlug: weekend?.meeting.eventSlug,
-  });
-  const replayHref = replayEventSlug
-    ? `/events/${fixture.slug}/replay`
-    : null;
   const kickoff = race?.dateStart ?? fixture.startsAt;
   const when = formatFixtureWhen(kickoff);
   const sport = sportDisplayName(fixture.sportSlug);
@@ -241,9 +230,6 @@ export default async function EventFixturePage({ params }: PageProps) {
       kickoffLabel={when}
       kickoff={kickoff}
       weekend={weekend}
-      replaySessionKey={replay?.sessionKey}
-      replayEventSlug={replayEventSlug}
-      replayHref={replayHref}
       intro={intro}
       localAngle={localAngle}
       editorialFaqs={faqs}
@@ -253,7 +239,6 @@ export default async function EventFixturePage({ params }: PageProps) {
       matrix={matrix}
       feed={feed}
       venueCards={venueCards}
-      venueCount={venueCount}
       circuitLine={weekend ? openF1CircuitLine(weekend.meeting) : null}
       jsonLd={jsonLd}
     />
