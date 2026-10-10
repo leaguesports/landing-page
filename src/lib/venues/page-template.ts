@@ -252,7 +252,8 @@ function stripPhoneNumbers(sentence: string): string {
 
 /**
  * Customer sentences with publish notes and phone numbers removed.
- * `venueCustomerAbout` is the first of these. The venue profile may show more.
+ * `venueCustomerAbout` is the first of these, for short facts.
+ * The visible About section uses `venueAboutParagraphs` and does not.
  */
 export function venueCustomerSentences(description: unknown): string[] {
   return sentences(venueAboutPlain(description))

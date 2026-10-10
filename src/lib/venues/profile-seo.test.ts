@@ -85,7 +85,9 @@ describe("venue profile copy", () => {
     assert.match(venueProfileLede(court), /play padel/);
     assert.match(venueProfileLede(court), /2 outdoor courts/);
     const about = venueProfileAbout(court.description);
-    assert.equal(about[0]?.includes("0821234567"), false);
+    assert.deepEqual(about, [
+      "Action Padel has 2 outdoor courts. Call 0821234567 to book.",
+    ]);
     assert.match(venueProfileFaqs(court)[1]?.answer ?? "", /2 outdoor courts/);
   });
 
