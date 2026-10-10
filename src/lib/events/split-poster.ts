@@ -394,23 +394,6 @@ function rivalryLabel(a: string, b: string): string | null {
   return null;
 }
 
-function luminance(fill: string): number {
-  const hex = normaliseWatchTeamColour(fill) ?? SPLIT_POSTER_NEUTRAL;
-  const value = Number.parseInt(hex.slice(1), 16);
-  const red = (value >> 16) & 255;
-  const green = (value >> 8) & 255;
-  const blue = value & 255;
-  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-}
-
-/** Lighter kit on the left so the giant type sits on the field that can hold dark ink. */
-function placeSides(home: PosterSide, away: PosterSide): { left: PosterSide; right: PosterSide } {
-  if (luminance(home.fill) + 0.18 < luminance(away.fill)) {
-    return { left: away, right: home };
-  }
-  return { left: home, right: away };
-}
-
 function teamPair(input: SplitPosterInput): { home: PosterSide; away: PosterSide } | null {
   const teams = (input.teams ?? []).filter((team) => team.name.trim());
   if (teams.length >= 2) {
@@ -459,22 +442,21 @@ export function buildSplitPoster(input: SplitPosterInput): SplitPosterModel {
   const pair = teamPair(input);
 
   if (pair) {
-    const placed = placeSides(pair.home, pair.away);
     const rivalry = rivalryLabel(pair.home.name, pair.away.name);
     const competition = input.competition?.trim() || null;
     const corner = rivalry ?? competition;
     const metaClock = clockPhrase("match", instant);
     return {
       kind: "match",
-      headlineHome: placed.left.displayName,
-      headlineAway: placed.right.displayName,
-      breadcrumb: `${placed.left.displayName} vs ${placed.right.displayName}`,
+      headlineHome: pair.home.displayName,
+      headlineAway: pair.away.displayName,
+      breadcrumb: `${pair.home.displayName} vs ${pair.away.displayName}`,
       eyebrow: eyebrow(sport, rivalry ?? competition),
       sportLabel: sport,
       metaDate,
       metaClock,
-      home: placed.left,
-      away: placed.right,
+      home: pair.home,
+      away: pair.away,
       cornerTitle: corner,
       dateLine: posterDateLine("match", instant),
     };

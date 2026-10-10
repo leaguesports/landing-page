@@ -11,6 +11,7 @@ const PRIMARY =
   "inline-flex h-11 items-center gap-2 rounded-full border border-[#0B0B0B] bg-[#0B0B0B] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#1d2024]";
 
 export function EventPosterHero({
+  heading,
   poster,
   sportSlug,
   findVenueHref,
@@ -19,6 +20,8 @@ export function EventPosterHero({
   followSlug,
   pageUrl,
 }: {
+  /** Production fixture heading from `fixtureSeoTitle`. The only h1. */
+  heading: string;
   poster: SplitPosterInput;
   sportSlug: string | null;
   findVenueHref: string;
@@ -73,18 +76,8 @@ export function EventPosterHero({
           {model.eyebrow}
         </p>
 
-        <h1 className="mt-2.5 font-display text-[48px] leading-none text-[#0B0B0B] sm:text-[72px]">
-          {model.kind === "match" ? (
-            <>
-              <span className="uppercase">{model.headlineHome}</span>{" "}
-              <em className="mx-[0.1em] align-[0.18em] text-[0.62em] font-normal not-italic text-[#8b9089]">
-                vs
-              </em>{" "}
-              <span className="uppercase">{model.headlineAway}</span>
-            </>
-          ) : (
-            <span className="uppercase">{model.headline}</span>
-          )}
+        <h1 className="mt-2.5 max-w-4xl font-display text-4xl leading-none text-[#0B0B0B] sm:text-5xl lg:text-6xl">
+          {heading}
         </h1>
 
         <div className="mt-3.5 flex flex-wrap items-center gap-2.5 text-[15px] font-medium text-[#2b2f33]">

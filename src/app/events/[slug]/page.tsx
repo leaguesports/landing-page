@@ -239,6 +239,7 @@ export default async function EventFixturePage({ params }: PageProps) {
       />
 
       <EventPosterHero
+        heading={heading}
         poster={{
           title: fixture.title,
           sportSlug: fixture.sportSlug,

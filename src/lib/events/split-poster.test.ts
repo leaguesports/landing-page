@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { fixtureSeoTitle } from "./meta.ts";
 import {
   SPLIT_POSTER_NEUTRAL,
   SPLIT_POSTER_NEUTRAL_ALT,
@@ -11,6 +13,9 @@ import {
   resolveNationStripes,
   resolveTeamPosterColour,
 } from "./split-poster.ts";
+
+const SOWETO_H1 = "Pirates vs Chiefs 2026 - Where to Watch the Soweto Derby";
+const MEXICO_H1 = "Mexico City Grand Prix 2026 - Where to Watch in South Africa";
 
 const DERBY_KICKOFF = "2026-10-31T13:30:00.000Z";
 const MEXICO_LIGHTS = "2026-11-01T20:00:00.000Z";
@@ -107,33 +112,36 @@ describe("posterInk", () => {
 });
 
 describe("buildSplitPoster", () => {
-  it("builds the Soweto derby with Chiefs on the light side and Pirates pinstripe", () => {
+  it("keeps home on the left for Orlando Pirates vs Kaizer Chiefs", () => {
     const poster = buildSplitPoster({
       title: "Orlando Pirates vs Kaizer Chiefs",
       sportSlug: "soccer",
       sportName: "Soccer",
       competition: "Betway Premiership",
       startsAt: DERBY_KICKOFF,
+      teams: [{ name: "Orlando Pirates" }, { name: "Kaizer Chiefs" }],
     });
     assert.equal(poster.kind, "match");
     if (poster.kind !== "match") return;
-    assert.equal(poster.headlineHome, "Chiefs");
-    assert.equal(poster.headlineAway, "Pirates");
-    assert.equal(poster.home.fill, "#ffd200");
-    assert.equal(poster.home.source, "curated");
-    assert.equal(poster.home.ink, "#0B0B0B");
-    assert.equal(poster.home.texture, "halftone");
-    assert.equal(poster.home.epithet, "Gold & black");
-    assert.equal(poster.away.fill, "#000000");
-    assert.equal(poster.away.texture, "pinstripe");
-    assert.equal(poster.away.ink, "#ffffff");
-    assert.equal(poster.away.epithet, "Black & white");
+    assert.equal(poster.home.name, "Orlando Pirates");
+    assert.equal(poster.away.name, "Kaizer Chiefs");
+    assert.equal(poster.headlineHome, "Pirates");
+    assert.equal(poster.headlineAway, "Chiefs");
+    assert.equal(poster.home.fill, "#000000");
+    assert.equal(poster.home.texture, "pinstripe");
+    assert.equal(poster.home.ink, "#ffffff");
+    assert.equal(poster.home.epithet, "Black & white");
+    assert.equal(poster.away.fill, "#ffd200");
+    assert.equal(poster.away.source, "curated");
+    assert.equal(poster.away.ink, "#0B0B0B");
+    assert.equal(poster.away.texture, "halftone");
+    assert.equal(poster.away.epithet, "Gold & black");
     assert.equal(poster.cornerTitle, "The Soweto derby");
     assert.equal(poster.eyebrow, "Watch Soccer · The Soweto derby");
     assert.equal(poster.metaDate, "Sat 31 Oct 2026");
     assert.equal(poster.metaClock, "Kick-off 15:30");
     assert.equal(poster.dateLine, "SAT 31 OCT 2026 · KICK-OFF 15:30");
-    assert.equal(poster.breadcrumb, "Chiefs vs Pirates");
+    assert.equal(poster.breadcrumb, "Pirates vs Chiefs");
   });
 
   it("keeps CMS colours and says kick-off is TBC when there is no start", () => {
@@ -147,10 +155,11 @@ describe("buildSplitPoster", () => {
     });
     assert.equal(poster.kind, "match");
     if (poster.kind !== "match") return;
-    assert.equal(poster.home.name, "Mamelodi Sundowns");
-    assert.equal(poster.home.fill, "#00aa00");
+    assert.equal(poster.home.name, "Kaizer Chiefs");
+    assert.equal(poster.home.fill, "#111111");
     assert.equal(poster.home.source, "cms");
-    assert.equal(poster.away.fill, "#111111");
+    assert.equal(poster.away.name, "Mamelodi Sundowns");
+    assert.equal(poster.away.fill, "#00aa00");
     assert.equal(poster.away.texture, "solid");
     assert.equal(poster.metaClock, "Kick-off TBC");
     assert.equal(poster.dateLine, "KICK-OFF TBC");
@@ -279,5 +288,47 @@ describe("fixtureCalendarUrl", () => {
       detailsUrl: "https://leaguesports.co.za/events/untitled",
     });
     assert.equal(new URL(href).searchParams.get("dates"), null);
+  });
+});
+
+describe("event hero h1", () => {
+  it("keeps the production where-to-watch phrase", () => {
+    assert.equal(
+      fixtureSeoTitle({
+        title: "Orlando Pirates vs Kaizer Chiefs",
+        seoTitle: SOWETO_H1,
+        competition: "Betway Premiership",
+        teams: [{ name: "Orlando Pirates" }, { name: "Kaizer Chiefs" }],
+        startsAt: DERBY_KICKOFF,
+      }),
+      SOWETO_H1,
+    );
+    assert.equal(
+      fixtureSeoTitle({
+        title: "Mexico City Grand Prix",
+        seoTitle: MEXICO_H1,
+        competition: "Formula 1",
+        startsAt: MEXICO_LIGHTS,
+      }),
+      MEXICO_H1,
+    );
+  });
+
+  it("renders that phrase as the only h1 on the event page", () => {
+    const hero = readFileSync(
+      new URL("../../components/events/EventPosterHero.tsx", import.meta.url),
+      "utf8",
+    );
+    const page = readFileSync(
+      new URL("../../app/events/[slug]/page.tsx", import.meta.url),
+      "utf8",
+    );
+    assert.equal(hero.match(/<h1\b/g)?.length, 1);
+    assert.equal(page.match(/<h1\b/g)?.length ?? 0, 0);
+    assert.match(hero, /<h1[^>]*>\s*\{heading\}\s*<\/h1>/);
+    assert.doesNotMatch(hero, /<h1[^>]*>[\s\S]*headlineHome/);
+    assert.match(page, /const heading = fixtureSeoTitle\(/);
+    assert.match(page, /heading=\{heading\}/);
+    assert.match(page, /seoTitle: fixture\.seoTitle/);
   });
 });

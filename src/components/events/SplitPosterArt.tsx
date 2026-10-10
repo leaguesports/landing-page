@@ -174,7 +174,10 @@ function MatchArt({
           <rect width={box.w} height={box.h} fill={`url(#${fade})`} />
         </mask>
       </defs>
-      <polygon points={left} fill={model.home.fill} />
+      <polygon
+        points={left}
+        fill={model.home.texture === "pinstripe" ? `url(#${pin})` : model.home.fill}
+      />
       {model.home.texture === "halftone" ? (
         <polygon points={left} fill={`url(#${dots})`} mask={`url(#${mask})`} />
       ) : null}
@@ -182,6 +185,9 @@ function MatchArt({
         points={right}
         fill={model.away.texture === "pinstripe" ? `url(#${pin})` : model.away.fill}
       />
+      {model.away.texture === "halftone" ? (
+        <polygon points={right} fill={`url(#${dots})`} mask={`url(#${mask})`} />
+      ) : null}
       <line x1={top} y1={0} x2={bottom} y2={box.h} stroke="#fff" strokeWidth={box.seam} />
       <text x={nameX} y={nameY} fill={model.home.ink} style={displayFont(homeSize)}>
         {homeName}
