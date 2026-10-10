@@ -13,8 +13,8 @@ import { useEffect, useState, useTransition } from "react";
 type FixtureFollowButtonProps = {
   slug: string;
   className?: string;
-  /** Primary is the filled watch CTA; follow is secondary on fixture pages. */
-  variant?: "primary" | "secondary";
+  /** Primary is the filled watch CTA; poster matches the light split-poster hero. */
+  variant?: "primary" | "secondary" | "poster";
 };
 
 type FollowStatus = "idle" | "loading" | "following" | "not_following";
@@ -75,11 +75,12 @@ export function FixtureFollowButton({
 
   const busy = authLoading || pending || (isAuthenticated && !statusReady);
   const isFollowing = isAuthenticated && remoteStatus === "following";
+  const followLabel = variant === "poster" ? "Follow event" : "Follow fixture";
   const label = !isAuthenticated
-    ? "Follow fixture"
+    ? followLabel
     : isFollowing
       ? "Following"
-      : "Follow fixture";
+      : followLabel;
 
   const followingClass =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-brand)]/50 bg-[var(--color-brand)]/15 px-6 py-2.5 text-sm font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/25 disabled:opacity-60";
@@ -87,12 +88,17 @@ export function FixtureFollowButton({
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white disabled:opacity-60";
   const secondaryClass =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950 disabled:opacity-60";
+  const posterClass = isFollowing
+    ? "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#0F6B45] bg-white px-5 text-sm font-medium text-[#0F6B45] transition-colors hover:border-[#0B0B0B] disabled:opacity-60"
+    : "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#d5d6da] bg-white px-5 text-sm font-medium text-[#1d2024] transition-colors hover:border-[#0B0B0B] disabled:opacity-60";
 
-  const buttonClass = isFollowing
+  const buttonClass = isFollowing && variant !== "poster"
     ? followingClass
     : variant === "primary"
       ? primaryClass
-      : secondaryClass;
+      : variant === "poster"
+        ? posterClass
+        : secondaryClass;
 
   return (
     <div className={className}>
@@ -109,7 +115,7 @@ export function FixtureFollowButton({
         />
         {pending ? (isFollowing ? "Updating…" : "Following…") : label}
       </button>
-      {!isAuthenticated && !authLoading ? (
+      {variant !== "poster" && !isAuthenticated && !authLoading ? (
         <p className="mt-2 text-xs text-zinc-500">
           Sign in to follow this fixture and find it again when you come back.
         </p>

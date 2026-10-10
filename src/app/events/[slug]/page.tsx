@@ -1,8 +1,8 @@
-import { ConversionKit } from "@/components/conversion/ConversionKit";
+import { StickyCtaBar } from "@/components/conversion/StickyCtaBar";
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
-import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
+import { EventPosterHero } from "@/components/events/EventPosterHero";
 import { FixtureVenueList } from "@/components/events/FixtureList";
 import { FixturePoolPanel } from "@/components/events/FixturePoolPanel";
 import {
@@ -11,17 +11,13 @@ import {
   FixtureIntroSection,
 } from "@/components/events/FixtureSeoSections";
 import { FixtureSocialFeed } from "@/components/events/FixtureSocialFeed";
-import { OpenF1CountryFlag, OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
+import { OpenF1WeekendSection } from "@/components/events/OpenF1WeekendSection";
 import { RaceReplaySection } from "@/components/f1-replay/RaceReplaySection";
 import { resolveFixturePageFaqs } from "@/lib/events/fixtureFaqs";
 import { isFixtureIndexable } from "@/lib/events/index-bar";
 import { buildEventJsonLd } from "@/lib/events/jsonLd";
 import { fixtureInternalLinks } from "@/lib/events/links";
-import {
-  EVENTS_LIST_HREF,
-  eventDetailListHref,
-  eventMoreSportLabel,
-} from "@/lib/events/scope";
+import { EVENTS_LIST_HREF, eventMoreSportLabel } from "@/lib/events/scope";
 import { fixtureSeoDescription, fixtureSeoTitle } from "@/lib/events/meta";
 import { selectCtaMatrix } from "@/lib/conversion/cta-matrix";
 import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
@@ -40,12 +36,9 @@ import {
 import { replayConfigFromWeekend } from "@/lib/openf1/replay";
 import { getSiteBaseUrl } from "@/lib/site-url";
 import { SPORT_CATALOG } from "@/lib/sports/catalog";
-import { formatFixtureWhen } from "@/lib/sports/events-feed";
 import { fixturePublicSlugs } from "@/lib/sports/events-path";
 import { getFixtureBySlug, getUpcomingFixtures } from "@/services/events";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
 export const revalidate = 300;
 
@@ -166,7 +159,6 @@ export default async function EventFixturePage({ params }: PageProps) {
     ? `/events/${fixture.slug}/replay`
     : null;
   const kickoff = race?.dateStart ?? fixture.startsAt;
-  const when = formatFixtureWhen(kickoff);
   const sport = sportDisplayName(fixture.sportSlug);
   const venueCount = fixture.venues.length;
   const watchHref = fixture.sportSlug
@@ -246,136 +238,35 @@ export default async function EventFixturePage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <section className="border-b border-white/5 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <nav
-            className="mb-8 flex flex-wrap items-center gap-2 text-sm text-zinc-500"
-            aria-label="Breadcrumb"
-          >
-            <Link href="/" className="transition-colors hover:text-white">
-              Home
-            </Link>
-            <span aria-hidden>/</span>
-            <Link
-              href={eventDetailListHref(fixture.sportSlug)}
-              className="transition-colors hover:text-white"
-            >
-              Events
-            </Link>
-            <span aria-hidden>/</span>
-            <span className="text-zinc-400">{fixture.title}</span>
-          </nav>
-
-          <Link
-            href={eventDetailListHref(fixture.sportSlug)}
-            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            {eventMoreSportLabel(fixture.sportSlug)}
-          </Link>
-
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            {sport ? (
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-400">
-                {sport}
-              </span>
-            ) : null}
-            {fixture.competition || weekend ? (
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
-                {fixture.competition || "Formula 1"}
-              </span>
-            ) : null}
-            {when ? (
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-                {when}
-              </span>
-            ) : null}
-            {weekend ? (
-              <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-                <OpenF1CountryFlag meeting={weekend.meeting} />
-                {openF1CircuitLine(weekend.meeting)}
-              </span>
-            ) : null}
-          </div>
-
-          <h1 className="font-display max-w-4xl text-4xl tracking-wide text-white sm:text-5xl lg:text-6xl">
-            {heading}
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
-            {fixture.broadcastInfo?.trim() ||
-              (weekend
-                ? `Official practice, qualifying, and race times for ${weekend.meeting.meetingName} at ${openF1CircuitLine(weekend.meeting)}.`
-                : venueCount > 0
-                ? `Find a screening nearby, follow the fixture, then open the live feed.`
-                : `Follow the live feed, then pick a venue screening nearby when listings land.`)}
-          </p>
-
-          <div className="mt-8 flex flex-col items-start gap-4">
-            <ConversionKit
-              matrix={matrix}
-              tone="watch"
-              sport={fixture.sportSlug}
-              slug={fixture.slug}
-              sourcePage={`/events/${fixture.slug}`}
-              pageKey={`event:${fixture.slug}`}
-              pageType="event"
-              showSticky
-              showFallback={false}
-            />
-            <div className="flex flex-wrap items-start gap-3">
-              <FixtureFollowButton slug={fixture.slug} variant="secondary" />
-              <Link
-                href="#live-feed"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-              >
-                Open live feed
-              </Link>
-              {weekend ? (
-                <Link
-                  href="#weekend-timetable"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  Weekend timetable
-                </Link>
-              ) : null}
-              {replayEventSlug ? (
-                <Link
-                  href="#race-replay"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  Race replay
-                </Link>
-              ) : null}
-              {fixture.relatedGuide?.slug ? (
-                <Link
-                  href={`/guides/${fixture.relatedGuide.slug}`}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  Related guide
-                </Link>
-              ) : null}
-              {fixture.hostVenue?.slug ? (
-                <Link
-                  href={`/venues/${fixture.hostVenue.slug}`}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  {fixture.hostVenue.name}
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              ) : null}
-              {fixture.eventPageHref ? (
-                <Link
-                  href={fixture.eventPageHref}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950"
-                >
-                  Event page
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </section>
+      <EventPosterHero
+        heading={heading}
+        poster={{
+          title: fixture.title,
+          sportSlug: fixture.sportSlug,
+          sportName: sport,
+          competition: fixture.competition ?? (weekend ? "Formula 1" : null),
+          series: fixture.series,
+          startsAt: kickoff,
+          teams: fixture.teams,
+          countryCode: weekend?.meeting.countryCode,
+          countryName: weekend?.meeting.countryName,
+          place: weekend?.meeting.location,
+          weekendStart: weekend?.meeting.dateStart,
+          weekendEnd: weekend?.meeting.dateEnd,
+        }}
+        sportSlug={fixture.sportSlug}
+        findVenueHref={venueCount > 0 ? "#where-to-watch" : watchHref}
+        pageUrl={share.pageUrl}
+        shareHref={share.href}
+        followSlug={fixture.slug}
+      />
+      <StickyCtaBar
+        matrix={matrix}
+        tone="watch"
+        sport={fixture.sportSlug}
+        slug={fixture.slug}
+        pageKey={`event:${fixture.slug}`}
+      />
 
       <FixtureIntroSection intro={intro} localAngle={localAngle} />
 
