@@ -16,7 +16,6 @@ import {
 import { getUpcomingFixtures } from "@/services/events";
 import { getRecommendedVenues } from "@/services/venueHub";
 import { VenueHubFavouritesSlot } from "./_components/VenueHubFavouritesSlot";
-import { VenueNameSearch } from "./_components/VenueNameSearch";
 import {
   VenueHubDirectories,
   VenueHubEventTiles,
@@ -95,16 +94,13 @@ export default async function VenuesPage({
             Find a venue
           </p>
           <h1 className="font-display text-4xl tracking-wide text-white sm:text-5xl">
-            Search, then browse
+            What’s on, then browse
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Type a venue name to jump straight there. What’s on and short
-            recommended lists stay capped — the full catalog lives on Watch,
-            Play, and city landings.
+            Search venues, sports, and cities from the bar at the top of every
+            page. What’s on and short recommended lists stay capped — the full
+            catalog lives on Watch, Play, and city landings.
           </p>
-          <div className="mt-8">
-            <VenueNameSearch initialQuery={landing.nameQuery ?? ""} />
-          </div>
         </div>
       </section>
 

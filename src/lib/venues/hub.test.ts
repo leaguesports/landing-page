@@ -44,6 +44,16 @@ const sportsHubSource = readFileSync(
   "utf8",
 );
 
+const navigationSource = readFileSync(
+  new URL("../../components/Navigation.tsx", import.meta.url),
+  "utf8",
+);
+
+const navbarSearchSource = readFileSync(
+  new URL("../../components/search/NavbarSearch.tsx", import.meta.url),
+  "utf8",
+);
+
 function fixture(
   partial: Partial<UpcomingFixture> &
     Pick<UpcomingFixture, "slug" | "title">,
@@ -83,7 +93,11 @@ describe("venues hub does not fetch the full catalog", () => {
   it("does not call searchVenues or render an All venues dump", () => {
     assert.doesNotMatch(hubPageSource, /\bsearchVenues\b/);
     assert.doesNotMatch(hubPageSource, /All venues/);
-    assert.match(hubPageSource, /VenueNameSearch/);
+    assert.doesNotMatch(hubPageSource, /VenueNameSearch/);
+    assert.doesNotMatch(hubPageSource, /VenueNameTypeahead/);
+    assert.match(navigationSource, /NavbarSearch/);
+    assert.match(navbarSearchSource, /useVenueNameSearch/);
+    assert.doesNotMatch(navbarSearchSource, /\bsearchVenues\b/);
     assert.match(hubPageSource, /venuesLandingMetadata/);
     assert.match(hubPageSource, /canonical: seo.canonical/);
     assert.match(hubPageSource, /robots: \{ index: false \}/);

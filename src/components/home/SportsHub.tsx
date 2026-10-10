@@ -58,7 +58,6 @@ import {
   hubConnectedCount,
   hubEventsHref,
   hubForYouEmptyCtas,
-  hubSearchHref,
   hubShowsSportControl,
   parseHubTabParam,
   takeHubPreview,
@@ -81,18 +80,12 @@ import {
   Flag,
   Heart,
   ListFilter,
-  LoaderCircle,
-  MapPin,
-  Search,
   Sparkles,
   Tv,
   Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useVenueNameSearch } from "@/hooks/useVenueNameSearch";
-import { classifySiteSearch } from "@/lib/search/venueSearch";
 import {
   useCallback,
   useEffect,
@@ -101,7 +94,6 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -113,9 +105,6 @@ const HUB_ICON_BTN =
 
 const HUB_ICON_BTN_ACTIVE =
   "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-400/35 bg-emerald-400/10 text-emerald-200 transition-colors hover:border-emerald-400/50 hover:bg-emerald-400/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
-
-const HUB_CONTROL =
-  "min-h-11 w-full rounded-2xl border border-white/10 bg-[#101410] text-sm text-white outline-none focus:border-emerald-400/40";
 
 function SectionHeading({
   id,
@@ -456,7 +445,7 @@ function HubSportControl({
         open={open}
         onClose={() => setOpen(false)}
         title="Filter by sport"
-        description="Scopes Home, Play, and search."
+        description="Scopes Home and Play."
       >
         <div id={panelId} className="p-2">
           <ul className="space-y-0.5" role="listbox" aria-label="Sports">
@@ -513,136 +502,6 @@ function HubSportControl({
   );
 }
 
-function HubSearch({
-  query,
-  onQueryChange,
-  onSubmit,
-}: {
-  query: string;
-  onQueryChange: (value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const searchId = useId();
-  const panelId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const classified = classifySiteSearch(query, "play");
-  const venueSearch = useVenueNameSearch(
-    classified.kind === "venue-name" ? query : "",
-  );
-  const showVenueHits =
-    classified.kind === "venue-name" && venueSearch.results.length > 0;
-
-  useEffect(() => {
-    if (!open) return;
-    const frame = window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [open]);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    onSubmit(event);
-    setOpen(false);
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label="Search venues, play, and watch"
-        onClick={() => setOpen(true)}
-        className={query.trim() ? HUB_ICON_BTN_ACTIVE : HUB_ICON_BTN}
-      >
-        <Search className="h-4 w-4" aria-hidden />
-      </button>
-
-      <HubModal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Search"
-        description="Find venues, play, and watch."
-      >
-        <form
-          id={panelId}
-          onSubmit={handleSubmit}
-          className="space-y-4 p-5"
-          role="search"
-        >
-          <label className="sr-only" htmlFor={searchId}>
-            Search venues, play, and watch
-          </label>
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500"
-              aria-hidden
-            />
-            <input
-              ref={inputRef}
-              id={searchId}
-              type="search"
-              value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
-              placeholder="Venue name, play, watch…"
-              autoComplete="off"
-              className={`${HUB_CONTROL} px-4 pl-10 placeholder:text-zinc-600`}
-            />
-          </div>
-          {classified.kind === "venue-name" && venueSearch.tooShort ? (
-            <p className="text-sm text-zinc-500">{venueSearch.hint}</p>
-          ) : null}
-          {classified.kind === "venue-name" && venueSearch.error ? (
-            <p className="text-sm text-amber-300/90">{venueSearch.errorCopy}</p>
-          ) : null}
-          {classified.kind === "venue-name" && venueSearch.empty ? (
-            <p className="text-sm text-zinc-500">{venueSearch.emptyCopy}</p>
-          ) : null}
-          {venueSearch.pending && classified.kind === "venue-name" ? (
-            <p className="flex items-center gap-2 text-sm text-zinc-400">
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-              Searching venues…
-            </p>
-          ) : null}
-          {showVenueHits ? (
-            <ul className="overflow-hidden rounded-2xl border border-white/10">
-              {venueSearch.results.map((venue) => (
-                <li key={venue.cmsId}>
-                  <Link
-                    href={`/venues/${venue.slug}`}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5"
-                  >
-                    <span>
-                      <span className="block text-sm font-medium text-white">
-                        {venue.name}
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
-                        <MapPin className="h-3 w-3" aria-hidden />
-                        {venue.city ?? "South Africa"}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <button
-            type="submit"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
-          >
-            Search
-          </button>
-        </form>
-      </HubModal>
-    </>
-  );
-}
-
 export function SportsHub({
   user,
   historyError,
@@ -668,7 +527,6 @@ export function SportsHub({
   initialActiveSport = null,
   initialTab = null,
 }: SportsHubProps) {
-  const router = useRouter();
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
   const padelLocked = lockedActivity?.padel ?? historyItems.length;
   const golfLocked = lockedActivity?.golf ?? golfHistoryItems.length;
@@ -690,7 +548,6 @@ export function SportsHub({
     initialActiveSport,
   );
   const [tab, setTab] = useState<HubTabId>(() => parseHubTabParam(initialTab));
-  const [searchQuery, setSearchQuery] = useState("");
   const [friendRequestCount, setFriendRequestCount] = useState(
     () => friends.incoming.length,
   );
@@ -774,11 +631,6 @@ export function SportsHub({
     setPrefs(selectHubSport(prefs, slug, knownSlugs));
   }
 
-  function submitHubSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    router.push(hubSearchHref(searchQuery, active));
-  }
-
   const forYouEmpty =
     !nextUp &&
     followedRest.length === 0 &&
@@ -790,22 +642,20 @@ export function SportsHub({
       <FriendsSnapshotSeed snapshot={friends} />
       <h1 className="sr-only">Your hub</h1>
 
-      <div className="sticky top-16 z-30 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2.5 sm:px-6 lg:max-w-5xl lg:px-8">
-          {showSportControl ? (
+      {showSportControl ? (
+        <div className="sticky top-16 z-30 border-b border-white/5 bg-[#0c0f0c]/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2.5 sm:px-6 lg:max-w-5xl lg:px-8">
             <HubSportControl
               active={active}
               sports={sports}
               onChange={focusSport}
             />
-          ) : null}
-          <HubSearch
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            onSubmit={submitHubSearch}
-          />
+            <p className="truncate text-sm text-zinc-400">
+              {activeSport ? activeSport.name : "All sports"}
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8 lg:max-w-5xl lg:px-8 lg:py-10">
         {tab === "home" ? (
