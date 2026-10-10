@@ -39,16 +39,6 @@ const WATCH_SPORT_LINKS: readonly Sitelink[] = [
   sportHub("watch", "motorsport", "Motorsport"),
 ];
 
-/**
- * Pages linked from the header on every URL.
- * Google builds brand sitelinks from short, repeated nav anchors like these.
- */
-export const HEADER_SITELINKS: readonly Sitelink[] = [
-  ...WATCH_SPORT_LINKS,
-  VENUES_LINK,
-  ABOUT_LINK,
-];
-
 export const SITEMAP_PAGE_LINK: Sitelink = {
   href: "/site-map",
   title: "Site Map",

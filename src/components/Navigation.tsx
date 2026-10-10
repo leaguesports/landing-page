@@ -6,27 +6,6 @@ import {
   NavbarSearch,
   NavbarSearchFallback,
 } from "@/components/search/NavbarSearch";
-import { HEADER_SITELINKS } from "@/lib/seo/sitelinks";
-
-function SectionLinks({
-  className,
-  linkClassName,
-}: {
-  className: string;
-  linkClassName: string;
-}) {
-  return (
-    <ul className={className}>
-      {HEADER_SITELINKS.map((link) => (
-        <li key={link.href} className="shrink-0">
-          <Link href={link.href} className={linkClassName}>
-            {link.title}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export default function Navigation() {
   return (
@@ -55,10 +34,6 @@ export default function Navigation() {
               <NavbarSearch />
             </Suspense>
           </div>
-          <SectionLinks
-            className="hidden min-w-0 items-center gap-4 lg:flex"
-            linkClassName="text-sm font-medium text-zinc-300 transition-colors hover:text-white"
-          />
           <HeaderSessionControls />
         </nav>
       </div>
