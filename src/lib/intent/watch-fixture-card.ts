@@ -255,6 +255,17 @@ function sideFrom(
   };
 }
 
+export function watchFixtureSides(input: {
+  title: string;
+  teams?: readonly WatchFixtureTeamHint[] | null;
+}): {
+  home: WatchFixtureSide | null;
+  away: WatchFixtureSide | null;
+} {
+  const sides = resolveSides(input);
+  return { home: sides.home, away: sides.away };
+}
+
 function resolveSides(input: {
   title: string;
   teams?: readonly WatchFixtureTeamHint[] | null;

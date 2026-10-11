@@ -39,6 +39,16 @@ const WATCH_SPORT_LINKS: readonly Sitelink[] = [
   sportHub("watch", "motorsport", "Motorsport"),
 ];
 
+/**
+ * Short, repeated site anchors Google can reuse as brand sitelinks.
+ * Watch sports from this list are linked in the footer.
+ */
+export const HEADER_SITELINKS: readonly Sitelink[] = [
+  ...WATCH_SPORT_LINKS,
+  VENUES_LINK,
+  ABOUT_LINK,
+];
+
 export const SITEMAP_PAGE_LINK: Sitelink = {
   href: "/site-map",
   title: "Site Map",

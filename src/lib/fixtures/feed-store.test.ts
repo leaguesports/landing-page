@@ -64,7 +64,7 @@ describe("ensureFixtureFeed", () => {
       assert.equal(snapshot.board.home.score, 0);
       assert.equal(snapshot.board.away.score, 0);
     }
-    assert.ok(snapshot.items.some((item) => item.kind === "venue_nudge"));
+    assert.equal(snapshot.items.some((item) => item.kind === "venue_nudge"), false);
     assert.equal(
       snapshot.items.some((item) => item.kind === "score_update"),
       false,

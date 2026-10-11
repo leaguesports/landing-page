@@ -16,6 +16,12 @@ type FixturePoolPanelProps = {
   slug: string;
   fixtureTitle: string;
   kicksOffAt?: string | null;
+  /** Light matches the venue sidebar. Dark is the night-mode card. */
+  tone?: "dark" | "light";
+  /** Page section drops the sidebar card so the form can use the column. */
+  layout?: "card" | "section";
+  /** Sport-specific line under the heading. */
+  poolLine?: string;
 };
 
 function sendToLogin(slug: string) {
@@ -29,6 +35,9 @@ export function FixturePoolPanel({
   slug,
   fixtureTitle,
   kicksOffAt,
+  tone = "dark",
+  layout = "card",
+  poolLine = "Start a friends tip pool for this fixture. Share the link on WhatsApp — no money, just bragging rights before kickoff.",
 }: FixturePoolPanelProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -87,23 +96,37 @@ export function FixturePoolPanel({
     });
   }
 
+  const light = tone === "light";
+  const section = layout === "section";
+
   return (
     <section
-      className="rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      className={
+        section
+          ? ""
+          : light
+            ? "rounded-3xl border border-zinc-200 bg-zinc-50 p-5 sm:p-6"
+            : "rounded-3xl border border-white/8 bg-[#141814] p-5 sm:p-6"
+      }
       aria-labelledby="fixture-pool-heading"
     >
-      <div className="mb-3 flex items-center gap-2">
-        <Trophy className="h-3.5 w-3.5 text-sky-300" aria-hidden />
+      <div className={section ? "" : "mb-3 flex items-center gap-2"}>
+        {section ? null : (
+          <Trophy className={`h-3.5 w-3.5 ${light ? "text-emerald-800" : "text-sky-300"}`} aria-hidden />
+        )}
         <h2
           id="fixture-pool-heading"
-          className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+          className={
+            section
+              ? "font-display text-3xl tracking-wide text-zinc-950"
+              : "text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+          }
         >
           Prediction pool
         </h2>
       </div>
-      <p className="text-sm leading-relaxed text-zinc-400">
-        Start a friends tip pool for this fixture. Share the link on WhatsApp —
-        no money, just bragging rights before kickoff.
+      <p className={`text-sm leading-relaxed ${section || light ? "mt-3 text-zinc-600" : "text-zinc-400"}`}>
+        {poolLine}
       </p>
 
       {unavailable ? (
@@ -112,7 +135,7 @@ export function FixturePoolPanel({
         </p>
       ) : poolPath && shareHref ? (
         <div className="mt-4 space-y-3">
-          <p className="text-sm text-sky-200" role="status">
+          <p className={`text-sm ${light ? "text-emerald-800" : "text-sky-200"}`} role="status">
             Pool ready. Forward this link to friends.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -127,14 +150,18 @@ export function FixturePoolPanel({
             </a>
             <Link
               href={poolPath}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
+              className={
+                light
+                  ? "inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 hover:border-zinc-950"
+                  : "inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-5 text-sm font-medium text-white hover:bg-white hover:text-zinc-950"
+              }
             >
               Open pool
             </Link>
           </div>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="mt-4 space-y-3">
+        <form onSubmit={onSubmit} className={`mt-4 space-y-3 ${section ? "max-w-xl" : ""}`}>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-zinc-500">
               Pool name (optional)
@@ -144,13 +171,21 @@ export function FixturePoolPanel({
               onChange={(event) => setTitle(event.target.value)}
               maxLength={80}
               placeholder={`${fixtureTitle} tips`}
-              className="min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white placeholder:text-zinc-600 focus:border-sky-400/60 focus:outline-none"
+              className={
+                light
+                  ? "min-h-11 w-full rounded-2xl border border-zinc-300 bg-white px-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-zinc-950 focus:outline-none"
+                  : "min-h-11 w-full rounded-2xl border border-white/10 bg-[#0c0f0c] px-3 text-sm text-white placeholder:text-zinc-600 focus:border-sky-400/60 focus:outline-none"
+              }
             />
           </label>
           <button
             type="submit"
             disabled={pending || authLoading}
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white disabled:opacity-60"
+            className={
+              light
+                ? "inline-flex min-h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:opacity-60"
+                : "inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white disabled:opacity-60"
+            }
           >
             {pending
               ? "Creating…"
@@ -159,7 +194,7 @@ export function FixturePoolPanel({
                 : "Sign in to create"}
           </button>
           {error ? (
-            <p className="text-sm text-red-300" role="alert">
+            <p className={`text-sm ${light ? "text-rose-700" : "text-red-300"}`} role="alert">
               {error}
             </p>
           ) : null}

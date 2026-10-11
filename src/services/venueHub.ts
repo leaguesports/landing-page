@@ -249,6 +249,103 @@ function toFeaturedHomeVenue(venue: VenueDetail): FeaturedHomeVenue | null {
   };
 }
 
+const VENUE_CARDS_BY_SLUG_QUERY = `*[
+  _type == "venue"
+  && slug.current in $slugs
+] {
+  _id,
+  name,
+  "slug": slug.current,
+  hero_image,
+  gallery[]{
+    alt,
+    credit,
+    asset->{
+      _id,
+      url
+    }
+  },
+  "address": {
+    "suburb": address.suburb->title,
+    "city": address.city->title
+  },
+  "sports": sports[]-> {
+    _id,
+    name,
+    image,
+    "slug": slug.current
+  }
+}`;
+
+function venueCardFromDetail(venue: VenueDetail): FeaturedHomeVenue | null {
+  const slug = venue.slug.trim();
+  const name = venue.name.trim();
+  if (!slug || !name) return null;
+  const image = scoreboardHeroImage(venue);
+  const imageUrl = image ? sanityImageUrl(image, { width: 960, height: 600 }) ?? "" : "";
+  const fromGallery = image === venue.gallery?.[0]?.image;
+  const sports = venue.sports
+    .map((sport) => {
+      const sportName = sport.name?.trim() ?? "";
+      const sportSlug = sport.slug?.trim() || sportName.toLowerCase().replace(/\s+/g, "-");
+      if (!sportName || !sportSlug) return null;
+      return { slug: sportSlug, name: sportName };
+    })
+    .filter((sport): sport is { slug: string; name: string } => sport !== null)
+    .slice(0, 3);
+  return {
+    slug,
+    name,
+    place: featuredHomePlace(venue),
+    sports,
+    imageUrl,
+    imageAlt: (fromGallery ? venue.gallery?.[0]?.alt : name) || name,
+  };
+}
+
+/** Home-style cards for a known slug list. Order follows `slugs`. Missing photos stay on the card. */
+export async function getVenueCardsBySlugs(
+  slugs: readonly string[],
+): Promise<FeaturedHomeVenue[]> {
+  const wanted = [...new Set(slugs.map((slug) => slug.trim()).filter(Boolean))].slice(0, 8);
+  if (wanted.length === 0 || !isSanityConfigured()) return [];
+
+  try {
+    const rows = await sanityClient.fetch<VenueRow[]>(VENUE_CARDS_BY_SLUG_QUERY, {
+      slugs: wanted,
+    });
+    const bySlug = new Map<string, FeaturedHomeVenue>();
+    for (const row of rows ?? []) {
+      const detail = mapVenueRow({
+        ...row,
+        _id: row._id || row.slug || "",
+        name: row.name || "",
+        description: null,
+        address: row.address ?? {
+          street: "",
+          suburb: "",
+          city: "",
+          province: "",
+          postcode: "",
+          country: "",
+        },
+        sports: row.sports ?? [],
+        broadcasts: row.broadcasts ?? [],
+      });
+      if (!detail) continue;
+      const card = venueCardFromDetail(detail);
+      if (card) bySlug.set(card.slug, card);
+    }
+    return wanted.flatMap((slug) => {
+      const card = bySlug.get(slug);
+      return card ? [card] : [];
+    });
+  } catch (error) {
+    console.error("[events] venue cards fetch failed", error);
+    return [];
+  }
+}
+
 /** Photo venues for the home row. Sport artwork never qualifies. */
 export async function getFeaturedHomeVenues(): Promise<FeaturedHomeVenue[]> {
   if (!isSanityConfigured()) return [];

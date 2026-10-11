@@ -21,6 +21,11 @@ const PRIMARY_CLASS: Record<CtaPairTone, string> = {
 const SECONDARY_CLASS =
   "inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white hover:text-zinc-950";
 
+const LIGHT_PRIMARY =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800";
+const LIGHT_SECONDARY =
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950";
+
 function isExternal(href: string): boolean {
   return (
     href.startsWith("http://") ||
@@ -96,6 +101,7 @@ export function CtaPair({
   city,
   slug,
   className = "",
+  surface = "dark",
 }: {
   matrix: CtaMatrix;
   slot?: CtaSlot;
@@ -104,24 +110,36 @@ export function CtaPair({
   city?: string | null;
   slug?: string | null;
   className?: string;
+  /** Light pages use the same filled and outline buttons as venue profiles. */
+  surface?: "dark" | "light";
 }) {
   const ctas = distinctMatrixCtas(matrix);
 
   return (
     <div className={`flex flex-wrap gap-3 ${className}`.trim()}>
-      {ctas.map((cta, index) => (
-        <ConversionCtaLink
-          key={`${cta.id}-${index}`}
-          cta={cta}
-          matrix={matrix}
-          slot={slot}
-          tone={tone}
-          variant={index === 0 ? "primary" : "secondary"}
-          sport={sport}
-          city={city}
-          slug={slug}
-        />
-      ))}
+      {ctas.map((cta, index) => {
+        const variant = index === 0 ? "primary" : "secondary";
+        return (
+          <ConversionCtaLink
+            key={`${cta.id}-${index}`}
+            cta={cta}
+            matrix={matrix}
+            slot={slot}
+            tone={tone}
+            variant={variant}
+            sport={sport}
+            city={city}
+            slug={slug}
+            className={
+              surface === "light"
+                ? variant === "primary"
+                  ? LIGHT_PRIMARY
+                  : LIGHT_SECONDARY
+                : undefined
+            }
+          />
+        );
+      })}
     </div>
   );
 }

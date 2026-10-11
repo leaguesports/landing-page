@@ -20,6 +20,7 @@ export function CoverageNotify({
   pageType,
   showRoadmap = true,
   trackFallbackOnView = false,
+  tone = "dark",
 }: {
   sport?: string | null;
   sportName?: string | null;
@@ -30,6 +31,8 @@ export function CoverageNotify({
   showRoadmap?: boolean;
   /** Fire `conversion_fallback` once when thin coverage is shown. */
   trackFallbackOnView?: boolean;
+  /** Light matches venue profile sections. */
+  tone?: "dark" | "light";
 }) {
   const emailFieldId = useId();
   const [email, setEmail] = useState("");
@@ -105,9 +108,17 @@ export function CoverageNotify({
     }
   }
 
+  const light = tone === "light";
+
   return (
-    <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-6 sm:py-7">
-      <p className="text-sm leading-relaxed text-zinc-400">
+    <div
+      className={
+        light
+          ? "rounded-3xl border border-zinc-200 bg-zinc-50 px-5 py-6 sm:px-6 sm:py-7"
+          : "rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 sm:px-6 sm:py-7"
+      }
+    >
+      <p className={`text-sm leading-relaxed ${light ? "text-zinc-600" : "text-zinc-400"}`}>
         {coverageHonestyCopy({
           sportName: sportName || sport,
           cityName: cityName || city,
@@ -115,14 +126,14 @@ export function CoverageNotify({
       </p>
 
       {done ? (
-        <p className="mt-4 text-sm font-medium text-emerald-300" role="status">
+        <p className={`mt-4 text-sm font-medium ${light ? "text-emerald-800" : "text-emerald-300"}`} role="status">
           You&apos;re on the list. We&apos;ll email you when coverage lands.
         </p>
       ) : (
         <form onSubmit={(event) => void onSubmit(event)} className="mt-4">
           <label
             htmlFor={emailFieldId}
-            className="mb-1.5 block text-xs font-medium text-zinc-400"
+            className={`mb-1.5 block text-xs font-medium ${light ? "text-zinc-500" : "text-zinc-400"}`}
           >
             Notify me when this is listed
           </label>
@@ -135,7 +146,11 @@ export function CoverageNotify({
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@email.com"
-              className="min-h-11 min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-400/40"
+              className={
+                light
+                  ? "min-h-11 min-w-0 flex-1 rounded-2xl border border-zinc-300 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 outline-none focus:border-zinc-950"
+                  : "min-h-11 min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#101410] px-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-400/40"
+              }
             />
             <button
               type="submit"
@@ -149,7 +164,7 @@ export function CoverageNotify({
       )}
 
       {error ? (
-        <p className="mt-3 text-sm text-rose-300" role="alert">
+        <p className={`mt-3 text-sm ${light ? "text-rose-700" : "text-rose-300"}`} role="alert">
           {error}
         </p>
       ) : null}
@@ -159,7 +174,7 @@ export function CoverageNotify({
           See what&apos;s next on the{" "}
           <Link
             href={ROADMAP_HREF}
-            className="font-medium text-emerald-300 hover:text-emerald-200"
+            className={light ? "font-medium text-emerald-800 hover:text-emerald-950" : "font-medium text-emerald-300 hover:text-emerald-200"}
           >
             roadmap
           </Link>

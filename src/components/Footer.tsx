@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HEADER_SITELINKS, SITEMAP_PAGE_LINK } from "@/lib/seo/sitelinks";
 
 export default function Footer() {
   return (
@@ -15,6 +16,20 @@ export default function Footer() {
                 South Africa&apos;s local sports platform — find where to watch,
                 play, and meet your next match.
               </p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                {HEADER_SITELINKS.filter((link) => link.href.startsWith("/watch/")).map(
+                  (link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-zinc-300 transition-colors hover:text-white"
+                      >
+                        {link.title}
+                      </Link>
+                    </li>
+                  ),
+                )}
+              </ul>
             </div>
 
             <div>
@@ -60,6 +75,14 @@ export default function Footer() {
                     className="text-sm text-zinc-300 transition-colors hover:text-white"
                   >
                     About
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={SITEMAP_PAGE_LINK.href}
+                    className="text-sm text-zinc-300 transition-colors hover:text-white"
+                  >
+                    {SITEMAP_PAGE_LINK.title}
                   </Link>
                 </li>
                 <li>

@@ -1,27 +1,11 @@
 "use client";
 
-import {
-  parseWatchFixtureTitle,
-  watchFixtureFill,
-  watchFixtureInk,
-} from "@/lib/intent/watch-fixture-card";
-import { VENUE_WEEK_EMPTY, type WatchVenueFixtureCard, type WatchVenueSide } from "@/lib/venues/watch-week";
+import { parseWatchFixtureTitle } from "@/lib/intent/watch-fixture-card";
+import { TeamBadge } from "@/components/fixtures/TeamBadge";
+import { VENUE_WEEK_EMPTY, type WatchVenueFixtureCard } from "@/lib/venues/watch-week";
 import { ChevronRight, Monitor, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-
-function TeamBadge({ side, role }: { side: WatchVenueSide; role: "home" | "away" }) {
-  const fill = watchFixtureFill(side.colour, role);
-  const ink = watchFixtureInk(fill);
-  return (
-    <span
-      className="inline-flex h-7 w-11 shrink-0 items-center justify-center rounded-md text-[11px] font-bold tracking-wide"
-      style={{ backgroundColor: fill, color: ink }}
-    >
-      {side.code}
-    </span>
-  );
-}
 
 function Cue({ label }: { label: string }) {
   const Icon = /sound/i.test(label) ? Volume2 : /screen/i.test(label) ? Monitor : null;
@@ -43,14 +27,14 @@ function FixtureRow({ card }: { card: WatchVenueFixtureCard }) {
     matchup = (
       <span className="flex min-w-0 items-center gap-2.5">
         <span className="flex min-w-0 items-center gap-2">
-          <TeamBadge side={card.home} role="home" />
+          <TeamBadge code={card.home.code} colour={card.home.colour} role="home" />
           <span className="truncate text-sm font-semibold text-zinc-950">{names.home}</span>
         </span>
         <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
           vs
         </span>
         <span className="flex min-w-0 items-center gap-2">
-          <TeamBadge side={card.away} role="away" />
+          <TeamBadge code={card.away.code} colour={card.away.colour} role="away" />
           <span className="truncate text-sm font-semibold text-zinc-950">{names.away}</span>
         </span>
       </span>

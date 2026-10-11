@@ -1,6 +1,7 @@
 "use client";
 
 import { FixtureLiveBoardView } from "@/components/events/FixtureLiveBoard";
+import type { WatchFixtureSide } from "@/lib/intent/watch-fixture-card";
 import {
   fetchFixtureFeed,
   postFanReply,
@@ -15,7 +16,7 @@ import type {
 import { isSafeRelativeHref } from "@/lib/fixtures/slug";
 import { fixtureChannelName } from "@/types/fixture-feed";
 import * as Ably from "ably";
-import { Heart, MapPin, Send } from "lucide-react";
+import { Heart, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 
@@ -41,25 +42,19 @@ function FeedItemRow({
   const isVenue = item.kind === "venue_nudge";
   return (
     <article
-      className={`border-t border-white/8 py-4 first:border-t-0 first:pt-0 ${
-        isVenue ? "-mx-1 rounded-xl bg-sky-950/20 px-3 sm:px-4" : ""
+      className={`border-t border-zinc-200 py-4 first:border-t-0 first:pt-0 ${
+        isVenue ? "-mx-1 rounded-xl bg-emerald-50 px-3 sm:px-4" : ""
       }`}
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
           {item.authorLabel}
         </span>
         <span className="text-[11px] text-zinc-600">
           {formatRelative(item.createdAt)}
         </span>
-        {isVenue ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-400">
-            <MapPin className="h-3 w-3" aria-hidden />
-            Watch nearby
-          </span>
-        ) : null}
       </div>
-      <p className="text-sm leading-relaxed text-zinc-200 sm:text-base">
+      <p className="text-sm leading-relaxed text-zinc-800 sm:text-base">
         {item.body}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -67,7 +62,7 @@ function FeedItemRow({
           type="button"
           disabled={busy}
           onClick={() => onReact(item.id)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-medium text-zinc-300 transition-colors hover:border-white/25 hover:text-white disabled:opacity-50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-zinc-300 px-3 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 disabled:opacity-50"
         >
           <Heart className="h-3.5 w-3.5" aria-hidden />
           {item.reactionCount > 0 ? item.reactionCount : "React"}
@@ -77,7 +72,7 @@ function FeedItemRow({
         isSafeRelativeHref(item.ctaHref) ? (
           <Link
             href={item.ctaHref}
-            className="inline-flex min-h-9 items-center rounded-full bg-white px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
+            className="inline-flex min-h-9 items-center rounded-full bg-zinc-950 px-3 text-xs font-semibold text-white transition-colors hover:bg-zinc-800"
           >
             {item.ctaLabel}
           </Link>
@@ -93,14 +88,22 @@ export function FixtureSocialFeed({
   sportSlug,
   venueCount,
   initial,
-  watchHref,
+  homeSide = null,
+  awaySide = null,
+  feedHeading = "Updates",
+  feedEmpty = "No updates yet — be the first to react when the desk posts.",
+  replyPlaceholder = "Say something short…",
 }: {
   slug: string;
   title: string;
   sportSlug: string | null;
   venueCount: number;
   initial: FixtureFeedSnapshot;
-  watchHref: string;
+  homeSide?: WatchFixtureSide | null;
+  awaySide?: WatchFixtureSide | null;
+  feedHeading?: string;
+  feedEmpty?: string;
+  replyPlaceholder?: string;
 }) {
   const [board, setBoard] = useState<FixtureLiveBoard | null>(initial.board);
   const [items, setItems] = useState<FixtureFeedItem[]>(initial.items);
@@ -198,34 +201,12 @@ export function FixtureSocialFeed({
 
   return (
     <div className="space-y-6">
-      <FixtureLiveBoardView board={board} />
-
-      <div className="rounded-2xl border border-sky-400/20 bg-linear-to-br from-sky-950/35 via-[#141814] to-[#141814] px-4 py-4 sm:px-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">
-          Watch this one live
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-          {venueCount > 0
-            ? `${venueCount} venue${venueCount === 1 ? "" : "s"} screening nearby — claim a seat while the feed is buzzing.`
-            : "Browse Watch venues screening this sport and turn interest into a night out."}
-        </p>
-        <Link
-          href={watchHref}
-          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white"
-        >
-          {venueCount > 0 ? "See screening venues" : "Find where to watch"}
-        </Link>
-      </div>
+      <FixtureLiveBoardView board={board} homeSide={homeSide} awaySide={awaySide} />
 
       <div>
-        <div className="mb-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-brand)]">
-            Live feed
-          </p>
-          <h2 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
-            Match updates
-          </h2>
-        </div>
+        <h2 className="mb-4 font-display text-3xl tracking-wide text-zinc-950">
+          {feedHeading}
+        </h2>
 
         <form onSubmit={handleReply} className="mb-5 flex gap-2">
           <label className="sr-only" htmlFor={`fixture-reply-${slug}`}>
@@ -236,31 +217,31 @@ export function FixtureSocialFeed({
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             maxLength={280}
-            placeholder="Say something short…"
-            className="min-h-11 flex-1 rounded-full border border-white/12 bg-white/4 px-4 text-sm text-white placeholder:text-zinc-500 focus:border-sky-400/60 focus:outline-none"
+            placeholder={replyPlaceholder}
+            className="min-h-11 flex-1 rounded-full border border-zinc-300 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-zinc-950 focus:outline-none"
           />
           <button
             type="submit"
             disabled={pending || !reply.trim()}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-zinc-950 transition-colors hover:bg-sky-400 hover:text-white disabled:opacity-40"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-zinc-950 text-white transition-colors hover:bg-zinc-800 disabled:opacity-40"
             aria-label="Post reply"
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>
         </form>
         {error ? (
-          <p className="mb-3 text-sm text-rose-400" role="alert">
+          <p className="mb-3 text-sm text-rose-700" role="alert">
             {error}
           </p>
         ) : null}
 
-        <div className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-2 sm:px-5">
-          {items.length === 0 ? (
+        <div className="rounded-2xl border border-zinc-200 px-4 py-2 sm:px-5">
+          {items.filter((item) => item.kind !== "venue_nudge").length === 0 ? (
             <p className="py-8 text-center text-sm text-zinc-500">
-              No updates yet — be the first to react when the desk posts.
+              {feedEmpty}
             </p>
           ) : (
-            items.map((item) => (
+            items.filter((item) => item.kind !== "venue_nudge").map((item) => (
               <FeedItemRow
                 key={item.id}
                 item={item}

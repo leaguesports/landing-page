@@ -91,6 +91,11 @@ const STATIC_PATHS: Array<{
   { path: "/guides", changeFrequency: "weekly", priority: 0.8 },
   { path: "/integrations", changeFrequency: "weekly", priority: 0.7 },
   { path: "/roadmap", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/site-map", changeFrequency: "weekly", priority: 0.6 },
+  { path: "/watch/soccer", changeFrequency: "daily", priority: 0.9 },
+  { path: "/watch/rugby", changeFrequency: "daily", priority: 0.9 },
+  { path: "/watch/cricket", changeFrequency: "daily", priority: 0.9 },
+  { path: "/watch/motorsport", changeFrequency: "daily", priority: 0.9 },
 ];
 
 export function resolveSitemapOrigin(raw?: string | null): string {

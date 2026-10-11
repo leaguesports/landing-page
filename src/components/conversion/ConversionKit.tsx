@@ -21,6 +21,7 @@ export function ConversionKit({
   stickyOffsetClassName = "",
   pageType,
   slot = "hero",
+  surface = "dark",
 }: {
   matrix: CtaMatrix;
   tone?: CtaPairTone;
@@ -36,6 +37,8 @@ export function ConversionKit({
   stickyOffsetClassName?: string;
   pageType: PageType;
   slot?: CtaSlot;
+  /** Light pages use filled and outline buttons. The sticky bar stays dark. */
+  surface?: "dark" | "light";
 }) {
   const fallbackRoadmap = matrix.fallback === "notify_roadmap";
   const showNotify =
@@ -51,6 +54,7 @@ export function ConversionKit({
         sport={sport}
         city={city}
         slug={slug}
+        surface={surface}
       />
       {showNotify ? (
         <div className="mt-6 max-w-xl">

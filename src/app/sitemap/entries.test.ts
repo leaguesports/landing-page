@@ -124,6 +124,9 @@ describe("static and CMS row mappers", () => {
     assert.ok(urls.includes(`${ORIGIN}/athletes`));
     assert.ok(urls.includes(`${ORIGIN}/integrations`));
     assert.ok(urls.includes(`${ORIGIN}/roadmap`));
+    assert.ok(urls.includes(`${ORIGIN}/site-map`));
+    assert.ok(urls.includes(`${ORIGIN}/watch/soccer`));
+    assert.equal(urls.includes(`${ORIGIN}/play/padel`), false);
     assert.equal(urls.some((url) => url.includes("?")), false);
   });
 
