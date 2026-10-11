@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { fixtureSeoTitle } from "./meta.ts";
 import {
+  F1_2026_HOST_KEYS,
   SPLIT_POSTER_NEUTRAL,
   SPLIT_POSTER_NEUTRAL_ALT,
   buildSplitPoster,
@@ -12,6 +13,8 @@ import {
   posterInk,
   resolveNationStripes,
   resolveTeamPosterColour,
+  splitPosterNationKeys,
+  type NationMark,
 } from "./split-poster.ts";
 
 const SOWETO_H1 = "Pirates vs Chiefs 2026 - Where to Watch the Soweto Derby";
@@ -100,7 +103,117 @@ describe("resolveNationStripes", () => {
     assert.equal(blank.source, "neutral");
     assert.equal(blank.key, "neutral");
   });
+
+  it("resolves every nation in the map, including each 2026 host", () => {
+    const keys = splitPosterNationKeys();
+    assert.equal(new Set(keys).size, keys.length);
+    for (const key of keys) {
+      const resolved = resolveNationStripes({ countryCode: key });
+      assert.equal(resolved.key, key);
+      assert.equal(resolved.source, "curated");
+    }
+    for (const key of F1_2026_HOST_KEYS) {
+      assert.ok(keys.includes(key), key);
+    }
+  });
+
+  it("gives the United States a star canton instead of a vertical tricolour", () => {
+    for (const hint of ["United States Grand Prix", "Miami Grand Prix", "Las Vegas Grand Prix", "Austin"]) {
+      const resolved = resolveNationStripes({ hint });
+      assert.equal(resolved.key, "usa");
+      assert.equal(resolved.mark.kind, "canton-stars");
+    }
+    const france = resolveNationStripes({ countryCode: "FRA" });
+    assert.equal(france.mark.kind, "bands");
+    if (france.mark.kind !== "bands") return;
+    assert.equal(france.mark.direction, "vertical");
+    assert.deepEqual(france.mark.colours, ["#0055A4", "#FFFFFF", "#EF4135"]);
+  });
+
+  it("separates clash pairs by orientation or shape", () => {
+    const mark = (code: string): NationMark => resolveNationStripes({ countryCode: code }).mark;
+    const seen = new Map<string, string>();
+    for (const key of splitPosterNationKeys()) {
+      const signature = JSON.stringify(mark(key));
+      const previous = seen.get(signature);
+      assert.equal(previous, undefined, `${key} repeats ${previous}`);
+      seen.set(signature, key);
+    }
+
+    assert.equal(direction(mark("fra")), "vertical");
+    assert.equal(direction(mark("ned")), "horizontal");
+    assert.equal(direction(mark("rus")), "horizontal");
+    assert.notDeepEqual(colours(mark("ned")), colours(mark("rus")));
+    assert.equal(colours(mark("rus"))[0], "#FFFFFF");
+
+    assert.equal(mark("mex").kind, "centre-block");
+    assert.equal(direction(mark("ita")), "vertical");
+    assert.equal(direction(mark("irl")), "vertical");
+    assert.notEqual(colours(mark("ita"))[2], colours(mark("irl"))[2]);
+
+    assert.equal(direction(mark("bel")), "vertical");
+    assert.equal(direction(mark("deu")), "horizontal");
+
+    assert.equal(direction(mark("mco")), "horizontal");
+    assert.equal(direction(mark("idn")), "horizontal");
+    assert.equal(direction(mark("pol")), "horizontal");
+    assert.notDeepEqual(mark("mco"), mark("idn"));
+    assert.notDeepEqual(colours(mark("mco")), colours(mark("pol")));
+    assert.equal(colours(mark("aut")).length, 3);
+    assert.equal(colours(mark("mco")).length, 2);
+
+    assert.equal(direction(mark("hun")), "horizontal");
+    assert.equal(direction(mark("bgr")), "horizontal");
+    assert.notDeepEqual(colours(mark("hun")), colours(mark("bgr")));
+
+    const japan = mark("jpn");
+    const china = mark("chn");
+    assert.equal(japan.kind, "disc");
+    assert.equal(china.kind, "disc");
+    if (japan.kind === "disc" && china.kind === "disc") {
+      assert.equal(japan.align, "center");
+      assert.equal(china.align, "hoist");
+      assert.notEqual(japan.field, china.field);
+    }
+
+    assert.equal(mark("gbr").kind, "union");
+    assert.equal(mark("aus").kind, "dots");
+    assert.equal(mark("bra").kind, "diamond");
+    assert.equal(mark("can").kind, "pale");
+    const bahrain = mark("bhr");
+    const qatar = mark("qat");
+    assert.equal(bahrain.kind, "serrated");
+    assert.equal(qatar.kind, "serrated");
+    if (bahrain.kind === "serrated" && qatar.kind === "serrated") {
+      assert.notEqual(bahrain.teeth, qatar.teeth);
+      assert.notEqual(bahrain.field, qatar.field);
+    }
+    assert.equal(mark("are").kind, "hoist");
+    assert.equal(mark("aze").kind, "crescent");
+    assert.equal(mark("sgp").kind, "half-crescent");
+    assert.equal(mark("mys").kind, "canton-crescent");
+    assert.notDeepEqual(mark("usa"), mark("mys"));
+  });
+
+  it("paints the mark from the poster art", () => {
+    const art = readFileSync(
+      new URL("../../components/events/SplitPosterArt.tsx", import.meta.url),
+      "utf8",
+    );
+    assert.match(art, /model\.mark/);
+    assert.match(art, /canton-stars/);
+    assert.match(art, /direction === "horizontal"/);
+  });
 });
+
+function direction(mark: NationMark): string | null {
+  return mark.kind === "bands" ? mark.direction : null;
+}
+
+function colours(mark: NationMark): readonly string[] {
+  if (mark.kind === "bands" || mark.kind === "centre-block") return mark.colours;
+  return [];
+}
 
 describe("posterInk", () => {
   it("puts dark ink on gold and white ink on black or slate", () => {

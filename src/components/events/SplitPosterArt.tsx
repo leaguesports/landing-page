@@ -1,4 +1,4 @@
-import type { SplitPosterModel } from "@/lib/events/split-poster";
+import type { NationMark, SplitPosterModel } from "@/lib/events/split-poster";
 import type { CSSProperties } from "react";
 import { useId } from "react";
 
@@ -266,14 +266,65 @@ function MatchArt({
   );
 }
 
-function sashPoints(box: Box, index: number, count: number): string {
-  const band = box.w * (count === 1 ? 0.12 : 0.06);
-  const shift = box.w * 0.12;
-  const center = box.w * 0.69;
-  const origin = center - (count * band) / 2;
-  const x0 = origin + index * band;
-  const x1 = x0 + band;
-  return `${x0},0 ${x1},0 ${x1 - shift},${box.h} ${x0 - shift},${box.h}`;
+type Sash = { left: number; width: number; shift: number; h: number };
+
+function sashOf(box: Box): Sash {
+  const width = box.w * 0.18;
+  return { left: box.w * 0.69 - width / 2, width, shift: box.w * 0.12, h: box.h };
+}
+
+function weightsFor(count: number, weights?: readonly number[]): number[] {
+  const raw =
+    weights && weights.length === count && weights.every((value) => value > 0)
+      ? [...weights]
+      : Array.from({ length: count }, () => 1);
+  const total = raw.reduce((sum, value) => sum + value, 0);
+  return raw.map((value) => value / total);
+}
+
+function verticalBand(sash: Sash, start: number, end: number): string {
+  const { left, shift, h } = sash;
+  return `${left + start},0 ${left + end},0 ${left + end - shift},${h} ${left + start - shift},${h}`;
+}
+
+function horizontalBand(sash: Sash, y0: number, y1: number): string {
+  const { left, width, shift, h } = sash;
+  const s0 = shift * (y0 / h);
+  const s1 = shift * (y1 / h);
+  return `${left - s0},${y0} ${left + width - s0},${y0} ${left + width - s1},${y1} ${left - s1},${y1}`;
+}
+
+function bandCenter(sash: Sash, start: number, end: number): { x: number; y: number; span: number } {
+  const y = sash.h / 2;
+  return {
+    x: sash.left + (start + end) / 2 - sash.shift * (y / sash.h),
+    y,
+    span: end - start,
+  };
+}
+
+function starPoints(cx: number, cy: number, radius: number): string {
+  const points: string[] = [];
+  for (let index = 0; index < 10; index += 1) {
+    const distance = index % 2 === 0 ? radius : radius * 0.4;
+    const angle = -Math.PI / 2 + (index * Math.PI) / 5;
+    points.push(`${cx + Math.cos(angle) * distance},${cy + Math.sin(angle) * distance}`);
+  }
+  return points.join(" ");
+}
+
+function panelPoints(box: Box): string {
+  const top = box.w * 0.56;
+  const bottom = box.w * 0.44;
+  return `${top},0 ${box.w},0 ${box.w},${box.h} ${bottom},${box.h}`;
+}
+
+function panelLeft(box: Box, y: number): number {
+  return box.w * 0.56 - box.w * 0.12 * (y / box.h);
+}
+
+function markUsesPanel(mark: NationMark): boolean {
+  return mark.kind !== "bands" && mark.kind !== "centre-block";
 }
 
 function RaceArt({
@@ -287,6 +338,8 @@ function RaceArt({
 }) {
   const raw = useId().replace(/[^a-zA-Z0-9]/g, "");
   const pin = `${raw}-pin`;
+  const clip = `${raw}-nation`;
+  const panel = markUsesPanel(model.mark);
   const leadSize = fitSize(
     model.lead,
     box.w * 0.52,
@@ -313,18 +366,18 @@ function RaceArt({
         </pattern>
       </defs>
       <rect width={box.w} height={box.h} fill="#0B0B0B" />
-      <polygon
-        points={`${box.w * 0.78},0 ${box.w},0 ${box.w},${box.h} ${box.w * 0.66},${box.h}`}
-        fill={`url(#${pin})`}
-      />
-      {model.stripes.map((colour, index) => (
-        <polygon
-          key={`${colour}-${index}`}
-          points={sashPoints(box, index, model.stripes.length)}
-          fill={colour}
-        />
-      ))}
-      {frame === "wide" ? <SpeedLines box={box} /> : null}
+      {panel ? (
+        <NationPanel mark={model.mark} box={box} frame={frame} clip={clip} />
+      ) : (
+        <>
+          <polygon
+            points={`${box.w * 0.78},0 ${box.w},0 ${box.w},${box.h} ${box.w * 0.66},${box.h}`}
+            fill={`url(#${pin})`}
+          />
+          <NationSash mark={model.mark} box={box} />
+          {frame === "wide" ? <SpeedLines box={box} /> : null}
+        </>
+      )}
       <text x={frame === "wide" ? 35 : 12} y={leadY} fill="#fff" style={displayFont(leadSize)}>
         {model.lead}
       </text>
@@ -365,9 +418,9 @@ function RaceArt({
           x={box.w - 40}
           y={140}
           textAnchor="end"
-          fill="none"
+          fill={panel ? "#0B0B0B" : "none"}
           stroke="#fff"
-          strokeOpacity={0.5}
+          strokeOpacity={panel ? 0.9 : 0.5}
           strokeWidth={2}
           style={displayFont(120)}
         >
@@ -376,6 +429,380 @@ function RaceArt({
       ) : null}
     </svg>
   );
+}
+
+function NationSash({ mark, box }: { mark: NationMark; box: Box }) {
+  const sash = sashOf(box);
+  if (mark.kind === "centre-block") {
+    const widths = weightsFor(3, mark.weights);
+    let cursor = 0;
+    const bands = mark.colours.map((colour, index) => {
+      const start = cursor;
+      cursor += widths[index]! * sash.width;
+      return { colour, start, end: cursor };
+    });
+    const middle = bands[1]!;
+    const center = bandCenter(sash, middle.start, middle.end);
+    const side = center.span * 0.46;
+    return (
+      <>
+        {bands.map((band) => (
+          <polygon key={band.colour} points={verticalBand(sash, band.start, band.end)} fill={band.colour} />
+        ))}
+        <rect
+          x={center.x - side / 2}
+          y={center.y - side / 2}
+          width={side}
+          height={side}
+          fill={mark.block}
+        />
+      </>
+    );
+  }
+
+  if (mark.kind !== "bands") return null;
+  if (mark.direction === "horizontal") {
+    const spans = weightsFor(mark.colours.length, mark.weights);
+    let cursor = 0;
+    return (
+      <>
+        {mark.colours.map((colour, index) => {
+          const y0 = cursor;
+          cursor += spans[index]! * sash.h;
+          return <polygon key={`${colour}-${index}`} points={horizontalBand(sash, y0, cursor)} fill={colour} />;
+        })}
+      </>
+    );
+  }
+
+  const spans = weightsFor(mark.colours.length, mark.weights);
+  let cursor = 0;
+  return (
+    <>
+      {mark.colours.map((colour, index) => {
+        const start = cursor;
+        cursor += spans[index]! * sash.width;
+        return (
+          <polygon key={`${colour}-${index}`} points={verticalBand(sash, start, cursor)} fill={colour} />
+        );
+      })}
+    </>
+  );
+}
+
+function Crescent({
+  cx,
+  cy,
+  radius,
+  colour,
+  cut,
+}: {
+  cx: number;
+  cy: number;
+  radius: number;
+  colour: string;
+  cut: string;
+}) {
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={radius} fill={colour} />
+      <circle cx={cx + radius * 0.45} cy={cy - radius * 0.06} r={radius * 0.76} fill={cut} />
+    </g>
+  );
+}
+
+function StarField({
+  x,
+  y,
+  width,
+  height,
+  colour,
+  columns,
+  rows,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  colour: string;
+  columns: number;
+  rows: number;
+}) {
+  const padX = width * 0.12;
+  const padY = height * 0.14;
+  const cellW = (width - padX * 2) / columns;
+  const cellH = (height - padY * 2) / rows;
+  const radius = Math.min(cellW, cellH) * 0.34;
+  const stars: { cx: number; cy: number }[] = [];
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      stars.push({
+        cx: x + padX + cellW * (column + 0.5),
+        cy: y + padY + cellH * (row + 0.5),
+      });
+    }
+  }
+  return (
+    <>
+      {stars.map((star) => (
+        <polygon key={`${star.cx}-${star.cy}`} points={starPoints(star.cx, star.cy, radius)} fill={colour} />
+      ))}
+    </>
+  );
+}
+
+function serrationPoints(box: Box, teeth: number): string {
+  const depth = box.w * 0.055;
+  const parts = [`${panelLeft(box, 0)},0`];
+  for (let index = 0; index < teeth; index += 1) {
+    const mid = (index + 0.5) / teeth;
+    const end = (index + 1) / teeth;
+    parts.push(`${panelLeft(box, mid * box.h) + depth},${mid * box.h}`);
+    parts.push(`${panelLeft(box, end * box.h)},${end * box.h}`);
+  }
+  return parts.join(" ");
+}
+
+function NationPanel({
+  mark,
+  box,
+  frame,
+  clip,
+}: {
+  mark: NationMark;
+  box: Box;
+  frame: Frame;
+  clip: string;
+}) {
+  const ink = frame === "wide" ? 64 : 28;
+  return (
+    <>
+      <defs>
+        <clipPath id={clip}>
+          <polygon points={panelPoints(box)} />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clip})`}>
+        <PanelMark mark={mark} box={box} frame={frame} />
+      </g>
+      <rect x={box.w * 0.4} y={box.h - ink} width={box.w} height={ink} fill="#0B0B0B" />
+    </>
+  );
+}
+
+function PanelMark({ mark, box, frame }: { mark: NationMark; box: Box; frame: Frame }) {
+  if (mark.kind === "canton-stars" || mark.kind === "canton-crescent") {
+    const count = mark.kind === "canton-stars" ? 7 : 6;
+    const cantonW = box.w * 0.2;
+    const cantonH = box.h * (mark.kind === "canton-stars" ? 4 / 7 : 0.5);
+    const cantonX = box.w * 0.58;
+    return (
+      <>
+        {Array.from({ length: count }, (_, index) => (
+          <rect
+            key={index}
+            x={0}
+            y={(index * box.h) / count}
+            width={box.w}
+            height={box.h / count + 0.5}
+            fill={index % 2 === 0 ? mark.stripe : mark.paper}
+          />
+        ))}
+        <rect x={cantonX} y={0} width={cantonW} height={cantonH} fill={mark.canton} />
+        {mark.kind === "canton-stars" ? (
+          <StarField
+            x={cantonX}
+            y={0}
+            width={cantonW}
+            height={cantonH}
+            colour={mark.star}
+            columns={frame === "wide" ? 4 : 3}
+            rows={frame === "wide" ? 3 : 2}
+          />
+        ) : (
+          <Crescent
+            cx={cantonX + cantonW * 0.5}
+            cy={cantonH * 0.5}
+            radius={Math.min(cantonW, cantonH) * 0.28}
+            colour={mark.crescent}
+            cut={mark.canton}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (mark.kind === "half-crescent") {
+    return (
+      <>
+        <rect width={box.w} height={box.h / 2} fill={mark.top} />
+        <rect y={box.h / 2} width={box.w} height={box.h / 2} fill={mark.bottom} />
+        <Crescent
+          cx={box.w * 0.68}
+          cy={box.h * 0.25}
+          radius={box.h * 0.12}
+          colour={mark.crescent}
+          cut={mark.top}
+        />
+      </>
+    );
+  }
+
+  if (mark.kind === "disc") {
+    const centered = mark.align === "center";
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.field} />
+        <circle
+          cx={box.w * (centered ? 0.78 : 0.68)}
+          cy={box.h / 2}
+          r={box.h * (centered ? 0.28 : 0.2)}
+          fill={mark.disc}
+        />
+      </>
+    );
+  }
+
+  if (mark.kind === "diamond") {
+    const cx = box.w * 0.78;
+    const cy = box.h / 2;
+    const rx = box.w * 0.11;
+    const ry = box.h * 0.34;
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.field} />
+        <polygon
+          points={`${cx},${cy - ry} ${cx + rx},${cy} ${cx},${cy + ry} ${cx - rx},${cy}`}
+          fill={mark.diamond}
+        />
+        <circle cx={cx} cy={cy} r={Math.min(rx, ry) * 0.42} fill={mark.disc} />
+      </>
+    );
+  }
+
+  if (mark.kind === "pale") {
+    const x0 = box.w * 0.5;
+    const span = (box.w - x0) / 3;
+    const cx = x0 + span * 1.5;
+    const cy = box.h / 2;
+    const radius = Math.min(span, box.h * 0.34) * 0.42;
+    return (
+      <>
+        <rect x={x0} width={span} height={box.h} fill={mark.hoist} />
+        <rect x={x0 + span} width={span} height={box.h} fill={mark.centre} />
+        <rect x={x0 + span * 2} width={box.w} height={box.h} fill={mark.hoist} />
+        <polygon
+          points={`${cx},${cy - radius} ${cx + radius},${cy} ${cx},${cy + radius} ${cx - radius},${cy}`}
+          fill={mark.mark}
+        />
+      </>
+    );
+  }
+
+  if (mark.kind === "union") {
+    const left = box.w * 0.62;
+    const bar = frame === "wide" ? 22 : 10;
+    const midX = left + (box.w - left) * 0.42;
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.field} />
+        <line
+          x1={left}
+          y1={0}
+          x2={box.w}
+          y2={box.h}
+          stroke={mark.saltire}
+          strokeWidth={bar * 1.35}
+        />
+        <line
+          x1={left}
+          y1={box.h}
+          x2={box.w}
+          y2={0}
+          stroke={mark.saltire}
+          strokeWidth={bar * 1.35}
+        />
+        <rect x={left} y={box.h / 2 - bar} width={box.w - left} height={bar * 2} fill={mark.cross} />
+        <rect x={midX - bar} y={0} width={bar * 2} height={box.h} fill={mark.cross} />
+      </>
+    );
+  }
+
+  if (mark.kind === "dots") {
+    const dots = [
+      { x: 0.7, y: 0.3, s: 0.05 },
+      { x: 0.84, y: 0.4, s: 0.034 },
+      { x: 0.76, y: 0.58, s: 0.055 },
+      { x: 0.64, y: 0.5, s: 0.03 },
+      { x: 0.88, y: 0.72, s: 0.028 },
+    ];
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.field} />
+        {dots.map((dot) => (
+          <circle
+            key={`${dot.x}-${dot.y}`}
+            cx={box.w * dot.x}
+            cy={box.h * dot.y}
+            r={box.h * dot.s}
+            fill={mark.dot}
+          />
+        ))}
+      </>
+    );
+  }
+
+  if (mark.kind === "serrated") {
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.field} />
+        <polygon points={serrationPoints(box, mark.teeth)} fill={mark.hoist} />
+      </>
+    );
+  }
+
+  if (mark.kind === "hoist") {
+    return (
+      <>
+        <rect width={box.w} height={box.h} fill={mark.hoist} />
+        {mark.bands.map((colour, index) => (
+          <rect
+            key={`${colour}-${index}`}
+            x={box.w * 0.7}
+            y={(index * box.h) / mark.bands.length}
+            width={box.w}
+            height={box.h / mark.bands.length + 0.5}
+            fill={colour}
+          />
+        ))}
+      </>
+    );
+  }
+
+  if (mark.kind === "crescent") {
+    return (
+      <>
+        {mark.bands.map((colour, index) => (
+          <rect
+            key={`${colour}-${index}`}
+            y={(index * box.h) / 3}
+            width={box.w}
+            height={box.h / 3 + 0.5}
+            fill={colour}
+          />
+        ))}
+        <Crescent
+          cx={box.w * 0.76}
+          cy={box.h / 2}
+          radius={box.h * 0.11}
+          colour={mark.crescent}
+          cut={mark.bands[1]}
+        />
+      </>
+    );
+  }
+
+  return null;
 }
 
 function SpeedLines({ box }: { box: Box }) {
