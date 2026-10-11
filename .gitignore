@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# Copied from flag-icons on install. See scripts/copy-flag-icons.mjs.
+/public/flags
+
 # production
 /build
 

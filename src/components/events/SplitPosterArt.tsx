@@ -1,6 +1,8 @@
-import type { NationMark, SplitPosterModel } from "@/lib/events/split-poster";
-import type { CSSProperties } from "react";
-import { useId } from "react";
+"use client";
+
+import type { PosterFlag } from "@/lib/events/poster-flags";
+import type { SplitPosterModel } from "@/lib/events/split-poster";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 
 type Frame = "wide" | "compact";
 
@@ -86,6 +88,13 @@ function svgProps(box: Box) {
 }
 
 export function SplitPoster({ model }: { model: SplitPosterModel }) {
+  if (model.kind === "race") {
+    return (
+      <div className="overflow-hidden rounded-2xl">
+        <RacePoster model={model} />
+      </div>
+    );
+  }
   return (
     <div className="overflow-hidden rounded-2xl">
       <div className="sm:hidden">
@@ -107,7 +116,7 @@ export function SplitPosterArt({
 }) {
   const box = boxFor(frame);
   if (model.kind === "match") return <MatchArt model={model} box={box} frame={frame} />;
-  if (model.kind === "race") return <RaceArt model={model} box={box} frame={frame} />;
+  if (model.kind === "race") return <RacePoster model={model} />;
   return <TitleArt model={model} box={box} />;
 }
 
@@ -266,568 +275,77 @@ function MatchArt({
   );
 }
 
-type Sash = { left: number; width: number; shift: number; h: number };
-
-function sashOf(box: Box): Sash {
-  const width = box.w * 0.18;
-  return { left: box.w * 0.69 - width / 2, width, shift: box.w * 0.12, h: box.h };
+function titleSize(text: string): string {
+  const px = Math.min(150, Math.floor(720 / Math.max(text.length * 0.36, 1)));
+  const cqw = (px / 1280) * 100;
+  return `clamp(22px, ${cqw.toFixed(2)}cqw, ${px}px)`;
 }
 
-function weightsFor(count: number, weights?: readonly number[]): number[] {
-  const raw =
-    weights && weights.length === count && weights.every((value) => value > 0)
-      ? [...weights]
-      : Array.from({ length: count }, () => 1);
-  const total = raw.reduce((sum, value) => sum + value, 0);
-  return raw.map((value) => value / total);
-}
+const FLAG_GRADIENT =
+  "linear-gradient(90deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,.25) 45%, rgba(0,0,0,.05) 100%), linear-gradient(0deg, rgba(0,0,0,.35), transparent 40%)";
 
-function verticalBand(sash: Sash, start: number, end: number): string {
-  const { left, shift, h } = sash;
-  return `${left + start},0 ${left + end},0 ${left + end - shift},${h} ${left + start - shift},${h}`;
-}
-
-function horizontalBand(sash: Sash, y0: number, y1: number): string {
-  const { left, width, shift, h } = sash;
-  const s0 = shift * (y0 / h);
-  const s1 = shift * (y1 / h);
-  return `${left - s0},${y0} ${left + width - s0},${y0} ${left + width - s1},${y1} ${left - s1},${y1}`;
-}
-
-function bandCenter(sash: Sash, start: number, end: number): { x: number; y: number; span: number } {
-  const y = sash.h / 2;
-  return {
-    x: sash.left + (start + end) / 2 - sash.shift * (y / sash.h),
-    y,
-    span: end - start,
-  };
-}
-
-function starPoints(cx: number, cy: number, radius: number): string {
-  const points: string[] = [];
-  for (let index = 0; index < 10; index += 1) {
-    const distance = index % 2 === 0 ? radius : radius * 0.4;
-    const angle = -Math.PI / 2 + (index * Math.PI) / 5;
-    points.push(`${cx + Math.cos(angle) * distance},${cy + Math.sin(angle) * distance}`);
-  }
-  return points.join(" ");
-}
-
-function panelPoints(box: Box): string {
-  const top = box.w * 0.56;
-  const bottom = box.w * 0.44;
-  return `${top},0 ${box.w},0 ${box.w},${box.h} ${bottom},${box.h}`;
-}
-
-function panelLeft(box: Box, y: number): number {
-  return box.w * 0.56 - box.w * 0.12 * (y / box.h);
-}
-
-function markUsesPanel(mark: NationMark): boolean {
-  return mark.kind !== "bands" && mark.kind !== "centre-block";
-}
-
-function RaceArt({
-  model,
-  box,
-  frame,
-}: {
-  model: Extract<SplitPosterModel, { kind: "race" }>;
-  box: Box;
-  frame: Frame;
-}) {
-  const raw = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const pin = `${raw}-pin`;
-  const clip = `${raw}-nation`;
-  const panel = markUsesPanel(model.mark);
-  const leadSize = fitSize(
-    model.lead,
-    box.w * 0.52,
-    frame === "wide" ? 158 : 58,
-    frame === "wide" ? 72 : 32,
-  );
-  const restLine = model.rest ? `${model.rest} GP` : "GP";
-  const restSize = fitSize(restLine, box.w * 0.52, leadSize, frame === "wide" ? 72 : 32);
-  const leadY = frame === "wide" ? 150.6 : 54.6;
-  const restY = frame === "wide" ? 286.5 : leadY + restSize * 0.86;
-
+function FlagBand({ flag }: { flag: PosterFlag }) {
+  const src = flag.kind === "image" ? flag.src : "";
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
   return (
-    <svg {...svgProps(box)}>
-      <defs>
-        <pattern
-          id={pin}
-          width={frame === "wide" ? 12 : 7}
-          height={frame === "wide" ? 12 : 7}
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(-35)"
-        >
-          <rect width="100%" height="100%" fill="#0B0B0B" />
-          <rect width={frame === "wide" ? 2.5 : 1.5} height="100%" fill="#fff" opacity="0.08" />
-        </pattern>
-      </defs>
-      <rect width={box.w} height={box.h} fill="#0B0B0B" />
-      {panel ? (
-        <NationPanel mark={model.mark} box={box} frame={frame} clip={clip} />
+    <div
+      className="absolute inset-y-0 right-0 overflow-hidden"
+      style={{ width: "48.4375%", clipPath: "polygon(34% 0, 100% 0, 100% 100%, 0 100%)" }}
+    >
+      {flag.kind === "image" && !failed ? (
+        <img
+          src={flag.src}
+          alt=""
+          className="block h-full w-full object-cover"
+          style={{ objectPosition: flag.objectPosition, filter: "saturate(0.9)" }}
+          onError={() => setFailed(true)}
+        />
       ) : (
-        <>
-          <polygon
-            points={`${box.w * 0.78},0 ${box.w},0 ${box.w},${box.h} ${box.w * 0.66},${box.h}`}
-            fill={`url(#${pin})`}
-          />
-          <NationSash mark={model.mark} box={box} />
-          {frame === "wide" ? <SpeedLines box={box} /> : null}
-        </>
+        <div
+          data-flag-fallback
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: flag.kind === "fallback" ? flag.fill : "#3a4658" }}
+        >
+          <span
+            className="font-display leading-none text-transparent"
+            style={{ WebkitTextStroke: "2px #fff", fontSize: "clamp(36px, 8cqw, 96px)" }}
+          >
+            {flag.initials}
+          </span>
+        </div>
       )}
-      <text x={frame === "wide" ? 35 : 12} y={leadY} fill="#fff" style={displayFont(leadSize)}>
-        {model.lead}
-      </text>
-      <text x={frame === "wide" ? 35 : 12} y={restY} fill="#fff" style={displayFont(restSize)}>
-        {model.rest ? <tspan>{model.rest} </tspan> : null}
-        <tspan fill="none" stroke="#F3EFE6" strokeWidth={frame === "wide" ? 3 : 1.4}>
-          GP
-        </tspan>
-      </text>
-      <text
-        x={frame === "wide" ? 40 : 14}
-        y={frame === "wide" ? 360 : box.h - 14}
-        fill="#fff"
-        style={frame === "wide" ? displayFont(34) : labelFont(9, 1.6)}
-      >
-        {frame === "wide"
-          ? model.dateLine
-          : (model.metaDate ?? model.dateLine).toLocaleUpperCase("en")}
-      </text>
-      {frame === "wide" && model.weekendLine ? (
-        <text
-          x={box.w - 40}
-          y={360}
-          textAnchor="end"
-          fill="#fff"
-          style={labelFont(13, 2.6)}
+      <div className="pointer-events-none absolute inset-0" style={{ background: FLAG_GRADIENT }} />
+    </div>
+  );
+}
+
+function RacePoster({ model }: { model: Extract<SplitPosterModel, { kind: "race" }> }) {
+  return (
+    <div className="@container relative w-full bg-black" style={{ aspectRatio: "1280 / 400" }}>
+      <FlagBand flag={model.flag} />
+      <div className="absolute top-[15.5%] left-[5%] z-10 w-[64%]">
+        <p
+          className="font-display tracking-[0.12em] text-[#e10600]"
+          style={{ fontSize: "clamp(13px, 2.66cqw, 34px)" }}
         >
-          {model.weekendLine}
-        </text>
-      ) : null}
-      {frame === "compact" ? (
-        <text x={box.w - 14} y={box.h - 14} textAnchor="end" fill="#fff" style={labelFont(9, 1.6)}>
-          RACE DAY
-        </text>
-      ) : null}
-      {frame === "wide" && model.numeral ? (
-        <text
-          x={box.w - 40}
-          y={140}
-          textAnchor="end"
-          fill={panel ? "#0B0B0B" : "none"}
-          stroke="#fff"
-          strokeOpacity={panel ? 0.9 : 0.5}
-          strokeWidth={2}
-          style={displayFont(120)}
-        >
-          {model.numeral}
-        </text>
-      ) : null}
-    </svg>
-  );
-}
-
-function NationSash({ mark, box }: { mark: NationMark; box: Box }) {
-  const sash = sashOf(box);
-  if (mark.kind === "centre-block") {
-    const widths = weightsFor(3, mark.weights);
-    let cursor = 0;
-    const bands = mark.colours.map((colour, index) => {
-      const start = cursor;
-      cursor += widths[index]! * sash.width;
-      return { colour, start, end: cursor };
-    });
-    const middle = bands[1]!;
-    const center = bandCenter(sash, middle.start, middle.end);
-    const side = center.span * 0.46;
-    return (
-      <>
-        {bands.map((band) => (
-          <polygon key={band.colour} points={verticalBand(sash, band.start, band.end)} fill={band.colour} />
-        ))}
-        <rect
-          x={center.x - side / 2}
-          y={center.y - side / 2}
-          width={side}
-          height={side}
-          fill={mark.block}
-        />
-      </>
-    );
-  }
-
-  if (mark.kind !== "bands") return null;
-  if (mark.direction === "horizontal") {
-    const spans = weightsFor(mark.colours.length, mark.weights);
-    let cursor = 0;
-    return (
-      <>
-        {mark.colours.map((colour, index) => {
-          const y0 = cursor;
-          cursor += spans[index]! * sash.h;
-          return <polygon key={`${colour}-${index}`} points={horizontalBand(sash, y0, cursor)} fill={colour} />;
-        })}
-      </>
-    );
-  }
-
-  const spans = weightsFor(mark.colours.length, mark.weights);
-  let cursor = 0;
-  return (
-    <>
-      {mark.colours.map((colour, index) => {
-        const start = cursor;
-        cursor += spans[index]! * sash.width;
-        return (
-          <polygon key={`${colour}-${index}`} points={verticalBand(sash, start, cursor)} fill={colour} />
-        );
-      })}
-    </>
-  );
-}
-
-function Crescent({
-  cx,
-  cy,
-  radius,
-  colour,
-  cut,
-}: {
-  cx: number;
-  cy: number;
-  radius: number;
-  colour: string;
-  cut: string;
-}) {
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={radius} fill={colour} />
-      <circle cx={cx + radius * 0.45} cy={cy - radius * 0.06} r={radius * 0.76} fill={cut} />
-    </g>
-  );
-}
-
-function StarField({
-  x,
-  y,
-  width,
-  height,
-  colour,
-  columns,
-  rows,
-}: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  colour: string;
-  columns: number;
-  rows: number;
-}) {
-  const padX = width * 0.12;
-  const padY = height * 0.14;
-  const cellW = (width - padX * 2) / columns;
-  const cellH = (height - padY * 2) / rows;
-  const radius = Math.min(cellW, cellH) * 0.34;
-  const stars: { cx: number; cy: number }[] = [];
-  for (let row = 0; row < rows; row += 1) {
-    for (let column = 0; column < columns; column += 1) {
-      stars.push({
-        cx: x + padX + cellW * (column + 0.5),
-        cy: y + padY + cellH * (row + 0.5),
-      });
-    }
-  }
-  return (
-    <>
-      {stars.map((star) => (
-        <polygon key={`${star.cx}-${star.cy}`} points={starPoints(star.cx, star.cy, radius)} fill={colour} />
-      ))}
-    </>
-  );
-}
-
-function serrationPoints(box: Box, teeth: number): string {
-  const depth = box.w * 0.055;
-  const parts = [`${panelLeft(box, 0)},0`];
-  for (let index = 0; index < teeth; index += 1) {
-    const mid = (index + 0.5) / teeth;
-    const end = (index + 1) / teeth;
-    parts.push(`${panelLeft(box, mid * box.h) + depth},${mid * box.h}`);
-    parts.push(`${panelLeft(box, end * box.h)},${end * box.h}`);
-  }
-  return parts.join(" ");
-}
-
-function NationPanel({
-  mark,
-  box,
-  frame,
-  clip,
-}: {
-  mark: NationMark;
-  box: Box;
-  frame: Frame;
-  clip: string;
-}) {
-  const ink = frame === "wide" ? 64 : 28;
-  return (
-    <>
-      <defs>
-        <clipPath id={clip}>
-          <polygon points={panelPoints(box)} />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${clip})`}>
-        <PanelMark mark={mark} box={box} frame={frame} />
-      </g>
-      <rect x={box.w * 0.4} y={box.h - ink} width={box.w} height={ink} fill="#0B0B0B" />
-    </>
-  );
-}
-
-function PanelMark({ mark, box, frame }: { mark: NationMark; box: Box; frame: Frame }) {
-  if (mark.kind === "canton-stars" || mark.kind === "canton-crescent") {
-    const count = mark.kind === "canton-stars" ? 7 : 6;
-    const cantonW = box.w * 0.2;
-    const cantonH = box.h * (mark.kind === "canton-stars" ? 4 / 7 : 0.5);
-    const cantonX = box.w * 0.58;
-    return (
-      <>
-        {Array.from({ length: count }, (_, index) => (
-          <rect
-            key={index}
-            x={0}
-            y={(index * box.h) / count}
-            width={box.w}
-            height={box.h / count + 0.5}
-            fill={index % 2 === 0 ? mark.stripe : mark.paper}
-          />
-        ))}
-        <rect x={cantonX} y={0} width={cantonW} height={cantonH} fill={mark.canton} />
-        {mark.kind === "canton-stars" ? (
-          <StarField
-            x={cantonX}
-            y={0}
-            width={cantonW}
-            height={cantonH}
-            colour={mark.star}
-            columns={frame === "wide" ? 4 : 3}
-            rows={frame === "wide" ? 3 : 2}
-          />
-        ) : (
-          <Crescent
-            cx={cantonX + cantonW * 0.5}
-            cy={cantonH * 0.5}
-            radius={Math.min(cantonW, cantonH) * 0.28}
-            colour={mark.crescent}
-            cut={mark.canton}
-          />
-        )}
-      </>
-    );
-  }
-
-  if (mark.kind === "half-crescent") {
-    return (
-      <>
-        <rect width={box.w} height={box.h / 2} fill={mark.top} />
-        <rect y={box.h / 2} width={box.w} height={box.h / 2} fill={mark.bottom} />
-        <Crescent
-          cx={box.w * 0.68}
-          cy={box.h * 0.25}
-          radius={box.h * 0.12}
-          colour={mark.crescent}
-          cut={mark.top}
-        />
-      </>
-    );
-  }
-
-  if (mark.kind === "disc") {
-    const centered = mark.align === "center";
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.field} />
-        <circle
-          cx={box.w * (centered ? 0.78 : 0.68)}
-          cy={box.h / 2}
-          r={box.h * (centered ? 0.28 : 0.2)}
-          fill={mark.disc}
-        />
-      </>
-    );
-  }
-
-  if (mark.kind === "diamond") {
-    const cx = box.w * 0.78;
-    const cy = box.h / 2;
-    const rx = box.w * 0.11;
-    const ry = box.h * 0.34;
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.field} />
-        <polygon
-          points={`${cx},${cy - ry} ${cx + rx},${cy} ${cx},${cy + ry} ${cx - rx},${cy}`}
-          fill={mark.diamond}
-        />
-        <circle cx={cx} cy={cy} r={Math.min(rx, ry) * 0.42} fill={mark.disc} />
-      </>
-    );
-  }
-
-  if (mark.kind === "pale") {
-    const x0 = box.w * 0.5;
-    const span = (box.w - x0) / 3;
-    const cx = x0 + span * 1.5;
-    const cy = box.h / 2;
-    const radius = Math.min(span, box.h * 0.34) * 0.42;
-    return (
-      <>
-        <rect x={x0} width={span} height={box.h} fill={mark.hoist} />
-        <rect x={x0 + span} width={span} height={box.h} fill={mark.centre} />
-        <rect x={x0 + span * 2} width={box.w} height={box.h} fill={mark.hoist} />
-        <polygon
-          points={`${cx},${cy - radius} ${cx + radius},${cy} ${cx},${cy + radius} ${cx - radius},${cy}`}
-          fill={mark.mark}
-        />
-      </>
-    );
-  }
-
-  if (mark.kind === "union") {
-    const left = box.w * 0.62;
-    const bar = frame === "wide" ? 22 : 10;
-    const midX = left + (box.w - left) * 0.42;
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.field} />
-        <line
-          x1={left}
-          y1={0}
-          x2={box.w}
-          y2={box.h}
-          stroke={mark.saltire}
-          strokeWidth={bar * 1.35}
-        />
-        <line
-          x1={left}
-          y1={box.h}
-          x2={box.w}
-          y2={0}
-          stroke={mark.saltire}
-          strokeWidth={bar * 1.35}
-        />
-        <rect x={left} y={box.h / 2 - bar} width={box.w - left} height={bar * 2} fill={mark.cross} />
-        <rect x={midX - bar} y={0} width={bar * 2} height={box.h} fill={mark.cross} />
-      </>
-    );
-  }
-
-  if (mark.kind === "dots") {
-    const dots = [
-      { x: 0.7, y: 0.3, s: 0.05 },
-      { x: 0.84, y: 0.4, s: 0.034 },
-      { x: 0.76, y: 0.58, s: 0.055 },
-      { x: 0.64, y: 0.5, s: 0.03 },
-      { x: 0.88, y: 0.72, s: 0.028 },
-    ];
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.field} />
-        {dots.map((dot) => (
-          <circle
-            key={`${dot.x}-${dot.y}`}
-            cx={box.w * dot.x}
-            cy={box.h * dot.y}
-            r={box.h * dot.s}
-            fill={mark.dot}
-          />
-        ))}
-      </>
-    );
-  }
-
-  if (mark.kind === "serrated") {
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.field} />
-        <polygon points={serrationPoints(box, mark.teeth)} fill={mark.hoist} />
-      </>
-    );
-  }
-
-  if (mark.kind === "hoist") {
-    return (
-      <>
-        <rect width={box.w} height={box.h} fill={mark.hoist} />
-        {mark.bands.map((colour, index) => (
-          <rect
-            key={`${colour}-${index}`}
-            x={box.w * 0.7}
-            y={(index * box.h) / mark.bands.length}
-            width={box.w}
-            height={box.h / mark.bands.length + 0.5}
-            fill={colour}
-          />
-        ))}
-      </>
-    );
-  }
-
-  if (mark.kind === "crescent") {
-    return (
-      <>
-        {mark.bands.map((colour, index) => (
-          <rect
-            key={`${colour}-${index}`}
-            y={(index * box.h) / 3}
-            width={box.w}
-            height={box.h / 3 + 0.5}
-            fill={colour}
-          />
-        ))}
-        <Crescent
-          cx={box.w * 0.76}
-          cy={box.h / 2}
-          radius={box.h * 0.11}
-          colour={mark.crescent}
-          cut={mark.bands[1]}
-        />
-      </>
-    );
-  }
-
-  return null;
-}
-
-function SpeedLines({ box }: { box: Box }) {
-  const lines = [
-    { y: 0.58, w: 0.21, o: 0.47 },
-    { y: 0.52, w: 0.16, o: 0.17 },
-    { y: 0.64, w: 0.18, o: 0.42 },
-    { y: 0.75, w: 0.14, o: 0.45 },
-    { y: 0.48, w: 0.22, o: 0.19 },
-    { y: 0.69, w: 0.15, o: 0.36 },
-  ];
-  return (
-    <>
-      {lines.map((line) => (
-        <rect
-          key={line.y}
-          x={box.w * (0.98 - line.w)}
-          y={box.h * line.y}
-          width={box.w * line.w}
-          height={2}
-          fill="#fff"
-          opacity={line.o}
-        />
-      ))}
-    </>
+          {model.kicker}
+        </p>
+        <p className="font-display leading-[0.9] text-white" style={{ fontSize: titleSize(model.headline) }}>
+          {model.headline}
+        </p>
+        {model.circuit ? (
+          <p
+            className="mt-[0.7em] font-sans tracking-[0.04em] text-[#bbb]"
+            style={{ fontSize: "clamp(12px, 1.56cqw, 20px)" }}
+          >
+            {model.circuit}
+          </p>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

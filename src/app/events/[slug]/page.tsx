@@ -251,6 +251,7 @@ export default async function EventFixturePage({ params }: PageProps) {
           countryCode: weekend?.meeting.countryCode,
           countryName: weekend?.meeting.countryName,
           place: weekend?.meeting.location,
+          circuit: fixture.track ?? weekend?.meeting.circuitShortName ?? null,
           weekendStart: weekend?.meeting.dateStart,
           weekendEnd: weekend?.meeting.dateEnd,
         }}

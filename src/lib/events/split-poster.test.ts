@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { fixtureSeoTitle } from "./meta.ts";
+import { existsSync } from "node:fs";
 import {
-  F1_2026_HOST_KEYS,
   SPLIT_POSTER_NEUTRAL,
   SPLIT_POSTER_NEUTRAL_ALT,
   buildSplitPoster,
@@ -11,11 +11,14 @@ import {
   grandPrixPosterLines,
   posterDisplayName,
   posterInk,
-  resolveNationStripes,
   resolveTeamPosterColour,
-  splitPosterNationKeys,
-  type NationMark,
 } from "./split-poster.ts";
+import {
+  F1_2026_HOST_FLAGS,
+  FLAG_OBJECT_POSITION_DEFAULT,
+  ULSTER_BANNER_CODE,
+  resolvePosterFlag,
+} from "./poster-flags.ts";
 
 const SOWETO_H1 = "Pirates vs Chiefs 2026 - Where to Watch the Soweto Derby";
 const MEXICO_H1 = "Mexico City Grand Prix 2026 - Where to Watch in South Africa";
@@ -73,147 +76,89 @@ describe("resolveTeamPosterColour", () => {
   });
 });
 
-describe("resolveNationStripes", () => {
-  it("paints Mexico in the locked green, cream, and red bands", () => {
-    const fromCode = resolveNationStripes({ countryCode: "MEX" });
-    assert.equal(fromCode.source, "curated");
-    assert.deepEqual(fromCode.stripes, ["#0B6B47", "#F3EFE6", "#C8213A"]);
-
-    const fromName = resolveNationStripes({ countryName: "Mexico" });
-    assert.equal(fromName.key, "mex");
-    assert.deepEqual(fromName.stripes, fromCode.stripes);
+describe("resolvePosterFlag", () => {
+  it("maps every 2026 host to a flag-icons file", () => {
+    const packageDir = new URL("../../../node_modules/flag-icons/flags/4x3/", import.meta.url);
+    const publicDir = new URL("../../../public/flags/4x3/", import.meta.url);
+    for (const host of F1_2026_HOST_FLAGS) {
+      const resolved = resolvePosterFlag({ hint: host.hint });
+      assert.equal(resolved.kind, "image", host.hint);
+      if (resolved.kind !== "image") continue;
+      assert.equal(resolved.code, host.code, host.hint);
+      assert.equal(resolved.src, `/flags/4x3/${host.code}.svg`);
+      assert.notEqual(resolved.code, ULSTER_BANNER_CODE);
+      assert.equal(existsSync(new URL(`${host.code}.svg`, packageDir)), true, host.code);
+      assert.equal(existsSync(new URL(`${host.code}.svg`, publicDir)), true, host.code);
+    }
   });
 
-  it("infers a host nation from the GP title when no country was supplied", () => {
-    const stripes = resolveNationStripes({ hint: "Mexico City Grand Prix" });
-    assert.equal(stripes.key, "mex");
-    assert.equal(stripes.source, "curated");
+  it("keeps the stars in frame and centres Japan and Brazil", () => {
+    const unitedStates = resolvePosterFlag({ hint: "United States Grand Prix" });
+    const japan = resolvePosterFlag({ hint: "Japanese Grand Prix" });
+    const brazil = resolvePosterFlag({ hint: "São Paulo Grand Prix" });
+    const mexico = resolvePosterFlag({ countryCode: "MX" });
+    assert.equal(unitedStates.kind, "image");
+    assert.equal(japan.kind, "image");
+    assert.equal(brazil.kind, "image");
+    assert.equal(mexico.kind, "image");
+    if (unitedStates.kind !== "image" || japan.kind !== "image" || brazil.kind !== "image" || mexico.kind !== "image") {
+      return;
+    }
+    assert.equal(unitedStates.objectPosition, "left top");
+    assert.equal(japan.objectPosition, "center");
+    assert.equal(brazil.objectPosition, "center");
+    assert.equal(mexico.objectPosition, FLAG_OBJECT_POSITION_DEFAULT);
   });
 
-  it("uses a neutral band for an unknown nation and does not guess from the title", () => {
-    const unknown = resolveNationStripes({
+  it("uses home-nation flags and never the Ulster Banner", () => {
+    const england = resolvePosterFlag({ countryName: "England" });
+    const scotland = resolvePosterFlag({ countryName: "Scotland" });
+    const wales = resolvePosterFlag({ countryName: "Wales" });
+    assert.equal(england.kind, "image");
+    assert.equal(scotland.kind, "image");
+    assert.equal(wales.kind, "image");
+    if (england.kind === "image") assert.equal(england.code, "gb-eng");
+    if (scotland.kind === "image") assert.equal(scotland.code, "gb-sct");
+    if (wales.kind === "image") assert.equal(wales.code, "gb-wls");
+
+    const ireland = resolvePosterFlag({ countryName: "Ireland" });
+    const ulster = resolvePosterFlag({ countryCode: "gb-nir" });
+    assert.equal(ireland.kind, "fallback");
+    assert.equal(ulster.kind, "fallback");
+    if (ireland.kind === "fallback") assert.equal(ireland.initials, "IRE");
+    assert.equal(JSON.stringify(ireland).includes(ULSTER_BANNER_CODE), false);
+    assert.equal(JSON.stringify(ulster).includes(ULSTER_BANNER_CODE), false);
+  });
+
+  it("draws outlined initials when the nation is not in the set", () => {
+    const westIndies = resolvePosterFlag({ countryName: "West Indies" });
+    assert.equal(westIndies.kind, "fallback");
+    if (westIndies.kind === "fallback") {
+      assert.equal(westIndies.initials, "WI");
+      assert.equal(westIndies.fill, SPLIT_POSTER_NEUTRAL);
+    }
+
+    const unknown = resolvePosterFlag({
       countryCode: "ZZ",
       countryName: "Nowhere",
       hint: "Mexico City Grand Prix",
     });
-    assert.equal(unknown.source, "neutral");
-    assert.deepEqual(unknown.stripes, [SPLIT_POSTER_NEUTRAL]);
-
-    const blank = resolveNationStripes({ hint: "Invitation race" });
-    assert.equal(blank.source, "neutral");
-    assert.equal(blank.key, "neutral");
+    assert.equal(unknown.kind, "fallback");
   });
 
-  it("resolves every nation in the map, including each 2026 host", () => {
-    const keys = splitPosterNationKeys();
-    assert.equal(new Set(keys).size, keys.length);
-    for (const key of keys) {
-      const resolved = resolveNationStripes({ countryCode: key });
-      assert.equal(resolved.key, key);
-      assert.equal(resolved.source, "curated");
-    }
-    for (const key of F1_2026_HOST_KEYS) {
-      assert.ok(keys.includes(key), key);
-    }
-  });
-
-  it("gives the United States a star canton instead of a vertical tricolour", () => {
-    for (const hint of ["United States Grand Prix", "Miami Grand Prix", "Las Vegas Grand Prix", "Austin"]) {
-      const resolved = resolveNationStripes({ hint });
-      assert.equal(resolved.key, "usa");
-      assert.equal(resolved.mark.kind, "canton-stars");
-    }
-    const france = resolveNationStripes({ countryCode: "FRA" });
-    assert.equal(france.mark.kind, "bands");
-    if (france.mark.kind !== "bands") return;
-    assert.equal(france.mark.direction, "vertical");
-    assert.deepEqual(france.mark.colours, ["#0055A4", "#FFFFFF", "#EF4135"]);
-  });
-
-  it("separates clash pairs by orientation or shape", () => {
-    const mark = (code: string): NationMark => resolveNationStripes({ countryCode: code }).mark;
-    const seen = new Map<string, string>();
-    for (const key of splitPosterNationKeys()) {
-      const signature = JSON.stringify(mark(key));
-      const previous = seen.get(signature);
-      assert.equal(previous, undefined, `${key} repeats ${previous}`);
-      seen.set(signature, key);
-    }
-
-    assert.equal(direction(mark("fra")), "vertical");
-    assert.equal(direction(mark("ned")), "horizontal");
-    assert.equal(direction(mark("rus")), "horizontal");
-    assert.notDeepEqual(colours(mark("ned")), colours(mark("rus")));
-    assert.equal(colours(mark("rus"))[0], "#FFFFFF");
-
-    assert.equal(mark("mex").kind, "centre-block");
-    assert.equal(direction(mark("ita")), "vertical");
-    assert.equal(direction(mark("irl")), "vertical");
-    assert.notEqual(colours(mark("ita"))[2], colours(mark("irl"))[2]);
-
-    assert.equal(direction(mark("bel")), "vertical");
-    assert.equal(direction(mark("deu")), "horizontal");
-
-    assert.equal(direction(mark("mco")), "horizontal");
-    assert.equal(direction(mark("idn")), "horizontal");
-    assert.equal(direction(mark("pol")), "horizontal");
-    assert.notDeepEqual(mark("mco"), mark("idn"));
-    assert.notDeepEqual(colours(mark("mco")), colours(mark("pol")));
-    assert.equal(colours(mark("aut")).length, 3);
-    assert.equal(colours(mark("mco")).length, 2);
-
-    assert.equal(direction(mark("hun")), "horizontal");
-    assert.equal(direction(mark("bgr")), "horizontal");
-    assert.notDeepEqual(colours(mark("hun")), colours(mark("bgr")));
-
-    const japan = mark("jpn");
-    const china = mark("chn");
-    assert.equal(japan.kind, "disc");
-    assert.equal(china.kind, "disc");
-    if (japan.kind === "disc" && china.kind === "disc") {
-      assert.equal(japan.align, "center");
-      assert.equal(china.align, "hoist");
-      assert.notEqual(japan.field, china.field);
-    }
-
-    assert.equal(mark("gbr").kind, "union");
-    assert.equal(mark("aus").kind, "dots");
-    assert.equal(mark("bra").kind, "diamond");
-    assert.equal(mark("can").kind, "pale");
-    const bahrain = mark("bhr");
-    const qatar = mark("qat");
-    assert.equal(bahrain.kind, "serrated");
-    assert.equal(qatar.kind, "serrated");
-    if (bahrain.kind === "serrated" && qatar.kind === "serrated") {
-      assert.notEqual(bahrain.teeth, qatar.teeth);
-      assert.notEqual(bahrain.field, qatar.field);
-    }
-    assert.equal(mark("are").kind, "hoist");
-    assert.equal(mark("aze").kind, "crescent");
-    assert.equal(mark("sgp").kind, "half-crescent");
-    assert.equal(mark("mys").kind, "canton-crescent");
-    assert.notDeepEqual(mark("usa"), mark("mys"));
-  });
-
-  it("paints the mark from the poster art", () => {
+  it("renders the flag from an image, not an inlined svg", () => {
     const art = readFileSync(
       new URL("../../components/events/SplitPosterArt.tsx", import.meta.url),
       "utf8",
     );
-    assert.match(art, /model\.mark/);
-    assert.match(art, /canton-stars/);
-    assert.match(art, /direction === "horizontal"/);
+    assert.match(art, /<img/);
+    assert.match(art, /onError/);
+    assert.match(art, /object-cover/);
+    assert.match(art, /clipPath/);
+    assert.match(art, /data-flag-fallback/);
+    assert.doesNotMatch(art, /canton-stars/);
   });
 });
-
-function direction(mark: NationMark): string | null {
-  return mark.kind === "bands" ? mark.direction : null;
-}
-
-function colours(mark: NationMark): readonly string[] {
-  if (mark.kind === "bands" || mark.kind === "centre-block") return mark.colours;
-  return [];
-}
 
 describe("posterInk", () => {
   it("puts dark ink on gold and white ink on black or slate", () => {
@@ -311,8 +256,13 @@ describe("buildSplitPoster", () => {
     assert.equal(poster.breadcrumb, "Mexico City GP");
     assert.equal(poster.lead, "MEXICO");
     assert.equal(poster.rest, "CITY");
-    assert.equal(poster.stripeSource, "curated");
-    assert.deepEqual(poster.stripes, ["#0B6B47", "#F3EFE6", "#C8213A"]);
+    assert.equal(poster.kicker, "FORMULA 1");
+    assert.equal(poster.flag.kind, "image");
+    if (poster.flag.kind === "image") {
+      assert.equal(poster.flag.code, "mx");
+      assert.equal(poster.flag.src, "/flags/4x3/mx.svg");
+      assert.equal(poster.flag.objectPosition, "center");
+    }
     assert.equal(poster.eyebrow, "Watch Motorsport · Mexico City");
     assert.equal(poster.metaDate, "Sun 1 Nov 2026");
     assert.equal(poster.metaClock, "Lights out 22:00");
@@ -330,8 +280,10 @@ describe("buildSplitPoster", () => {
     });
     assert.equal(poster.kind, "race");
     if (poster.kind !== "race") return;
-    assert.equal(poster.stripeSource, "neutral");
-    assert.deepEqual(poster.stripes, [SPLIT_POSTER_NEUTRAL]);
+    assert.equal(poster.flag.kind, "fallback");
+    if (poster.flag.kind === "fallback") {
+      assert.equal(poster.flag.fill, SPLIT_POSTER_NEUTRAL);
+    }
     assert.equal(poster.metaClock, "Lights out TBC");
     assert.equal(poster.weekendLine, null);
   });

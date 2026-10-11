@@ -327,6 +327,7 @@ describe("cmsEventsToFixtures", () => {
     );
     assert.equal(fixtures[0]?.venues.length, 0);
     assert.equal(fixtures[0]?.featured, false);
+    assert.equal(fixtures[0]?.track, "Monza");
   });
 
   it("maps rugby/soccer events from event-level startsAt and featured", () => {
