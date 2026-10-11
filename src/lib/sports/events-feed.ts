@@ -78,6 +78,8 @@ export type UpcomingFixture = {
   relatedGuide?: FixtureRelatedGuide | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  /** F1 circuit name from CMS `f1Details.track`. */
+  track?: string | null;
   updatedAt?: string | null;
 };
 
@@ -337,6 +339,7 @@ type FixtureSeoFields = {
   seoTitle: string | null;
   seoDescription: string | null;
   updatedAt: string | null;
+  track: string | null;
 };
 
 const EMPTY_SEO: FixtureSeoFields = {
@@ -351,6 +354,7 @@ const EMPTY_SEO: FixtureSeoFields = {
   seoTitle: null,
   seoDescription: null,
   updatedAt: null,
+  track: null,
 };
 
 function seoFromCmsRow(row: EventsCmsEventRow): FixtureSeoFields {
@@ -366,6 +370,7 @@ function seoFromCmsRow(row: EventsCmsEventRow): FixtureSeoFields {
     seoTitle: asString(row.seoTitle) || null,
     seoDescription: asString(row.seoDescription) || null,
     updatedAt: asIso(row.updatedAt),
+    track: asString(row.track) || null,
   };
 }
 
@@ -384,6 +389,7 @@ function applySeo(
   if (seo.seoTitle) target.seoTitle = seo.seoTitle;
   if (seo.seoDescription) target.seoDescription = seo.seoDescription;
   if (seo.updatedAt) target.updatedAt = seo.updatedAt;
+  if (seo.track) target.track = seo.track;
 }
 
 /**
@@ -516,6 +522,7 @@ function toUpcoming(row: MutableFixture): UpcomingFixture {
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
     updatedAt: row.updatedAt,
+    track: row.track,
   };
 }
 
@@ -707,6 +714,7 @@ export function mergeUpcomingFixtures(
         seoTitle: item.seoTitle ?? null,
         seoDescription: item.seoDescription ?? null,
         updatedAt: item.updatedAt ?? null,
+        track: item.track ?? null,
       });
       byKey.set(key, created);
       return;
@@ -747,6 +755,7 @@ export function mergeUpcomingFixtures(
       seoTitle: item.seoTitle ?? null,
       seoDescription: item.seoDescription ?? null,
       updatedAt: item.updatedAt ?? null,
+      track: item.track ?? null,
     });
     if (
       from === "screening" ||
