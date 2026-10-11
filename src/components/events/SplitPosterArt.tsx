@@ -326,10 +326,10 @@ function RacePoster({ model }: { model: Extract<SplitPosterModel, { kind: "race"
   return (
     <div className="@container relative w-full bg-black" style={{ aspectRatio: "1280 / 400" }}>
       <FlagBand flag={model.flag} />
-      <div className="absolute top-[15.5%] left-[5%] z-10 w-[64%]">
+      <div className="absolute top-[12%] left-[5%] z-10 w-[62%]">
         <p
-          className="font-display tracking-[0.12em] text-[#e10600]"
-          style={{ fontSize: "clamp(13px, 2.66cqw, 34px)" }}
+          className="font-sans font-bold uppercase text-white"
+          style={{ fontSize: "clamp(10px, 1.05cqw, 13px)", letterSpacing: "0.2em" }}
         >
           {model.kicker}
         </p>
@@ -345,6 +345,12 @@ function RacePoster({ model }: { model: Extract<SplitPosterModel, { kind: "race"
           </p>
         ) : null}
       </div>
+      <p
+        className="absolute bottom-[7.5%] left-[5%] z-10 font-display leading-none text-white"
+        style={{ fontSize: "clamp(13px, 2.2cqw, 28px)", letterSpacing: "0.02em" }}
+      >
+        {model.dateLine}
+      </p>
     </div>
   );
 }

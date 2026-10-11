@@ -128,6 +128,16 @@ const DAY_MONTH = new Intl.DateTimeFormat("en-GB", {
   month: "short",
 });
 
+const DAY_NUM = new Intl.DateTimeFormat("en-GB", {
+  timeZone: FIXTURE_TIMEZONE,
+  day: "numeric",
+});
+
+const MONTH_SHORT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: FIXTURE_TIMEZONE,
+  month: "short",
+});
+
 const CLOCK = new Intl.DateTimeFormat("en-GB", {
   timeZone: FIXTURE_TIMEZONE,
   hour: "2-digit",
@@ -330,19 +340,27 @@ function eyebrow(sport: string | null, context: string | null): string {
   return context ? `${lead} · ${context}` : lead;
 }
 
+/** Compact meeting span, e.g. `23–25 OCT` or `30 OCT–1 NOV`. */
+function weekendRangeLabel(
+  startIso: string | null | undefined,
+  endIso: string | null | undefined,
+): string | null {
+  const start = parsedInstant(startIso);
+  const end = parsedInstant(endIso);
+  if (!start || !end) return null;
+  const dayA = DAY_NUM.format(start);
+  const dayB = DAY_NUM.format(end);
+  const monA = MONTH_SHORT.format(start).toLocaleUpperCase("en");
+  const monB = MONTH_SHORT.format(end).toLocaleUpperCase("en");
+  if (monA === monB && dayA === dayB) return `${dayA} ${monA}`;
+  if (monA === monB) return `${dayA}–${dayB} ${monA}`;
+  return `${dayA} ${monA}–${dayB} ${monB}`;
+}
+
 function raceKicker(input: SplitPosterInput): string {
-  const series = (input.series ?? "").trim().toLowerCase();
-  const competition = (input.competition ?? "").trim().toLowerCase();
-  if (
-    series === "f1" ||
-    series === "formula-1" ||
-    series === "formula 1" ||
-    competition.includes("formula 1") ||
-    competition.includes("formula one")
-  ) {
-    return "FORMULA 1";
-  }
-  return (input.sportName ?? input.sportSlug ?? "Race").toUpperCase();
+  const sport = (sportLabel(input) ?? "Motorsport").toLocaleUpperCase("en");
+  const range = weekendRangeLabel(input.weekendStart, input.weekendEnd);
+  return range ? `${sport} · RACE WEEKEND ${range}` : sport;
 }
 
 export function buildSplitPoster(input: SplitPosterInput): SplitPosterModel {

@@ -256,7 +256,7 @@ describe("buildSplitPoster", () => {
     assert.equal(poster.breadcrumb, "Mexico City GP");
     assert.equal(poster.lead, "MEXICO");
     assert.equal(poster.rest, "CITY");
-    assert.equal(poster.kicker, "FORMULA 1");
+    assert.equal(poster.kicker, "MOTORSPORT · RACE WEEKEND 30 OCT–1 NOV");
     assert.equal(poster.flag.kind, "image");
     if (poster.flag.kind === "image") {
       assert.equal(poster.flag.code, "mx");
@@ -269,6 +269,22 @@ describe("buildSplitPoster", () => {
     assert.equal(poster.dateLine, "SUN 1 NOV 2026 · LIGHTS OUT 22:00");
     assert.equal(poster.weekendLine, "RACE WEEKEND · 30 OCT – 1 NOV");
     assert.equal(poster.numeral, "01.11");
+  });
+
+  it("folds a same-month meeting into the motorsport kicker", () => {
+    const poster = buildSplitPoster({
+      title: "United States Grand Prix",
+      sportSlug: "motorsport",
+      sportName: "Motorsport",
+      series: "f1",
+      startsAt: "2026-10-25T20:00:00.000Z",
+      weekendStart: "2026-10-23T12:00:00.000Z",
+      weekendEnd: "2026-10-25T20:00:00.000Z",
+    });
+    assert.equal(poster.kind, "race");
+    if (poster.kind !== "race") return;
+    assert.equal(poster.kicker, "MOTORSPORT · RACE WEEKEND 23–25 OCT");
+    assert.equal(poster.dateLine, "SUN 25 OCT 2026 · LIGHTS OUT 22:00");
   });
 
   it("keeps an explicit unknown nation on the neutral band", () => {
@@ -284,6 +300,7 @@ describe("buildSplitPoster", () => {
     if (poster.flag.kind === "fallback") {
       assert.equal(poster.flag.fill, SPLIT_POSTER_NEUTRAL);
     }
+    assert.equal(poster.kicker, "MOTORSPORT");
     assert.equal(poster.metaClock, "Lights out TBC");
     assert.equal(poster.weekendLine, null);
   });
@@ -296,6 +313,7 @@ describe("buildSplitPoster", () => {
     });
     assert.equal(poster.kind, "race");
     if (poster.kind !== "race") return;
+    assert.equal(poster.kicker, "MOTORSPORT");
     assert.equal(poster.weekendLine, "RACE DAY · 1 NOV");
   });
 
