@@ -84,6 +84,7 @@ export const SEARCH_SPORTS = [
   { name: "Rugby", slug: "rugby" },
   { name: "Soccer", slug: "soccer" },
   { name: "Cricket", slug: "cricket" },
+  { name: "Motorsport", slug: "motorsport" },
   { name: "Tennis", slug: "tennis" },
   { name: "Squash", slug: "squash" },
   { name: "Karting", slug: "karting" },

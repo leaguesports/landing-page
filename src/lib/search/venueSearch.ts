@@ -28,6 +28,10 @@ const SPORT_ALIASES: Record<string, string> = {
   golf: "golf",
   rugby: "rugby",
   cricket: "cricket",
+  motorsport: "motorsport",
+  f1: "motorsport",
+  "formula 1": "motorsport",
+  "formula one": "motorsport",
   tennis: "tennis",
   squash: "squash",
   karting: "karting",
@@ -393,8 +397,8 @@ export type ClassifiedSiteSearch =
 
 /**
  * Route a free-text query to either sport/city directory landings or the
- * Find Venue name typeahead. Used by SearchAction `/venues?q=`, hub search,
- * and the homepage hero so “Africa Padel” is not hijacked as `/watch/padel`.
+ * Find Venue name typeahead. Used by SearchAction `/venues?q=` and the
+ * navbar so “Africa Padel” is not hijacked as `/watch/padel`.
  */
 export function classifySiteSearch(
   query: string,

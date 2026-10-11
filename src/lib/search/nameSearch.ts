@@ -1,6 +1,6 @@
 /**
  * Shared venue-by-name search contract.
- * Used by `/venues` typeahead, `GET /api/venues/search`, onboarding, and
+ * Used by navbar search, `GET /api/venues/search`, onboarding, and
  * Play/Organise pickers so min-chars, GROQ tokens, ranking, and empty copy
  * stay consistent. Directory (sport/city) parsing lives in `venueSearch.ts`.
  */
