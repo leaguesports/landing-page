@@ -128,14 +128,13 @@ const DAY_MONTH = new Intl.DateTimeFormat("en-GB", {
   month: "short",
 });
 
-const DAY_NUM = new Intl.DateTimeFormat("en-GB", {
+const RANGE_PARTS = new Intl.DateTimeFormat("en-GB", {
   timeZone: FIXTURE_TIMEZONE,
   day: "numeric",
-});
-
-const MONTH_SHORT = new Intl.DateTimeFormat("en-GB", {
-  timeZone: FIXTURE_TIMEZONE,
   month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
 });
 
 const CLOCK = new Intl.DateTimeFormat("en-GB", {
@@ -340,7 +339,21 @@ function eyebrow(sport: string | null, context: string | null): string {
   return context ? `${lead} · ${context}` : lead;
 }
 
-/** Compact meeting span, e.g. `23–25 OCT` or `30 OCT–1 NOV`. */
+function rangeStamp(instant: Date): { day: string; month: string; midnight: boolean } {
+  const parts = RANGE_PARTS.formatToParts(instant);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: value("day"),
+    month: value("month").toLocaleUpperCase("en"),
+    midnight: value("hour") === "00" && value("minute") === "00",
+  };
+}
+
+/**
+ * Compact meeting span, e.g. `23–25 OCT` or `30 OCT–1 NOV`.
+ * An end stamp at local midnight belongs to the previous calendar day.
+ */
 function weekendRangeLabel(
   startIso: string | null | undefined,
   endIso: string | null | undefined,
@@ -348,13 +361,14 @@ function weekendRangeLabel(
   const start = parsedInstant(startIso);
   const end = parsedInstant(endIso);
   if (!start || !end) return null;
-  const dayA = DAY_NUM.format(start);
-  const dayB = DAY_NUM.format(end);
-  const monA = MONTH_SHORT.format(start).toLocaleUpperCase("en");
-  const monB = MONTH_SHORT.format(end).toLocaleUpperCase("en");
-  if (monA === monB && dayA === dayB) return `${dayA} ${monA}`;
-  if (monA === monB) return `${dayA}–${dayB} ${monA}`;
-  return `${dayA} ${monA}–${dayB} ${monB}`;
+  const opening = rangeStamp(start);
+  const closingInstant = rangeStamp(end).midnight ? new Date(end.getTime() - 60_000) : end;
+  const closing = rangeStamp(closingInstant);
+  if (opening.month === closing.month && opening.day === closing.day) {
+    return `${opening.day} ${opening.month}`;
+  }
+  if (opening.month === closing.month) return `${opening.day}–${closing.day} ${opening.month}`;
+  return `${opening.day} ${opening.month}–${closing.day} ${closing.month}`;
 }
 
 function raceKicker(input: SplitPosterInput): string {

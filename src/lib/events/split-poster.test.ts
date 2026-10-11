@@ -278,8 +278,8 @@ describe("buildSplitPoster", () => {
       sportName: "Motorsport",
       series: "f1",
       startsAt: "2026-10-25T20:00:00.000Z",
-      weekendStart: "2026-10-23T12:00:00.000Z",
-      weekendEnd: "2026-10-25T20:00:00.000Z",
+      weekendStart: "2026-10-23T17:30:00.000Z",
+      weekendEnd: "2026-10-25T22:00:00.000Z",
     });
     assert.equal(poster.kind, "race");
     if (poster.kind !== "race") return;

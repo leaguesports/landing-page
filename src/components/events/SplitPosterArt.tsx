@@ -326,28 +326,31 @@ function RacePoster({ model }: { model: Extract<SplitPosterModel, { kind: "race"
   return (
     <div className="@container relative w-full bg-black" style={{ aspectRatio: "1280 / 400" }}>
       <FlagBand flag={model.flag} />
-      <div className="absolute top-[12%] left-[5%] z-10 w-[62%]">
+      <div className="absolute top-[11%] left-[5%] z-10 w-[72%]">
         <p
-          className="font-sans font-bold uppercase text-white"
-          style={{ fontSize: "clamp(10px, 1.05cqw, 13px)", letterSpacing: "0.2em" }}
+          className="truncate font-sans font-bold uppercase text-white"
+          style={{ fontSize: "clamp(8px, 1.15cqw, 13px)", letterSpacing: "0.16em" }}
         >
           {model.kicker}
         </p>
-        <p className="font-display leading-[0.9] text-white" style={{ fontSize: titleSize(model.headline) }}>
+        <p
+          className="mt-[0.15em] max-w-[86%] font-display leading-[0.9] text-white"
+          style={{ fontSize: titleSize(model.headline) }}
+        >
           {model.headline}
         </p>
         {model.circuit ? (
           <p
-            className="mt-[0.7em] font-sans tracking-[0.04em] text-[#bbb]"
-            style={{ fontSize: "clamp(12px, 1.56cqw, 20px)" }}
+            className="mt-[0.45em] font-sans tracking-[0.04em] text-[#bbb]"
+            style={{ fontSize: "clamp(9px, 1.35cqw, 18px)" }}
           >
             {model.circuit}
           </p>
         ) : null}
       </div>
       <p
-        className="absolute bottom-[7.5%] left-[5%] z-10 font-display leading-none text-white"
-        style={{ fontSize: "clamp(13px, 2.2cqw, 28px)", letterSpacing: "0.02em" }}
+        className="absolute bottom-[8%] left-[5%] z-10 max-w-[78%] truncate font-display leading-none text-white"
+        style={{ fontSize: "clamp(11px, 1.85cqw, 26px)", letterSpacing: "0.02em" }}
       >
         {model.dateLine}
       </p>
