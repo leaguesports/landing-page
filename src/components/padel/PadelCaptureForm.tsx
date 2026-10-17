@@ -10,7 +10,8 @@ import {
   type SlotKey,
 } from "@/components/padel/PlayerPairings";
 import { RulesToggle } from "@/components/padel/RulesToggle";
-import { SwapTeamsButton, VenuePicker } from "@/components/padel/VenuePicker";
+import { SwapTeamsButton } from "@/components/padel/VenuePicker";
+import { VenueSelectField } from "@/components/padel/VenueSelectField";
 import { useAuth } from "@/hooks/useAuth";
 import { getLoginPageHref, relativeAuthReturnTo } from "@/lib/auth-return-to";
 import { capturePadelMatch } from "@/lib/match-api";
@@ -48,6 +49,7 @@ import type {
 type PadelCaptureFormProps = {
   venues: VenueOption[];
   initialVenueSlug?: string | null;
+  /** Venue-query links still pass this. Changing court opens the picker here. */
   lockVenue?: boolean;
   initialSelf?: QuickStartInitialSelf | null;
 };
@@ -67,7 +69,6 @@ function showTieBreak(set: CapturePadelSetInput): boolean {
 export function PadelCaptureForm({
   venues,
   initialVenueSlug,
-  lockVenue = false,
   initialSelf = null,
 }: PadelCaptureFormProps) {
   const router = useRouter();
@@ -243,29 +244,17 @@ export function PadelCaptureForm({
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-zinc-200">Padel court</h2>
-        {lockVenue && venue ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white">{venue.name}</p>
-              <p className="mt-0.5 text-xs text-zinc-400">
-                {[venue.suburb, venue.city].filter(Boolean).join(" · ") ||
-                  "Selected court"}
-              </p>
-            </div>
-            <Link
-              href="/padel/capture"
-              className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
-            >
-              Choose a different court
-            </Link>
-          </div>
-        ) : venues.length === 0 ? (
+        {venues.length === 0 ? (
           <p className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-3 text-sm text-zinc-400">
             No padel courts in the directory yet. A court is required to
             capture.
           </p>
         ) : (
-          <VenuePicker venues={venues} selected={venue} onSelect={setVenue} />
+          <VenueSelectField
+            venues={venues}
+            selected={venue}
+            onSelect={setVenue}
+          />
         )}
       </section>
 
