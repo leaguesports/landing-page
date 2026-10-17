@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock, Loader2, Minus, Plus } from "lucide-react";
+import { Clock, Loader2, Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import {
   PlayerPairings,
   swapTeamSlots,
@@ -19,10 +19,7 @@ import {
   datetimeLocalToIso,
   toDatetimeLocalValue,
 } from "@/lib/padel/api-match";
-import {
-  inferPadelMatchWinner,
-  inferPadelSetWinner,
-} from "@/lib/padel/capture";
+import { derivePadelMatchWinner } from "@/lib/padel/capture";
 import {
   buildDemoGuestSlots,
   playerFromInitialSelf,
@@ -42,8 +39,11 @@ import type {
   CapturePadelSetInput,
   PadelPlayer,
   PadelRuleset,
-  PadelTeamId,
 } from "@/types/padel-match";
+
+const MAX_SETS = 5;
+const MAX_GAMES = 20;
+const MAX_TIE_BREAK = 30;
 
 type PadelCaptureFormProps = {
   venues: VenueOption[];
@@ -53,7 +53,7 @@ type PadelCaptureFormProps = {
 };
 
 function emptySet(): CapturePadelSetInput {
-  return { gamesA: 6, gamesB: 4, tieBreak: null, winner: "A" };
+  return { gamesA: 0, gamesB: 0, tieBreak: null };
 }
 
 function showTieBreak(set: CapturePadelSetInput): boolean {
@@ -61,6 +61,167 @@ function showTieBreak(set: CapturePadelSetInput): boolean {
     (set.gamesA === 6 && set.gamesB === 6) ||
     (set.gamesA === 7 && set.gamesB === 6) ||
     (set.gamesA === 6 && set.gamesB === 7)
+  );
+}
+
+function scoreOnlySet(set: CapturePadelSetInput): CapturePadelSetInput {
+  return {
+    gamesA: set.gamesA,
+    gamesB: set.gamesB,
+    tieBreak: showTieBreak(set) ? (set.tieBreak ?? null) : null,
+  };
+}
+
+function pairingLabel(
+  players: Array<PadelPlayer | null | undefined>,
+  fallback: string,
+): string {
+  const names = players
+    .map((player) => player?.displayName?.trim() ?? "")
+    .filter((name) => name.length > 0);
+  return names.length > 0 ? names.join(" / ") : fallback;
+}
+
+function ScoreStepper({
+  value,
+  max,
+  label,
+  onChange,
+  compact = false,
+}: {
+  value: number;
+  max: number;
+  label: string;
+  onChange: (next: number) => void;
+  compact?: boolean;
+}) {
+  const buttonClass = [
+    "inline-flex items-center justify-center rounded-full disabled:opacity-30",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
+    compact
+      ? "h-6 w-6 text-zinc-400 hover:bg-white/10 hover:text-white"
+      : "h-7 w-7 text-zinc-200 hover:bg-emerald-400/15 hover:text-emerald-200",
+  ].join(" ");
+
+  return (
+    <div
+      className={[
+        "inline-flex items-center rounded-full border bg-[#0c0f0c]",
+        compact
+          ? "gap-0.5 border-white/8 px-0.5 py-0.5"
+          : "gap-0.5 border-white/10 px-0.5 py-0.5",
+      ].join(" ")}
+    >
+      {compact ? (
+        <span className="pl-1 text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
+          TB
+        </span>
+      ) : null}
+      <button
+        type="button"
+        aria-label={`Decrease ${label}`}
+        disabled={value <= 0}
+        onClick={() => onChange(Math.max(0, value - 1))}
+        className={buttonClass}
+      >
+        <Minus className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+      </button>
+      <span
+        className={[
+          "text-center tabular-nums",
+          compact
+            ? "min-w-4 text-xs font-medium text-zinc-200"
+            : "min-w-6 font-display text-xl tracking-wide text-white",
+        ].join(" ")}
+      >
+        {value}
+      </span>
+      <button
+        type="button"
+        aria-label={`Increase ${label}`}
+        disabled={value >= max}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className={buttonClass}
+      >
+        <Plus className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+      </button>
+    </div>
+  );
+}
+
+function TeamScoreRow({
+  label,
+  fallback,
+  isWinner,
+  sets,
+  team,
+  onGames,
+  onTieBreak,
+  trailing,
+}: {
+  label: string;
+  fallback: string;
+  isWinner: boolean;
+  sets: CapturePadelSetInput[];
+  team: "A" | "B";
+  onGames: (index: number, games: number) => void;
+  onTieBreak: (index: number, points: number) => void;
+  trailing?: ReactNode;
+}) {
+  const named = label !== fallback;
+  return (
+    <tr className={isWinner ? "bg-emerald-400/10" : undefined}>
+      <th
+        scope="row"
+        className={[
+          "sticky left-0 z-10 min-w-[6.75rem] max-w-[9.5rem] px-3 py-2.5 text-left",
+          isWinner ? "bg-[#163028] text-emerald-200" : "bg-[#141814] text-white",
+        ].join(" ")}
+      >
+        <span className="block truncate text-sm font-semibold" title={label}>
+          {label}
+        </span>
+        {isWinner ? (
+          <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+            Winner
+          </span>
+        ) : named ? (
+          <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+            {fallback}
+          </span>
+        ) : null}
+      </th>
+      {sets.map((set, index) => {
+        const games = team === "A" ? set.gamesA : set.gamesB;
+        const tieBreakPoints =
+          team === "A"
+            ? (set.tieBreak?.pointsA ?? 0)
+            : (set.tieBreak?.pointsB ?? 0);
+        const setLabel = `set ${index + 1}`;
+        return (
+          <td key={index} className="px-1.5 py-2 text-center align-middle">
+            <div className="flex flex-col items-center gap-1">
+              <ScoreStepper
+                value={games}
+                max={MAX_GAMES}
+                label={`${label} games in ${setLabel}`}
+                onChange={(next) => onGames(index, next)}
+              />
+              {showTieBreak(set) ? (
+                <ScoreStepper
+                  compact
+                  value={tieBreakPoints}
+                  max={MAX_TIE_BREAK}
+                  label={`${label} tie-break in ${setLabel}`}
+                  onChange={(next) => onTieBreak(index, next)}
+                />
+              ) : null}
+            </div>
+          </td>
+        );
+      })}
+      {trailing}
+    </tr>
   );
 }
 
@@ -82,8 +243,10 @@ export function PadelCaptureForm({
   const [slots, setSlots] = useState<Record<SlotKey, PadelPlayer | null>>(() =>
     resolveInitialQuickStartSlots(initialSelf),
   );
-  const [sets, setSets] = useState<CapturePadelSetInput[]>([emptySet()]);
-  const [winner, setWinner] = useState<PadelTeamId>("A");
+  const [sets, setSets] = useState<CapturePadelSetInput[]>([
+    emptySet(),
+    emptySet(),
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saving, setSaving] = useState(false);
@@ -112,7 +275,15 @@ export function PadelCaptureForm({
   );
 
   const playedAtIso = datetimeLocalToIso(playedAtLocal);
-  const inferredWinner = inferPadelMatchWinner(sets, winner) ?? winner;
+  const derivedWinner = derivePadelMatchWinner(sets);
+  const teamALabel = pairingLabel(
+    [resolvedSlots.a1, resolvedSlots.a2],
+    "Team A",
+  );
+  const teamBLabel = pairingLabel(
+    [resolvedSlots.b1, resolvedSlots.b2],
+    "Team B",
+  );
 
   const ready =
     Boolean(venue) &&
@@ -124,26 +295,30 @@ export function PadelCaptureForm({
         resolvedSlots.b2,
     ) &&
     sets.length > 0 &&
-    Boolean(inferredWinner) &&
+    Boolean(derivedWinner) &&
     !saving &&
     !isPending;
 
   function applySets(next: CapturePadelSetInput[]) {
-    setSets(next);
-    const nextWinner = inferPadelMatchWinner(next);
-    if (nextWinner) setWinner(nextWinner);
+    setSets(next.map(scoreOnlySet));
   }
 
   function updateSet(index: number, patch: Partial<CapturePadelSetInput>) {
     applySets(
-      sets.map((set, i) => {
-        if (i !== index) return set;
-        const next = { ...set, ...patch };
-        next.winner = inferPadelSetWinner(next);
-        if (!showTieBreak(next)) next.tieBreak = null;
-        return next;
-      }),
+      sets.map((set, i) => (i === index ? { ...set, ...patch } : set)),
     );
+  }
+
+  function updateTieBreak(index: number, team: "A" | "B", points: number) {
+    const set = sets[index];
+    if (!set) return;
+    const current = set.tieBreak ?? { pointsA: 0, pointsB: 0 };
+    updateSet(index, {
+      tieBreak: {
+        pointsA: team === "A" ? points : current.pointsA,
+        pointsB: team === "B" ? points : current.pointsB,
+      },
+    });
   }
 
   async function handleCapture() {
@@ -170,8 +345,8 @@ export function PadelCaptureForm({
       setError("Pick all four players");
       return;
     }
-    if (!inferredWinner) {
-      setError("Pick the match winner");
+    if (!derivedWinner) {
+      setError("This score does not decide a winner.");
       return;
     }
 
@@ -198,8 +373,14 @@ export function PadelCaptureForm({
           ruleset,
           pairings,
           servingTeam: "A",
-          score: { sets },
-          winner: inferredWinner,
+          score: {
+            sets: sets.map((set) => ({
+              gamesA: set.gamesA,
+              gamesB: set.gamesB,
+              tieBreak: set.tieBreak ?? null,
+            })),
+          },
+          winner: derivedWinner,
         },
         { venue: toMatchVenue(venue)! },
       );
@@ -322,162 +503,99 @@ export function PadelCaptureForm({
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-zinc-200">Set scores</h2>
-          <button
-            type="button"
-            disabled={sets.length >= 5}
-            onClick={() => applySets([...sets, emptySet()])}
-            className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 disabled:opacity-40"
-          >
-            <Plus className="h-3.5 w-3.5" aria-hidden />
-            Add set
-          </button>
-        </div>
-        <div className="space-y-3">
-          {sets.map((set, index) => (
-            <div
-              key={index}
-              className="space-y-3 rounded-3xl border border-white/8 bg-[#141814] p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                  Set {index + 1}
-                </p>
-                {sets.length > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      applySets(sets.filter((_, i) => i !== index))
-                    }
-                    className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-white"
+        <h2 className="text-sm font-semibold text-zinc-200">Set scores</h2>
+        <div className="overflow-x-auto rounded-2xl border border-white/8 bg-[#141814]">
+          <table className="w-full border-collapse">
+            <caption className="sr-only">
+              Padel scoreboard. The match winner is the side that wins more
+              sets.
+            </caption>
+            <thead>
+              <tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                <th
+                  scope="col"
+                  className="sticky left-0 z-10 bg-[#141814] px-3 py-2 text-left"
+                >
+                  Pair
+                </th>
+                {sets.map((_, index) => (
+                  <th
+                    key={index}
+                    scope="col"
+                    className="px-1.5 py-2 text-center"
                   >
-                    <Minus className="h-3.5 w-3.5" aria-hidden />
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs text-zinc-500">
-                    Team A games
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={set.gamesA}
-                    onChange={(e) =>
-                      updateSet(index, {
-                        gamesA: Number.parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs text-zinc-500">
-                    Team B games
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={set.gamesB}
-                    onChange={(e) =>
-                      updateSet(index, {
-                        gamesB: Number.parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-                  />
-                </label>
-              </div>
-              {showTieBreak(set) ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="mb-1 block text-xs text-zinc-500">
-                      Tie-break A
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={30}
-                      value={set.tieBreak?.pointsA ?? 0}
-                      onChange={(e) =>
-                        updateSet(index, {
-                          tieBreak: {
-                            pointsA: Number.parseInt(e.target.value, 10) || 0,
-                            pointsB: set.tieBreak?.pointsB ?? 0,
-                          },
-                        })
-                      }
-                      className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-xs text-zinc-500">
-                      Tie-break B
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={30}
-                      value={set.tieBreak?.pointsB ?? 0}
-                      onChange={(e) =>
-                        updateSet(index, {
-                          tieBreak: {
-                            pointsA: set.tieBreak?.pointsA ?? 0,
-                            pointsB: Number.parseInt(e.target.value, 10) || 0,
-                          },
-                        })
-                      }
-                      className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-emerald-400/40"
-                    />
-                  </label>
-                </div>
-              ) : null}
-              <div className="flex gap-2">
-                {(["A", "B"] as const).map((team) => (
-                  <button
-                    key={team}
-                    type="button"
-                    onClick={() => updateSet(index, { winner: team })}
-                    className={[
-                      "min-h-10 flex-1 rounded-full border text-sm font-medium",
-                      set.winner === team
-                        ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                        : "border-white/10 bg-white/5 text-zinc-300",
-                    ].join(" ")}
-                  >
-                    Set to Team {team}
-                  </button>
+                    <span className="block">Set {index + 1}</span>
+                    {sets.length > 1 ? (
+                      <button
+                        type="button"
+                        aria-label={`Remove set ${index + 1}`}
+                        onClick={() =>
+                          applySets(sets.filter((_, i) => i !== index))
+                        }
+                        className="mx-auto mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                      >
+                        <X className="h-3 w-3" aria-hidden />
+                      </button>
+                    ) : null}
+                  </th>
                 ))}
-              </div>
-            </div>
-          ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/8">
+              <TeamScoreRow
+                label={teamALabel}
+                fallback="Team A"
+                isWinner={derivedWinner === "A"}
+                sets={sets}
+                team="A"
+                onGames={(index, games) => updateSet(index, { gamesA: games })}
+                onTieBreak={(index, points) =>
+                  updateTieBreak(index, "A", points)
+                }
+                trailing={
+                  sets.length < MAX_SETS ? (
+                    <td
+                      rowSpan={2}
+                      className="border-l border-white/8 px-2 align-middle"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => applySets([...sets, emptySet()])}
+                        className="inline-flex min-h-24 min-w-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-emerald-400/30 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300 hover:border-emerald-400/60 hover:bg-emerald-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                      >
+                        <Plus className="h-4 w-4" aria-hidden />
+                        Add set
+                      </button>
+                    </td>
+                  ) : null
+                }
+              />
+              <TeamScoreRow
+                label={teamBLabel}
+                fallback="Team B"
+                isWinner={derivedWinner === "B"}
+                sets={sets}
+                team="B"
+                onGames={(index, games) => updateSet(index, { gamesB: games })}
+                onTieBreak={(index, points) =>
+                  updateTieBreak(index, "B", points)
+                }
+              />
+            </tbody>
+          </table>
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-200">Match winner</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {(["A", "B"] as const).map((team) => (
-            <button
-              key={team}
-              type="button"
-              onClick={() => setWinner(team)}
-              className={[
-                "min-h-12 rounded-2xl border text-sm font-medium",
-                inferredWinner === team
-                  ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                  : "border-white/10 bg-white/5 text-zinc-300",
-              ].join(" ")}
-            >
-              Team {team}
-            </button>
-          ))}
-        </div>
+        <p
+          role="status"
+          className={
+            derivedWinner
+              ? "text-sm font-medium text-emerald-300"
+              : "text-sm text-zinc-400"
+          }
+        >
+          {derivedWinner
+            ? `${derivedWinner === "A" ? teamALabel : teamBLabel} won`
+            : "This score does not decide a winner."}
+        </p>
       </section>
 
       {error ? (
