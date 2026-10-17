@@ -58,17 +58,49 @@ function requirePlayer(player: PadelPlayer | null | undefined, label: string): P
   return player;
 }
 
-export function inferPadelSetWinner(
-  set: Pick<CapturePadelSetInput, "gamesA" | "gamesB" | "tieBreak" | "winner">,
-): PadelTeamId | null {
-  if (isTeamId(set.winner)) return set.winner;
+type PadelSetScore = Pick<
+  CapturePadelSetInput,
+  "gamesA" | "gamesB" | "tieBreak" | "winner"
+>;
+
+/**
+ * Winner from the numbers only. More games wins. Tie-break points decide
+ * only when the games are level. A stored `winner` is ignored.
+ */
+export function derivePadelSetWinner(set: PadelSetScore): PadelTeamId | null {
+  if (set.gamesA > set.gamesB) return "A";
+  if (set.gamesB > set.gamesA) return "B";
   const tb = set.tieBreak;
   if (tb && tb.pointsA !== tb.pointsB) {
     return tb.pointsA > tb.pointsB ? "A" : "B";
   }
-  if (set.gamesA > set.gamesB) return "A";
-  if (set.gamesB > set.gamesA) return "B";
   return null;
+}
+
+/**
+ * Side that won more sets, from the score. Null when any set is unfinished
+ * or the sets are split. Manual winners are ignored.
+ */
+export function derivePadelMatchWinner(
+  sets: readonly PadelSetScore[],
+): PadelTeamId | null {
+  if (sets.length === 0) return null;
+  let a = 0;
+  let b = 0;
+  for (const set of sets) {
+    const setWinner = derivePadelSetWinner(set);
+    if (!setWinner) return null;
+    if (setWinner === "A") a += 1;
+    else b += 1;
+  }
+  if (a > b) return "A";
+  if (b > a) return "B";
+  return null;
+}
+
+export function inferPadelSetWinner(set: PadelSetScore): PadelTeamId | null {
+  if (isTeamId(set.winner)) return set.winner;
+  return derivePadelSetWinner(set);
 }
 
 export function inferPadelMatchWinner(

@@ -4,6 +4,8 @@ import type { CapturePadelMatchInput, PadelPairing } from "../../types/padel-mat
 import { MatchApiError } from "./api-match.ts";
 import {
   capturePadelMatchWith,
+  derivePadelMatchWinner,
+  derivePadelSetWinner,
   inferPadelMatchWinner,
   inferPadelSetWinner,
   toCapturePadelMatchBody,
@@ -90,6 +92,121 @@ describe("inferPadelSetWinner / inferPadelMatchWinner", () => {
     );
     assert.equal(inferPadelMatchWinner([{ gamesA: 6, gamesB: 4 }]), "A");
   });
+
+  it("prefers an explicit set winner before the score", () => {
+    assert.equal(
+      inferPadelSetWinner({ gamesA: 6, gamesB: 4, winner: "B" }),
+      "B",
+    );
+  });
+});
+
+describe("derivePadelSetWinner / derivePadelMatchWinner", () => {
+  it("gives the set to the side with more games", () => {
+    assert.equal(derivePadelSetWinner({ gamesA: 6, gamesB: 4 }), "A");
+    assert.equal(derivePadelSetWinner({ gamesA: 3, gamesB: 6 }), "B");
+    assert.equal(derivePadelSetWinner({ gamesA: 7, gamesB: 5 }), "A");
+    assert.equal(derivePadelSetWinner({ gamesA: 1, gamesB: 0 }), "A");
+    assert.equal(derivePadelSetWinner({ gamesA: 0, gamesB: 0 }), null);
+    assert.equal(derivePadelSetWinner({ gamesA: 6, gamesB: 6 }), null);
+  });
+
+  it("uses tie-break points only when games are level", () => {
+    assert.equal(
+      derivePadelSetWinner({
+        gamesA: 6,
+        gamesB: 6,
+        tieBreak: { pointsA: 7, pointsB: 5 },
+      }),
+      "A",
+    );
+    assert.equal(
+      derivePadelSetWinner({
+        gamesA: 6,
+        gamesB: 6,
+        tieBreak: { pointsA: 3, pointsB: 7 },
+      }),
+      "B",
+    );
+    assert.equal(
+      derivePadelSetWinner({
+        gamesA: 6,
+        gamesB: 6,
+        tieBreak: { pointsA: 7, pointsB: 7 },
+      }),
+      null,
+    );
+    assert.equal(
+      derivePadelSetWinner({
+        gamesA: 7,
+        gamesB: 6,
+        tieBreak: { pointsA: 5, pointsB: 7 },
+      }),
+      "A",
+    );
+    assert.equal(
+      derivePadelSetWinner({
+        gamesA: 6,
+        gamesB: 7,
+        tieBreak: { pointsA: 7, pointsB: 0 },
+      }),
+      "B",
+    );
+  });
+
+  it("ignores a stale manual winner and follows the score", () => {
+    assert.equal(
+      derivePadelSetWinner({ gamesA: 6, gamesB: 4, winner: "B" }),
+      "A",
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 6, gamesB: 4, winner: "B" },
+        { gamesA: 6, gamesB: 3, winner: "B" },
+      ]),
+      "A",
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 6, gamesB: 4 },
+        { gamesA: 4, gamesB: 6 },
+      ]),
+      null,
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 0, gamesB: 0 },
+        { gamesA: 0, gamesB: 0 },
+      ]),
+      null,
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 6, gamesB: 4 },
+        { gamesA: 0, gamesB: 0 },
+      ]),
+      null,
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 6, gamesB: 4 },
+        { gamesA: 6, gamesB: 3 },
+      ]),
+      "A",
+    );
+    assert.equal(
+      derivePadelMatchWinner([
+        { gamesA: 6, gamesB: 4 },
+        { gamesA: 3, gamesB: 6 },
+        {
+          gamesA: 7,
+          gamesB: 6,
+          tieBreak: { pointsA: 2, pointsB: 7 },
+        },
+      ]),
+      "A",
+    );
+  });
 });
 
 describe("toCapturePadelMatchBody", () => {
@@ -118,6 +235,37 @@ describe("toCapturePadelMatchBody", () => {
     });
     assert.equal(body.startsAt, "2026-08-29T09:00:00.000Z");
     assert.equal("playedAt" in body, false);
+  });
+
+  it("keeps an explicit winner when a caller asks for one", () => {
+    const body = toCapturePadelMatchBody({
+      ...captureInput,
+      winner: "B",
+      score: { sets: [{ gamesA: 6, gamesB: 4 }] },
+    });
+    assert.equal(body.winner, "B");
+    assert.equal(body.score.sets[0]?.winner, "A");
+  });
+
+  it("posts the score-derived winner when the form strips a stale override", () => {
+    const rawSets = [
+      { gamesA: 6, gamesB: 4, winner: "B" as const },
+      { gamesA: 6, gamesB: 2, winner: "B" as const },
+    ];
+    const winner = derivePadelMatchWinner(rawSets);
+    assert.equal(winner, "A");
+    const body = toCapturePadelMatchBody({
+      ...captureInput,
+      winner: winner!,
+      score: {
+        sets: rawSets.map(({ gamesA, gamesB }) => ({ gamesA, gamesB })),
+      },
+    });
+    assert.equal(body.winner, "A");
+    assert.deepEqual(
+      body.score.sets.map((set) => set.winner),
+      ["A", "A"],
+    );
   });
 
   it("rejects missing venue, time, sets, or winner", () => {
