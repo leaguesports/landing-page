@@ -4,11 +4,12 @@ import { Clock, Loader2, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { CaptureCourtPairings } from "@/components/padel/CaptureCourtPairings";
 import {
-  PlayerPairings,
   swapTeamSlots,
   type SlotKey,
 } from "@/components/padel/PlayerPairings";
+import { capturePairingsReady, selfIsSeated } from "@/lib/padel/capture-court";
 import { RulesToggle } from "@/components/padel/RulesToggle";
 import { SwapTeamsButton, VenuePicker } from "@/components/padel/VenuePicker";
 import { useAuth } from "@/hooks/useAuth";
@@ -114,15 +115,12 @@ export function PadelCaptureForm({
   const playedAtIso = datetimeLocalToIso(playedAtLocal);
   const inferredWinner = inferPadelMatchWinner(sets, winner) ?? winner;
 
+  const pairingsReady = capturePairingsReady(resolvedSlots, knownSelf);
+
   const ready =
     Boolean(venue) &&
     Boolean(playedAtIso) &&
-    Boolean(
-      resolvedSlots.a1 &&
-        resolvedSlots.a2 &&
-        resolvedSlots.b1 &&
-        resolvedSlots.b2,
-    ) &&
+    pairingsReady &&
     sets.length > 0 &&
     Boolean(inferredWinner) &&
     !saving &&
@@ -161,13 +159,18 @@ export function PadelCaptureForm({
       setError("Set when the match was played");
       return;
     }
-    if (
-      !resolvedSlots.a1 ||
-      !resolvedSlots.a2 ||
-      !resolvedSlots.b1 ||
-      !resolvedSlots.b2
-    ) {
-      setError("Pick all four players");
+    if (!pairingsReady) {
+      const fourFilled = Boolean(
+        resolvedSlots.a1 &&
+          resolvedSlots.a2 &&
+          resolvedSlots.b1 &&
+          resolvedSlots.b2,
+      );
+      setError(
+        fourFilled
+          ? "You must be seated as a named player"
+          : "Pick all four players",
+      );
       return;
     }
     if (!inferredWinner) {
@@ -306,12 +309,14 @@ export function PadelCaptureForm({
           </button>
         </div>
         <p className="text-xs text-zinc-500">
-          You must be seated as a named player.
-          {knownSelf
-            ? " You are in Team A until you pick someone else."
-            : null}
+          Tap a slot to choose a player. Switch positions to move any two,
+          including across teams.
+          {knownSelf ? " You must stay seated as one of the four." : null}
         </p>
-        <PlayerPairings
+        {knownSelf && !selfIsSeated(resolvedSlots, knownSelf) ? (
+          <p className="text-xs text-amber-300">Seat yourself before saving.</p>
+        ) : null}
+        <CaptureCourtPairings
           slots={resolvedSlots}
           onChange={setSlots}
           selfPlayer={knownSelf}
