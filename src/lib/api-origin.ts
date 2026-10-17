@@ -77,7 +77,8 @@ function getApiProxySkipPattern(): string {
   // Match identity (POST/GET /api/matches, lock) is league-sports-api.
   // Ably live-scoring, fixture social feed/live board, venue claim, venue
   // name typeahead, and the F1 replay telemetry proxy stay on Next.
-  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)";
+  // `/api/revalidate` is the Sanity publish webhook and must stay on Next.
+  return "matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)|revalidate(?:/|$)";
 }
 
 /**

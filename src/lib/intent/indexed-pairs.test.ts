@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   collectIndexedIntentPairs,
   locationSlugsFromIntentVenueRow,
+  mergeMetroPageLastmods,
 } from "./indexed-pairs.ts";
 
 const UPDATED = "2026-09-01T00:00:00.000Z";
@@ -104,5 +105,45 @@ describe("collectIndexedIntentPairs", () => {
       pairs.map((pair) => `${pair.activitySlug}/${pair.locationSlug}`),
       ["padel/fourways"],
     );
+  });
+});
+
+describe("mergeMetroPageLastmods", () => {
+  it("keeps the newer of venue coverage and the metroPage _updatedAt", () => {
+    const pairs = collectIndexedIntentPairs("play", [golfInSandton]);
+    const merged = mergeMetroPageLastmods("play", pairs, [
+      {
+        intent: "play",
+        activitySlug: "golf",
+        citySlug: "johannesburg",
+        updatedAt: "2026-09-04T00:00:00.000Z",
+      },
+      {
+        intent: "play",
+        activitySlug: "golf",
+        citySlug: "sandton",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        intent: "watch",
+        activitySlug: "rugby",
+        citySlug: "johannesburg",
+        updatedAt: "2026-09-09T00:00:00.000Z",
+      },
+      {
+        intent: "play",
+        activitySlug: "padel",
+        citySlug: "cape-town",
+        updatedAt: "2026-09-03T12:00:00.000Z",
+      },
+    ]);
+
+    const byKey = new Map(
+      merged.map((pair) => [`${pair.activitySlug}/${pair.locationSlug}`, pair.updatedAt]),
+    );
+    assert.equal(byKey.get("golf/johannesburg"), "2026-09-04T00:00:00.000Z");
+    assert.equal(byKey.get("golf/sandton"), UPDATED);
+    assert.equal(byKey.get("padel/cape-town"), "2026-09-03T12:00:00.000Z");
+    assert.equal(byKey.has("rugby/johannesburg"), false);
   });
 });

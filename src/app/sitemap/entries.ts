@@ -1,4 +1,8 @@
 import { guideHref, isGuideSlug } from "../../lib/guides/slugs.ts";
+import {
+  activityHubPaths,
+  type ActivityHubDoc,
+} from "../../lib/seo/published-pages.ts";
 
 export const SITEMAP_FALLBACK_ORIGIN = "https://leaguesports.co.za";
 
@@ -50,6 +54,8 @@ export type SitemapDataSource = {
   getGuides: () => Promise<SitemapGuideRow[]>;
   getIntentPairs: (intent: IntentKind) => Promise<SitemapIntentPair[]>;
   getFixtures: () => Promise<SitemapFixtureRow[]>;
+  /** Sport, series, and watch-city location docs. Optional for older callers. */
+  getActivityHubs?: () => Promise<ActivityHubDoc[]>;
 };
 
 /** Named modules emitted by `generateSitemaps` at `/sitemap/{id}.xml`. */
@@ -307,6 +313,56 @@ export function fixtureSitemapRoutes(
   return routes;
 }
 
+/**
+ * Prefer a document `_updatedAt` when a CMS hub shares a URL with a static
+ * route (for example `/watch/soccer`). Hub-only URLs are appended.
+ */
+export function overlayDocLastmods(
+  base: SitemapEntry[],
+  docs: SitemapEntry[],
+): SitemapEntry[] {
+  const docByUrl = new Map<string, SitemapEntry>();
+  for (const entry of docs) {
+    const existing = docByUrl.get(entry.url);
+    if (!existing || entry.lastModified > existing.lastModified) {
+      docByUrl.set(entry.url, entry);
+    }
+  }
+
+  const seen = new Set<string>();
+  const merged = base.map((entry) => {
+    seen.add(entry.url);
+    const doc = docByUrl.get(entry.url);
+    if (!doc) return entry;
+    return { ...entry, lastModified: doc.lastModified };
+  });
+  for (const entry of docByUrl.values()) {
+    if (!seen.has(entry.url)) merged.push(entry);
+  }
+  return merged;
+}
+
+export function activityHubSitemapRoutes(
+  origin: string,
+  rows: unknown,
+  now: Date,
+): SitemapEntry[] {
+  const routes: SitemapEntry[] = [];
+  for (const row of collectRows<ActivityHubDoc>(rows)) {
+    const updatedAt = typeof row.updatedAt === "string" ? row.updatedAt : null;
+    const lastModified = toSitemapDate(updatedAt, now);
+    for (const path of activityHubPaths(row)) {
+      const entry = sitemapEntry(sitemapAbsoluteUrl(origin, path), {
+        lastModified,
+        changeFrequency: "daily",
+        priority: 0.9,
+      });
+      if (entry) routes.push(entry);
+    }
+  }
+  return routes;
+}
+
 export function isSitemapBucketId(value: unknown): value is SitemapBucketId {
   return (
     typeof value === "string" &&
@@ -384,8 +440,13 @@ export async function buildSitemapBucket(
   const source = options.source ?? {};
 
   switch (id) {
-    case "static":
-      return staticSitemapRoutes(origin, now);
+    case "static": {
+      const hubs = await loadSourceRows(source.getActivityHubs, []);
+      return overlayDocLastmods(
+        staticSitemapRoutes(origin, now),
+        activityHubSitemapRoutes(origin, hubs, now),
+      );
+    }
     case "venues": {
       const venues = await loadSourceRows(source.getVenues, []);
       return dedupeSitemapEntries(venueSitemapRoutes(origin, venues, now));
