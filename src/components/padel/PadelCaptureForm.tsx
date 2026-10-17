@@ -556,7 +556,7 @@ export function PadelCaptureForm({
                   sets.length < MAX_SETS ? (
                     <td
                       rowSpan={2}
-                      className="border-l border-white/8 px-2 align-middle"
+                      className="border-l border-white/8 bg-[#141814] px-2 align-middle"
                     >
                       <button
                         type="button"
