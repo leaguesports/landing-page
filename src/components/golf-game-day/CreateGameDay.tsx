@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createGameDay, GameDayApiError } from "@/lib/golf-game-day/api";
@@ -26,8 +27,9 @@ import {
 
 function LinkBack() {
   return (
-    <Link href="/play/golf" className="mb-4 inline-flex text-sm font-semibold text-zinc-950">
-      ‹ Golf
+    <Link href="/play/golf" className="mb-4 inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Golf
     </Link>
   );
 }
@@ -154,6 +156,7 @@ export function CreateGameDay({
       <form onSubmit={onSubmit}>
         <LinkBack />
         <Eyebrow>New game day</Eyebrow>
+        <ScreenTitle>Set up game day</ScreenTitle>
         <p className="mt-3 text-sm leading-relaxed text-zinc-600">
           Pick the course and day. You&apos;ll get a link for the group.
         </p>

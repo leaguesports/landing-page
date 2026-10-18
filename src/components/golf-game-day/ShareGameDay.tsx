@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Copy, Eye } from "lucide-react";
+import { Check, ChevronLeft, Copy, Eye, MessageCircle } from "lucide-react";
 import type { GameDayCreated, GameDayPlayerSummary } from "@/types/golf-game-day";
 import {
   gameDayBoardPath,
@@ -13,7 +13,7 @@ import {
   whatsAppShareUrl,
 } from "@/lib/golf-game-day/paths";
 import { useGameDayAction } from "./GameDayChrome";
-import { primaryLinkClass, WhatsAppIcon } from "./ui";
+import { primaryLinkClass } from "./ui";
 
 type ShareGameDayProps = {
   day: GameDayCreated;
@@ -76,24 +76,25 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
       <div className="flex-1 px-5 pb-4 pt-4">
         <div className="flex h-10 items-center justify-between">
-          <Link href="/play/golf" className="text-sm font-semibold text-zinc-950">
-            ‹ Game day
+          <Link href="/play/golf" className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+            Game day
           </Link>
           <span className="text-sm font-semibold text-zinc-950">Ready to share</span>
         </div>
 
         <div className="mt-4 flex items-start gap-3">
-          <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white">
-            <Check className="h-5 w-5" aria-hidden />
+          <span className="mt-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white">
+            <Check className="h-6 w-6" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Stroke play · {day.defaultTee} tee
             </p>
-            <h1 className="mt-1 font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-1 font-display text-2xl leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
         </div>
 
@@ -104,7 +105,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Join code</p>
-              <p className="mt-1 font-display text-5xl tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
+              <p className="mt-1 font-display text-4xl leading-none tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
             </div>
             <p className="pb-1 text-right text-xs font-semibold leading-snug text-zinc-950">
               leaguesports.co.za
@@ -112,7 +113,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
             </p>
           </div>
           <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-4`}>
-            <WhatsAppIcon />
+            <MessageCircle className="h-5 w-5" aria-hidden />
             Share on WhatsApp
           </a>
           <div className="mt-2 grid grid-cols-2 gap-2">
@@ -136,8 +137,8 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
 
         <section className="mt-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Watch link</h2>
-            <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">Watch link</h2>
+            <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
               New
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">view only</span>
@@ -173,7 +174,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
       <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
         <Link
           href={myCard}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-950"
+          className="inline-flex min-h-16 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950"
         >
           Go to my card
         </Link>

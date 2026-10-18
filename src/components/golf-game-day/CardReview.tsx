@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { scoreMark } from "@/lib/golf-game-day/scoring-ui";
+import { Check, ChevronLeft } from "lucide-react";
+import { looksRightPill, scoreMark } from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
 import { PrimaryButton } from "./ui";
 
@@ -16,6 +16,8 @@ export type ReviewPlayer = {
   net?: number | null;
   points?: number | null;
   scorer?: boolean;
+  looksRight?: boolean;
+  you?: boolean;
 };
 
 type CardReviewProps = {
@@ -30,6 +32,7 @@ type CardReviewProps = {
   boardHref: string;
   onConfirm: () => void;
   onEditHole?: (holeNumber: number) => void;
+  onLooksRight?: (slot: number) => void;
 };
 
 function sumStrokes(holes: ReviewPlayer["holes"]): number | null {
@@ -134,9 +137,9 @@ export function CardReview({
   boardHref,
   onConfirm,
   onEditHole,
+  onLooksRight,
 }: CardReviewProps) {
   useGameDayAction("Board", boardHref);
-  const [ticks, setTicks] = useState<Record<number, boolean>>({});
   const front = players.map((player) => ({
     ...player,
     holes: player.holes.filter((hole) => hole.number <= 9),
@@ -148,24 +151,25 @@ export function CardReview({
   const lastHole = players[0]?.holes.at(-1)?.number ?? 18;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
       <div className="flex-1 px-4 pb-4 pt-4">
         <div className="flex h-10 items-center justify-between">
-          <Link href={scoreHref} className="text-sm font-semibold text-zinc-950">
-            ‹ Hole {lastHole}
+          <Link href={scoreHref} className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+            Hole {lastHole}
           </Link>
           <span className="text-sm font-semibold text-zinc-950">Review card</span>
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
             Card {cardNumber} · all 18 holes in
           </p>
-          <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+          <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
             New
           </span>
         </div>
-        <h1 className="mt-2 font-display text-5xl tracking-wide text-zinc-950">Check your card</h1>
+        <h1 className="mt-2 font-display text-[28px] leading-none tracking-wide text-zinc-950">Check your card</h1>
         <p className="mt-2 text-sm text-zinc-600">Tap any score to fix it before you confirm.</p>
 
         <NineTable title="Front" totalLabel="Out" players={front} onEditHole={onEditHole} />
@@ -182,38 +186,38 @@ export function CardReview({
           </span>
         </p>
 
-        <ul className="mt-6 divide-y divide-zinc-200">
+        <ul className="mt-6 overflow-hidden rounded-2xl border border-zinc-300">
           {players.map((player) => {
-            const ticked = ticks[player.slot] === true;
+            const pill = looksRightPill({
+              looksRight: player.looksRight === true,
+              isScorer: player.scorer === true,
+              you: player.you === true,
+            });
             const summary =
               player.gross == null
                 ? "Score incomplete"
                 : player.handicap
                   ? `${player.gross} gross · ${player.net ?? "–"} net · ${player.points ?? "–"} pts`
                   : `${player.gross} gross · no hcp · ${player.points ?? "–"} pts`;
+            const pillClass = pill.filled
+              ? "inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-[#3dff8a] px-3 text-sm font-semibold text-zinc-950"
+              : "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-950";
             return (
-              <li key={player.slot} className="flex items-center justify-between gap-3 py-3">
+              <li key={player.slot} className="flex items-center justify-between gap-3 border-b border-zinc-200 px-3 py-3 last:border-b-0">
                 <div className="min-w-0">
                   <p className="font-semibold text-zinc-950">{player.name}</p>
                   <p className="mt-0.5 text-sm text-zinc-500">{summary}</p>
                 </div>
-                {player.scorer ? (
-                  <span className="shrink-0 rounded-full bg-zinc-950 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-                    Scorer
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    aria-pressed={ticked}
-                    onClick={() => setTicks((current) => ({ ...current, [player.slot]: !current[player.slot] }))}
-                    className={
-                      ticked
-                        ? "shrink-0 rounded-full bg-green-800 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
-                        : "shrink-0 rounded-full border border-zinc-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-950"
-                    }
-                  >
-                    {ticked ? "Looks right" : "Looks right?"}
+                {pill.interactive ? (
+                  <button type="button" onClick={() => onLooksRight?.(player.slot)} className={pillClass}>
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                    {pill.label}
                   </button>
+                ) : (
+                  <span className={pillClass}>
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                    {pill.label}
+                  </span>
                 )}
               </li>
             );

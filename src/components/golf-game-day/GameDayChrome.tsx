@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, List } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -57,8 +57,9 @@ function ActionPill({ action }: { action: GameDayAction }) {
   return (
     <Link
       href={action.href}
-      className="inline-flex shrink-0 items-center rounded-full border border-white/40 px-3 py-1.5 text-xs font-semibold text-white"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/50 px-3 py-1.5 text-xs font-semibold text-white"
     >
+      {action.label === "Board" ? <List className="h-3.5 w-3.5" aria-hidden /> : null}
       {action.label}
     </Link>
   );
@@ -69,14 +70,14 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
   return (
     <GameDayActionContext.Provider value={setAction}>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0c0f0c]">
-        <div className="mx-auto flex h-14 w-full items-center justify-between gap-3 px-4 xl:px-6">
+        <div className="mx-auto flex h-16 w-full items-center justify-between gap-3 px-4 xl:px-6">
           <Link
             href="/"
-            className="inline-flex min-w-0 items-center gap-2 font-display text-[1.35rem] tracking-wide text-white"
+            className="inline-flex min-w-0 items-center gap-2 font-display text-2xl tracking-wide text-white"
           >
-            <BrandMark className="h-7 w-7 shrink-0" size={28} priority />
+            <BrandMark className="h-8 w-8 shrink-0" size={32} priority />
             <span className="truncate">
-              LEAGUE <span className="text-[#C6FF00]">SPORTS</span>
+              LEAGUE <span className="text-[#3dff8a]">SPORTS</span>
             </span>
           </Link>
           {action.sports ? (

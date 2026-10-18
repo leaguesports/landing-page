@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Flag } from "lucide-react";
+import { ChevronLeft, Flag } from "lucide-react";
 import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { gameDayBoardPath, presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
 import {
@@ -52,18 +52,19 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
   return (
     <GameDayColumn>
       <div className="flex h-10 items-center justify-between">
-        <Link href={gameDayBoardPath(board.gameDayId)} className="text-sm font-semibold text-zinc-950">
-          ‹ Game day
+        <Link href={gameDayBoardPath(board.gameDayId)} className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          Game day
         </Link>
         <span className="text-sm font-semibold text-zinc-950">Results</span>
       </div>
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Final</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">Final</p>
         <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
           ✓ {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
         </span>
       </div>
-      <h1 className="mt-3 font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
+      <h1 className="mt-3 font-display text-[28px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
 
       <article className="mt-5 rounded-3xl bg-zinc-950 px-5 py-6 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">

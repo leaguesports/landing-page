@@ -356,6 +356,8 @@ export function mergeLeaderboard(
   };
 }
 
+export { looksRightPill, overlayQueuedLooksRight, withLooksRight } from "./looks-right.ts";
+
 export function mergeCard(
   incoming: GameDayCard,
   playerId: string | null,

@@ -12,7 +12,7 @@ export function GameDayColumn({
       className={
         wide
           ? "mx-auto w-full max-w-[1120px] px-4 py-6 sm:px-6 xl:px-8"
-          : "mx-auto w-full max-w-[420px] px-5 pb-16 pt-8"
+          : "mx-auto w-full max-w-[420px] px-5 pb-16 pt-4"
       }
     >
       {children}
@@ -22,7 +22,7 @@ export function GameDayColumn({
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
       {children}
     </p>
   );
@@ -30,14 +30,17 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 
 export function ScreenTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="mt-2 font-display text-5xl tracking-wide text-zinc-950">
+    <h1 className="mt-2 font-display text-[28px] leading-none tracking-wide text-zinc-950">
       {children}
     </h1>
   );
 }
 
+export const newChipClass =
+  "rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950";
+
 export const primaryLinkClass =
-  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white";
+  "inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-5 text-base font-semibold text-white";
 
 export function PrimaryButton({
   className = "",
@@ -46,7 +49,7 @@ export function PrimaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white disabled:opacity-40 ${className}`}
+      className={`inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-5 text-base font-semibold text-white disabled:opacity-40 ${className}`}
     />
   );
 }
@@ -58,7 +61,7 @@ export function OutlineButton({
   return (
     <button
       {...props}
-      className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-950 disabled:opacity-40 ${className}`}
+      className={`inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950 disabled:opacity-40 ${className}`}
     />
   );
 }
@@ -96,7 +99,7 @@ export function ChoiceChip({
 
 export function FieldLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-950">
       {children}
     </span>
   );
@@ -108,8 +111,9 @@ export function textFieldClass(): string {
 
 export function WhatsAppIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4 fill-current">
-      <path d="M20.5 3.5A11 11 0 0 0 2.1 16.8L1 22.2l5.5-1.1A11 11 0 0 0 20.5 3.5Zm-8.5 17a9.1 9.1 0 0 1-4.6-1.3l-.3-.2-3.3.7.7-3.2-.2-.3A9.1 9.1 0 1 1 12 20.5Zm5-6.8c-.3-.1-1.6-.8-1.8-.9s-.4-.1-.6.1-.7.9-.8 1-.3.2-.6.1a7.4 7.4 0 0 1-2.2-1.4 8.2 8.2 0 0 1-1.5-1.9c-.2-.3 0-.4.1-.6l.4-.5.2-.3a.5.5 0 0 0 0-.5c0-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.4 4 14.6 14.6 0 0 0 1.5.6 3.6 3.6 0 0 0 1.7.1 2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.6-.3Z" />
+    <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5 fill-none stroke-current stroke-[1.75]">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 19.5 4.5 20.5 5.5 17.5A8.5 8.5 0 1 1 12 20.5a8.4 8.4 0 0 1-4.5-1Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 10.2c.2 1.6 1.6 3.1 3.2 3.6.4.1.8 0 1.1-.3l.7-.7c.2-.2.5-.2.7 0l1.2.7c.3.2.3.6.1.9-.6.8-1.6 1.1-2.6.8-2.2-.6-4.4-2.7-5.1-4.9-.2-1 .1-2 .9-2.5.3-.2.7-.1.9.1l.7 1.1c.2.2.1.5-.1.7l-.7.5Z" />
     </svg>
   );
 }

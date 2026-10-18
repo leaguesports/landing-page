@@ -289,6 +289,7 @@ export type CardReviewLine = {
   scorer: boolean;
   handicapIndex: number | null;
   playingHandicap: number;
+  looksRight: boolean;
   front: readonly number[];
   back: readonly number[];
 };
@@ -300,6 +301,7 @@ export const CARD_REVIEW_LINES: readonly CardReviewLine[] = [
     scorer: true,
     handicapIndex: 6,
     playingHandicap: 6,
+    looksRight: false,
     front: [4, 5, 3, 5, 5, 4, 4, 3, 5],
     back: [4, 2, 5, 3, 5, 5, 3, 6, 5],
   },
@@ -308,6 +310,7 @@ export const CARD_REVIEW_LINES: readonly CardReviewLine[] = [
     scorer: false,
     handicapIndex: null,
     playingHandicap: 0,
+    looksRight: true,
     front: [5, 6, 5, 7, 4, 4, 4, 6, 7],
     back: [4, 3, 6, 4, 4, 4, 4, 7, 5],
   },
@@ -316,6 +319,7 @@ export const CARD_REVIEW_LINES: readonly CardReviewLine[] = [
     scorer: false,
     handicapIndex: 12,
     playingHandicap: 12,
+    looksRight: true,
     front: [4, 6, 4, 5, 4, 4, 2, 4, 5],
     back: [4, 3, 5, 5, 4, 4, 4, 5, 6],
   },
@@ -324,6 +328,7 @@ export const CARD_REVIEW_LINES: readonly CardReviewLine[] = [
     scorer: false,
     handicapIndex: 20,
     playingHandicap: 20,
+    looksRight: false,
     front: [5, 4, 4, 7, 5, 4, 4, 6, 5],
     back: [6, 3, 5, 6, 5, 5, 5, 5, 6],
   },

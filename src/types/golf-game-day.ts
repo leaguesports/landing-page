@@ -273,3 +273,13 @@ export type QueuedHolePut = {
   state: "queued" | "saving" | "offline";
   attempts: number;
 };
+
+/** One pending "looks right" mark per player. The server only sets the flag true. */
+export type QueuedLooksRight = {
+  gameDayId: string;
+  cardId: string;
+  playerId: string;
+  clientTimestamp: string;
+  state: "queued" | "saving" | "offline";
+  attempts: number;
+};

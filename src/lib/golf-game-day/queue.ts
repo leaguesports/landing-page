@@ -1,4 +1,4 @@
-import type { QueuedHolePut } from "../../types/golf-game-day.ts";
+import type { QueuedHolePut, QueuedLooksRight } from "../../types/golf-game-day.ts";
 import type { KeyValueStore } from "./storage.ts";
 import { readHoleQueue, writeHoleQueue } from "./storage.ts";
 
@@ -76,6 +76,68 @@ export async function flushHoleQueue(
       outcome = { ok: false, kind: "network", message: "offline" };
     }
     const applied = applyFlushResult(next, live, outcome);
+    next = applied.queue;
+    if (applied.stop) break;
+  }
+  return next;
+}
+
+function sameMark(left: QueuedLooksRight, right: Pick<QueuedLooksRight, "cardId" | "playerId">): boolean {
+  return left.cardId === right.cardId && left.playerId === right.playerId;
+}
+
+/** One pending mark per player. A newer timestamp replaces the queued one. */
+export function enqueueLooksRight(
+  queue: QueuedLooksRight[],
+  next: QueuedLooksRight,
+): QueuedLooksRight[] {
+  const existing = queue.find((item) => sameMark(item, next));
+  if (existing && existing.clientTimestamp > next.clientTimestamp) return queue;
+  const rest = queue.filter((item) => !sameMark(item, next));
+  return [...rest, next].sort((left, right) => left.clientTimestamp.localeCompare(right.clientTimestamp));
+}
+
+export function applyLooksRightFlush(
+  queue: QueuedLooksRight[],
+  item: QueuedLooksRight,
+  outcome: FlushOutcome,
+): { queue: QueuedLooksRight[]; stop: boolean } {
+  const exact = (row: QueuedLooksRight) =>
+    sameMark(row, item) && row.clientTimestamp === item.clientTimestamp;
+  if (outcome.ok || (!outcome.ok && outcome.kind === "rejected")) {
+    return { queue: queue.filter((row) => !exact(row)), stop: false };
+  }
+  if (outcome.kind === "network") {
+    return {
+      stop: true,
+      queue: queue.map((row) =>
+        exact(row) ? { ...row, state: "offline", attempts: row.attempts + 1 } : row,
+      ),
+    };
+  }
+  return { queue, stop: true };
+}
+
+export async function flushLooksRightQueue(
+  queue: QueuedLooksRight[],
+  send: (item: QueuedLooksRight) => Promise<FlushOutcome>,
+): Promise<QueuedLooksRight[]> {
+  let next = [...queue];
+  const ordered = [...queue].sort((left, right) =>
+    left.clientTimestamp.localeCompare(right.clientTimestamp),
+  );
+  for (const snapshot of ordered) {
+    const live = next.find(
+      (row) => sameMark(row, snapshot) && row.clientTimestamp === snapshot.clientTimestamp,
+    );
+    if (!live) continue;
+    let outcome: FlushOutcome;
+    try {
+      outcome = await send(live);
+    } catch {
+      outcome = { ok: false, kind: "network", message: "offline" };
+    }
+    const applied = applyLooksRightFlush(next, live, outcome);
     next = applied.queue;
     if (applied.stop) break;
   }

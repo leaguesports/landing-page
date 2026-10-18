@@ -204,6 +204,8 @@ export function PreviewScreen({ screen }: { screen: string }) {
             net: line.handicapIndex == null ? null : round.net,
             points: round.stableford,
             scorer: line.scorer,
+            looksRight: line.looksRight,
+            you: false,
           };
         })}
         canConfirm

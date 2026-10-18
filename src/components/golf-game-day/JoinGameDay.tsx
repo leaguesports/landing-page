@@ -397,7 +397,7 @@ export function JoinGameDay({
                 className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-zinc-950"
               >
                 {scorer.displayName} is scoring
-                <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+                <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
                   New
                 </span>
               </button>
@@ -416,7 +416,7 @@ export function JoinGameDay({
 
         <div className="mt-6">
           {seatedCard ? (
-            <a href={gameDayBoardPath(preview.id)} className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white">
+            <a href={gameDayBoardPath(preview.id)} className="inline-flex min-h-16 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-base font-semibold text-white">
               Open live leaderboard
             </a>
           ) : (
@@ -430,7 +430,7 @@ export function JoinGameDay({
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
       <div className="flex-1 px-5 pb-4 pt-6">
         <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
         <p className="mt-3 text-base font-semibold text-zinc-950">
@@ -440,7 +440,7 @@ export function JoinGameDay({
         <fieldset className="mt-6">
           <legend className="flex items-center gap-2">
             <span className="text-sm font-semibold text-zinc-950">Tap your name</span>
-            <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+            <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
               New
             </span>
           </legend>

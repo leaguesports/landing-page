@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Eye, Flag } from "lucide-react";
+import { Check, Eye, Flag, Star } from "lucide-react";
 import type { BoardTab, GameDayFeedItem, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { johannesburgClock, presentGameDay } from "@/lib/golf-game-day/paths";
 import {
@@ -145,7 +145,7 @@ export function LeaderboardView({
         ) : (
           <div className="mx-auto w-full max-w-[420px] px-4 pb-10 pt-6">
             <div className="flex items-end justify-between gap-3">
-              <h1 className="font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
+              <h1 className="font-display text-[28px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
               {updated ? <p className="pb-1 text-xs text-zinc-500">Updated {updated}</p> : null}
             </div>
             <div className="mt-4">
@@ -162,7 +162,7 @@ export function LeaderboardView({
                 <li
                   key={row.playerId}
                   ref={bind(row.playerId)}
-                  className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-2.5 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                  className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-3 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
                 >
                   <MobileRow row={row} />
                 </li>
@@ -184,10 +184,10 @@ export function LeaderboardView({
       <div className={`mx-auto w-full px-6 py-6 ${desktopClass}`}>
         <div className="flex items-end justify-between gap-6">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-green-700">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Live leaderboard · {scoringName(board.format)} · {board.venueName}
             </p>
-            <h1 className="mt-1 font-display text-6xl tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-1 font-display text-4xl leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
           <div className="flex shrink-0 items-center gap-3 pb-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
@@ -334,7 +334,7 @@ function FeedBlock({
       <div className="mt-4 flex items-center justify-between gap-2">
         <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
           Live feed
-          <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+          <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
             New
           </span>
         </h2>
@@ -373,7 +373,7 @@ function FeedRow({ item }: { item: GameDayFeedItem }) {
   const lead = item.type === "lead_change";
   return (
     <li
-      className={`flex items-center gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${lead ? "bg-[#e5f6d8]" : "bg-white"}`}
+      className={`flex items-center gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
     >
       <FeedMark item={item} />
       <p className={`min-w-0 flex-1 text-sm leading-snug ${lead ? "font-semibold text-zinc-950" : "text-zinc-800"}`}>
@@ -421,10 +421,10 @@ function SpectatorPhone({
           </span>
           {updated ? <p className="text-sm text-zinc-500">Updated {updated} · refreshes itself</p> : null}
         </div>
-        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
           {scoringName(board.format)} · {players} players · {cards} cards
         </p>
-        <h1 className="mt-1 font-display text-5xl tracking-wide text-zinc-950">{headline}</h1>
+        <h1 className="mt-1 font-display text-[28px] leading-none tracking-wide text-zinc-950">{headline}</h1>
 
         <section className="mt-5" aria-label="Latest">
           <h2 className="text-sm font-semibold text-zinc-950">Latest</h2>
@@ -494,30 +494,28 @@ function spectatorCell(tab: BoardTab, row: RankingRow): { text: string; under: b
 function FeedMark({ item }: { item: GameDayFeedItem }) {
   if (item.type === "lead_change") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-green-800" aria-hidden>
-        <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-          <path d="M10 1.6l2.2 4.7 5.1.5-3.8 3.5 1.1 5.1L10 13.1 5.4 15.4l1.1-5.1L2.7 6.8l5.1-.5L10 1.6z" />
-        </svg>
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white" aria-hidden>
+        <Star className="h-3.5 w-3.5 fill-current" />
       </span>
     );
   }
   if (item.type === "birdie") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-green-800 text-xs font-semibold text-white">
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-950">
         B
       </span>
     );
   }
   if (item.type === "thru") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-200 text-xs font-semibold text-zinc-950">
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-950">
         {item.holeNumber ?? "·"}
       </span>
     );
   }
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-xs font-semibold text-zinc-500">
-      ✓
+    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-950">
+      <Check className="h-3.5 w-3.5" aria-hidden />
     </span>
   );
 }

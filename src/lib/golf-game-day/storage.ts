@@ -3,9 +3,11 @@ import type {
   DeviceSession,
   GameDayCard,
   QueuedHolePut,
+  QueuedLooksRight,
 } from "../../types/golf-game-day.ts";
 
 export const HOLE_QUEUE_KEY = "golf-gameday:v1:queue";
+export const LOOKS_RIGHT_QUEUE_KEY = "golf-gameday:v1:looks-right";
 export const DEVICE_KEY = "golf-gameday:v1:device";
 export const COURSE_PREFIX = "golf-gameday:v1:course:";
 export const CARD_PREFIX = "golf-gameday:v1:card:";
@@ -120,6 +122,31 @@ export function readHoleQueue(store: KeyValueStore): QueuedHolePut[] {
 
 export function writeHoleQueue(store: KeyValueStore, queue: QueuedHolePut[]): void {
   store.set(HOLE_QUEUE_KEY, JSON.stringify(queue));
+}
+
+function isQueuedLooksRight(value: unknown): value is QueuedLooksRight {
+  if (!value || typeof value !== "object") return false;
+  const item = value as QueuedLooksRight;
+  return (
+    typeof item.gameDayId === "string" &&
+    typeof item.cardId === "string" &&
+    typeof item.playerId === "string" &&
+    typeof item.clientTimestamp === "string"
+  );
+}
+
+export function readLooksRightQueue(store: KeyValueStore): QueuedLooksRight[] {
+  const parsed = readJson<unknown>(store, LOOKS_RIGHT_QUEUE_KEY);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter(isQueuedLooksRight).map((item) => ({
+    ...item,
+    state: item.state === "offline" || item.state === "saving" ? item.state : "queued",
+    attempts: typeof item.attempts === "number" ? item.attempts : 0,
+  }));
+}
+
+export function writeLooksRightQueue(store: KeyValueStore, queue: QueuedLooksRight[]): void {
+  store.set(LOOKS_RIGHT_QUEUE_KEY, JSON.stringify(queue));
 }
 
 export function readDevices(store: KeyValueStore): Record<string, DeviceSession> {

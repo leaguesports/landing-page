@@ -1,16 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { QueuedHolePut } from "../../types/golf-game-day.ts";
+import type { QueuedHolePut, QueuedLooksRight } from "../../types/golf-game-day.ts";
 import {
   applyFlushResult,
+  applyLooksRightFlush,
   enqueueHolePut,
+  enqueueLooksRight,
   flushHoleQueue,
+  flushLooksRightQueue,
 } from "./queue.ts";
 import {
   HOLE_QUEUE_KEY,
+  LOOKS_RIGHT_QUEUE_KEY,
   memoryStore,
   readHoleQueue,
+  readLooksRightQueue,
   writeHoleQueue,
+  writeLooksRightQueue,
 } from "./storage.ts";
 
 function put(overrides: Partial<QueuedHolePut> = {}): QueuedHolePut {
@@ -112,5 +118,48 @@ describe("hole put queue", () => {
     assert.deepEqual(order, [3]);
     assert.equal(remaining.length, 2);
     assert.equal(remaining.find((item) => item.holeNumber === 3)?.state, "offline");
+  });
+});
+
+function mark(overrides: Partial<QueuedLooksRight> = {}): QueuedLooksRight {
+  return {
+    gameDayId: "day-1",
+    cardId: "card-2",
+    playerId: "kabelo",
+    clientTimestamp: "2026-11-01T09:00:00.000Z",
+    state: "queued",
+    attempts: 0,
+    ...overrides,
+  };
+}
+
+describe("looks right queue", () => {
+  it("keeps one mark per player and replaces it with a newer timestamp", () => {
+    const first = mark();
+    const newer = mark({ clientTimestamp: "2026-11-01T09:05:00.000Z" });
+    const queue = enqueueLooksRight(enqueueLooksRight([], first), newer);
+    assert.equal(queue.length, 1);
+    assert.equal(queue[0]?.clientTimestamp, newer.clientTimestamp);
+  });
+
+  it("round-trips the offline queue and marks a network failure", async () => {
+    const store = memoryStore();
+    const queued = mark({ state: "offline" });
+    writeLooksRightQueue(store, [queued]);
+    assert.ok(store.get(LOOKS_RIGHT_QUEUE_KEY)?.includes("kabelo"));
+    assert.deepEqual(readLooksRightQueue(store), [queued]);
+
+    const failed = applyLooksRightFlush([queued], queued, { ok: false, kind: "network" });
+    assert.equal(failed.stop, true);
+    assert.equal(failed.queue[0]?.state, "offline");
+    assert.equal(failed.queue[0]?.attempts, 1);
+
+    const sent: string[] = [];
+    const remaining = await flushLooksRightQueue([queued], async (item) => {
+      sent.push(item.playerId);
+      return { ok: true, reason: "applied" };
+    });
+    assert.deepEqual(sent, ["kabelo"]);
+    assert.deepEqual(remaining, []);
   });
 });

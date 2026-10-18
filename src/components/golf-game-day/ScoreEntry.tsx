@@ -79,7 +79,7 @@ export function ScoreEntry({
   const last = holeNumber >= holesPlayed;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
       <div className="flex h-12 items-center justify-between border-b border-zinc-200 px-3">
         <Link
           href={boardHref}
@@ -236,7 +236,7 @@ export function ScoreEntry({
           type="button"
           disabled={!canScore}
           onClick={onNext}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white disabled:opacity-40"
+          className="inline-flex min-h-16 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-base font-semibold text-white disabled:opacity-40"
         >
           {last ? `Save hole ${holeNumber} · review` : `Save hole ${holeNumber} · next`}
         </button>

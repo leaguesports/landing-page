@@ -1,4 +1,5 @@
 import { getRailwayApiOrigin } from "@/lib/api-origin";
+import { postLooksRight, type LooksRightResponse } from "@/lib/golf-game-day/looks-right";
 import type {
   CreateGameDayInput,
   GameDayCard,
@@ -146,6 +147,27 @@ export function putHole(
     `/api/golf-game-days/${encodeURIComponent(gameDayId)}/cards/${encodeURIComponent(cardId)}/holes/${holeNumber}`,
     { method: "PUT", deviceToken, body },
   );
+}
+
+export function markLooksRight(
+  gameDayId: string,
+  cardId: string,
+  deviceToken: string,
+): Promise<LooksRightResponse> {
+  return postLooksRight({
+    gameDayId,
+    cardId,
+    deviceToken,
+    baseUrl: requestBase(),
+    fetchImpl: fetch,
+  }).catch((cause: unknown) => {
+    const status = cause && typeof cause === "object" && "status" in cause ? Number(cause.status) : 0;
+    const message = cause instanceof Error ? cause.message : "Could not mark the card";
+    if (cause instanceof TypeError || status === 0) {
+      throw new GameDayApiError(0, "You are offline. Scores stay on this phone.");
+    }
+    throw new GameDayApiError(Number.isFinite(status) ? status : 0, message);
+  });
 }
 
 export function confirmCard(

@@ -2,17 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { GameDayCard, QueuedHolePut } from "@/types/golf-game-day";
+import * as Ably from "ably";
+import type { GameDayCard, QueuedHolePut, QueuedLooksRight } from "@/types/golf-game-day";
 import {
   confirmCard,
   fetchCard,
   GameDayApiError,
+  markLooksRight,
   putHole,
 } from "@/lib/golf-game-day/api";
 import { gameDayBoardPath, gameDayCardPath, gameDayReviewPath, presentGameDay } from "@/lib/golf-game-day/paths";
 import {
   enqueueHolePut,
+  enqueueLooksRight,
   flushHoleQueue,
+  flushLooksRightQueue,
   writeCardQueue,
 } from "@/lib/golf-game-day/queue";
 import {
@@ -24,6 +28,7 @@ import {
   holesStillOpen,
   initialHoleStrokes,
   mergeCard,
+  overlayQueuedLooksRight,
   overallSyncLabel,
   scoreRelation,
   shotChipLabel,
@@ -36,7 +41,10 @@ import {
   readCachedCard,
   readDevice,
   readHoleQueue,
+  readLooksRightQueue,
+  writeLooksRightQueue,
 } from "@/lib/golf-game-day/storage";
+import { withLooksRight } from "@/lib/golf-game-day/looks-right";
 import { CardReview } from "./CardReview";
 import { ScoreEntry } from "./ScoreEntry";
 import { GameDayColumn } from "./ui";
@@ -58,8 +66,29 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
   const [confirming, setConfirming] = useState(false);
   const [ready, setReady] = useState(false);
   const queueRef = useRef<QueuedHolePut[]>([]);
+  const looksRef = useRef<QueuedLooksRight[]>([]);
   const flushing = useRef(false);
   const timer = useRef<number | null>(null);
+
+  const rememberLooks = useCallback(
+    (next: QueuedLooksRight[]) => {
+      looksRef.current = next;
+      const others = readLooksRightQueue(store).filter((item) => item.cardId !== cardId);
+      writeLooksRightQueue(store, [...others, ...next]);
+    },
+    [cardId, store],
+  );
+
+  const showCard = useCallback(
+    (incoming: GameDayCard, playerId: string | null) => {
+      const pending = looksRef.current.map((item) => item.playerId);
+      const merged = overlayQueuedLooksRight(mergeCard(incoming, playerId), pending);
+      setCard(merged);
+      cacheCard(store, merged);
+      return merged;
+    },
+    [store],
+  );
 
   const remember = useCallback(
     (next: QueuedHolePut[]) => {
@@ -96,9 +125,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             session.deviceToken,
             { clientTimestamp: latest.clientTimestamp, strokes: latest.strokes },
           );
-          const merged = mergeCard(response.card, session.playerId);
-          setCard(merged);
-          cacheCard(store, merged);
+          showCard(response.card, session.playerId);
           if (response.reason === "stale") {
             setDrafts((current) => {
               const copy = { ...current };
@@ -132,13 +159,44 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     } finally {
       flushing.current = false;
     }
-  }, [cardId, gameDayId, remember, store]);
+  }, [cardId, gameDayId, remember, showCard, store]);
+
+  const flushLooks = useCallback(async () => {
+    const session = readDevice(store, gameDayId);
+    if (!session?.deviceToken) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      rememberLooks(looksRef.current.map((item) => ({ ...item, state: "offline" as const })));
+      return;
+    }
+    const pending = looksRef.current;
+    const flushed = await flushLooksRightQueue(pending, async (item) => {
+      try {
+        await markLooksRight(item.gameDayId, item.cardId, session.deviceToken);
+        return { ok: true, reason: "applied" };
+      } catch (cause) {
+        if (cause instanceof GameDayApiError && cause.status > 0 && cause.status !== 429) {
+          setCard((current) => {
+            if (!current) return current;
+            const next = withLooksRight(current, item.playerId, false);
+            cacheCard(store, next);
+            return next;
+          });
+          setError(cause.message);
+          return { ok: false, kind: "rejected", message: cause.message };
+        }
+        return { ok: false, kind: "network" };
+      }
+    });
+    rememberLooks(flushed);
+  }, [gameDayId, rememberLooks, store]);
 
   useEffect(() => {
     const cached = readCachedCard(store, cardId);
     const stored = readHoleQueue(store).filter((item) => item.cardId === cardId);
     queueRef.current = stored;
     setQueue(stored);
+    const storedLooks = readLooksRightQueue(store).filter((item) => item.cardId === cardId);
+    looksRef.current = storedLooks;
     const requested = Number(new URLSearchParams(window.location.search).get("hole"));
     const fromQuery = Number.isInteger(requested) && requested >= 1 ? requested : null;
     if (cached) {
@@ -153,24 +211,52 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     fetchCard(gameDayId, cardId, { deviceToken: session?.deviceToken })
       .then((incoming) => {
         if (cancelled) return;
-        const merged = mergeCard(incoming, session?.playerId ?? null);
-        setCard(merged);
-        cacheCard(store, merged);
+        const merged = showCard(incoming, session?.playerId ?? null);
         setHoleNumber((current) => current ?? fromQuery ?? merged.missingHoles[0] ?? merged.course.holes[0]?.number ?? 1);
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [cardId, gameDayId, store]);
+  }, [cardId, gameDayId, showCard, store]);
+
+  useEffect(() => {
+    let client: Ably.Realtime | null = null;
+    let cancelled = false;
+    try {
+      client = new Ably.Realtime({
+        authUrl: `/api/realtime/token?sport=golf-gameday&gameDayId=${encodeURIComponent(gameDayId)}`,
+        authMethod: "GET",
+      });
+    } catch {
+      return;
+    }
+    const channel = client.channels.get(`golf-gameday:${gameDayId}`);
+    const onEvent = (message: Ably.Message) => {
+      if (cancelled) return;
+      const data = message.data as { card?: GameDayCard } | undefined;
+      if (!data?.card || data.card.id !== cardId) return;
+      const session = readDevice(store, gameDayId);
+      showCard(data.card, session?.playerId ?? null);
+    };
+    channel.subscribe("score.updated", onEvent);
+    channel.subscribe("card.locked", onEvent);
+    return () => {
+      cancelled = true;
+      channel.unsubscribe("score.updated", onEvent);
+      channel.unsubscribe("card.locked", onEvent);
+      client?.close();
+    };
+  }, [cardId, gameDayId, showCard, store]);
 
   useEffect(() => {
     const onOnline = () => {
       void flush();
+      void flushLooks();
     };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
-  }, [flush]);
+  }, [flush, flushLooks]);
 
   function scheduleFlush() {
     if (timer.current) window.clearTimeout(timer.current);
@@ -276,10 +362,47 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             net: player.handicapIndex == null ? null : round?.net ?? null,
             points: round?.stableford ?? null,
             scorer: player.isScorer,
+            looksRight: player.looksRight,
+            you: player.you,
           };
         })}
         onEditHole={(number) => {
           router.push(`${gameDayCardPath(gameDayId, cardId)}?hole=${number}`);
+        }}
+        onLooksRight={(slot) => {
+          const session = readDevice(store, gameDayId);
+          const current = card;
+          if (!session || !current) return;
+          const player = current.players.find((item) => item.slot === slot);
+          if (!player || !player.you || player.isScorer || player.looksRight) return;
+          const optimistic = withLooksRight(current, player.playerId, true);
+          setCard(optimistic);
+          cacheCard(store, optimistic);
+          const item: QueuedLooksRight = {
+            gameDayId,
+            cardId,
+            playerId: player.playerId,
+            clientTimestamp: new Date().toISOString(),
+            state: typeof navigator !== "undefined" && navigator.onLine ? "saving" : "offline",
+            attempts: 0,
+          };
+          if (item.state === "offline") {
+            rememberLooks(enqueueLooksRight(looksRef.current, item));
+            return;
+          }
+          markLooksRight(gameDayId, cardId, session.deviceToken)
+            .then(() => {
+              rememberLooks(looksRef.current.filter((row) => row.playerId !== player.playerId));
+            })
+            .catch((cause: unknown) => {
+              if (cause instanceof GameDayApiError && cause.status === 0) {
+                rememberLooks(enqueueLooksRight(looksRef.current, { ...item, state: "offline" }));
+                return;
+              }
+              setCard(current);
+              cacheCard(store, current);
+              setError(cause instanceof GameDayApiError ? cause.message : "Could not mark the card");
+            });
         }}
         canConfirm={blockedReason == null && card.status === "live"}
         confirming={confirming}
@@ -292,7 +415,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           setConfirming(true);
           confirmCard(gameDayId, cardId, session.deviceToken)
             .then((result) => {
-              cacheCard(store, mergeCard(result.card, session.playerId));
+              showCard(result.card, session.playerId);
               router.push(gameDayBoardPath(gameDayId));
             })
             .catch((cause: unknown) => {
