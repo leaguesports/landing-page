@@ -17,8 +17,8 @@ export function ChromeFrame({
   const pathname = usePathname() ?? "";
   if (isGameDayChromePath(pathname)) {
     return (
-      <GameDayChrome>
-        <main className="min-h-dvh min-w-0 flex-1 overflow-x-clip bg-white text-zinc-950">
+      <GameDayChrome nav={nav}>
+        <main className="min-h-dvh min-w-0 flex-1 overflow-x-clip bg-white text-zinc-950 lg:min-h-0">
           {children}
         </main>
       </GameDayChrome>

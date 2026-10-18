@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, ChevronLeft } from "lucide-react";
 import { looksRightPill, scoreMark } from "@/lib/golf-game-day/scoring-ui";
+import { DesktopReview } from "./DesktopReview";
 import { useGameDayAction } from "./GameDayChrome";
 import { PrimaryButton } from "./ui";
 
@@ -37,6 +38,7 @@ type CardReviewProps = {
   unlocking?: boolean;
   onUnlock?: () => void;
   notice?: string | null;
+  sample?: boolean;
 };
 
 function sumStrokes(holes: ReviewPlayer["holes"]): number | null {
@@ -146,6 +148,7 @@ export function CardReview({
   unlocking = false,
   onUnlock,
   notice = null,
+  sample = false,
 }: CardReviewProps) {
   useGameDayAction("Board", boardHref);
   const front = players.map((player) => ({
@@ -159,7 +162,9 @@ export function CardReview({
   const lastHole = players[0]?.holes.at(-1)?.number ?? 18;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+    <>
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem] lg:hidden">
+      <div className="gd-phone">
       <div className="flex-1 px-4 pt-4">
         <div className="flex h-10 items-center justify-between">
           <Link href={scoreHref} className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
@@ -258,6 +263,22 @@ export function CardReview({
           )}
         </div>
       </div>
+      </div>
     </div>
+    <DesktopReview
+      cardNumber={cardNumber}
+      players={players}
+      canConfirm={canConfirm}
+      confirming={confirming}
+      canUnlock={canUnlock}
+      unlocking={unlocking}
+      sample={sample}
+      scoreHref={scoreHref}
+      onConfirm={onConfirm}
+      onUnlock={onUnlock}
+      onEditHole={onEditHole}
+      onLooksRight={onLooksRight}
+    />
+    </>
   );
 }

@@ -177,6 +177,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
           const next = HOLES.find((item) => item.number === number);
           if (next) setStrokes(next.par);
         }}
+        sample
         onNext={() => {
           const next = Math.min(18, hole + 1);
           setHole(next);
@@ -222,6 +223,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         boardHref="/golf/game-day/preview/leaderboard"
         onConfirm={() => undefined}
         onEditHole={() => undefined}
+        sample
       />
     );
   }
@@ -300,7 +302,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         tab={watchTab}
         onTab={setWatchTab}
         yourCardHref={null}
-        layout="phone"
+        layout="responsive"
       />
     );
   }

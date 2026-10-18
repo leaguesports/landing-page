@@ -14,6 +14,7 @@ import {
   ZEBULA_VENUE_SLUG,
 } from "@/lib/golf-game-day/paths";
 import { preferredDefaultTee, teeChipLabel } from "@/lib/golf-game-day/scoring-ui";
+import { DesktopCreate } from "./DesktopCreate";
 import { useGameDayAction } from "./GameDayChrome";
 import {
   Eyebrow,
@@ -138,8 +139,34 @@ export function CreateGameDay({
     }
   }
 
+  const desktop = (
+    <DesktopCreate
+      venue={venue}
+      venues={venues}
+      date={date}
+      dateLabel={dateLabel}
+      tee={tee}
+      players={players}
+      draftName={draftName}
+      weekend={weekend}
+      pending={pending}
+      error={error}
+      sample={preview}
+      onVenue={selectVenue}
+      onDate={setDate}
+      onTee={setTee}
+      onDraft={setDraftName}
+      onAdd={addName}
+      onRemove={(index) => setPlayers((current) => current.filter((_, item) => item !== index))}
+      onWeekend={() => setWeekend((current) => !current)}
+      onSubmit={onSubmit}
+    />
+  );
+
   return (
-    <form onSubmit={onSubmit} className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
+    <>
+    <form onSubmit={onSubmit} className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col lg:hidden">
+      <div className="gd-phone">
       <div className="px-5">
         <LinkBack />
       </div>
@@ -337,7 +364,10 @@ export function CreateGameDay({
           {pending ? "Creating…" : "Create game day"}
         </PrimaryButton>
       </div>
+      </div>
     </form>
+    {desktop}
+    </>
   );
 }
 

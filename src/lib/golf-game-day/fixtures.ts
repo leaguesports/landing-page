@@ -181,6 +181,7 @@ function finishedPlayer(input: {
   playingHandicap: number;
   gross: number;
   countbackNote: string | null;
+  cardNumber?: number;
   you?: boolean;
 }): RankingRow {
   const scores = finishedRound(input.gross, input.playingHandicap);
@@ -191,8 +192,8 @@ function finishedPlayer(input: {
     playerId: input.name.toLowerCase(),
     displayName: input.name,
     you: input.you ?? false,
-    cardId: "card-1",
-    cardNumber: 1,
+    cardId: `card-${input.cardNumber ?? 1}`,
+    cardNumber: input.cardNumber ?? 1,
     handicapIndex: input.handicapIndex,
     playingHandicap: input.playingHandicap,
     thru: scores.thru,
@@ -206,16 +207,16 @@ function finishedPlayer(input: {
 
 /** Countback order is the source order inside a tied score. v2 results, all 10 players. */
 const finishedPlayers: RankingRow[] = [
-  finishedPlayer({ name: "Pieter", handicapIndex: 12, playingHandicap: 12, gross: 78, countbackNote: "Won countback" }),
-  finishedPlayer({ name: "Nadia", handicapIndex: 16, playingHandicap: 16, gross: 82, countbackNote: "Lost countback (last 9)" }),
-  finishedPlayer({ name: "Jaco", handicapIndex: 18, playingHandicap: 18, gross: 85, countbackNote: null }),
-  finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 79, countbackNote: "Won countback" }),
-  finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: "Lost countback (last 9)" }),
-  finishedPlayer({ name: "Kabelo", handicapIndex: 20, playingHandicap: 20, gross: 90, countbackNote: "Lost countback (last 9)" }),
-  finishedPlayer({ name: "Ruan", handicapIndex: 11, playingHandicap: 11, gross: 83, countbackNote: null }),
-  finishedPlayer({ name: "Thandi", handicapIndex: 22, playingHandicap: 22, gross: 97, countbackNote: null }),
-  finishedPlayer({ name: "Brandon", handicapIndex: 14, playingHandicap: 14, gross: 90, countbackNote: null, you: true }),
-  finishedPlayer({ name: "Lerato", handicapIndex: null, playingHandicap: 0, gross: 89, countbackNote: null }),
+  finishedPlayer({ name: "Pieter", handicapIndex: 12, playingHandicap: 12, gross: 78, countbackNote: "Won countback", cardNumber: 2 }),
+  finishedPlayer({ name: "Nadia", handicapIndex: 16, playingHandicap: 16, gross: 82, countbackNote: "Lost countback (last 9)", cardNumber: 3 }),
+  finishedPlayer({ name: "Jaco", handicapIndex: 18, playingHandicap: 18, gross: 85, countbackNote: null, cardNumber: 1 }),
+  finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 79, countbackNote: "Won countback", cardNumber: 1 }),
+  finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: "Lost countback (last 9)", cardNumber: 2 }),
+  finishedPlayer({ name: "Kabelo", handicapIndex: 20, playingHandicap: 20, gross: 90, countbackNote: "Lost countback (last 9)", cardNumber: 2 }),
+  finishedPlayer({ name: "Ruan", handicapIndex: 11, playingHandicap: 11, gross: 83, countbackNote: null, cardNumber: 3 }),
+  finishedPlayer({ name: "Thandi", handicapIndex: 22, playingHandicap: 22, gross: 97, countbackNote: null, cardNumber: 1 }),
+  finishedPlayer({ name: "Brandon", handicapIndex: 14, playingHandicap: 14, gross: 90, countbackNote: null, you: true, cardNumber: 1 }),
+  finishedPlayer({ name: "Lerato", handicapIndex: null, playingHandicap: 0, gross: 89, countbackNote: null, cardNumber: 2 }),
 ];
 
 function orderFinished(

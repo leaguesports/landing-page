@@ -14,6 +14,8 @@ import {
   resultsToParCell,
   resultsWinnerLine,
 } from "@/lib/golf-game-day/scoring-ui";
+import { DesktopResults } from "./DesktopResults";
+import { FIXTURE_DAY_ID } from "@/lib/golf-game-day/fixtures";
 import { useGameDayAction } from "./GameDayChrome";
 import { GameDayColumn, primaryLinkClass } from "./ui";
 
@@ -50,6 +52,8 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
     : shown.headline;
 
   return (
+    <>
+    <div className="gd-phone">
     <GameDayColumn>
       <div className="flex h-10 items-center justify-between">
         <Link href={gameDayBoardPath(board.gameDayId)} className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
@@ -156,6 +160,15 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         )}
       </section>
     </GameDayColumn>
+    </div>
+    <DesktopResults
+      board={board}
+      tab={tab}
+      onTab={setTab}
+      weekendHref={weekendHref}
+      sample={board.gameDayId === FIXTURE_DAY_ID}
+    />
+    </>
   );
 }
 

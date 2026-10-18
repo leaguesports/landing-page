@@ -24,6 +24,7 @@ import {
   readDevice,
   writeDevice,
 } from "@/lib/golf-game-day/storage";
+import { DesktopJoinForm, DesktopYoureIn } from "./DesktopJoin";
 import { useGameDayAction } from "./GameDayChrome";
 import {
   Eyebrow,
@@ -327,7 +328,9 @@ export function JoinGameDay({
     const seatedPlayers = seatedCard?.players ?? [];
     const openSpots = seatedCard?.openSlots ?? 0;
     return (
-      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+      <>
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem] lg:hidden">
+        <div className="gd-phone">
         <div className="flex-1 px-5 pt-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
             You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
@@ -431,12 +434,17 @@ export function JoinGameDay({
           )}
           </div>
         </div>
+        </div>
       </div>
+      <DesktopYoureIn preview={preview} session={session} sample={previewMode} pending={pending} onStart={() => void onStart()} />
+      </>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
+    <>
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col lg:hidden">
+      <div className="gd-phone">
       <div className="flex-1 px-5 pb-4 pt-6">
         <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
         <ScreenTitle>{shown.headline}</ScreenTitle>
@@ -637,6 +645,26 @@ export function JoinGameDay({
         </PrimaryButton>
         <p className="mt-2 text-center text-xs text-zinc-500">No account needed.</p>
       </div>
+      </div>
     </div>
+    <DesktopJoinForm
+      code={code}
+      preview={preview}
+      playerId={playerId}
+      handicap={handicap}
+      tee={tee}
+      cardChoice={cardChoice}
+      addedName={addedName}
+      pending={pending}
+      error={error}
+      sample={previewMode}
+      onPlayer={setPlayerId}
+      onAddedName={setAddedName}
+      onHandicap={setHandicap}
+      onTee={setTee}
+      onCard={setCardChoice}
+      onJoin={() => void onJoin()}
+    />
+    </>
   );
 }

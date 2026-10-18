@@ -7,6 +7,7 @@ import {
   GAME_DAY_STEPPER_PX,
   holeStatusLines,
 } from "@/lib/golf-game-day/scoring-ui";
+import { DesktopScore } from "./DesktopScore";
 import { useGameDayAction } from "./GameDayChrome";
 
 export type ScoreHoleChip = {
@@ -43,6 +44,7 @@ type ScoreEntryProps = {
   onStep: (slot: number, delta: number) => void;
   onSelectHole: (holeNumber: number) => void;
   onNext: () => void;
+  sample?: boolean;
 };
 
 function holeClass(hole: ScoreHoleChip, current: number): string {
@@ -73,6 +75,7 @@ export function ScoreEntry({
   onStep,
   onSelectHole,
   onNext,
+  sample = false,
 }: ScoreEntryProps) {
   const hit = GAME_DAY_STEPPER_PX;
   const [menu, setMenu] = useState(false);
@@ -83,7 +86,9 @@ export function ScoreEntry({
   const waitingLine = lines.find((line) => line.includes("waiting"));
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden pb-[6.75rem]">
+    <>
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden pb-[6.75rem] lg:hidden">
+      <div className="gd-phone">
       <div className="flex h-12 items-center gap-1 px-2">
         <Link
           href={boardHref}
@@ -264,6 +269,22 @@ export function ScoreEntry({
         </button>
         </div>
       </div>
+      </div>
     </div>
+    <DesktopScore
+      cardNumber={cardNumber}
+      holeNumber={holeNumber}
+      holesPlayed={holesPlayed}
+      par={par}
+      strokeIndex={strokeIndex}
+      holes={holes}
+      players={players}
+      canScore={canScore}
+      sample={sample}
+      onStep={onStep}
+      onSelectHole={onSelectHole}
+      onNext={onNext}
+    />
+    </>
   );
 }
