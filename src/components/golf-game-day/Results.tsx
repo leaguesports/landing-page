@@ -71,10 +71,10 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
           🏆 Winner · {tab}
         </p>
-        <h2 className="mt-4 font-display text-[56px] leading-none tracking-wide text-white">
+        <h2 className="mt-2 font-display text-[56px] leading-[0.9] tracking-wide text-white">
           {winner?.displayName ?? "No winner yet"}
         </h2>
-        <p className="mt-3 text-lg leading-tight text-white">{line}</p>
+        <p className="mt-2 text-lg leading-tight text-white">{line}</p>
         {tiebreak ? <p className="mt-1 text-sm text-zinc-400">{tiebreak}</p> : null}
       </article>
 

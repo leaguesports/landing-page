@@ -397,7 +397,7 @@ export function JoinGameDay({
                   return (
                     <li
                       key={`${player.displayName}-${player.slot}`}
-                      className="flex min-h-[58px] items-center gap-3 border-b border-zinc-200 px-4 py-2.5 last:border-b-0"
+                      className="flex min-h-[58px] items-center gap-3 border-b border-zinc-200 px-4 py-1.5 last:border-b-0"
                     >
                       <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-sm font-semibold text-white">
                         {player.displayName.slice(0, 1).toUpperCase()}

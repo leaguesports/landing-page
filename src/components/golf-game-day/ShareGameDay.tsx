@@ -103,7 +103,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-zinc-950">Join code</p>
-              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.38em] text-zinc-950">{day.inviteCode}</p>
+              <p className="mt-1 font-display text-[52px] leading-none !tracking-[0.12em] text-zinc-950">{day.inviteCode}</p>
             </div>
             <p className="pb-1 text-right text-sm font-normal leading-snug text-zinc-950">
               leaguesports.co.za
