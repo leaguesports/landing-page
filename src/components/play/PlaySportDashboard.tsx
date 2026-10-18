@@ -135,6 +135,24 @@ export function PlaySportDashboard({ sport }: PlaySportDashboardProps) {
               <ActionCard action={golfTours} />
             </li>
           ) : null}
+          {sport.slug === "golf" ? (
+            <li>
+              <Link
+                href="/golf/game-day/new"
+                className="flex h-full w-full flex-col items-start gap-5 rounded-3xl border border-white/8 bg-[#141814] px-5 py-6 text-left transition-colors hover:border-emerald-400/35 hover:bg-white/3 sm:px-6 lg:px-7 lg:py-7"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/4 text-emerald-200">
+                  <Flag className="h-4 w-4" aria-hidden />
+                </span>
+                <div>
+                  <h3 className="font-display text-3xl tracking-wide text-white">Game day</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                    One course, a few cards, and a live leaderboard for the group.
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ) : null}
           {showHandicap ? (
             <li>
               <div className="h-full">

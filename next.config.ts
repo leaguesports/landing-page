@@ -5,6 +5,7 @@ import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./src/lib/sports/hub-redirects";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  devIndicators: false,
   transpilePackages: ["three"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
