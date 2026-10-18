@@ -5,7 +5,7 @@ import type {
   RankingRow,
 } from "../../types/golf-game-day.ts";
 import { formatGameDayDate, gameDayHeadline } from "./paths.ts";
-import { finishedRound, midRound } from "./scoring-ui.ts";
+import { finishedRound, midRound, netToPar } from "./scoring-ui.ts";
 
 const FIXTURE_DATE = "2026-11-01";
 const FIXTURE_VENUE = "Zebula Golf Estate & Spa";
@@ -63,7 +63,7 @@ function byStableford(rows: RankingRow[]): RankingRow[] {
   return [...rows].sort((left, right) => (right.stableford ?? 0) - (left.stableford ?? 0));
 }
 function byNet(rows: RankingRow[]): RankingRow[] {
-  return [...rows].sort((left, right) => (left.net ?? 999) - (right.net ?? 999));
+  return [...rows].sort((left, right) => (netToPar(left) ?? 999) - (netToPar(right) ?? 999));
 }
 function byGross(rows: RankingRow[]): RankingRow[] {
   return [...rows].sort((left, right) => (left.toPar ?? 999) - (right.toPar ?? 999));
@@ -100,7 +100,7 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
       you: access === "player" && item.playerId === "mike",
     }));
   const gross = mark(placeTied(byGross(liveRows), (row) => row.toPar ?? 999));
-  const net = mark(placeTied(byNet(liveRows), (row) => row.net ?? 999));
+  const net = mark(placeTied(byNet(liveRows), (row) => netToPar(row) ?? 999));
   const stableford = mark(placeTied(byStableford(liveRows), (row) => row.stableford ?? 0));
   return {
     gameDayId: FIXTURE_DAY_ID,
@@ -204,13 +204,17 @@ function finishedPlayer(input: {
   };
 }
 
-/** Countback order is the source order inside a tied score. */
+/** Countback order is the source order inside a tied score. v2 results, all 10 players. */
 const finishedPlayers: RankingRow[] = [
   finishedPlayer({ name: "Pieter", handicapIndex: 12, playingHandicap: 12, gross: 78, countbackNote: "Won countback" }),
   finishedPlayer({ name: "Nadia", handicapIndex: 16, playingHandicap: 16, gross: 82, countbackNote: "Lost countback (last 9)" }),
   finishedPlayer({ name: "Jaco", handicapIndex: 18, playingHandicap: 18, gross: 85, countbackNote: null }),
-  finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: null, you: true }),
-  finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 83, countbackNote: null }),
+  finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 79, countbackNote: "Won countback" }),
+  finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: "Lost countback (last 9)" }),
+  finishedPlayer({ name: "Kabelo", handicapIndex: 20, playingHandicap: 20, gross: 90, countbackNote: "Lost countback (last 9)" }),
+  finishedPlayer({ name: "Ruan", handicapIndex: 11, playingHandicap: 11, gross: 83, countbackNote: null }),
+  finishedPlayer({ name: "Thandi", handicapIndex: 22, playingHandicap: 22, gross: 97, countbackNote: null }),
+  finishedPlayer({ name: "Brandon", handicapIndex: 14, playingHandicap: 14, gross: 90, countbackNote: null, you: true }),
   finishedPlayer({ name: "Lerato", handicapIndex: null, playingHandicap: 0, gross: 89, countbackNote: null }),
 ];
 
@@ -249,8 +253,8 @@ export function fixtureCreated(): GameDayCreated {
   return {
     id: FIXTURE_DAY_ID,
     inviteCode: "ZB47",
-    watchToken: "k7Qm9p",
-    watchPath: "/api/golf-game-days/watch/k7Qm9p/leaderboard",
+    watchToken: "ZB47",
+    watchPath: "/api/golf-game-days/watch/ZB47/leaderboard",
     venueCmsId: "zebula-golf-estate-spa",
     venueName: FIXTURE_VENUE,
     date: FIXTURE_DATE,
@@ -262,29 +266,71 @@ export function fixtureCreated(): GameDayCreated {
     status: "setup",
     version: 0,
     weekendEventId: "9b6e2c44-1d55-4c2a-9a10-77c1a9d0e221",
-    players: [
-      {
-        id: "p-brandon",
-        displayName: "Brandon",
+    players: ["Brandon", "Sipho", "Jaco", "Thandi", "Mike", "Lerato", "Pieter", "Kabelo", "Nadia"].map(
+      (name) => ({
+        id: `p-${name.toLowerCase()}`,
+        displayName: name,
         handicapIndex: null,
         teeName: "White",
-        joined: false,
-        cardId: null,
-        cardNumber: null,
-        slot: null,
-      },
-      {
-        id: "p-sipho",
-        displayName: "Sipho",
-        handicapIndex: null,
-        teeName: "White",
-        joined: false,
-        cardId: null,
-        cardNumber: null,
-        slot: null,
-      },
-    ],
+        joined: name === "Brandon",
+        cardId: name === "Brandon" ? "card-1" : null,
+        cardNumber: name === "Brandon" ? 1 : null,
+        slot: name === "Brandon" ? 1 : null,
+      }),
+    ),
   };
+}
+
+export const CARD_REVIEW_FRONT_PAR = [4, 4, 3, 5, 4, 4, 3, 4, 5] as const;
+export const CARD_REVIEW_BACK_PAR = [4, 3, 5, 4, 4, 4, 3, 5, 4] as const;
+
+export type CardReviewLine = {
+  name: string;
+  scorer: boolean;
+  handicapIndex: number | null;
+  playingHandicap: number;
+  front: readonly number[];
+  back: readonly number[];
+};
+
+/** Card 2 scorecard transcribed from the review mockup. */
+export const CARD_REVIEW_LINES: readonly CardReviewLine[] = [
+  {
+    name: "Mike",
+    scorer: true,
+    handicapIndex: 6,
+    playingHandicap: 6,
+    front: [4, 5, 3, 5, 5, 4, 4, 3, 5],
+    back: [4, 2, 5, 3, 5, 5, 3, 6, 5],
+  },
+  {
+    name: "Lerato",
+    scorer: false,
+    handicapIndex: null,
+    playingHandicap: 0,
+    front: [5, 6, 5, 7, 4, 4, 4, 6, 7],
+    back: [4, 3, 6, 4, 4, 4, 4, 7, 5],
+  },
+  {
+    name: "Pieter",
+    scorer: false,
+    handicapIndex: 12,
+    playingHandicap: 12,
+    front: [4, 6, 4, 5, 4, 4, 2, 4, 5],
+    back: [4, 3, 5, 5, 4, 4, 4, 5, 6],
+  },
+  {
+    name: "Kabelo",
+    scorer: false,
+    handicapIndex: 20,
+    playingHandicap: 20,
+    front: [5, 4, 4, 7, 5, 4, 4, 6, 5],
+    back: [6, 3, 5, 6, 5, 5, 5, 5, 6],
+  },
+];
+
+export function sumNine(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0);
 }
 
 export function fixturePreview(): GameDayPreview {
@@ -300,10 +346,15 @@ export function fixturePreview(): GameDayPreview {
     format: "stroke",
     status: "setup",
     players: [
-      { id: "p-mike", displayName: "Mike", taken: false, cardId: null, cardNumber: null },
+      { id: "p-brandon", displayName: "Brandon", taken: true, cardId: "card-1", cardNumber: 1 },
       { id: "p-sipho", displayName: "Sipho", taken: true, cardId: "card-1", cardNumber: 1 },
-      { id: "p-pieter", displayName: "Pieter", taken: false, cardId: null, cardNumber: null },
-      { id: "p-ruan", displayName: "Ruan", taken: false, cardId: null, cardNumber: null },
+      { id: "p-jaco", displayName: "Jaco", taken: true, cardId: "card-1", cardNumber: 1 },
+      { id: "p-thandi", displayName: "Thandi", taken: true, cardId: "card-1", cardNumber: 1 },
+      { id: "p-lerato", displayName: "Lerato", taken: true, cardId: "card-2", cardNumber: 2 },
+      { id: "p-pieter", displayName: "Pieter", taken: true, cardId: "card-2", cardNumber: 2 },
+      { id: "p-mike", displayName: "Mike", taken: false, cardId: null, cardNumber: null },
+      { id: "p-kabelo", displayName: "Kabelo", taken: false, cardId: null, cardNumber: null },
+      { id: "p-nadia", displayName: "Nadia", taken: false, cardId: null, cardNumber: null },
     ],
     cards: [
       {
@@ -315,17 +366,20 @@ export function fixturePreview(): GameDayPreview {
         players: [
           { displayName: "Brandon", slot: 1, scoring: true },
           { displayName: "Sipho", slot: 2, scoring: false },
-          { displayName: "Pieter", slot: 3, scoring: false },
-          { displayName: "Ruan", slot: 4, scoring: false },
+          { displayName: "Jaco", slot: 3, scoring: false },
+          { displayName: "Thandi", slot: 4, scoring: false },
         ],
       },
       {
         id: "card-2",
         number: 2,
         status: "live",
-        openSlots: 3,
+        openSlots: 2,
         full: false,
-        players: [{ displayName: "Mike", slot: 1, scoring: true }],
+        players: [
+          { displayName: "Pieter", slot: 1, scoring: true },
+          { displayName: "Lerato", slot: 2, scoring: false },
+        ],
       },
     ],
   };

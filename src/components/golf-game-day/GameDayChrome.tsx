@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Eye } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -15,9 +16,9 @@ export type GameDayAction = {
 const DEFAULT_ACTION: GameDayAction = { label: "Sign in", href: "/login", tone: "default" };
 
 const SPORT_LINKS = [
-  { label: "Soccer", href: "/play" },
-  { label: "Rugby", href: "/play" },
-  { label: "Cricket", href: "/play" },
+  { label: "Soccer", href: "/watch/soccer" },
+  { label: "Rugby", href: "/watch/rugby" },
+  { label: "Cricket", href: "/watch/cricket" },
   { label: "Golf", href: "/play/golf" },
   { label: "Venues", href: "/venues" },
 ];
@@ -40,7 +41,8 @@ export function useGameDayAction(
 function ActionPill({ action }: { action: GameDayAction }) {
   if (action.tone === "watch") {
     return (
-      <span className="inline-flex shrink-0 items-center rounded-full bg-[#3dff8a] px-3 py-1.5 text-xs font-semibold text-zinc-950">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#3dff8a] px-3 py-1.5 text-xs font-semibold text-zinc-950">
+        {action.label === "Watching" ? <Eye className="h-3.5 w-3.5" aria-hidden /> : null}
         {action.label}
       </span>
     );

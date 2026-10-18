@@ -30,7 +30,6 @@ import {
   Eyebrow,
   FieldLabel,
   GameDayColumn,
-  OutlineButton,
   PrimaryButton,
   ScreenTitle,
   teeDotClass,
@@ -44,6 +43,7 @@ type JoinGameDayProps = {
   previewMode?: boolean;
   initialPhase?: "join" | "in";
   initialSession?: JoinResult | null;
+  initialHandicap?: string;
 };
 
 export function JoinGameDay({
@@ -53,6 +53,7 @@ export function JoinGameDay({
   previewMode = false,
   initialPhase = "join",
   initialSession = null,
+  initialHandicap = "",
 }: JoinGameDayProps) {
   const router = useRouter();
   const [preview, setPreview] = useState(initialPreview);
@@ -62,7 +63,7 @@ export function JoinGameDay({
     initialPreview?.players.find((player) => !player.taken)?.id ?? "new",
   );
   const [addedName, setAddedName] = useState("");
-  const [handicap, setHandicap] = useState("");
+  const [handicap, setHandicap] = useState(initialHandicap);
   const [tee, setTee] = useState(initialPreview?.defaultTee ?? "");
   const [session, setSession] = useState(initialSession);
   const [courseSaved, setCourseSaved] = useState(previewMode && initialPhase === "in");
@@ -335,55 +336,95 @@ export function JoinGameDay({
           (player) => player.displayName.toLowerCase() === session.displayName.toLowerCase(),
         ),
       );
+    const scorer = seatedCard?.players.find((player) => player.scoring) ?? null;
+    const seatedOthers = seatedCard?.players.filter((player) => !player.scoring) ?? [];
+    const openSpots = seatedCard?.openSlots ?? 0;
     return (
       <GameDayColumn>
-        <Eyebrow>{shown.headline}</Eyebrow>
-        <ScreenTitle>You&apos;re in</ScreenTitle>
-        <p className="mt-3 text-sm text-zinc-600">
-          {session.displayName} · {session.teeName} tees
-        </p>
+        <ScreenTitle>
+          You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
+        </ScreenTitle>
         {courseSaved ? (
-          <p className="mt-3 text-sm font-semibold text-green-800">
-            ✓ Course and your card saved on this phone
-          </p>
+          <>
+            <p className="mt-4 text-sm font-semibold text-green-800">✓ Course & card saved to this phone</p>
+            <p className="mt-1 text-sm text-zinc-600">
+              Works without signal. Scores sync when you&apos;re back in coverage.
+            </p>
+          </>
         ) : (
-          <p className="mt-3 text-sm text-zinc-500">
-            Still fetching the course. You can join once it&apos;s saved.
+          <p className="mt-4 text-sm text-zinc-500">
+            Still fetching the course. You can score once it&apos;s saved.
           </p>
         )}
 
-        <div className="mt-8 space-y-3">
-          {preview.cards.filter((card) => !card.full && card.id !== seatedCard?.id).map((card) => (
-            <OutlineButton
-              key={card.id}
-              type="button"
-              disabled={pending}
-              onClick={() => onJoinCard(card.id)}
-            >
-              Join card {card.number}
-            </OutlineButton>
-          ))}
+        {seatedCard ? (
+          <section className="mt-6" aria-label={`Card ${seatedCard.number}`}>
+            {seatedCard.teeTime ? (
+              <p className="text-sm font-semibold text-zinc-950">
+                Card {seatedCard.number} tee time {seatedCard.teeTime}
+              </p>
+            ) : null}
+            <ul className="mt-3 divide-y divide-zinc-200">
+              {seatedOthers.map((player) => {
+                const you = player.displayName.toLowerCase() === session.displayName.toLowerCase();
+                return (
+                  <li key={`${player.displayName}-${player.slot}`} className="py-3">
+                    <p className="font-semibold text-zinc-950">
+                      {player.displayName}
+                      {you ? (
+                        <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+                          You
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-0.5 text-sm text-zinc-500">
+                      {player.handicapLabel ?? (you && session.handicapIndex != null ? `hcp ${session.handicapIndex}` : "no hcp")}
+                      {player.teeName || session.teeName ? ` · ${player.teeName || session.teeName}` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+              {Array.from({ length: openSpots }, (_, index) => (
+                <li key={`open-${index}`} className="py-3 text-sm font-semibold text-zinc-500">
+                  + open spot
+                </li>
+              ))}
+            </ul>
+            {scorer ? (
+              <button
+                type="button"
+                onClick={() => onTakeOver(seatedCard.id)}
+                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-zinc-950"
+              >
+                {scorer.displayName} is scoring
+                <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+                  New
+                </span>
+              </button>
+            ) : null}
+          </section>
+        ) : null}
+
+        <p className="mt-4 text-sm text-zinc-500">
+          Battery low or swapping? Anyone on the card can take over. Scores so far stay.
+        </p>
+        {error ? (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="mt-6">
           {seatedCard ? (
-            <PrimaryButton type="button" disabled={pending} onClick={() => onTakeOver(seatedCard.id)}>
-              {seatedCard.players.some((player) => player.scoring && player.displayName === session.displayName)
-                ? "Back to scoring"
-                : "Take over scoring"}
-            </PrimaryButton>
+            <a href={gameDayBoardPath(preview.id)} className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white">
+              Open live leaderboard
+            </a>
           ) : (
             <PrimaryButton type="button" disabled={pending || (!previewMode && !courseSaved)} onClick={onStart}>
               Start card {nextCard}
             </PrimaryButton>
           )}
         </div>
-        <p className="mt-4 text-sm text-zinc-500">Take over scoring if you need to.</p>
-        {error ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-        <a href={gameDayBoardPath(preview.id)} className="mt-8 block text-center text-sm font-semibold">
-          Leaderboard
-        </a>
       </GameDayColumn>
     );
   }
@@ -392,17 +433,16 @@ export function JoinGameDay({
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
       <div className="flex-1 px-5 pb-4 pt-6">
         <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
-        <ScreenTitle>Join the game</ScreenTitle>
-        <p className="mt-3 text-sm text-zinc-600">
-          {shown.place} · {shown.dateLabel}
-        </p>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-3 text-base font-semibold text-zinc-950">
           {shown.place} · {preview.format === "stroke" ? "Stroke play" : preview.format}
         </p>
 
         <fieldset className="mt-6">
-          <legend>
-            <FieldLabel>Your name</FieldLabel>
+          <legend className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-zinc-950">Tap your name</span>
+            <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+              New
+            </span>
           </legend>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {preview.players.map((player) => {
@@ -440,11 +480,14 @@ export function JoinGameDay({
               onClick={() => setPlayerId("new")}
               className={
                 playerId === "new"
-                  ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-sm font-semibold text-white"
-                  : "min-h-[4.5rem] rounded-2xl border border-dashed border-zinc-400 bg-white px-2 py-2 text-left text-sm font-semibold text-zinc-950"
+                  ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-white"
+                  : "min-h-[4.5rem] rounded-2xl border border-dashed border-zinc-400 bg-white px-2 py-2 text-left text-zinc-950"
               }
             >
-              Add me
+              <span className="block text-sm font-semibold">+ Add me</span>
+              <span className={`mt-1 block text-[11px] ${playerId === "new" ? "text-white/80" : "text-zinc-500"}`}>
+                not on the list
+              </span>
             </button>
           </div>
           {playerId === "new" ? (
@@ -501,14 +544,17 @@ export function JoinGameDay({
             {preview.cards.map((card) => {
               const seats = card.players.length;
               const selected = cardChoice === card.id;
-              const members = card.players
-                .map((player) => {
-                  const you =
-                    selectedName.toLowerCase() === player.displayName.toLowerCase() ? " (+ you)" : "";
-                  const scoring = player.scoring ? " · scoring" : "";
-                  return `${player.displayName}${you}${scoring}`;
-                })
-                .join(", ");
+              const names = card.players.map((player) =>
+                player.scoring ? `${player.displayName} (scoring)` : player.displayName,
+              );
+              const joining =
+                selected &&
+                !card.players.some(
+                  (player) => player.displayName.toLowerCase() === selectedName.toLowerCase(),
+                );
+              if (joining) names.push("+ you");
+              const members = names.join(", ");
+              const open = Math.max(card.openSlots, 4 - card.players.length);
               return (
                 <button
                   key={card.id}
@@ -524,7 +570,7 @@ export function JoinGameDay({
                   <span className="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span>Card {card.number}</span>
                     <span className="text-[11px] uppercase tracking-[0.12em]">
-                      {card.full ? "Full" : "Open"} {seats}/4
+                      {card.full ? `Full · ${seats}/4` : `${seats}/4 · ${open} open`}
                     </span>
                   </span>
                   <span className={`mt-1 block text-sm ${selected ? "text-white/80" : "text-zinc-600"}`}>
@@ -543,7 +589,7 @@ export function JoinGameDay({
                   : "w-full rounded-2xl border border-dashed border-zinc-400 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-950"
               }
             >
-              Start new card · you&apos;ll score
+              + Start new card · you&apos;ll score
             </button>
           </div>
         </section>

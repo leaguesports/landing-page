@@ -64,7 +64,15 @@ export type InviteCard = {
   status: GameDayCardStatus;
   openSlots: number;
   full: boolean;
-  players: Array<{ displayName: string; slot: number | null; scoring: boolean }>;
+  /** Preview copy such as "08:10 · 1st tee". Absent on the live invite payload. */
+  teeTime?: string | null;
+  players: Array<{
+    displayName: string;
+    slot: number | null;
+    scoring: boolean;
+    handicapLabel?: string | null;
+    teeName?: string | null;
+  }>;
 };
 
 export type GameDayPreview = {

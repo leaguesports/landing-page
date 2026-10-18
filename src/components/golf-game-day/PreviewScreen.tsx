@@ -3,14 +3,19 @@
 import { useState } from "react";
 import { notFound } from "next/navigation";
 import {
+  CARD_REVIEW_BACK_PAR,
+  CARD_REVIEW_FRONT_PAR,
+  CARD_REVIEW_LINES,
   fixtureCreated,
   fixtureLeaderboard,
   fixturePreview,
   fixtureResults,
   FIXTURE_DAY_ID,
+  sumNine,
 } from "@/lib/golf-game-day/fixtures";
 import { gameDayCardPath, gameDayHeadline, gameDayWeekendPath } from "@/lib/golf-game-day/paths";
 import {
+  finishedRound,
   formatHandicap,
   formatToPar,
   scoreRelation,
@@ -42,6 +47,7 @@ const SCORE_PLAYERS = [
 
 export function PreviewScreen({ screen }: { screen: string }) {
   const [tab, setTab] = useState<"gross" | "net" | "stableford">("stableford");
+  const [watchTab, setWatchTab] = useState<"gross" | "net" | "stableford">("net");
   const [strokes, setStrokes] = useState(4);
   const [hole, setHole] = useState(8);
 
@@ -69,7 +75,13 @@ export function PreviewScreen({ screen }: { screen: string }) {
   }
 
   if (screen === "share") {
-    return <ShareGameDay day={fixtureCreated()} origin="https://leaguesports.co.za" />;
+    return (
+      <ShareGameDay
+        day={fixtureCreated()}
+        origin="https://leaguesports.co.za"
+        cardHref="/golf/game-day/preview/score"
+      />
+    );
   }
 
   if (screen === "join") {
@@ -79,30 +91,30 @@ export function PreviewScreen({ screen }: { screen: string }) {
         initialPreview={fixturePreview()}
         initialCourse={null}
         previewMode
+        initialHandicap="6"
       />
     );
   }
 
   if (screen === "joined") {
     const preview = fixturePreview();
-    preview.cards = [
-      {
-        id: "card-1",
-        number: 1,
-        status: "live",
-        openSlots: 0,
-        full: true,
-        players: [{ displayName: "Brandon", slot: 1, scoring: true }],
-      },
-      {
-        id: "card-2",
-        number: 2,
-        status: "live",
-        openSlots: 0,
-        full: true,
-        players: [{ displayName: "Sipho", slot: 1, scoring: true }],
-      },
-    ];
+    const card = preview.cards.find((item) => item.number === 2);
+    if (card) {
+      card.players = [
+        { displayName: "Lerato", slot: 2, scoring: false, handicapLabel: "no hcp", teeName: "White" },
+        { displayName: "Mike", slot: 1, scoring: false, handicapLabel: "hcp 6", teeName: "White" },
+        { displayName: "Pieter", slot: 3, scoring: true, handicapLabel: "hcp 12", teeName: "White" },
+      ];
+      card.openSlots = 1;
+      card.full = false;
+      card.teeTime = "08:10 · 1st tee";
+    }
+    const mike = preview.players.find((player) => player.id === "p-mike");
+    if (mike) {
+      mike.taken = true;
+      mike.cardId = "card-2";
+      mike.cardNumber = 2;
+    }
     return (
       <JoinGameDay
         code="ZB47"
@@ -168,30 +180,39 @@ export function PreviewScreen({ screen }: { screen: string }) {
   }
 
   if (screen === "review") {
-    const scores = [4, 5, 4, 3, 5, 6, 4, 4, 4, 4, 5, 4, 3, 4, 5, 4, 3, 5];
-    const gross = scores.reduce((sum, value) => sum + value, 0);
-    const parTotal = HOLES.reduce((sum, item) => sum + item.par, 0);
+    const pars = [...CARD_REVIEW_FRONT_PAR, ...CARD_REVIEW_BACK_PAR];
     return (
       <CardReview
         headline={HEADLINE}
         cardNumber={2}
         overallSyncLabel="Saved"
-        players={[
-          {
-            slot: 1,
-            name: "Mike",
-            handicap: formatHandicap(6),
-            holes: HOLES.map((item, index) => ({ number: item.number, strokes: scores[index] ?? item.par })),
+        players={CARD_REVIEW_LINES.map((line, index) => {
+          const strokes = [...line.front, ...line.back];
+          const gross = sumNine(line.front) + sumNine(line.back);
+          const round = finishedRound(gross, line.playingHandicap);
+          return {
+            slot: index + 1,
+            name: line.name,
+            handicap: formatHandicap(line.handicapIndex),
+            holes: strokes.map((value, holeIndex) => ({
+              number: holeIndex + 1,
+              strokes: value,
+              par: pars[holeIndex],
+            })),
             gross,
-            toPar: formatToPar(gross - parTotal),
-          },
-        ]}
+            toPar: formatToPar(round.toPar),
+            net: line.handicapIndex == null ? null : round.net,
+            points: round.stableford,
+            scorer: line.scorer,
+          };
+        })}
         canConfirm
         confirming={false}
         blockedReason={null}
         scoreHref="/golf/game-day/preview/score"
         boardHref="/golf/game-day/preview/leaderboard"
         onConfirm={() => undefined}
+        onEditHole={() => undefined}
       />
     );
   }
@@ -224,8 +245,8 @@ export function PreviewScreen({ screen }: { screen: string }) {
     return (
       <LeaderboardView
         board={fixtureLeaderboard("watch")}
-        tab={tab}
-        onTab={setTab}
+        tab={watchTab}
+        onTab={setWatchTab}
         yourCardHref={null}
         layout="phone"
       />

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
-import { presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
+import { gameDayBoardPath, presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
 import {
   defaultBoardTab,
   GAME_DAY_COURSE_PAR,
@@ -49,13 +50,19 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
 
   return (
     <GameDayColumn>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex h-10 items-center justify-between">
+        <Link href={gameDayBoardPath(board.gameDayId)} className="text-sm font-semibold text-zinc-950">
+          ‹ Game day
+        </Link>
+        <span className="text-sm font-semibold text-zinc-950">Results</span>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Final</p>
         <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
           ✓ {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
         </span>
       </div>
-      <h1 className="mt-3 font-display text-5xl tracking-wide text-zinc-950">{shown.dateLabel}</h1>
+      <h1 className="mt-3 font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
 
       <article className="mt-5 rounded-3xl bg-zinc-950 px-5 py-6 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
@@ -120,7 +127,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       <section className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-zinc-300 px-4 py-4">
         <div>
           <p className="text-sm font-semibold text-zinc-950">Add to weekend event</p>
-          <p className="mt-1 text-sm text-zinc-500">Keep this round on the weekend board.</p>
+          <p className="mt-1 text-sm text-zinc-500">Optional. Link with Sunday for one combined board.</p>
         </div>
         {weekendHref ? (
           <a

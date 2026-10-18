@@ -5,9 +5,11 @@ import {
   GAME_DAY_COURSE_PAR,
   finishedRound,
   midRound,
+  netToPar,
   resultsRowDetail,
   resultsTiebreakLine,
   resultsToParCell,
+  signedScore,
 } from "./scoring-ui.ts";
 
 describe("finished results fixture", () => {
@@ -21,7 +23,7 @@ describe("finished results fixture", () => {
 
     for (const tab of ["gross", "net", "stableford"] as const) {
       const rows = board.rankings[tab];
-      assert.equal(rows.length, 6);
+      assert.equal(rows.length, 10);
       rows.forEach((row, index) => {
         assert.equal(row.thru, 18);
         assert.equal(row.position, String(index + 1));
@@ -57,6 +59,24 @@ describe("finished results fixture", () => {
     assert.equal(resultsTiebreakLine(gross, "gross"), null);
     assert.ok((net[0]?.net ?? 99) <= (net[1]?.net ?? 99));
     assert.ok((net[1]?.net ?? 99) <= (net[2]?.net ?? 99));
+
+    assert.deepEqual(
+      net.map((row) => row.displayName),
+      ["Pieter", "Nadia", "Jaco", "Sipho", "Mike", "Kabelo", "Ruan", "Thandi", "Brandon", "Lerato"],
+    );
+    assert.deepEqual(
+      net.map((row) => row.net),
+      [66, 66, 67, 70, 70, 70, 72, 75, 76, 89],
+    );
+    assert.equal(net.find((row) => row.displayName === "Brandon")?.you, true);
+    assert.equal(net.find((row) => row.displayName === "Mike")?.you, false);
+    assert.equal(resultsRowDetail(net[3]!, net, "net"), "Won countback");
+    assert.equal(resultsRowDetail(net[4]!, net, "net"), "Lost countback (last 9)");
+    assert.equal(resultsRowDetail(net[6]!, net, "net"), "hcp 11");
+    assert.equal(resultsRowDetail(net[9]!, net, "net"), "no hcp");
+    assert.equal(resultsToParCell("net", net[6]!).text, "E");
+    assert.equal(resultsToParCell("net", net[8]!).text, "+4");
+    assert.equal(resultsToParCell("net", net[9]!).text, "+17");
 
     assert.equal(gross[0]?.displayName, "Mike");
     assert.equal(gross[0]?.gross, 76);
@@ -95,5 +115,21 @@ describe("live leaderboard fixture", () => {
       assert.equal(row.toPar, expected.toPar);
       assert.equal(row.net, expected.net);
     }
+    const net = board.rankings.net;
+    assert.deepEqual(
+      net.map((row) => `${row.position} ${row.displayName} ${signedScore(netToPar(row))} thru ${row.thru}`),
+      [
+        "1 Nadia −8 thru 10",
+        "2 Pieter −5 thru 11",
+        "3 Sipho −3 thru 12",
+        "T4 Jaco −2 thru 12",
+        "T4 Mike −2 thru 11",
+        "T4 Kabelo −2 thru 11",
+        "7 Brandon +1 thru 12",
+        "8 Thandi +2 thru 12",
+        "9 Ruan +3 thru 10",
+        "10 Lerato +12 thru 11",
+      ],
+    );
   });
 });

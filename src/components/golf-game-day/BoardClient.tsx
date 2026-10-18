@@ -29,7 +29,7 @@ type BoardClientProps = {
 
 export function BoardClient({ gameDayId, watchToken }: BoardClientProps) {
   const [board, setBoard] = useState<GameDayLeaderboard | null>(null);
-  const [tab, setTab] = useState<BoardTab>("stableford");
+  const [tab, setTab] = useState<BoardTab>(watchToken ? "net" : "stableford");
   const [error, setError] = useState<string | null>(null);
 
   const apply = useCallback((incoming: GameDayLeaderboard) => {

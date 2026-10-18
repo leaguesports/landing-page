@@ -16,6 +16,7 @@ import {
   writeCardQueue,
 } from "@/lib/golf-game-day/queue";
 import {
+  finishedRound,
   formatHandicap,
   formatToPar,
   grossForSlot,
@@ -138,9 +139,13 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     const stored = readHoleQueue(store).filter((item) => item.cardId === cardId);
     queueRef.current = stored;
     setQueue(stored);
+    const requested = Number(new URLSearchParams(window.location.search).get("hole"));
+    const fromQuery = Number.isInteger(requested) && requested >= 1 ? requested : null;
     if (cached) {
       setCard(cached);
-      setHoleNumber(cached.missingHoles[0] ?? cached.course.holes[0]?.number ?? 1);
+      setHoleNumber(fromQuery ?? cached.missingHoles[0] ?? cached.course.holes[0]?.number ?? 1);
+    } else if (fromQuery) {
+      setHoleNumber(fromQuery);
     }
     setReady(true);
     const session = readDevice(store, gameDayId);
@@ -151,7 +156,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
         const merged = mergeCard(incoming, session?.playerId ?? null);
         setCard(merged);
         cacheCard(store, merged);
-        setHoleNumber((current) => current ?? merged.missingHoles[0] ?? merged.course.holes[0]?.number ?? 1);
+        setHoleNumber((current) => current ?? fromQuery ?? merged.missingHoles[0] ?? merged.course.holes[0]?.number ?? 1);
       })
       .catch(() => undefined);
     return () => {
@@ -254,11 +259,13 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             const queued = cardQueue.find((item) => item.holeNumber === number);
             const saved = card.holes.find((hole) => hole.number === number);
             const strokes = queued?.strokes[String(player.slot)] ?? saved?.strokes[String(player.slot)] ?? drafts[number]?.[String(player.slot)] ?? null;
-            return { number, strokes: strokes ?? null };
+            const par = card.course.holes.find((hole) => hole.number === number)?.par;
+            return { number, strokes: strokes ?? null, par };
           });
           const scored = holes.filter((hole) => hole.strokes != null) as Array<{ number: number; strokes: number }>;
           const gross = scored.length === ordered.length ? grossForSlot(scored.map((hole) => ({ strokes: { [String(player.slot)]: hole.strokes } })), player.slot) : null;
           const parTotal = card.course.holes.reduce((sum, hole) => sum + hole.par, 0);
+          const round = gross == null ? null : finishedRound(gross, player.playingHandicap ?? 0, parTotal);
           return {
             slot: player.slot,
             name: player.displayName,
@@ -266,8 +273,14 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             holes,
             gross,
             toPar: gross == null ? "–" : formatToPar(gross - parTotal),
+            net: player.handicapIndex == null ? null : round?.net ?? null,
+            points: round?.stableford ?? null,
+            scorer: player.isScorer,
           };
         })}
+        onEditHole={(number) => {
+          router.push(`${gameDayCardPath(gameDayId, cardId)}?hole=${number}`);
+        }}
         canConfirm={blockedReason == null && card.status === "live"}
         confirming={confirming}
         blockedReason={error ?? blockedReason}

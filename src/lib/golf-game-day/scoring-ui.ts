@@ -228,6 +228,21 @@ export function signedScore(value: number | null | undefined): string {
   return `+${value}`;
 }
 
+/** Net against the par played so far. Finished rounds use course par, so this matches net − par. */
+export function netToPar(
+  row: Pick<RankingRow, "net" | "gross" | "toPar">,
+): number | null {
+  if (row.net == null || row.gross == null || row.toPar == null) return null;
+  return row.net - (row.gross - row.toPar);
+}
+
+/** Birdie or better is circled. Double bogey or worse is a square. */
+export function scoreMark(strokes: number, par: number): "birdie" | "double" | "plain" {
+  if (strokes < par) return "birdie";
+  if (strokes >= par + 2) return "double";
+  return "plain";
+}
+
 /** The results "to par" cell follows the active tab. */
 export function resultsToParCell(
   tab: BoardTab,

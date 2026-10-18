@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Eye, Flag } from "lucide-react";
 import type { BoardTab, GameDayFeedItem, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { johannesburgClock, presentGameDay } from "@/lib/golf-game-day/paths";
 import {
@@ -8,6 +9,8 @@ import {
   LEAD_DOT_HALF_MS,
   LEAD_SLIDE_MS,
   leadChangePlan,
+  netToPar,
+  signedScore,
 } from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
 import { GameDayColumn } from "./ui";
@@ -129,43 +132,54 @@ export function LeaderboardView({
     <>
       <style>{`@keyframes gameday-dot{0%,49%{background:#3dff8a}50%,100%{background:#14532d}}.gameday-dot-blink{animation:gameday-dot ${LEAD_DOT_HALF_MS * 2}ms steps(1,end) infinite}@media (prefers-reduced-motion:reduce){.gameday-dot-blink{animation:none}}`}</style>
       <div className={phoneClass}>
-        <GameDayColumn wide>
-          <div className="flex items-end justify-between gap-3">
-            <h1 className="font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
-            {updated ? (
-              <p className="pb-1 text-xs text-zinc-500">
-                Updated {updated}
-                {watching ? " · refreshes itself" : ""}
+        {watching ? (
+          <SpectatorPhone
+            board={board}
+            rows={rows}
+            tab={tab}
+            onTab={onTab}
+            updated={updated}
+            blink={blink}
+            bind={bind}
+            headline={shown.headline}
+          />
+        ) : (
+          <GameDayColumn wide>
+            <div className="flex items-end justify-between gap-3">
+              <h1 className="font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
+              {updated ? <p className="pb-1 text-xs text-zinc-500">Updated {updated}</p> : null}
+            </div>
+            <div className="mt-4">
+              <TabBar tab={tab} onTab={onTab} label="Scoring" />
+            </div>
+            <div className="mt-4 grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] gap-2 border-b border-zinc-200 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              <span>Pos</span>
+              <span>Player</span>
+              <span className="text-right">Pts</span>
+              <span className="text-right">Thru</span>
+            </div>
+            <ul>
+              {rows.map((row) => (
+                <li
+                  key={row.playerId}
+                  ref={bind(row.playerId)}
+                  className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-2.5 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                >
+                  <MobileRow row={row} />
+                </li>
+              ))}
+            </ul>
+            {board.countback ? (
+              <p className="mt-4 flex items-start gap-2 text-sm text-zinc-500">
+                <Flag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                Ties split on countback: {board.countback}
               </p>
             ) : null}
-          </div>
-          <div className="mt-4">
-            <TabBar tab={tab} onTab={onTab} label="Scoring" />
-          </div>
-          <div className="mt-4 grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] gap-2 border-b border-zinc-200 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            <span>Pos</span>
-            <span>Player</span>
-            <span className="text-right">Pts</span>
-            <span className="text-right">Thru</span>
-          </div>
-          <ul>
-            {rows.map((row) => (
-              <li
-                key={row.playerId}
-                ref={bind(row.playerId)}
-                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-2.5 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
-              >
-                <MobileRow row={row} />
-              </li>
-            ))}
-          </ul>
-          {board.countback ? (
-            <p className="mt-4 text-sm text-zinc-500">Ties split on countback: {board.countback}</p>
-          ) : null}
-          <div className="mt-5">
-            <FeedBlock board={board} />
-          </div>
-        </GameDayColumn>
+            <div className="mt-5">
+              <FeedBlock board={board} showCards={false} hideThru />
+            </div>
+          </GameDayColumn>
+        )}
       </div>
 
       <div className={`mx-auto w-full px-6 py-6 ${desktopClass}`}>
@@ -306,7 +320,16 @@ function MobileRow({ row }: { row: RankingRow }) {
   );
 }
 
-function FeedBlock({ board }: { board: GameDayLeaderboard }) {
+function FeedBlock({
+  board,
+  showCards = true,
+  hideThru = false,
+}: {
+  board: GameDayLeaderboard;
+  showCards?: boolean;
+  hideThru?: boolean;
+}) {
+  const feed = hideThru ? board.feed.filter((item) => item.type !== "thru") : board.feed;
   return (
     <>
       <div className="mt-4 flex items-center justify-between gap-2">
@@ -319,13 +342,13 @@ function FeedBlock({ board }: { board: GameDayLeaderboard }) {
         <p className="text-xs text-zinc-500">newest first</p>
       </div>
       <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
-        {board.feed.length === 0 ? (
+        {feed.length === 0 ? (
           <li className="px-3 py-3 text-sm text-zinc-500">Scores will show up here.</li>
         ) : (
-          board.feed.map((item) => <FeedRow key={item.id} item={item} />)
+          feed.map((item) => <FeedRow key={item.id} item={item} />)
         )}
       </ul>
-      {board.cards.length > 0 ? (
+      {showCards && board.cards.length > 0 ? (
         <ul className="mt-4 overflow-hidden rounded-2xl border border-zinc-300" aria-label="Card sync">
           {board.cards.map((card) => (
             <li
@@ -362,6 +385,111 @@ function FeedRow({ item }: { item: GameDayFeedItem }) {
       </time>
     </li>
   );
+}
+
+function SpectatorPhone({
+  board,
+  rows,
+  tab,
+  onTab,
+  updated,
+  blink,
+  bind,
+  headline,
+}: {
+  board: GameDayLeaderboard;
+  rows: RankingRow[];
+  tab: BoardTab;
+  onTab: (tab: BoardTab) => void;
+  updated: string;
+  blink: boolean;
+  bind: (id: string) => (element: HTMLElement | null) => void;
+  headline: string;
+}) {
+  const players = rows.length;
+  const cards = board.cardsTotal;
+  return (
+    <div className="mx-auto w-full max-w-[420px] pb-10">
+      <div className="flex items-center gap-2 bg-[#3dff8a] px-4 py-2.5 text-sm font-semibold text-zinc-950">
+        <Eye className="h-4 w-4 shrink-0" aria-hidden />
+        View only · you can&apos;t enter or change scores
+      </div>
+      <div className="px-4 pt-4">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
+            <span className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`} aria-hidden />
+            Live
+          </span>
+          {updated ? <p className="text-sm text-zinc-500">Updated {updated} · refreshes itself</p> : null}
+        </div>
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          {scoringName(board.format)} · {players} players · {cards} cards
+        </p>
+        <h1 className="mt-1 font-display text-5xl tracking-wide text-zinc-950">{headline}</h1>
+
+        <section className="mt-5" aria-label="Latest">
+          <h2 className="text-sm font-semibold text-zinc-950">Latest</h2>
+          <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
+            {board.feed.slice(0, 3).map((item) => (
+              <FeedRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </section>
+
+        <div className="mt-4">
+          <TabBar tab={tab} onTab={onTab} label="Scoring" />
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
+          <div className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] gap-2 border-b border-zinc-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            <span>Pos</span>
+            <span>Player</span>
+            <span className="text-right">{tab === "stableford" ? "Pts" : "To par"}</span>
+            <span className="text-right">Thru</span>
+          </div>
+          <ul>
+            {rows.map((row) => {
+              const cell = spectatorCell(tab, row);
+              return (
+                <li
+                  key={row.playerId}
+                  ref={bind(row.playerId)}
+                  className={`grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                >
+                  <span className="font-display text-3xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-zinc-950">{row.displayName}</span>
+                    <span className="block text-xs text-zinc-500">
+                      Card {row.cardNumber} · {formatHandicap(row.handicapIndex) ?? "no hcp"}
+                    </span>
+                  </span>
+                  <span
+                    className={`text-right font-display text-3xl leading-none tabular-nums ${cell.under ? "text-green-800" : "text-zinc-950"}`}
+                  >
+                    {cell.text}
+                  </span>
+                  <span className="text-right text-sm tabular-nums text-zinc-700">{row.thru}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        {board.countback ? (
+          <p className="mt-4 flex items-start gap-2 text-sm text-zinc-500">
+            <Flag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            Ties split on countback: {board.countback}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function spectatorCell(tab: BoardTab, row: RankingRow): { text: string; under: boolean } {
+  if (tab === "stableford") return { text: row.stableford == null ? "–" : String(row.stableford), under: false };
+  if (tab === "gross") return { text: signedScore(row.toPar), under: (row.toPar ?? 0) < 0 };
+  const value = netToPar(row);
+  return { text: signedScore(value), under: (value ?? 0) < 0 };
 }
 
 function FeedMark({ item }: { item: GameDayFeedItem }) {
