@@ -303,7 +303,20 @@ describe("offline score queue", () => {
       attempts: 0,
     };
     assert.deepEqual(applyFlushResult([queuedItem], queuedItem, outcome).queue, []);
-    assert.equal(conflictNotice(response.conflicts, 8), "Hole 8 · previous score was 5 (Mike)");
+    assert.equal(
+      conflictNotice(response.conflicts, 8, {
+        strokes: queued.strokes,
+        names: { 1: "Lerato" },
+      }),
+      "Lerato · hole 8 was 5 on another phone, now 4",
+    );
+    assert.equal(
+      conflictNotice([{ slot: 2, previous: null }], 8, {
+        strokes: { "2": 4 },
+        names: { 2: "Lerato" },
+      }),
+      "Lerato · hole 8 was empty on another phone, now 4",
+    );
   });
 
   it("treats replay as success and does not surface a conflict", () => {

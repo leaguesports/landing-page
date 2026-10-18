@@ -91,8 +91,8 @@ export function ShareGameDay({
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
-      <div className="flex-1 px-5 pb-4 pt-4">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+      <div className="flex-1 px-5 pt-4">
         <div className="flex h-10 items-center justify-between">
           <Link href="/play/golf" className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -177,16 +177,17 @@ export function ShareGameDay({
 
         {organiserToken ? (
           <section className="mt-6">
-            <p className="text-sm text-zinc-600">Save your organiser link.</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-zinc-950">Save your organiser link</h2>
+              <span className="ml-auto text-xs text-zinc-600">organiser only</span>
+            </div>
             <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-100 px-3 py-4">
               <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
                 <Link2 className="h-5 w-5 text-zinc-950" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-zinc-950">Organiser link</p>
-                <p className="mt-0.5 break-all text-xs text-zinc-600">
-                  leaguesports.co.za{organiserPath}
-                </p>
+                <p className="mt-0.5 truncate text-xs text-zinc-600">leaguesports.co.za{organiserPath}</p>
               </div>
               <button
                 type="button"
@@ -339,13 +340,15 @@ export function ShareGameDay({
         </section>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-300 bg-white px-5 py-3">
-        <Link
-          href={myCard}
-          className="inline-flex min-h-16 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950"
-        >
-          Go to my card
-        </Link>
+      <div className="fixed inset-x-0 bottom-0 z-30">
+        <div className="mx-auto w-full max-w-[420px] border-t border-zinc-300 bg-white px-5 py-3">
+          <Link
+            href={myCard}
+            className="inline-flex min-h-16 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950"
+          >
+            Go to my card
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -101,13 +101,21 @@ export function holePutOutcome(response: { reason: string }): FlushOutcome {
 export function conflictNotice(
   conflicts: readonly HoleScoreConflict[],
   holeNumber: number,
+  context: {
+    strokes?: Record<string, number>;
+    names?: Readonly<Record<number, string>>;
+  } = {},
 ): string | null {
   if (conflicts.length === 0) return null;
+  const strokes = context.strokes ?? {};
+  const names = context.names ?? {};
   return conflicts
     .map((conflict) => {
-      if (!conflict.previous) return `Hole ${holeNumber} · previous score was empty`;
-      const who = conflict.previous.updatedByName ? ` (${conflict.previous.updatedByName})` : "";
-      return `Hole ${holeNumber} · previous score was ${conflict.previous.strokes}${who}`;
+      const name = names[conflict.slot] || "Player";
+      const was = conflict.previous ? String(conflict.previous.strokes) : "empty";
+      const now = strokes[String(conflict.slot)];
+      const nowLabel = typeof now === "number" ? String(now) : "a new score";
+      return `${name} · hole ${holeNumber} was ${was} on another phone, now ${nowLabel}`;
     })
     .join(". ");
 }

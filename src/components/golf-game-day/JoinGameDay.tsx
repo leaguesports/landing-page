@@ -327,8 +327,8 @@ export function JoinGameDay({
     const seatedPlayers = seatedCard?.players ?? [];
     const openSpots = seatedCard?.openSlots ?? 0;
     return (
-      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
-        <div className="flex-1 px-5 pb-4 pt-5">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+        <div className="flex-1 px-5 pt-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
             You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
           </p>
@@ -412,7 +412,8 @@ export function JoinGameDay({
           ) : null}
 
         </div>
-        <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-30">
+          <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-5 py-3">
           {seatedCard ? (
             <a
               href={gameDayBoardPath(preview.id)}
@@ -426,6 +427,7 @@ export function JoinGameDay({
               Start card {nextCard}
             </PrimaryButton>
           )}
+          </div>
         </div>
       </div>
     );

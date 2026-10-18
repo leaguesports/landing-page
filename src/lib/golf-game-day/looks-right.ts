@@ -76,22 +76,19 @@ export function overlayQueuedLooksRight(
 }
 
 export type LooksRightPill = {
-  label: "Scorer" | "Looks right" | "Looks right?";
+  label: "Looks right" | "Looks right?";
   filled: boolean;
   interactive: boolean;
 };
 
-/** Pill copy comes from the card player, not from a local tick. */
+/** Ticked rows show Looks right. Your unticked row has no chip. Others show Looks right?. */
 export function looksRightPill(player: {
   looksRight: boolean;
-  isScorer: boolean;
   you: boolean;
-}): LooksRightPill {
-  if (player.isScorer) {
-    return { label: "Scorer", filled: false, interactive: false };
-  }
+}): LooksRightPill | null {
   if (player.looksRight) {
     return { label: "Looks right", filled: true, interactive: false };
   }
-  return { label: "Looks right?", filled: false, interactive: player.you };
+  if (player.you) return null;
+  return { label: "Looks right?", filled: false, interactive: false };
 }

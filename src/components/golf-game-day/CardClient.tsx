@@ -154,7 +154,15 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           );
           showCard(response.card, session?.playerId ?? storedOrganiser?.organiserPlayerId ?? null);
           if (response.reason !== "replay" && response.conflict) {
-            setNotice(conflictNotice(response.conflicts, latest.holeNumber));
+            const names = Object.fromEntries(
+              (cardRef.current?.players ?? []).map((player) => [player.slot, player.displayName]),
+            );
+            setNotice(
+              conflictNotice(response.conflicts, latest.holeNumber, {
+                strokes: latest.strokes,
+                names,
+              }),
+            );
           } else {
             setNotice(null);
           }
@@ -486,7 +494,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           const current = card;
           if (!session || !current) return;
           const player = current.players.find((item) => item.slot === slot);
-          if (!player || !player.you || player.playerId === current.scorer.playerId || player.looksRight) return;
+          if (!player || !player.you || player.looksRight) return;
           const optimistic = withLooksRight(current, player.playerId, true);
           setCard(optimistic);
           cacheCard(store, optimistic);

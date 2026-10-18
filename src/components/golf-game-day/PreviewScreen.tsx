@@ -145,7 +145,9 @@ export function PreviewScreen({ screen }: { screen: string }) {
         holesPlayed={18}
         par={current.par}
         strokeIndex={current.strokeIndex}
-        conflictNotice={current.number === 8 ? "Hole 8 · previous score was 5" : null}
+        conflictNotice={
+          current.number === 8 ? "Lerato · hole 8 was 5 on another phone, now 4" : null
+        }
         holes={HOLES.map((item) => ({
           number: item.number,
           sync: item.number <= 6 ? "saved" : item.number === 7 ? "offline" : "open",
@@ -154,11 +156,15 @@ export function PreviewScreen({ screen }: { screen: string }) {
           slot: player.slot,
           name: player.name,
           handicap: player.slot === 1 ? "hcp 6" : null,
-          strokes: player.slot === 1 ? strokes : player.strokes,
+          strokes:
+            player.slot === 1 ? strokes : current.number === 8 && player.slot === 2 ? 4 : player.strokes,
           dots: player.dots,
           total: player.total,
           toPar: player.toPar,
-          relation: scoreRelation(player.slot === 1 ? strokes : player.strokes, current.par),
+          relation: scoreRelation(
+            player.slot === 1 ? strokes : current.number === 8 && player.slot === 2 ? 4 : player.strokes,
+            current.par,
+          ),
           shotChip: shotChipLabel(player.dots),
           changedBy: current.number === 8 && player.slot === 2 ? "changed by Mike" : null,
         }))}

@@ -83,7 +83,7 @@ export function ScoreEntry({
   const waitingLine = lines.find((line) => line.includes("waiting"));
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden pb-[6.75rem]">
       <div className="flex h-12 items-center gap-1 px-2">
         <Link
           href={boardHref}
@@ -181,12 +181,12 @@ export function ScoreEntry({
               ) : null}
             </div>
           ) : null}
+          {conflictNotice ? (
+            <p role="status" className="mt-2 text-xs font-semibold text-zinc-950">
+              {conflictNotice}
+            </p>
+          ) : null}
         </div>
-        {conflictNotice ? (
-          <p role="status" className="mt-2 px-1 text-xs font-medium text-zinc-600">
-            {conflictNotice}
-          </p>
-        ) : null}
 
         <div className="mt-2">
           {players.map((player) => (
@@ -251,7 +251,8 @@ export function ScoreEntry({
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 z-30">
+        <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-4 py-3">
         <button
           type="button"
           disabled={!canScore}
@@ -261,6 +262,7 @@ export function ScoreEntry({
           {last ? `Save hole ${holeNumber} · review` : `Save hole ${holeNumber} · next`}
           {last ? null : <ChevronRight className="h-5 w-5" aria-hidden />}
         </button>
+        </div>
       </div>
     </div>
   );
