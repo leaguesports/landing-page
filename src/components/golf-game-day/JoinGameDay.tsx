@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { ArrowLeftRight, List, Plus, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { GameDayPreview, JoinResult } from "@/types/golf-game-day";
 import type { GolfCourseCms } from "@/types/golf-round";
@@ -34,6 +34,13 @@ import {
   teeDotClass,
   textFieldClass,
 } from "./ui";
+
+const JOIN_TILES = ["Brandon", "Sipho", "Jaco", "Thandi", "Mike", "Lerato", "Pieter", "Kabelo", "Nadia"];
+
+function joinTileOrder(name: string): number {
+  const index = JOIN_TILES.indexOf(name);
+  return index === -1 ? JOIN_TILES.length : index;
+}
 
 type JoinGameDayProps = {
   code: string;
@@ -339,83 +346,131 @@ export function JoinGameDay({
     const seatedPlayers = seatedCard?.players ?? [];
     const openSpots = seatedCard?.openSlots ?? 0;
     return (
-      <GameDayColumn>
-        <ScreenTitle>
-          You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
-        </ScreenTitle>
-        {courseSaved ? (
-          <>
-            <p className="mt-4 text-sm font-semibold text-green-800">✓ Course & card saved to this phone</p>
-            <p className="mt-1 text-sm text-zinc-600">
-              Works without signal. Scores sync when you&apos;re back in coverage.
-            </p>
-          </>
-        ) : (
-          <p className="mt-4 text-sm text-zinc-500">
-            Still fetching the course. You can score once it&apos;s saved.
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
+        <div className="flex-1 px-5 pb-4 pt-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
+            You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
           </p>
-        )}
+          <h1 className="mt-2 font-display text-[42px] leading-none tracking-wide text-zinc-950">
+            Hi {session.displayName}
+          </h1>
 
-        {seatedCard ? (
-          <section className="mt-6" aria-label={`Card ${seatedCard.number}`}>
-            {seatedCard.teeTime ? (
-              <p className="text-sm font-semibold text-zinc-950">
-                Card {seatedCard.number} tee time {seatedCard.teeTime}
-              </p>
-            ) : null}
-            <ul className="mt-3 divide-y divide-zinc-200">
-              {seatedPlayers.map((player) => {
-                const you = player.displayName.toLowerCase() === session.displayName.toLowerCase();
-                return (
-                  <li key={`${player.displayName}-${player.slot}`} className="py-3">
-                    <p className="font-semibold text-zinc-950">
-                      {player.displayName}
-                      {you ? (
-                        <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
-                          You
+          {courseSaved ? (
+            <div className="relative mt-4 rounded-2xl border border-zinc-950 bg-[#dcfce7] px-4 py-3">
+              <span className="absolute -top-2.5 right-4 rounded-full border border-zinc-950 bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+                New
+              </span>
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-[#3dff8a]">
+                  <Smartphone className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-zinc-950">Course & card saved to this phone</p>
+                  <p className="mt-1 text-sm text-zinc-800">
+                    Works without signal. Scores sync when you&apos;re back in coverage.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-500">Still fetching the course. You can score once it&apos;s saved.</p>
+          )}
+
+          {seatedCard ? (
+            <section className="mt-4" aria-label={`Card ${seatedCard.number}`}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-base font-bold text-zinc-950">Card {seatedCard.number}</h2>
+                {seatedCard.teeTime ? (
+                  <p className="text-sm text-zinc-700">tee time {seatedCard.teeTime}</p>
+                ) : null}
+              </div>
+              <ul className="mt-3 overflow-hidden rounded-2xl border border-zinc-300">
+                {seatedPlayers.map((player) => {
+                  const you = player.displayName.toLowerCase() === session.displayName.toLowerCase();
+                  const detail = [
+                    player.handicapLabel ??
+                      (you && session.handicapIndex != null ? `hcp ${session.handicapIndex}` : "no hcp"),
+                    player.teeName || session.teeName || "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <li
+                      key={`${player.displayName}-${player.slot}`}
+                      className="flex min-h-[58px] items-center gap-3 border-b border-zinc-200 px-4 py-1.5 last:border-b-0"
+                    >
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-sm font-semibold text-white">
+                        {player.displayName.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold text-zinc-950">{player.displayName}</span>
+                        <span className="mt-0.5 block text-sm text-zinc-600">{detail}</span>
+                      </span>
+                      {player.scoring || you ? (
+                        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                          {player.scoring ? (
+                            <span className="rounded-full bg-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+                              Scoring
+                            </span>
+                          ) : null}
+                          {you ? (
+                            <span className="rounded-full border border-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-zinc-950">
+                              You
+                            </span>
+                          ) : null}
                         </span>
                       ) : null}
-                    </p>
-                    <p className="mt-0.5 text-sm text-zinc-500">
-                      {player.handicapLabel ?? (you && session.handicapIndex != null ? `hcp ${session.handicapIndex}` : "no hcp")}
-                      {player.teeName || session.teeName ? ` · ${player.teeName || session.teeName}` : ""}
-                    </p>
+                    </li>
+                  );
+                })}
+                {openSpots > 0 ? (
+                  <li className="flex min-h-[52px] items-center gap-2 px-4 text-base font-bold text-zinc-950">
+                    <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
+                    {openSpots} open spot
                   </li>
-                );
-              })}
-              {Array.from({ length: openSpots }, (_, index) => (
-                <li key={`open-${index}`} className="py-3 text-sm font-semibold text-zinc-500">
-                  + open spot
-                </li>
-              ))}
-            </ul>
-            {scorer ? (
-              <button
-                type="button"
-                onClick={() => onTakeOver(seatedCard.id)}
-                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-zinc-950"
-              >
-                {scorer.displayName} is scoring
-                <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
-                  New
-                </span>
-              </button>
-            ) : null}
-          </section>
-        ) : null}
+                ) : null}
+              </ul>
+              {scorer ? (
+                <div className="mt-3 rounded-2xl bg-zinc-100 px-4 py-3">
+                  <div className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-2">
+                    <div className="col-start-2 flex items-baseline gap-2">
+                      <p className="font-semibold text-zinc-950">{scorer.displayName} is scoring</p>
+                      <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+                        New
+                      </span>
+                    </div>
+                    <ArrowLeftRight className="col-start-1 row-start-2 mt-2 h-5 w-5 text-zinc-950" aria-hidden />
+                    <p className="col-start-2 row-start-2 mt-2 text-sm text-zinc-800">
+                      Battery low or swapping? Anyone on the card can take over. Scores so far stay.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onTakeOver(seatedCard.id)}
+                    disabled={pending}
+                    className="mt-3 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-base font-semibold text-white disabled:opacity-40"
+                  >
+                    Take over scoring
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
-        <p className="mt-4 text-sm text-zinc-500">
-          Battery low or swapping? Anyone on the card can take over. Scores so far stay.
-        </p>
-        {error ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
 
-        <div className="mt-6">
+        </div>
+        <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
           {seatedCard ? (
-            <a href={gameDayBoardPath(preview.id)} className="inline-flex min-h-16 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-base font-semibold text-white">
+            <a
+              href={gameDayBoardPath(preview.id)}
+              className="inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950"
+            >
+              <List className="h-5 w-5" aria-hidden />
               Open live leaderboard
             </a>
           ) : (
@@ -424,7 +479,7 @@ export function JoinGameDay({
             </PrimaryButton>
           )}
         </div>
-      </GameDayColumn>
+      </div>
     );
   }
 
@@ -438,14 +493,16 @@ export function JoinGameDay({
         </p>
 
         <fieldset className="mt-6">
-          <legend className="flex items-center gap-2">
+          <legend className="flex w-full items-center justify-between gap-2">
             <span className="text-sm font-semibold text-zinc-950">Tap your name</span>
             <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
               New
             </span>
           </legend>
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {preview.players.map((player) => {
+            {[...preview.players]
+              .sort((a, b) => joinTileOrder(a.displayName) - joinTileOrder(b.displayName))
+              .map((player) => {
               const selected = playerId === player.id;
               const status = selected && !player.taken
                 ? "That's me"
@@ -461,13 +518,13 @@ export function JoinGameDay({
                   onClick={() => setPlayerId(player.id)}
                   className={
                     player.taken
-                      ? "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl bg-zinc-200 px-1 py-2 text-center text-zinc-600"
+                      ? "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl border border-zinc-300 bg-zinc-100 px-1 py-2 text-center text-zinc-600"
                       : selected
                         ? "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl bg-zinc-950 px-1 py-2 text-center text-white"
                         : "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl border border-zinc-300 bg-white px-1 py-2 text-center text-zinc-950"
                   }
                 >
-                  <span className="block text-sm font-semibold">{player.displayName}</span>
+                  <span className="block text-sm font-bold">{player.displayName}</span>
                   <span className={`mt-1 block text-[11px] ${selected && !player.taken ? "font-semibold text-[#3dff8a]" : "text-zinc-500"}`}>
                     {status}
                   </span>
@@ -481,11 +538,12 @@ export function JoinGameDay({
             onClick={() => setPlayerId("new")}
             className={
               playerId === "new"
-                ? "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl bg-zinc-950 px-3 text-sm font-semibold text-white"
-                : "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-400 bg-white px-3 text-sm font-semibold text-zinc-950"
+                ? "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl bg-zinc-950 px-3 text-base font-semibold text-white"
+                : "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-950 bg-white px-3 text-base font-semibold text-zinc-950"
             }
           >
-            + Add me · not on the list
+            <span className="text-base font-bold">+ Add me</span>
+            <span className="font-normal"> · not on the list</span>
           </button>
           {playerId === "new" ? (
             <input
@@ -499,14 +557,14 @@ export function JoinGameDay({
         </fieldset>
 
         <label className="mt-5 flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-zinc-950">Handicap optional</span>
+          <span className="text-base font-bold text-zinc-950">Handicap optional</span>
           <input
             value={handicap}
             onChange={(event) => setHandicap(event.target.value)}
             inputMode="decimal"
             placeholder="6"
             aria-label="Handicap"
-            className="w-16 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-center text-sm font-semibold text-zinc-950"
+            className="h-14 w-24 rounded-2xl border border-zinc-950 bg-white px-3 text-center text-xl font-bold text-zinc-950"
           />
         </label>
 
@@ -558,8 +616,6 @@ export function JoinGameDay({
                 !card.players.some(
                   (player) => player.displayName.toLowerCase() === selectedName.toLowerCase(),
                 );
-              if (joining) names.push("+ you");
-              const members = names.join(", ");
               const open = Math.max(card.openSlots, 4 - card.players.length);
               return (
                 <button
@@ -577,23 +633,28 @@ export function JoinGameDay({
                 >
                   <span className="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span className="inline-flex items-center gap-2">
-                      <span
-                        className={
-                          selected
-                            ? "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-950"
-                            : "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-400"
-                        }
-                        aria-hidden
-                      >
-                        {selected ? <span className="h-2.5 w-2.5 rounded-full bg-zinc-950" /> : null}
-                      </span>
+                      {card.full ? null : (
+                        <span
+                          className={
+                            selected
+                              ? "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-950"
+                              : "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-400"
+                          }
+                          aria-hidden
+                        >
+                          {selected ? <span className="h-2.5 w-2.5 rounded-full bg-zinc-950" /> : null}
+                        </span>
+                      )}
                       Card {card.number}
                     </span>
                     <span className="text-xs font-semibold text-zinc-600">
                       {card.full ? `Full · ${seats}/4` : `${seats}/4 · ${open} open`}
                     </span>
                   </span>
-                  <span className="mt-1 block pl-7 text-sm text-zinc-600">{members}</span>
+                  <span className={`mt-1 block text-sm text-zinc-600 ${card.full ? "" : "pl-7"}`}>
+                    {names.join(", ")}
+                    {joining ? <span className="font-bold text-zinc-950">, + you</span> : null}
+                  </span>
                 </button>
               );
             })}

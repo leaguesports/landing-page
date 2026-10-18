@@ -16,6 +16,9 @@ import { useGameDayAction } from "./GameDayChrome";
 
 const TABS: BoardTab[] = ["gross", "net", "stableford"];
 
+/** Pos, move, player, score, thru. Move has no header label. */
+const PHONE_GRID = "grid grid-cols-[2.25rem_2.5rem_minmax(0,1fr)_2.2rem_2rem] gap-1";
+
 type LeaderboardViewProps = {
   board: GameDayLeaderboard;
   tab: BoardTab;
@@ -60,13 +63,27 @@ function TabBar({
   tab,
   onTab,
   label,
+  large = false,
+  boxed = false,
 }: {
   tab: BoardTab;
   onTab: (tab: BoardTab) => void;
   label: string;
+  large?: boolean;
+  boxed?: boolean;
 }) {
+  const height = large ? "h-[38px] text-[15px]" : "min-h-10 text-sm";
+  const track = large
+    ? "flex w-full gap-0 pr-1.5"
+    : boxed
+      ? "flex gap-1 rounded-full border border-zinc-300 bg-white p-1"
+      : "flex gap-1 rounded-full bg-zinc-100 p-1";
   return (
-    <div className="flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label={label}>
+    <div
+      className={track}
+      role="tablist"
+      aria-label={label}
+    >
       {TABS.map((item) => {
         const selected = item === tab;
         return (
@@ -78,8 +95,8 @@ function TabBar({
             onClick={() => onTab(item)}
             className={
               selected
-                ? "min-h-10 flex-1 rounded-full bg-zinc-950 text-sm font-semibold capitalize text-white"
-                : "min-h-10 flex-1 rounded-full text-sm font-semibold capitalize text-zinc-600"
+                ? `${height} flex-1 rounded-full bg-zinc-950 font-semibold capitalize text-white`
+                : `${height} flex-1 rounded-full font-semibold capitalize ${large || boxed ? "text-zinc-800" : "text-zinc-600"}`
             }
           >
             {item}
@@ -156,8 +173,9 @@ export function LeaderboardView({
               <TabBar tab={tab} onTab={onTab} label="Scoring" />
             </div>
             <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
-              <div className="grid grid-cols-[4.6rem_minmax(0,1fr)_2.4rem_2rem] gap-1 bg-zinc-100 px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+              <div className={`${PHONE_GRID} bg-zinc-100 px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500`}>
                 <span>Pos</span>
+                <span className="sr-only">Move</span>
                 <span>Player</span>
                 <span className="text-right">{tab === "stableford" ? "Pts" : "To par"}</span>
                 <span className="text-right">Thru</span>
@@ -167,7 +185,7 @@ export function LeaderboardView({
                   <li
                     key={row.playerId}
                     ref={bind(row.playerId)}
-                    className={`relative grid grid-cols-[4.6rem_minmax(0,1fr)_2.4rem_2rem] items-center gap-1 border-b border-zinc-200 px-2 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                    className={`relative ${PHONE_GRID} items-center border-b border-zinc-200 px-2 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
                   >
                     {row.positionNumber === 1 ? (
                       <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden />
@@ -190,40 +208,53 @@ export function LeaderboardView({
         )}
       </div>
 
-      <div className={`mx-auto w-full px-6 py-6 ${desktopClass}`}>
-        <div className="flex items-end justify-between gap-6">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
+      <div className={`mx-auto w-full px-10 py-5 ${desktopClass}`}>
+        <div className="flex items-start justify-between gap-7">
+          <div className="min-w-0 pt-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Live leaderboard · {scoringName(board.format)} · {board.venueName}
             </p>
-            <h1 className="mt-1 font-display text-[56px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-3 font-display text-[60px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
-          <div className="flex shrink-0 items-center gap-3 pb-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
-              <span
-                className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`}
-                aria-hidden
-              />
-              {board.status === "final" ? "Final" : "Live"}
-            </span>
-            {updated ? <span className="text-sm text-zinc-500">Updated {updated}</span> : null}
+          <div className="flex w-[396px] shrink-0 flex-col gap-5">
+            <div className="flex items-center justify-end gap-3.5">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-950 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                <span
+                  className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`}
+                  aria-hidden
+                />
+                {board.status === "final" ? "Final" : "Live"}
+              </span>
+              {updated ? <span className="text-[15px] font-medium text-zinc-800">Updated {updated}</span> : null}
+            </div>
+            <TabBar tab={tab} onTab={onTab} label="Scoring" large />
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-[minmax(0,1fr)_320px] items-start gap-5">
-          <div className="overflow-hidden rounded-2xl border border-zinc-300">
-            <table className="w-full border-collapse text-left">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-7">
+          <div className="overflow-hidden rounded-xl border border-zinc-300">
+            <table className="w-full table-fixed border-collapse text-left">
               <caption className="sr-only">Live leaderboard</caption>
+              <colgroup>
+                <col className="w-[10%]" />
+                <col className="w-[6.4%]" />
+                <col className="w-[23%]" />
+                <col className="w-[14.5%]" />
+                <col className="w-[10%]" />
+                <col className="w-[11%]" />
+                <col className="w-[11%]" />
+                <col className="w-[14.1%]" />
+              </colgroup>
               <thead>
-                <tr className="border-b border-zinc-200 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                  <th className="py-3 pl-4 pr-2 font-semibold">Pos</th>
-                  <th className="px-2 py-3 font-semibold">Move</th>
-                  <th className="px-2 py-3 font-semibold">Player</th>
-                  <th className="px-2 py-3 font-semibold">Card</th>
-                  <th className="px-2 py-3 text-right font-semibold">Thru</th>
-                  <th className="px-2 py-3 text-right font-semibold">Gross</th>
-                  <th className="px-2 py-3 text-right font-semibold">Net</th>
-                  <th className="py-3 pl-2 pr-4 text-right font-semibold">Pts</th>
+                <tr className="h-10 border-b border-zinc-200 bg-zinc-100 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                  <th className="pl-8 pr-2 text-left font-semibold">Pos</th>
+                  <th className="px-2 text-left font-semibold">Move</th>
+                  <th className="px-2 text-left font-semibold">Player</th>
+                  <th className="px-2 text-left font-semibold">Card</th>
+                  <th className="px-2 text-right font-semibold">Thru</th>
+                  <th className="px-2 text-right font-semibold">Gross</th>
+                  <th className="px-2 text-right font-semibold">Net</th>
+                  <th className="pl-2 pr-6 text-right font-semibold">Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,13 +266,13 @@ export function LeaderboardView({
           </div>
 
           <aside className="min-w-0" aria-label="Live feed">
-            <TabBar tab={tab} onTab={onTab} label="Scoring" />
-            <FeedBlock board={board} />
+            <FeedBlock board={board} large />
           </aside>
         </div>
 
         <footer className="mt-4 flex items-center justify-between gap-4 text-sm text-zinc-500">
-          <p>
+          <p className="flex items-center gap-2">
+            <Flag className="h-4 w-4 shrink-0" aria-hidden />
             {board.countback
               ? `Ties split on countback: ${board.countback} (applied at the finish)`
               : "Ties split on countback at the finish"}
@@ -262,24 +293,26 @@ function DesktopRow({
 }) {
   const leader = row.positionNumber === 1;
   return (
-    <tr ref={bind} className={leader ? "bg-[#e9fff1]" : "bg-white"}>
-      <td className="relative border-b border-zinc-200 py-2.5 pl-4 pr-2 font-display text-4xl leading-none tracking-wide text-zinc-950">
-        {leader ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
+    <tr ref={bind} className={`h-[50px] ${leader ? "bg-[#e9fff1]" : "bg-white"}`}>
+      <td className="relative border-b border-zinc-200 pl-8 pr-2 font-display text-[32px] leading-none tracking-wide text-zinc-950">
+        {leader ? <span className="absolute inset-y-0 left-0 w-[5px] bg-zinc-950" aria-hidden /> : null}
         {row.position ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2.5">
+      <td className="border-b border-zinc-200 px-2">
         <MovePill move={row.move} />
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2.5 font-semibold text-zinc-950">{row.displayName}</td>
-      <td className="border-b border-zinc-200 px-2 py-2.5 tabular-nums text-zinc-700">{row.cardNumber}</td>
-      <td className="border-b border-zinc-200 px-2 py-2.5 text-right tabular-nums text-zinc-700">{row.thru}</td>
-      <td className="border-b border-zinc-200 px-2 py-2.5 text-right tabular-nums text-zinc-950">
+      <td className="border-b border-zinc-200 px-2 text-[15px] font-bold text-zinc-950">{row.displayName}</td>
+      <td className="border-b border-zinc-200 px-2 text-[15px] whitespace-nowrap text-zinc-700">
+        Card {row.cardNumber}
+      </td>
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-700">{row.thru}</td>
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-950">
         {row.gross ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2.5 text-right tabular-nums text-zinc-950">
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-950">
         {row.net ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 py-2.5 pl-2 pr-4 text-right font-display text-4xl leading-none tracking-wide text-zinc-950">
+      <td className="border-b border-zinc-200 pl-2 pr-6 text-right font-display text-[36px] leading-none tracking-wide text-zinc-950">
         {row.stableford ?? "–"}
       </td>
     </tr>
@@ -288,8 +321,8 @@ function DesktopRow({
 
 function MovePill({ move, compact = false }: { move: number | null | undefined; compact?: boolean }) {
   if (move == null || move === 0) return null;
-  const size = compact ? "px-1 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs";
   if (move > 0) {
+    const size = compact ? "px-1 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs";
     return (
       <span className={`inline-flex items-center rounded-full bg-[#3dff8a] font-semibold text-zinc-950 ${size}`}>
         ▲{move}
@@ -297,9 +330,7 @@ function MovePill({ move, compact = false }: { move: number | null | undefined; 
     );
   }
   return (
-    <span className={`inline-flex items-center rounded-full bg-red-100 font-semibold text-red-700 ${size}`}>
-      ▼{Math.abs(move)}
-    </span>
+    <span className={`font-semibold text-red-700 ${compact ? "text-[11px]" : "text-xs"}`}>▼{Math.abs(move)}</span>
   );
 }
 
@@ -315,12 +346,12 @@ function MobileRow({ row, tab }: { row: RankingRow; tab: BoardTab }) {
         : signedScore(netToPar(row));
   return (
     <>
-      <span className="flex min-w-0 items-center gap-1">
-        <span className="font-display text-2xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+      <span className="font-display text-2xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+      <span className="flex items-center">
         <MovePill move={row.move} compact />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-zinc-950">
+        <span className="block truncate text-sm font-bold text-zinc-950">
           {row.displayName}
           {row.you ? (
             <span className="ml-1.5 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -342,16 +373,19 @@ function FeedBlock({
   board,
   showCards = true,
   hideThru = false,
+  large = false,
 }: {
   board: GameDayLeaderboard;
   showCards?: boolean;
   hideThru?: boolean;
+  large?: boolean;
 }) {
   const feed = hideThru ? board.feed.filter((item) => item.type !== "thru") : board.feed;
+  const copy = large ? "text-[15px]" : "text-sm";
   return (
     <>
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
+      <div className={`flex items-center justify-between gap-2 ${large ? "" : "mt-4"}`}>
+        <h2 className={`inline-flex items-center gap-2 font-semibold text-zinc-950 ${large ? "text-base" : "text-sm"}`}>
           Live feed
           <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
             New
@@ -359,25 +393,36 @@ function FeedBlock({
         </h2>
         <p className="text-xs text-zinc-500">newest first</p>
       </div>
-      <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
+      <ul className={`overflow-hidden rounded-2xl border border-zinc-300 ${large ? "mt-2.5" : "mt-2"}`}>
         {feed.length === 0 ? (
           <li className="px-3 py-3 text-sm text-zinc-500">Scores will show up here.</li>
         ) : (
-          feed.map((item) => <FeedRow key={item.id} item={item} />)
+          feed.map((item) => <FeedRow key={item.id} item={item} large={large} />)
         )}
       </ul>
       {showCards && board.cards.length > 0 ? (
-        <ul className="mt-4 overflow-hidden rounded-2xl border border-zinc-300" aria-label="Card sync">
+        <ul
+          className={
+            large
+              ? "mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 py-2.5"
+              : "mt-4 overflow-hidden rounded-2xl border border-zinc-300"
+          }
+          aria-label="Card sync"
+        >
           {board.cards.map((card) => (
             <li
               key={card.id}
-              className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0"
+              className={
+                large
+                  ? "flex h-[38px] items-center gap-3 px-4"
+                  : "flex items-center gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0"
+              }
             >
-              <span className="rounded-full bg-zinc-950 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+              <span className="rounded-full bg-zinc-950 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                 Card {card.number}
               </span>
-              <span className="text-sm tabular-nums text-zinc-700">Thru {card.thru}</span>
-              <span className="text-sm font-semibold text-green-800">
+              <span className={`tabular-nums text-zinc-700 ${copy}`}>Thru {card.thru}</span>
+              <span className={`ml-auto font-semibold text-green-800 ${copy}`}>
                 {card.syncedAt ? `✓ synced ${johannesburgClock(card.syncedAt)}` : "Waiting"}
               </span>
             </li>
@@ -388,20 +433,37 @@ function FeedBlock({
   );
 }
 
-function FeedRow({ item }: { item: GameDayFeedItem }) {
+function FeedMessage({ item }: { item: GameDayFeedItem }) {
+  const name = item.playerName ?? item.leaderName ?? null;
+  if (!name) return item.message;
+  const at = item.message.indexOf(name);
+  if (at < 0) return item.message;
+  return (
+    <>
+      {item.message.slice(0, at)}
+      <span className="font-bold text-zinc-950">{name}</span>
+      {item.message.slice(at + name.length)}
+    </>
+  );
+}
+
+function FeedRow({ item, large = false }: { item: GameDayFeedItem; large?: boolean }) {
   const lead = item.type === "lead_change";
   return (
     <li
-      className={`relative flex items-start gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
+      className={`relative flex gap-3 border-b border-zinc-200 last:border-b-0 ${large ? "h-[50px] items-center px-4" : "items-start px-3 py-2.5"} ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
     >
       {lead ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
-      <FeedMark item={item} />
-      <p className={`min-w-0 flex-1 text-sm leading-snug ${lead ? "font-semibold text-zinc-950" : "text-zinc-800"}`}>
-        {item.message}
-        <time className="ml-2 whitespace-nowrap text-xs font-normal tabular-nums text-zinc-500" dateTime={item.at}>
-          {johannesburgClock(item.at)}
-        </time>
+      <FeedMark item={item} large={large} />
+      <p className={`min-w-0 flex-1 leading-snug ${large ? "text-[15px]" : "text-sm"} ${lead ? "font-medium text-zinc-950" : "text-zinc-800"}`}>
+        <FeedMessage item={item} />
       </p>
+      <time
+        className={`shrink-0 text-right tabular-nums text-zinc-500 ${large ? "text-sm" : "text-xs"}`}
+        dateTime={item.at}
+      >
+        {johannesburgClock(item.at)}
+      </time>
     </li>
   );
 }
@@ -435,11 +497,11 @@ function SpectatorPhone({
       </div>
       <div className="px-4 pt-4">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-950 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
             <span className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`} aria-hidden />
             Live
           </span>
-          {updated ? <p className="text-sm text-zinc-500">Updated {updated} · refreshes itself</p> : null}
+          {updated ? <p className="text-sm font-medium text-zinc-950">Updated {updated} · refreshes itself</p> : null}
         </div>
         <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
           {scoringName(board.format)} · {players} players · {cards} cards
@@ -456,11 +518,11 @@ function SpectatorPhone({
         </section>
 
         <div className="mt-4">
-          <TabBar tab={tab} onTab={onTab} label="Scoring" />
+          <TabBar tab={tab} onTab={onTab} label="Scoring" boxed />
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
-          <div className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] gap-2 border-b border-zinc-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <div className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] gap-2 border-b border-zinc-200 bg-zinc-100 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             <span>Pos</span>
             <span>Player</span>
             <span className="text-right">{tab === "stableford" ? "Pts" : "To par"}</span>
@@ -473,11 +535,11 @@ function SpectatorPhone({
                 <li
                   key={row.playerId}
                   ref={bind(row.playerId)}
-                  className={`grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                  className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2.5 last:border-b-0"
                 >
-                  <span className="font-display text-3xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+                  <span className="font-display text-[22px] leading-none text-zinc-950">{row.position ?? "–"}</span>
                   <span className="min-w-0">
-                    <span className="block truncate font-semibold text-zinc-950">{row.displayName}</span>
+                    <span className="block truncate font-bold text-zinc-950">{row.displayName}</span>
                     <span className="block text-xs text-zinc-500">
                       Card {row.cardNumber} · {formatHandicap(row.handicapIndex) ?? "no hcp"}
                     </span>
@@ -511,31 +573,32 @@ function spectatorCell(tab: BoardTab, row: RankingRow): { text: string; under: b
   return { text: signedScore(value), under: (value ?? 0) < 0 };
 }
 
-function FeedMark({ item }: { item: GameDayFeedItem }) {
+function FeedMark({ item, large = false }: { item: GameDayFeedItem; large?: boolean }) {
+  const size = large ? "h-6 w-6" : "h-7 w-7";
   if (item.type === "lead_change") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white" aria-hidden>
-        <Star className="h-3.5 w-3.5 fill-current" />
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white`} aria-hidden>
+        <Star className={large ? "h-3 w-3 fill-current" : "h-3.5 w-3.5 fill-current"} />
       </span>
     );
   }
   if (item.type === "birdie") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-950">
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950`}>
         B
       </span>
     );
   }
   if (item.type === "thru") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-950">
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950`}>
         {item.holeNumber ?? "·"}
       </span>
     );
   }
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-950">
-      <Check className="h-3.5 w-3.5" aria-hidden />
+    <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-950`}>
+      <Check className={large ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
     </span>
   );
 }

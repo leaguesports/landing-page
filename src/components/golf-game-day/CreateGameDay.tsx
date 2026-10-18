@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Calendar, ChevronDown, ChevronLeft, Link2, MapPin } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, Link2, MapPin, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createGameDay, GameDayApiError } from "@/lib/golf-game-day/api";
@@ -24,7 +24,7 @@ import {
 
 function LinkBack() {
   return (
-    <Link href="/play/golf" className="mb-4 inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
+    <Link href="/play/golf" className="inline-flex h-12 items-center gap-0.5 text-sm font-semibold text-zinc-950">
       <ChevronLeft className="h-4 w-4" aria-hidden />
       Golf
     </Link>
@@ -149,22 +149,25 @@ export function CreateGameDay({
   }
 
   return (
-    <GameDayColumn>
-      <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
+      <div className="px-5">
         <LinkBack />
+      </div>
+      <div className="border-t border-zinc-200" />
+      <div className="flex-1 px-5 pb-6 pt-4">
         <Eyebrow>New game day</Eyebrow>
         <ScreenTitle>Set up game day</ScreenTitle>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-600">
+        <p className="mt-2 text-sm leading-relaxed text-zinc-700">
           Pick the course and day. You&apos;ll get a link for the group.
         </p>
 
-        <div className="mt-8">
+        <div className="mt-5">
           <p className="text-sm font-semibold text-zinc-950">Course</p>
-          <div className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-300 px-4 py-3">
+          <div className="mt-2 flex items-center gap-3 rounded-2xl border-2 border-zinc-950 px-4 py-3">
             <MapPin className="h-5 w-5 shrink-0 text-zinc-950" aria-hidden />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold text-zinc-950">{venue?.name ?? "Choose a course"}</span>
-              <span className="mt-0.5 block text-sm text-zinc-500">Bela-Bela · Limpopo</span>
+              <span className="mt-0.5 block text-sm font-medium text-zinc-800">Bela-Bela · Limpopo</span>
             </span>
             <label className="shrink-0 text-sm font-semibold text-zinc-950">
               Change
@@ -187,7 +190,7 @@ export function CreateGameDay({
 
         <label className="relative mt-6 block">
           <span className="text-sm font-semibold text-zinc-950">Date</span>
-          <span className="mt-2 flex min-h-14 items-center gap-3 rounded-2xl border border-zinc-300 bg-white px-4 text-base text-zinc-950">
+          <span className="mt-2 flex min-h-14 items-center gap-3 rounded-2xl border border-zinc-300 bg-white px-4 text-base font-semibold text-zinc-950">
             <Calendar className="h-5 w-5 shrink-0" aria-hidden />
             <span className="min-w-0 flex-1">{dateLabel}</span>
             <ChevronDown className="h-5 w-5 shrink-0" aria-hidden />
@@ -268,7 +271,7 @@ export function CreateGameDay({
             {players.map((name, index) => (
               <li
                 key={`${name}-${index}`}
-                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-950"
+                className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-zinc-300 px-3.5 text-sm font-semibold text-zinc-950"
               >
                 <span>{name}</span>
                 {index === 0 ? (
@@ -277,10 +280,10 @@ export function CreateGameDay({
                   <button
                     type="button"
                     aria-label={`Remove ${name}`}
-                    className="text-base leading-none text-zinc-500"
+                    className="inline-flex h-5 w-5 items-center justify-center text-zinc-950"
                     onClick={() => setPlayers((current) => current.filter((_, item) => item !== index))}
                   >
-                    ×
+                    <X className="h-4 w-4" aria-hidden />
                   </button>
                 )}
               </li>
@@ -303,7 +306,7 @@ export function CreateGameDay({
             <button
               type="button"
               onClick={addName}
-              className="shrink-0 rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white"
+              className="inline-flex h-11 min-w-[5.75rem] shrink-0 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white"
             >
               + Add
             </button>
@@ -315,7 +318,7 @@ export function CreateGameDay({
             <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" aria-hidden />
             <span>
               <span className="block text-sm font-semibold text-zinc-950">Add to weekend event</span>
-              <span className="mt-1 block text-sm text-zinc-500">Optional. Combine leaderboards across days.</span>
+              <span className="mt-1 block text-sm text-zinc-800">Optional. Combine leaderboards across days.</span>
             </span>
           </span>
           <button
@@ -338,13 +341,13 @@ export function CreateGameDay({
           </p>
         ) : null}
 
-        <div className="mt-8">
-          <PrimaryButton type="submit" disabled={pending || !venue}>
-            {pending ? "Creating…" : "Create game day"}
-          </PrimaryButton>
-        </div>
-      </form>
-    </GameDayColumn>
+      </div>
+      <div className="border-t border-zinc-200 px-5 py-3">
+        <PrimaryButton type="submit" disabled={pending || !venue}>
+          {pending ? "Creating…" : "Create game day"}
+        </PrimaryButton>
+      </div>
+    </form>
   );
 }
 
