@@ -224,7 +224,7 @@ export function GolfQuickStart({
               teeName: teeName.trim(),
               course,
               players,
-              ...teeRatings,
+              ...(teeRatings ?? {}),
             },
             toGolfRoundVenue(venue)!,
           ),

@@ -253,12 +253,21 @@ export function selectedCmsTee(
   );
 }
 
+/**
+ * Ratings for the named CMS tee.
+ * `null` means no tee is selected yet (unknown — not missing ratings).
+ * A chosen tee that lacks a course rating or slope still returns a ratings
+ * object with those fields null. A typed name that is not on the course is
+ * a chosen tee without ratings.
+ */
 export function teeRatingsFromCms(
   course: GolfCourseCms | null | undefined,
   teeName: string | null | undefined,
   holeParTotal?: number | null,
-): GolfTeeRatings {
+): GolfTeeRatings | null {
   const selected = selectedCmsTee(course, teeName);
+  if (!teeName?.trim()) return null;
+
   const fallbackPar =
     parseTeePar(selected?.par) ??
     parseTeePar(course?.parTotal) ??
@@ -277,6 +286,15 @@ export function teeRatingsFromCms(
     slopeRating: selected.slopeRating,
     teePar: fallbackPar,
   });
+}
+
+/** Null/omitted ratings mean no tee yet. A ratings object is a chosen tee. */
+function chosenTeeLacksCourseOrSlope(
+  ratings: GolfTeeRatings | null | undefined,
+): boolean {
+  if (ratings == null) return false;
+  const normalized = normalizeTeeRatings(ratings);
+  return normalized.courseRating == null || normalized.slopeRating == null;
 }
 
 export function playerHasPlayingHandicap(
@@ -328,6 +346,8 @@ export type GrossOnlyContext = {
 
 /**
  * Honest reasons the UI must stay gross-only. Never invent CR / slope / HI.
+ * Missing course/slope is only a reason after a tee is chosen and that tee
+ * lacks one of them. No tee yet is unknown, not missing.
  */
 export function golfGrossOnlyReasons(
   context: GrossOnlyContext,
@@ -341,7 +361,7 @@ export function golfGrossOnlyReasons(
   ) {
     reasons.push("missing-hi");
   }
-  if (!teeRatingsAreComplete(context.ratings)) {
+  if (chosenTeeLacksCourseOrSlope(context.ratings)) {
     reasons.push("missing-ratings");
   }
   if (

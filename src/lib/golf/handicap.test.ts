@@ -102,8 +102,17 @@ describe("tee ratings from CMS", () => {
     assert.equal(white?.courseRating, 71.2);
     assert.equal(white?.slopeRating, 129);
     assert.equal(teeRatingsAreComplete(teeRatingsFromCms(course, "White")), true);
-    assert.equal(teeRatingsAreComplete(teeRatingsFromCms(course, "Red")), false);
+    const red = teeRatingsFromCms(course, "Red");
+    assert.notEqual(red, null);
+    assert.equal(teeRatingsAreComplete(red), false);
     assert.equal(cmsTeeOptions(course).length, 2);
+  });
+
+  it("returns null when no tee is selected", () => {
+    assert.equal(teeRatingsFromCms(course, ""), null);
+    assert.equal(teeRatingsFromCms(course, "   "), null);
+    assert.equal(teeRatingsFromCms(course, null), null);
+    assert.equal(teeRatingsFromCms(course, undefined), null);
   });
 });
 
@@ -163,6 +172,101 @@ describe("gross-only banners", () => {
       GOLF_HANDICAP_UI_DISCLAIMER,
       "Estimated course handicap (WHS-style)",
     );
+  });
+
+  it("does not treat no tee as missing ratings", () => {
+    const course: GolfCourseCms = {
+      courseName: "Zebula",
+      parTotal: 72,
+      tees: [
+        {
+          name: "White",
+          color: "White",
+          courseRating: 72.1,
+          slopeRating: 133,
+          par: 72,
+        },
+      ],
+    };
+
+    const noTee = golfGrossOnlyReasons({
+      signedIn: true,
+      handicapIndex: 12.4,
+      ratings: teeRatingsFromCms(course, ""),
+    });
+    assert.equal(noTee.includes("missing-ratings"), false);
+    assert.equal(golfGrossOnlyBanner(noTee), null);
+
+    const guest = golfGrossOnlyReasons({
+      isGuest: true,
+      ratings: teeRatingsFromCms(course, ""),
+    });
+    assert.deepEqual(guest, ["guest"]);
+    assert.match(golfGrossOnlyBanner(guest) ?? "", /Guests play gross-only/i);
+    assert.equal(
+      /no course or slope rating/i.test(golfGrossOnlyBanner(guest) ?? ""),
+      false,
+    );
+
+    const noHi = golfGrossOnlyReasons({
+      signedIn: true,
+      handicapIndex: null,
+      ratings: teeRatingsFromCms(course, null),
+    });
+    assert.deepEqual(noHi, ["missing-hi"]);
+    assert.match(golfGrossOnlyBanner(noHi) ?? "", /No handicap index/i);
+    assert.equal(
+      /no course or slope rating/i.test(golfGrossOnlyBanner(noHi) ?? ""),
+      false,
+    );
+  });
+
+  it("stays quiet when the selected tee has course and slope ratings", () => {
+    const course: GolfCourseCms = {
+      courseName: "Woodhill",
+      parTotal: 72,
+      tees: [
+        {
+          name: "White",
+          color: "White",
+          courseRating: 71.8,
+          slopeRating: 128,
+          par: 72,
+        },
+      ],
+    };
+    const reasons = golfGrossOnlyReasons({
+      signedIn: true,
+      handicapIndex: 8.2,
+      ratings: teeRatingsFromCms(course, "White"),
+    });
+    assert.equal(reasons.includes("missing-ratings"), false);
+    assert.equal(golfGrossOnlyBanner(reasons), null);
+  });
+
+  it("banners when the selected tee is missing a course rating or slope", () => {
+    const course: GolfCourseCms = {
+      courseName: "Kyalami",
+      parTotal: 72,
+      tees: [
+        { name: "Red", color: "Red", par: 72 },
+        { name: "Blue", color: "Blue", courseRating: 70.4, par: 72 },
+        { name: "Gold", color: "Gold", slopeRating: 121, par: 72 },
+      ],
+    };
+
+    for (const teeName of ["Red", "Blue", "Gold"] as const) {
+      const reasons = golfGrossOnlyReasons({
+        signedIn: true,
+        handicapIndex: 12.4,
+        ratings: teeRatingsFromCms(course, teeName),
+      });
+      assert.equal(reasons.includes("missing-ratings"), true);
+      assert.match(
+        golfGrossOnlyBanner(reasons) ?? "",
+        /This tee has no course or slope rating — scoring is gross-only\./,
+      );
+    }
   });
 });
 
