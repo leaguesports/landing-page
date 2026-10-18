@@ -28,15 +28,16 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
   useGameDayAction("Sign in", "/login");
   const rows = board.rankings[tab];
   const winner = rows.find((row) => row.positionNumber === 1) ?? rows[0] ?? null;
+  const tiebreak = board.countbackApplied ? resultsTiebreakLine(rows, tab) : null;
+  const countbackWon = tiebreak != null && tab !== "stableford";
   const line = winner
     ? resultsWinnerLine({
         tab,
         row: winner,
         coursePar: GAME_DAY_COURSE_PAR,
-        countbackApplied: board.countbackApplied,
+        countbackApplied: countbackWon,
       })
     : "";
-  const tiebreak = board.countbackApplied ? resultsTiebreakLine(rows, tab) : null;
   const shareText = winner
     ? resultShareText({
         name: winner.displayName,

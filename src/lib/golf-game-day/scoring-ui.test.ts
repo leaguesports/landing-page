@@ -127,6 +127,14 @@ describe("game day scoring UI", () => {
       }),
       "Net 66 (−6) · won on countback",
     );
+    assert.equal(
+      resultsWinnerLine({
+        tab: "gross",
+        row: round,
+        countbackApplied: false,
+      }),
+      "Gross 70 (−2)",
+    );
   });
 
   it("follows the active tab for to-par and countback labels", () => {
