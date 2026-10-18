@@ -13,7 +13,6 @@ import {
   signedScore,
 } from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
-import { GameDayColumn } from "./ui";
 
 const TABS: BoardTab[] = ["gross", "net", "stableford"];
 
@@ -144,7 +143,7 @@ export function LeaderboardView({
             headline={shown.headline}
           />
         ) : (
-          <GameDayColumn wide>
+          <div className="mx-auto w-full max-w-[420px] px-4 pb-10 pt-6">
             <div className="flex items-end justify-between gap-3">
               <h1 className="font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
               {updated ? <p className="pb-1 text-xs text-zinc-500">Updated {updated}</p> : null}
@@ -178,7 +177,7 @@ export function LeaderboardView({
             <div className="mt-5">
               <FeedBlock board={board} showCards={false} hideThru />
             </div>
-          </GameDayColumn>
+          </div>
         )}
       </div>
 

@@ -32,7 +32,7 @@ import { ShareGameDay } from "./ShareGameDay";
 
 const HOLES = Array.from({ length: 18 }, (_, index) => ({
   number: index + 1,
-  par: [4, 5, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 5][index] ?? 4,
+  par: [4, 5, 4, 3, 4, 5, 4, 4, 4, 4, 4, 4, 3, 4, 5, 4, 3, 5][index] ?? 4,
   strokeIndex: index + 1 === 8 ? 9 : index + 1,
 }));
 

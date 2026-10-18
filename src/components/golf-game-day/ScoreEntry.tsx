@@ -80,23 +80,6 @@ export function ScoreEntry({
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
-      {banner ? (
-        <div className="flex items-center justify-between gap-3 bg-zinc-950 px-4 py-2.5 text-sm text-white">
-          <p>
-            {banner} is now scoring Card {cardNumber}
-            {takeoverDetail ? <span className="mt-0.5 block text-zinc-300">{takeoverDetail}</span> : null}
-          </p>
-          <button
-            type="button"
-            aria-label="Dismiss takeover"
-            onClick={() => setBanner(null)}
-            className="inline-flex h-8 w-8 items-center justify-center text-white"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
-        </div>
-      ) : null}
-
       <div className="flex h-12 items-center justify-between border-b border-zinc-200 px-3">
         <Link
           href={boardHref}
@@ -127,6 +110,23 @@ export function ScoreEntry({
           <Link href={boardHref} className="block py-2 text-sm font-semibold">
             Leaderboard
           </Link>
+        </div>
+      ) : null}
+
+      {banner ? (
+        <div className="flex items-center justify-between gap-3 bg-zinc-950 px-4 py-2.5 text-sm text-white">
+          <p>
+            {banner} is now scoring Card {cardNumber}
+            {takeoverDetail ? <span className="mt-0.5 block text-zinc-300">{takeoverDetail}</span> : null}
+          </p>
+          <button
+            type="button"
+            aria-label="Dismiss takeover"
+            onClick={() => setBanner(null)}
+            className="inline-flex h-8 w-8 items-center justify-center text-white"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       ) : null}
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Flag } from "lucide-react";
 import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { gameDayBoardPath, presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
 import {
@@ -116,7 +117,10 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       </div>
 
       {board.countback ? (
-        <p className="mt-4 text-sm text-zinc-500">Ties split on countback: {board.countback}</p>
+        <p className="mt-4 flex items-start gap-2 text-sm text-zinc-500">
+          <Flag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          Ties split on countback: {board.countback}
+        </p>
       ) : null}
 
       <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-6`}>
