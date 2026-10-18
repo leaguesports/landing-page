@@ -2,11 +2,14 @@ import Ably from "ably";
 import { NextResponse } from "next/server";
 import { getRailwayApiOrigin } from "@/lib/api-origin";
 import { parseFixtureChannel } from "@/lib/fixtures/slug";
+import { golfGameDayChannel, publishSportGrant } from "@/lib/realtime/token-policy";
 
 /**
  * Issues a short-lived Ably TokenRequest for authenticated (or guest) clients.
  *
- * - Sport match channels (`{sport}:*`) keep publish/subscribe for padel scoring.
+ * - Sport match channels (`{sport}:*`) keep publish/subscribe for allowlisted
+ *   scorecard sports (padel, golf, darts). Unknown sports are rejected.
+ * - Golf game day (`golf-gameday:{uuid}`) is subscribe/history only.
  * - Fixture social channels (`fixture:<slug>`) are subscribe/history only —
  *   server `publish.ts` uses the root key for desk writes. Slugs are allowlisted
  *   so Ably wildcards like `fixture:*` / `fixture:foo*` cannot be minted.
@@ -61,12 +64,28 @@ export async function GET(request: Request) {
     // Guests must not publish — clients apply BOARD_UPDATED / FEED_ITEM_ADDED
     // blindly, including ctaHref into <Link>.
     capabilities = ["subscribe", "history"];
+  } else if (sport === "golf-gameday") {
+    // PR #74: subscribe + history on golf-gameday:{uuid}. No publish, no wildcard.
+    const granted = golfGameDayChannel(searchParams.get("gameDayId"));
+    if (!granted.ok) {
+      return NextResponse.json({ error: "Invalid game day" }, { status: 400 });
+    }
+    channelPattern = granted.channelPattern;
+    capabilities = [...granted.capabilities];
   } else if (matchId) {
-    channelPattern = `${sport}:${matchId}`;
-    capabilities = ["publish", "subscribe", "presence", "history"];
+    const granted = publishSportGrant(sport, matchId);
+    if (!granted.ok) {
+      return NextResponse.json({ error: granted.error }, { status: granted.status });
+    }
+    channelPattern = granted.channelPattern;
+    capabilities = [...granted.capabilities];
   } else {
-    channelPattern = `${sport}:*`;
-    capabilities = ["publish", "subscribe", "presence", "history"];
+    const granted = publishSportGrant(sport, null);
+    if (!granted.ok) {
+      return NextResponse.json({ error: granted.error }, { status: granted.status });
+    }
+    channelPattern = granted.channelPattern;
+    capabilities = [...granted.capabilities];
   }
 
   const rest = new Ably.Rest({ key: apiKey });

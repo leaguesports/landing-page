@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { ChromeFrame } from "@/components/ChromeFrame";
 import { AppSessionProvider } from "@/components/providers/AppSessionProvider";
 import { Bebas_Neue, Outfit, Permanent_Marker } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -67,13 +68,9 @@ export default function RootLayout({
     >
       <body className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[var(--background)] text-[var(--foreground)] antialiased">
         <AppSessionProvider>
-          <Navigation />
-          {/*
-            Flex items default to min-width:auto, so a wide intrinsic child
-            (iOS datetime-local on padel/golf start) can expand the whole page.
-          */}
-          <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>
-          <Footer />
+          <ChromeFrame nav={<Navigation />} footer={<Footer />}>
+            {children}
+          </ChromeFrame>
         </AppSessionProvider>
       </body>
       {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
