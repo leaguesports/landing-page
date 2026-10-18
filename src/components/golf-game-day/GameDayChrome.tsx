@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "./desktop.css";
 import { Eye, List, Pencil } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark } from "@/components/BrandMark";
@@ -73,11 +74,11 @@ function ActionPill({ action }: { action: GameDayAction }) {
   );
 }
 
-export function GameDayChrome({ children }: { children: ReactNode }) {
+export function GameDayChrome({ children, nav }: { children: ReactNode; nav?: ReactNode }) {
   const [action, setAction] = useState<GameDayAction>(DEFAULT_ACTION);
   return (
     <GameDayActionContext.Provider value={setAction}>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0c0f0c]">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0c0f0c] lg:hidden">
         <div className="mx-auto flex h-16 w-full items-center justify-between gap-3 px-4 xl:px-6">
           <Link
             href="/"
@@ -101,6 +102,7 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+      {nav ? <div className="gd-desk-nav hidden lg:block">{nav}</div> : null}
       {children}
     </GameDayActionContext.Provider>
   );

@@ -13,6 +13,8 @@ import {
   presentGameDay,
   whatsAppShareUrl,
 } from "@/lib/golf-game-day/paths";
+import { DesktopShare } from "./DesktopShare";
+import { FIXTURE_DAY_ID } from "@/lib/golf-game-day/fixtures";
 import { useGameDayAction } from "./GameDayChrome";
 import { primaryLinkClass } from "./ui";
 
@@ -91,7 +93,9 @@ export function ShareGameDay({
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+    <>
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem] lg:hidden">
+      <div className="gd-phone">
       <div className="flex-1 px-5 pt-4">
         <div className="flex h-10 items-center justify-between">
           <Link href="/play/golf" className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
@@ -350,6 +354,18 @@ export function ShareGameDay({
           </Link>
         </div>
       </div>
+      </div>
     </div>
+    <DesktopShare
+      day={day}
+      copied={copied}
+      sample={day.id === FIXTURE_DAY_ID}
+      onCopy={(kind) => {
+        if (kind === "invite") void copy("invite", inviteUrl || invitePath);
+        if (kind === "watch") void copy("watch", watchUrl || watchPath);
+        if (kind === "organiser") void copy("organiser", organiserUrl || organiserPath);
+      }}
+    />
+    </>
   );
 }

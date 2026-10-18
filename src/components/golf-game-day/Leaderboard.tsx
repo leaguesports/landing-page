@@ -12,6 +12,7 @@ import {
   netToPar,
   signedScore,
 } from "@/lib/golf-game-day/scoring-ui";
+import { DesktopSpectator, DesktopTv } from "./DesktopBoard";
 import { useGameDayAction } from "./GameDayChrome";
 
 const TABS: BoardTab[] = ["gross", "net", "stableford"];
@@ -141,8 +142,8 @@ export function LeaderboardView({
     desktopChrome || watching ? "watch" : "default",
     desktopChrome,
   );
-  const phoneClass = layout === "desktop" ? "hidden" : layout === "responsive" ? "xl:hidden" : "";
-  const desktopClass = layout === "phone" ? "hidden" : layout === "responsive" ? "hidden xl:block" : "";
+  const phoneClass = layout === "desktop" ? "hidden" : layout === "responsive" ? "lg:hidden" : "";
+  const desktopClass = layout === "desktop" ? "lg:hidden" : "hidden";
 
   return (
     <>
@@ -280,6 +281,11 @@ export function LeaderboardView({
           {board.watchLabel ? <p className="shrink-0">Watch: {board.watchLabel}</p> : null}
         </footer>
       </div>
+      {layout === "phone" ? null : watching && layout !== "desktop" ? (
+        <DesktopSpectator board={board} tab={tab} onTab={onTab} blink={blink} />
+      ) : (
+        <DesktopTv board={board} tab={tab} onTab={onTab} blink={blink} />
+      )}
     </>
   );
 }
