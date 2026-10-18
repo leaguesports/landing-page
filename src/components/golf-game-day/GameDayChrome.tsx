@@ -33,8 +33,7 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
           >
             <BrandMark className="h-7 w-7 shrink-0" size={28} priority />
             <span className="truncate">
-              LEAGUE
-              <span className="text-[#C6FF00]">SPORTS</span>
+              LEAGUE <span className="text-[#C6FF00]">SPORTS</span>
             </span>
           </Link>
           <Link
