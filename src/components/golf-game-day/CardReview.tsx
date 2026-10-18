@@ -52,10 +52,10 @@ function ScoreCell({
   const mark = strokes != null && par != null ? scoreMark(strokes, par) : "plain";
   const className =
     mark === "birdie"
-      ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-950 text-sm font-semibold tabular-nums text-zinc-950"
+      ? "inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-950 text-sm font-bold tabular-nums text-zinc-950"
       : mark === "double"
-        ? "inline-flex h-7 w-7 items-center justify-center bg-zinc-200 text-sm font-semibold tabular-nums text-zinc-950"
-        : "inline-flex h-7 w-7 items-center justify-center text-sm font-semibold tabular-nums text-zinc-950";
+        ? "inline-flex h-6 w-6 items-center justify-center bg-zinc-200 text-sm font-bold tabular-nums text-zinc-950"
+        : "inline-flex h-6 w-6 items-center justify-center text-sm font-bold tabular-nums text-zinc-950";
   const label = strokes == null ? "–" : String(strokes);
   if (!onEdit) return <span className={className}>{label}</span>;
   return (
@@ -84,31 +84,31 @@ function NineTable({
     <section className="mt-5" aria-label={title}>
       <table className="w-full border-collapse text-center">
         <thead>
-          <tr className="bg-zinc-100 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
-            <th className="bg-zinc-100 py-1.5 pr-1 text-left font-semibold">{title}</th>
+          <tr className="bg-zinc-100 text-[10px] font-bold tracking-[0.08em] text-zinc-800">
+            <th className="bg-zinc-100 py-1.5 pr-1 text-left font-bold normal-case">{title}</th>
             {holes.map((hole) => (
-              <th key={hole.number} className="bg-zinc-100 px-0.5 py-1.5 font-semibold">
+              <th key={hole.number} className="bg-zinc-100 px-0.5 py-1.5 font-bold">
                 {hole.number}
               </th>
             ))}
-            <th className="bg-zinc-100 py-1.5 pl-1 font-semibold">{totalLabel}</th>
+            <th className="bg-zinc-100 py-1.5 pl-1 font-bold normal-case">{totalLabel}</th>
           </tr>
         </thead>
         <tbody>
           <tr className="border-b border-zinc-200 bg-zinc-100">
-            <th className="bg-zinc-100 py-1.5 pr-1 text-left text-xs font-semibold text-zinc-500">Par</th>
+            <th className="bg-zinc-100 py-1 pr-1 text-left text-xs font-bold text-zinc-950">Par</th>
             {holes.map((hole) => (
-              <td key={hole.number} className="bg-zinc-100 px-0.5 py-1.5 text-xs tabular-nums text-zinc-500">
+              <td key={hole.number} className="bg-zinc-100 px-0.5 py-1 text-xs font-bold tabular-nums text-zinc-950">
                 {hole.par ?? "–"}
               </td>
             ))}
-            <td className="bg-zinc-100 py-1.5 pl-1 text-xs font-semibold tabular-nums text-zinc-950">{parTotal ?? "–"}</td>
+            <td className="bg-zinc-100 py-1 pl-1 text-xs font-bold tabular-nums text-zinc-950">{parTotal ?? "–"}</td>
           </tr>
           {players.map((player) => (
             <tr key={player.slot} className="border-b border-zinc-100">
-              <th className="py-1.5 pr-1 text-left text-sm font-bold text-zinc-950">{player.name}</th>
+              <th className="py-1 pr-1 text-left text-sm font-bold text-zinc-950">{player.name}</th>
               {player.holes.map((hole) => (
-                <td key={hole.number} className="px-0.5 py-1.5">
+                <td key={hole.number} className="px-0.5 py-1">
                   <ScoreCell
                     strokes={hole.strokes}
                     par={hole.par}
@@ -116,7 +116,7 @@ function NineTable({
                   />
                 </td>
               ))}
-              <td className="bg-zinc-100 py-1.5 pl-1 text-sm font-bold tabular-nums text-zinc-950">
+              <td className="bg-zinc-100 py-1 pl-1 text-sm font-bold tabular-nums text-zinc-950">
                 {sumStrokes(player.holes) ?? "–"}
               </td>
             </tr>
@@ -205,8 +205,8 @@ export function CardReview({
             return (
               <li key={player.slot} className="flex items-center justify-between gap-3 border-b border-zinc-200 px-3 py-3 last:border-b-0">
                 <div className="min-w-0">
-                  <p className="font-semibold text-zinc-950">{player.name}</p>
-                  <p className="mt-0.5 text-sm text-zinc-500">{summary}</p>
+                  <p className="font-bold text-zinc-950">{player.name}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-zinc-800">{summary}</p>
                 </div>
                 {pill.interactive ? (
                   <button type="button" onClick={() => onLooksRight?.(player.slot)} className={pillClass}>
@@ -234,7 +234,7 @@ export function CardReview({
       </div>
 
       <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3">
-        <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm}>
+        <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
           {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
         </PrimaryButton>
         <p className="mt-2 text-center text-xs text-zinc-500">

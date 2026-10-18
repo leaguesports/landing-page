@@ -271,7 +271,7 @@ export function CreateGameDay({
             {players.map((name, index) => (
               <li
                 key={`${name}-${index}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-zinc-300 px-3 text-sm font-semibold text-zinc-950"
+                className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-zinc-300 px-3.5 text-sm font-semibold text-zinc-950"
               >
                 <span>{name}</span>
                 {index === 0 ? (
@@ -280,10 +280,10 @@ export function CreateGameDay({
                   <button
                     type="button"
                     aria-label={`Remove ${name}`}
-                    className="inline-flex h-4 w-4 items-center justify-center text-zinc-700"
+                    className="inline-flex h-5 w-5 items-center justify-center text-zinc-950"
                     onClick={() => setPlayers((current) => current.filter((_, item) => item !== index))}
                   >
-                    <X className="h-3.5 w-3.5" aria-hidden />
+                    <X className="h-4 w-4" aria-hidden />
                   </button>
                 )}
               </li>
@@ -306,7 +306,7 @@ export function CreateGameDay({
             <button
               type="button"
               onClick={addName}
-              className="shrink-0 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white"
+              className="inline-flex h-11 min-w-[5.75rem] shrink-0 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white"
             >
               + Add
             </button>

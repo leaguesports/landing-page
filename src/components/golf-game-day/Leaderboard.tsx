@@ -501,7 +501,7 @@ function SpectatorPhone({
             <span className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`} aria-hidden />
             Live
           </span>
-          {updated ? <p className="text-sm text-zinc-500">Updated {updated} · refreshes itself</p> : null}
+          {updated ? <p className="text-sm font-medium text-zinc-950">Updated {updated} · refreshes itself</p> : null}
         </div>
         <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
           {scoringName(board.format)} · {players} players · {cards} cards

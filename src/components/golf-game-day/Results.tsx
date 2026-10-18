@@ -71,10 +71,10 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
           🏆 Winner · {tab}
         </p>
-        <h2 className="mt-2 font-display text-6xl leading-[0.72] tracking-wide text-white">
+        <h2 className="mt-4 font-display text-[56px] leading-none tracking-wide text-white">
           {winner?.displayName ?? "No winner yet"}
         </h2>
-        <p className="mt-2 text-lg leading-tight text-white">{line}</p>
+        <p className="mt-3 text-lg leading-tight text-white">{line}</p>
         {tiebreak ? <p className="mt-1 text-sm text-zinc-400">{tiebreak}</p> : null}
       </article>
 
@@ -101,7 +101,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-100 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-              <th className="py-2 pr-2 font-semibold">Pos</th>
+              <th className="w-12 py-2 text-center font-semibold">Pos</th>
               <th className="py-2 pr-2 font-semibold">Player</th>
               <th className="py-2 pr-2 text-right font-semibold">
                 {tab === "stableford" ? "Pts" : "To par"}
@@ -171,10 +171,10 @@ function ResultRow({
   const cell = resultsToParCell(tab, row, GAME_DAY_COURSE_PAR);
   const detail = resultsRowDetail(row, rows, tab);
   return (
-    <tr className="border-b border-zinc-200">
-      <td className="py-2 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
-      <td className="py-2 pr-2">
-        <span className="font-bold text-zinc-950">
+    <tr className="h-[58px] border-b border-zinc-200 align-middle">
+      <td className="w-12 text-center font-display text-[22px] leading-none text-zinc-950">{row.position ?? "–"}</td>
+      <td className="py-1 pr-2">
+        <span className="font-bold leading-tight text-zinc-950">
           {row.displayName}
           {row.you ? (
             <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -182,7 +182,7 @@ function ResultRow({
             </span>
           ) : null}
         </span>
-        {detail ? <span className="mt-0.5 block text-xs text-zinc-500">{detail}</span> : null}
+        {detail ? <span className="mt-0.5 block text-xs leading-tight text-zinc-600">{detail}</span> : null}
       </td>
       <td
         className={`py-2 pr-2 text-right font-display text-3xl leading-none tabular-nums ${cell.under ? "text-green-800" : "text-zinc-950"}`}

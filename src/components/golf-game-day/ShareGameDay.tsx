@@ -98,14 +98,14 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           </div>
         </div>
 
-        <h2 className="mt-2 text-sm font-semibold text-zinc-950">Join · for players</h2>
+        <h2 className="mt-2 text-base font-bold text-zinc-950">Join · for players</h2>
         <section className="mt-3 rounded-2xl border border-zinc-300 p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-zinc-950">Join code</p>
-              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.28em] text-zinc-950">{day.inviteCode}</p>
+              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.38em] text-zinc-950">{day.inviteCode}</p>
             </div>
-            <p className="pb-1 text-right text-xs font-normal leading-snug text-zinc-950">
+            <p className="pb-1 text-right text-sm font-normal leading-snug text-zinc-950">
               leaguesports.co.za
               <span className="block">/g/{day.inviteCode}</span>
             </p>
@@ -165,8 +165,8 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
             <h2 className="text-base font-bold text-zinc-950">Players added</h2>
             <span className="text-sm font-semibold text-zinc-700">{day.players.length} names</span>
           </div>
-          <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-800">{rosterLine(day.players)}</p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-700">
+          <p className="mt-2 text-base font-medium leading-snug text-zinc-950">{rosterLine(day.players)}</p>
+          <p className="mt-1 text-sm font-medium leading-snug text-zinc-800">
             Friends tap their name, pick a card (max 4) and play. Anyone else taps &quot;Add me&quot;.
           </p>
         </section>
