@@ -32,21 +32,68 @@ export function isGameDayChromePath(pathname: string): boolean {
   return false;
 }
 
-/** Same weekday label the API builds in UTC from YYYY-MM-DD. */
+/** Calendar dates for a game day are read in South African time. */
+export const GAME_DAY_TIME_ZONE = "Africa/Johannesburg";
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Weekday and month come from the YYYY-MM-DD on the game day, never a
+ * hardcoded label. Noon in Johannesburg keeps the calendar day stable.
+ */
 export function formatGameDayDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (!year || !month || !day) return isoDate;
-  const date = new Date(Date.UTC(year, month - 1, day));
-  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getUTCDay()];
-  const monthName = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1];
-  return `${weekday} ${day} ${monthName}`;
+  const match = ISO_DATE.exec(isoDate.trim());
+  if (!match) return isoDate;
+  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T12:00:00+02:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: GAME_DAY_TIME_ZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).formatToParts(date);
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  const month = pick("month").replace(/\.$/, "");
+  return `${pick("weekday")} ${pick("day")} ${month}`;
+}
+
+export function gameDayPlaceName(venueName: string): string {
+  return venueName.trim().split(/\s+/)[0] || venueName.trim() || "Game";
+}
+
+export function gameDayHeadline(venueName: string, isoDate: string): string {
+  return `${gameDayPlaceName(venueName).toUpperCase()} · ${formatGameDayDate(isoDate).toUpperCase()}`;
+}
+
+export function presentGameDay(input: {
+  venueName: string;
+  date: string;
+  dateLabel?: string;
+  headline?: string;
+}): { dateLabel: string; headline: string; place: string } {
+  const place = gameDayPlaceName(input.venueName);
+  if (ISO_DATE.test(input.date.trim())) {
+    return {
+      place,
+      dateLabel: formatGameDayDate(input.date),
+      headline: gameDayHeadline(input.venueName, input.date),
+    };
+  }
+  return {
+    place,
+    dateLabel: input.dateLabel || input.date,
+    headline: input.headline || place.toUpperCase(),
+  };
 }
 
 export function localIsoDate(now = new Date()): string {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: GAME_DAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 }
 
 export function defaultGameDayDate(venueSlug: string, today: string): string {

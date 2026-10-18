@@ -13,7 +13,7 @@ import {
   startCard,
   takeOverCard,
 } from "@/lib/golf-game-day/api";
-import { gameDayBoardPath, gameDayCardPath } from "@/lib/golf-game-day/paths";
+import { gameDayBoardPath, gameDayCardPath, presentGameDay } from "@/lib/golf-game-day/paths";
 import { gameDayCardStartBody, mergeCard } from "@/lib/golf-game-day/scoring-ui";
 import { parseGolfHandicapIndex } from "@/lib/golf/handicap";
 import {
@@ -24,6 +24,7 @@ import {
   readDevice,
   writeDevice,
 } from "@/lib/golf-game-day/storage";
+import { useGameDayAction } from "./GameDayChrome";
 import {
   ChoiceChip,
   Eyebrow,
@@ -32,6 +33,7 @@ import {
   OutlineButton,
   PrimaryButton,
   ScreenTitle,
+  teeDotClass,
   textFieldClass,
 } from "./ui";
 
@@ -64,8 +66,14 @@ export function JoinGameDay({
   const [tee, setTee] = useState(initialPreview?.defaultTee ?? "");
   const [session, setSession] = useState(initialSession);
   const [courseSaved, setCourseSaved] = useState(previewMode && initialPhase === "in");
+  const [cardChoice, setCardChoice] = useState<string>(() => {
+    const openCard = initialPreview?.cards.find((card) => !card.full);
+    return openCard?.id ?? (initialPreview ? "new" : "");
+  });
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const boardHref = preview ? gameDayBoardPath(preview.id) : "/login";
+  useGameDayAction(phase === "in" ? "Board" : "Sign in", phase === "in" ? boardHref : "/login");
 
   useEffect(() => {
     if (previewMode || !preview) return;
@@ -108,6 +116,8 @@ export function JoinGameDay({
         if (cancelled) return;
         setPreview(next);
         setTee(next.defaultTee);
+        const openCard = next.cards.find((card) => !card.full);
+        setCardChoice(openCard?.id ?? "new");
         const open = next.players.find((player) => !player.taken);
         if (open) setPlayerId(open.id);
       })
@@ -183,6 +193,19 @@ export function JoinGameDay({
         setCourseSaved(true);
       }
       setSession(joined);
+      if (cardChoice && cardChoice !== "new") {
+        try {
+          const seated = await joinCard(preview.id, cardChoice, joined.deviceToken);
+          cacheCard(store, mergeCard(seated.card, joined.playerId));
+          writeDevice(store, {
+            ...joined,
+            inviteCode: code,
+            cardId: cardChoice,
+          });
+        } catch (cause) {
+          setError(cause instanceof GameDayApiError ? cause.message : "Could not join that card.");
+        }
+      }
       setPhase("in");
       const fresh = await fetchInvite(code).catch(() => preview);
       setPreview(fresh);
@@ -292,7 +315,16 @@ export function JoinGameDay({
     );
   }
 
+  const shown = presentGameDay(preview);
   const nextCard = (preview.cards.reduce((max, card) => Math.max(max, card.number), 0) || 0) + 1;
+  const selectedName =
+    playerId === "new"
+      ? addedName.trim() || "me"
+      : preview.players.find((player) => player.id === playerId)?.displayName || "me";
+  const chosenCard = preview.cards.find((card) => card.id === cardChoice) ?? null;
+  const joinLabel = chosenCard
+    ? `Join Card ${chosenCard.number} as ${selectedName}`
+    : `Start card ${nextCard} as ${selectedName}`;
 
   if (phase === "in" && session) {
     const me = preview.players.find((player) => player.id === session.playerId);
@@ -305,14 +337,14 @@ export function JoinGameDay({
       );
     return (
       <GameDayColumn>
-        <Eyebrow>{preview.headline}</Eyebrow>
+        <Eyebrow>{shown.headline}</Eyebrow>
         <ScreenTitle>You&apos;re in</ScreenTitle>
         <p className="mt-3 text-sm text-zinc-600">
           {session.displayName} · {session.teeName} tees
         </p>
         {courseSaved ? (
           <p className="mt-3 text-sm font-semibold text-green-800">
-            Course and your card saved on this phone
+            ✓ Course and your card saved on this phone
           </p>
         ) : (
           <p className="mt-3 text-sm text-zinc-500">
@@ -357,49 +389,64 @@ export function JoinGameDay({
   }
 
   return (
-    <GameDayColumn>
-      <Eyebrow>{preview.headline}</Eyebrow>
-      <ScreenTitle>Join the game</ScreenTitle>
-      <p className="mt-3 text-sm text-zinc-600">
-        {preview.venueName} · {preview.dateLabel}
-      </p>
+    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
+      <div className="flex-1 px-5 pb-4 pt-6">
+        <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
+        <ScreenTitle>Join the game</ScreenTitle>
+        <p className="mt-3 text-sm text-zinc-600">
+          {shown.place} · {shown.dateLabel}
+        </p>
+        <p className="mt-1 text-sm text-zinc-600">
+          {shown.place} · {preview.format === "stroke" ? "Stroke play" : preview.format}
+        </p>
 
-      <fieldset className="mt-8">
-        <legend>
-          <FieldLabel>Your name</FieldLabel>
-        </legend>
-        <div className="mt-3 space-y-2">
-          {preview.players.map((player) => (
+        <fieldset className="mt-6">
+          <legend>
+            <FieldLabel>Your name</FieldLabel>
+          </legend>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {preview.players.map((player) => {
+              const selected = playerId === player.id;
+              const status = selected && !player.taken
+                ? "That's me"
+                : player.cardNumber
+                  ? `✓ Card ${player.cardNumber}`
+                  : "Not joined";
+              return (
+                <button
+                  key={player.id}
+                  type="button"
+                  disabled={player.taken}
+                  aria-pressed={selected}
+                  onClick={() => setPlayerId(player.id)}
+                  className={
+                    player.taken
+                      ? "min-h-[4.5rem] rounded-2xl border border-zinc-200 px-2 py-2 text-left text-zinc-400"
+                      : selected
+                        ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-white"
+                        : "min-h-[4.5rem] rounded-2xl border border-zinc-300 bg-white px-2 py-2 text-left text-zinc-950"
+                  }
+                >
+                  <span className="block text-sm font-semibold">{player.displayName}</span>
+                  <span className={`mt-1 block text-[11px] ${selected ? "text-white/80" : "text-zinc-500"}`}>
+                    {status}
+                  </span>
+                </button>
+              );
+            })}
             <button
-              key={player.id}
               type="button"
-              disabled={player.taken}
-              aria-pressed={playerId === player.id}
-              onClick={() => setPlayerId(player.id)}
+              aria-pressed={playerId === "new"}
+              onClick={() => setPlayerId("new")}
               className={
-                player.taken
-                  ? "flex min-h-12 w-full items-center justify-between rounded-2xl border border-zinc-200 px-4 text-left text-zinc-400"
-                  : playerId === player.id
-                    ? "flex min-h-12 w-full items-center justify-between rounded-2xl bg-zinc-950 px-4 text-left font-semibold text-white"
-                    : "flex min-h-12 w-full items-center justify-between rounded-2xl border border-zinc-300 bg-white px-4 text-left"
+                playerId === "new"
+                  ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-sm font-semibold text-white"
+                  : "min-h-[4.5rem] rounded-2xl border border-dashed border-zinc-400 bg-white px-2 py-2 text-left text-sm font-semibold text-zinc-950"
               }
             >
-              <span>{player.displayName}</span>
-              {player.taken ? <span className="text-xs">Taken</span> : null}
+              Add me
             </button>
-          ))}
-          <button
-            type="button"
-            aria-pressed={playerId === "new"}
-            onClick={() => setPlayerId("new")}
-            className={
-              playerId === "new"
-                ? "flex min-h-12 w-full items-center rounded-2xl bg-zinc-950 px-4 text-left font-semibold text-white"
-                : "flex min-h-12 w-full items-center rounded-2xl border border-zinc-300 bg-white px-4 text-left"
-            }
-          >
-            Add me
-          </button>
+          </div>
           {playerId === "new" ? (
             <input
               value={addedName}
@@ -409,44 +456,111 @@ export function JoinGameDay({
               className={textFieldClass()}
             />
           ) : null}
-        </div>
-      </fieldset>
+        </fieldset>
 
-      <label className="mt-6 block">
-        <FieldLabel>Handicap · optional</FieldLabel>
-        <input
-          value={handicap}
-          onChange={(event) => setHandicap(event.target.value)}
-          inputMode="decimal"
-          placeholder="e.g. 14.2"
-          className={textFieldClass()}
-        />
-      </label>
+        <label className="mt-5 flex items-center justify-between gap-3">
+          <FieldLabel>Handicap · optional</FieldLabel>
+          <input
+            value={handicap}
+            onChange={(event) => setHandicap(event.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 6"
+            aria-label="Handicap"
+            className="w-24 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-right text-sm text-zinc-950"
+          />
+        </label>
 
-      <fieldset className="mt-6">
-        <legend>
-          <FieldLabel>Tee</FieldLabel>
-        </legend>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {preview.teeOptions.map((option) => (
-            <ChoiceChip key={option} selected={(tee || preview.defaultTee) === option} onClick={() => setTee(option)}>
-              {option}
-            </ChoiceChip>
-          ))}
-        </div>
-      </fieldset>
+        <fieldset className="mt-5 rounded-2xl border border-dashed border-zinc-400 p-4">
+          <legend className="sr-only">Your tee</legend>
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel>Your tee</FieldLabel>
+            <span className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
+              Option
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-zinc-500">organiser&apos;s: {preview.defaultTee}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {preview.teeOptions.map((option) => (
+              <ChoiceChip
+                key={option}
+                selected={(tee || preview.defaultTee) === option}
+                onClick={() => setTee(option)}
+              >
+                <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${teeDotClass(option)}`} />
+                {option}
+              </ChoiceChip>
+            ))}
+          </div>
+        </fieldset>
 
-      {error ? (
-        <p role="alert" className="mt-4 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
+        <section className="mt-6">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Pick a card
+          </h2>
+          <div className="mt-3 space-y-2">
+            {preview.cards.map((card) => {
+              const seats = card.players.length;
+              const selected = cardChoice === card.id;
+              const members = card.players
+                .map((player) => {
+                  const you =
+                    selectedName.toLowerCase() === player.displayName.toLowerCase() ? " (+ you)" : "";
+                  const scoring = player.scoring ? " · scoring" : "";
+                  return `${player.displayName}${you}${scoring}`;
+                })
+                .join(", ");
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setCardChoice(card.id)}
+                  className={
+                    selected
+                      ? "w-full rounded-2xl bg-zinc-950 px-4 py-3 text-left text-white"
+                      : "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-left text-zinc-950"
+                  }
+                >
+                  <span className="flex items-center justify-between gap-3 text-sm font-semibold">
+                    <span>Card {card.number}</span>
+                    <span className="text-[11px] uppercase tracking-[0.12em]">
+                      {card.full ? "Full" : "Open"} {seats}/4
+                    </span>
+                  </span>
+                  <span className={`mt-1 block text-sm ${selected ? "text-white/80" : "text-zinc-600"}`}>
+                    {members}
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              aria-pressed={cardChoice === "new"}
+              onClick={() => setCardChoice("new")}
+              className={
+                cardChoice === "new"
+                  ? "w-full rounded-2xl bg-zinc-950 px-4 py-3 text-left text-sm font-semibold text-white"
+                  : "w-full rounded-2xl border border-dashed border-zinc-400 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-950"
+              }
+            >
+              Start new card · you&apos;ll score
+            </button>
+          </div>
+        </section>
 
-      <div className="mt-8">
-        <PrimaryButton type="button" disabled={pending} onClick={onJoin}>
-          {pending ? "Joining…" : "Join"}
-        </PrimaryButton>
+        {error ? (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
       </div>
-    </GameDayColumn>
+
+      <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
+        <PrimaryButton type="button" disabled={pending} onClick={onJoin}>
+          {pending ? "Joining…" : joinLabel}
+        </PrimaryButton>
+        <p className="mt-2 text-center text-xs text-zinc-500">No account needed.</p>
+      </div>
+    </div>
   );
 }

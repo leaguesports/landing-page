@@ -4,6 +4,12 @@ import type {
   GameDayPreview,
   RankingRow,
 } from "../../types/golf-game-day.ts";
+import { formatGameDayDate, gameDayHeadline } from "./paths.ts";
+
+const FIXTURE_DATE = "2026-11-01";
+const FIXTURE_VENUE = "Zebula Golf Estate & Spa";
+const FIXTURE_DATE_LABEL = formatGameDayDate(FIXTURE_DATE);
+const FIXTURE_HEADLINE = gameDayHeadline(FIXTURE_VENUE, FIXTURE_DATE);
 
 export const FIXTURE_DAY_ID = "8c2f0a1e-6b4d-4a1e-8f3a-0b1c2d3e4f50";
 
@@ -81,11 +87,11 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
     access,
     status: "in_play",
     format: "stroke",
-    venueName: "Zebula Golf Estate & Spa",
+    venueName: FIXTURE_VENUE,
     venueCmsId: "zebula-golf-estate-spa",
-    date: "2026-11-01",
-    dateLabel: "Sat 1 Nov",
-    headline: "ZEBULA · SAT 1 NOV",
+    date: FIXTURE_DATE,
+    dateLabel: FIXTURE_DATE_LABEL,
+    headline: FIXTURE_HEADLINE,
     cardsConfirmed: 1,
     cardsTotal: 3,
     countback: "last 9, 6, 3, 1",
@@ -96,14 +102,14 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
       {
         id: "feed-1",
         type: "birdie",
-        message: "Nadia birdie on 10 · Card 3 thru 10",
+        message: "Nadia birdie · 10",
         at: "2026-11-01T08:42:00.000Z",
         playerName: "Nadia",
       },
       {
         id: "feed-2",
         type: "lead_change",
-        message: "Lead change: Nadia leads on 38 pts",
+        message: "Lead change · Nadia · 38 pts",
         at: "2026-11-01T08:41:00.000Z",
         leaderName: "Nadia",
         metric: "stableford",
@@ -112,7 +118,7 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
       {
         id: "feed-3",
         type: "birdie",
-        message: "Pieter eagle on 6 · Card 1 thru 6",
+        message: "Pieter eagle · 6",
         at: "2026-11-01T08:20:00.000Z",
       },
       {
@@ -174,10 +180,10 @@ export function fixtureCreated(): GameDayCreated {
     watchToken: "k7Qm9p",
     watchPath: "/api/golf-game-days/watch/k7Qm9p/leaderboard",
     venueCmsId: "zebula-golf-estate-spa",
-    venueName: "Zebula Golf Estate & Spa",
-    date: "2026-11-01",
-    dateLabel: "Sat 1 Nov",
-    headline: "ZEBULA · SAT 1 NOV",
+    venueName: FIXTURE_VENUE,
+    date: FIXTURE_DATE,
+    dateLabel: FIXTURE_DATE_LABEL,
+    headline: FIXTURE_HEADLINE,
     defaultTee: "White",
     teeOptions: ["White", "Yellow", "Red"],
     format: "stroke",
@@ -212,21 +218,43 @@ export function fixtureCreated(): GameDayCreated {
 export function fixturePreview(): GameDayPreview {
   return {
     id: FIXTURE_DAY_ID,
-    venueName: "Zebula Golf Estate & Spa",
+    venueName: FIXTURE_VENUE,
     venueCmsId: "zebula-golf-estate-spa",
-    date: "2026-11-01",
-    dateLabel: "Sat 1 Nov",
-    headline: "ZEBULA · SAT 1 NOV",
+    date: FIXTURE_DATE,
+    dateLabel: FIXTURE_DATE_LABEL,
+    headline: FIXTURE_HEADLINE,
     defaultTee: "White",
     teeOptions: ["White", "Yellow", "Red"],
     format: "stroke",
     status: "setup",
     players: [
       { id: "p-mike", displayName: "Mike", taken: false, cardId: null, cardNumber: null },
-      { id: "p-sipho", displayName: "Sipho", taken: false, cardId: null, cardNumber: null },
+      { id: "p-sipho", displayName: "Sipho", taken: true, cardId: "card-1", cardNumber: 1 },
       { id: "p-pieter", displayName: "Pieter", taken: false, cardId: null, cardNumber: null },
       { id: "p-ruan", displayName: "Ruan", taken: false, cardId: null, cardNumber: null },
     ],
-    cards: [],
+    cards: [
+      {
+        id: "card-1",
+        number: 1,
+        status: "live",
+        openSlots: 0,
+        full: true,
+        players: [
+          { displayName: "Brandon", slot: 1, scoring: true },
+          { displayName: "Sipho", slot: 2, scoring: false },
+          { displayName: "Pieter", slot: 3, scoring: false },
+          { displayName: "Ruan", slot: 4, scoring: false },
+        ],
+      },
+      {
+        id: "card-2",
+        number: 2,
+        status: "live",
+        openSlots: 3,
+        full: false,
+        players: [{ displayName: "Mike", slot: 1, scoring: true }],
+      },
+    ],
   };
 }

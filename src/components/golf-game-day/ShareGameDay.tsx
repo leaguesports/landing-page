@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { GameDayCreated } from "@/types/golf-game-day";
-import { gameDayBoardPath, gameDayInvitePath, gameDayWatchPath, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
+import { gameDayBoardPath, gameDayInvitePath, gameDayWatchPath, presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
+import { useGameDayAction } from "./GameDayChrome";
 import { Eyebrow, GameDayColumn, primaryLinkClass, ScreenTitle, WhatsAppIcon } from "./ui";
 
 type ShareGameDayProps = {
@@ -22,6 +23,8 @@ async function copyText(value: string): Promise<boolean> {
 
 export function ShareGameDay({ day, origin = "" }: ShareGameDayProps) {
   const [copied, setCopied] = useState<"invite" | "watch" | null>(null);
+  const shown = presentGameDay(day);
+  useGameDayAction("Sign in", "/login");
   const invitePath = gameDayInvitePath(day.inviteCode);
   const watchPath = gameDayWatchPath(day.watchToken);
   const inviteUrl = `${origin}${invitePath}`;
@@ -38,10 +41,10 @@ export function ShareGameDay({ day, origin = "" }: ShareGameDayProps) {
 
   return (
     <GameDayColumn>
-      <Eyebrow>{day.headline}</Eyebrow>
+      <Eyebrow>{shown.headline}</Eyebrow>
       <ScreenTitle>Share</ScreenTitle>
       <p className="mt-3 text-sm text-zinc-600">
-        {day.venueName} · {day.dateLabel}
+        {shown.place} · {shown.dateLabel}
       </p>
 
       <section className="mt-8">

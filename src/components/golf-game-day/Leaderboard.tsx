@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
 import type { BoardTab, GameDayFeedItem, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
+import { presentGameDay } from "@/lib/golf-game-day/paths";
 import {
   boardBadge,
   formatBoardScore,
   formatHandicap,
   formatToPar,
 } from "@/lib/golf-game-day/scoring-ui";
+import { useGameDayAction } from "./GameDayChrome";
 import { Eyebrow, GameDayColumn } from "./ui";
 
 const TABS: BoardTab[] = ["gross", "net", "stableford"];
@@ -61,6 +63,8 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
   const orderKey = rows.map((row) => row.playerId).join("|");
   const bind = useRowSlide(orderKey);
   const badge = boardBadge(board.status, board.access);
+  const shown = presentGameDay(board);
+  useGameDayAction("Sign in", "/login");
 
   return (
     <GameDayColumn wide>
@@ -68,7 +72,7 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
         <div>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <Eyebrow>{board.headline}</Eyebrow>
+              <Eyebrow>{shown.headline}</Eyebrow>
               <h1 className="mt-2 font-display text-5xl tracking-wide text-zinc-950">
                 Leaderboard
               </h1>
@@ -135,7 +139,11 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
                   <td className="py-3 pr-3">
                     <div className="font-semibold text-zinc-950">
                       {row.displayName}
-                      {row.you ? " · You" : ""}
+                      {row.you ? (
+                        <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+                          You
+                        </span>
+                      ) : null}
                     </div>
                     <div className="text-xs text-zinc-500">
                       {[formatHandicap(row.handicapIndex), row.countbackNote].filter(Boolean).join(" · ")}
@@ -163,8 +171,11 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
         </div>
 
         <aside className="mt-8 xl:mt-0" aria-label="Live feed">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Live
+          <h2 className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            <span className="rounded-full bg-zinc-950 px-2 py-0.5 text-[10px] tracking-[0.14em] text-white">
+              Live
+            </span>
+            Live feed
           </h2>
           <ul className="mt-3 space-y-3">
             {board.feed.length === 0 ? (
@@ -194,7 +205,11 @@ function MobileRow({ row, tab }: { row: RankingRow; tab: BoardTab }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold text-zinc-950">
           {row.displayName}
-          {row.you ? " · You" : ""}
+          {row.you ? (
+            <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+              You
+            </span>
+          ) : null}
         </span>
         <span className="block text-xs text-zinc-500">
           {[handicap, `thru ${row.thru}`, row.countbackNote].filter(Boolean).join(" · ")}

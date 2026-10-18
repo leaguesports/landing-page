@@ -63,6 +63,16 @@ export function OutlineButton({
   );
 }
 
+export function teeDotClass(label: string): string {
+  const value = label.toLowerCase();
+  if (value.includes("yellow")) return "bg-yellow-400";
+  if (value.includes("red")) return "bg-red-600";
+  if (value.includes("blue")) return "bg-blue-600";
+  if (value.includes("black")) return "bg-zinc-950";
+  if (value.includes("white")) return "border border-zinc-400 bg-white";
+  return "bg-zinc-400";
+}
+
 export function ChoiceChip({
   selected,
   children,

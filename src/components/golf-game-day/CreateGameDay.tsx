@@ -11,12 +11,15 @@ import {
   ZEBULA_VENUE_SLUG,
 } from "@/lib/golf-game-day/paths";
 import { preferredDefaultTee, teeChipLabel } from "@/lib/golf-game-day/scoring-ui";
+import { useGameDayAction } from "./GameDayChrome";
 import {
   ChoiceChip,
+  Eyebrow,
   FieldLabel,
   GameDayColumn,
   PrimaryButton,
   ScreenTitle,
+  teeDotClass,
   textFieldClass,
 } from "./ui";
 
@@ -32,7 +35,6 @@ type CreateGameDayProps = {
   preview?: boolean;
   initialVenueSlug?: string;
   initialDate?: string;
-  initialDateLabel?: string;
   initialPlayers?: string[];
 };
 
@@ -41,7 +43,6 @@ export function CreateGameDay({
   preview = false,
   initialVenueSlug,
   initialDate,
-  initialDateLabel,
   initialPlayers = [],
 }: CreateGameDayProps) {
   const router = useRouter();
@@ -66,8 +67,9 @@ export function CreateGameDay({
   const [weekend, setWeekend] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  useGameDayAction("Sign in", "/login");
 
-  const dateLabel = initialDateLabel || formatGameDayDate(date);
+  const dateLabel = formatGameDayDate(date);
   const teeNames = useMemo(() => venue?.tees ?? [], [venue]);
 
   function selectVenue(slug: string) {
@@ -143,6 +145,7 @@ export function CreateGameDay({
   return (
     <GameDayColumn>
       <form onSubmit={onSubmit}>
+        <Eyebrow>New game day</Eyebrow>
         <ScreenTitle>New game day</ScreenTitle>
         <p className="mt-3 text-sm leading-relaxed text-zinc-600">
           One course, a few cards, live for everyone who joins.
@@ -189,6 +192,7 @@ export function CreateGameDay({
                 selected={item.name === tee}
                 onClick={() => setTee(item.name)}
               >
+                <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${teeDotClass(item.color || item.name)}`} />
                 {teeChipLabel(item)}
               </ChoiceChip>
             ))}

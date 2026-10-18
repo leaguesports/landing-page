@@ -12,6 +12,7 @@ import {
   formatBoardScore,
   formatToPar,
   gameDayCardStartBody,
+  holeStatusLines,
   holeSyncLabel,
   holeSyncState,
   initialHoleStrokes,
@@ -19,6 +20,8 @@ import {
   movedPlayerIds,
   overallSyncLabel,
   preferredDefaultTee,
+  scoreRelation,
+  shotChipLabel,
   stepStroke,
   strokeDotsForPlayer,
   teeChipLabel,
@@ -59,6 +62,23 @@ describe("game day scoring UI", () => {
     assert.equal(strokeDotsForPlayer(6, holes, 8), 1);
     assert.equal(strokeDotsForPlayer(2, holes, 8), 0);
     assert.equal(strokeDotsForPlayer(null, holes, 8), 0);
+  });
+
+  it("names the score against par and the handicap shot chip", () => {
+    assert.equal(scoreRelation(4, 4), "PAR");
+    assert.equal(scoreRelation(5, 4), "BOGEY");
+    assert.equal(scoreRelation(3, 4), "BIRDIE");
+    assert.equal(scoreRelation(6, 4), "DOUBLE");
+    assert.equal(shotChipLabel(1), "+1 shot");
+    assert.equal(shotChipLabel(0), null);
+    assert.deepEqual(
+      holeStatusLines([
+        { number: 6, sync: "saved" },
+        { number: 7, sync: "offline" },
+        { number: 8, sync: "open" },
+      ]),
+      ["Hole 6 synced", "Hole 7 waiting · weak signal"],
+    );
   });
 
   it("describes per-hole and overall sync", () => {

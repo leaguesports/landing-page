@@ -9,7 +9,7 @@ import {
   GameDayApiError,
   putHole,
 } from "@/lib/golf-game-day/api";
-import { gameDayBoardPath, gameDayCardPath, gameDayReviewPath } from "@/lib/golf-game-day/paths";
+import { gameDayBoardPath, gameDayCardPath, gameDayReviewPath, presentGameDay } from "@/lib/golf-game-day/paths";
 import {
   enqueueHolePut,
   flushHoleQueue,
@@ -19,12 +19,13 @@ import {
   formatHandicap,
   formatToPar,
   grossForSlot,
-  holeSyncLabel,
   holeSyncState,
   holesStillOpen,
   initialHoleStrokes,
   mergeCard,
   overallSyncLabel,
+  scoreRelation,
+  shotChipLabel,
   stepStroke,
   strokeDotsForPlayer,
 } from "@/lib/golf-game-day/scoring-ui";
@@ -237,7 +238,11 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           : "Only the scorer can confirm.";
     return (
       <CardReview
-        headline={card.course.name ? card.course.name.toUpperCase() : "Game day"}
+        headline={presentGameDay({
+          venueName: card.course.name || "Game day",
+          date: "",
+          headline: card.course.name ? card.course.name.toUpperCase() : "GAME DAY",
+        }).headline}
         cardNumber={card.number}
         overallSyncLabel={overallSyncLabel(
           cardQueue.length
@@ -267,6 +272,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
         confirming={confirming}
         blockedReason={error ?? blockedReason}
         scoreHref={gameDayCardPath(gameDayId, cardId)}
+        boardHref={gameDayBoardPath(gameDayId)}
         onConfirm={() => {
           const session = readDevice(store, gameDayId);
           if (!session) return;
@@ -293,18 +299,8 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
         holeNumber={holeNumber}
         holesPlayed={card.holesPlayed}
         par={par}
-        holeSyncLabel={holeSyncLabel(
-          holeSyncState({
-            holeNumber,
-            queued: cardQueue,
-            serverSynced: card.holes.some((hole) => hole.number === holeNumber),
-          }),
-        )}
-        overallSyncLabel={overallSyncLabel(
-          cardQueue.length
-            ? cardQueue.map((item) => (item.state === "offline" ? "offline" : "saving"))
-            : ["saved"],
-        )}
+        strokeIndex={courseHole?.strokeIndex ?? holeNumber}
+        takeoverName={card.scoring ? card.scorer.displayName : null}
         holes={ordered.map((number) => ({
           number,
           sync: card.holes.some((hole) => hole.number === number) || cardQueue.some((item) => item.holeNumber === number)
@@ -317,12 +313,26 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
         }))}
         players={card.players.map((player) => {
           const strokes = strokesFor(card, holeNumber)[String(player.slot)] ?? par;
+          const dots = strokeDotsForPlayer(player.playingHandicap, card.course.holes, holeNumber);
+          let totalStrokes = 0;
+          let totalPar = 0;
+          for (const hole of card.course.holes) {
+            if (hole.number > holeNumber) break;
+            const value = strokesFor(card, hole.number)[String(player.slot)];
+            if (typeof value !== "number") continue;
+            totalStrokes += value;
+            totalPar += hole.par;
+          }
           return {
             slot: player.slot,
             name: player.displayName,
             handicap: formatHandicap(player.handicapIndex),
             strokes,
-            dots: strokeDotsForPlayer(player.playingHandicap, card.course.holes, holeNumber),
+            dots,
+            total: totalStrokes,
+            toPar: formatToPar(totalStrokes - totalPar),
+            relation: scoreRelation(strokes, par),
+            shotChip: shotChipLabel(dots),
           };
         })}
         canScore={card.scoring && card.status === "live"}
@@ -339,8 +349,15 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           commit(card, holeNumber, next);
         }}
         onSelectHole={go}
-        onPrevious={() => go(ordered[Math.max(0, index - 1)] ?? holeNumber)}
-        onNext={() => go(ordered[Math.min(ordered.length - 1, index + 1)] ?? holeNumber)}
+        onNext={() => {
+          const lastHole = ordered[ordered.length - 1] ?? holeNumber;
+          if (holeNumber >= lastHole) {
+            commit(card, holeNumber, strokesFor(card, holeNumber));
+            router.push(gameDayReviewPath(gameDayId, cardId));
+            return;
+          }
+          go(ordered[Math.min(ordered.length - 1, index + 1)] ?? holeNumber);
+        }}
       />
       {error ? (
         <p role="alert" className="mx-auto max-w-[420px] px-5 pb-8 text-sm text-red-700">

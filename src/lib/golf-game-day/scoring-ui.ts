@@ -66,6 +66,42 @@ export function holeSyncLabel(state: HoleSyncState): string {
   return "Offline";
 }
 
+export function scoreRelation(strokes: number, par: number): string {
+  const diff = strokes - par;
+  if (diff <= -3) return "ALBATROSS";
+  if (diff === -2) return "EAGLE";
+  if (diff === -1) return "BIRDIE";
+  if (diff === 0) return "PAR";
+  if (diff === 1) return "BOGEY";
+  if (diff === 2) return "DOUBLE";
+  if (diff === 3) return "TRIPLE";
+  return `+${diff}`;
+}
+
+export function shotChipLabel(dots: number): string | null {
+  if (!Number.isFinite(dots) || dots <= 0) return null;
+  return dots === 1 ? "+1 shot" : `+${dots} shots`;
+}
+
+/** The strip calls out the latest saved hole and any hole still waiting. */
+export function holeStatusLines(
+  holes: readonly { number: number; sync: string }[],
+): string[] {
+  const saved = holes.filter((hole) => hole.sync === "saved");
+  const waiting = holes.filter((hole) => hole.sync === "offline" || hole.sync === "saving");
+  const lines: string[] = [];
+  const lastSaved = saved[saved.length - 1];
+  if (lastSaved) lines.push(`Hole ${lastSaved.number} synced`);
+  for (const hole of waiting) {
+    lines.push(
+      hole.sync === "offline"
+        ? `Hole ${hole.number} waiting · weak signal`
+        : `Hole ${hole.number} waiting`,
+    );
+  }
+  return lines;
+}
+
 export function overallSyncLabel(states: readonly HoleSyncState[]): string {
   if (states.some((state) => state === "offline")) return "Offline — will sync";
   if (states.some((state) => state === "saving")) return "Saving…";
