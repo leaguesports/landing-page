@@ -391,8 +391,10 @@ export function JoinGameDay({
                         <span className="mt-0.5 block text-sm text-zinc-600">{detail}</span>
                       </span>
                       {you ? (
-                        <span className="ml-auto rounded-full border border-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-zinc-950">
-                          You
+                        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                          <span className="rounded-full border border-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-zinc-950">
+                            You
+                          </span>
                         </span>
                       ) : null}
                     </li>

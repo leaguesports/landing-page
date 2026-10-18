@@ -252,15 +252,15 @@ export function CardReview({
 
       <div className="fixed inset-x-0 bottom-0 z-30">
         <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-4 py-3">
-        {canUnlock ? (
-          <PrimaryButton type="button" disabled={unlocking} onClick={onUnlock} className="!text-lg">
-            {unlocking ? "Unlocking…" : "Unlock"}
-          </PrimaryButton>
-        ) : (
-          <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
-            {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
-          </PrimaryButton>
-        )}
+          {canUnlock ? (
+            <PrimaryButton type="button" disabled={unlocking} onClick={onUnlock} className="!text-lg">
+              {unlocking ? "Unlocking…" : "Unlock"}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
+              {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
+            </PrimaryButton>
+          )}
         </div>
       </div>
       </div>
