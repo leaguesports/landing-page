@@ -5,6 +5,15 @@ import { DeskFrame, GdIcon, teeFill } from "./desk";
 
 const ORDER = ["Brandon", "Sipho", "Jaco", "Thandi", "Mike", "Lerato", "Pieter", "Kabelo", "Nadia"];
 
+/** Card 2 on the join mockup lists Lerato before Pieter. The phone list keeps fixture order. */
+function optionNames(names: string[], sample?: boolean): string[] {
+  if (sample && names.includes("Lerato") && names.includes("Pieter")) {
+    const rest = names.filter((name) => name !== "Lerato" && name !== "Pieter");
+    return ["Lerato", "Pieter", ...rest];
+  }
+  return names;
+}
+
 function orderOf(name: string): number {
   const index = ORDER.indexOf(name);
   return index === -1 ? ORDER.length : index;
@@ -176,7 +185,10 @@ export function DesktopJoinForm({
                         {card.full ? " · full" : ""}
                       </div>
                       <div className="w" style={card.full ? { color: "var(--sub)" } : undefined}>
-                        {card.players.map((player) => player.displayName).join(", ")}
+                        {optionNames(
+                          card.players.map((player) => player.displayName),
+                          sample,
+                        ).join(", ")}
                         {joining ? (
                           <>
                             {card.players.length ? ", " : ""}

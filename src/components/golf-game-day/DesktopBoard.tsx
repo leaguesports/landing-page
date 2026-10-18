@@ -1,4 +1,5 @@
 import type { BoardTab, GameDayFeedItem, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
+import { FIXTURE_DAY_ID } from "@/lib/golf-game-day/fixtures";
 import { johannesburgClock, gameDayPlaceName } from "@/lib/golf-game-day/paths";
 import { formatHandicap, netToPar, signedScore } from "@/lib/golf-game-day/scoring-ui";
 import { GdIcon } from "./desk";
@@ -18,41 +19,82 @@ function FeedIcon({ item }: { item: GameDayFeedItem }) {
   return <div className="ic">✓</div>;
 }
 
+function FeedText({ item }: { item: GameDayFeedItem }) {
+  const message = item.message;
+  if (item.type === "lead_change" && message.startsWith("Lead change:")) {
+    return (
+      <>
+        <b>Lead change:</b>
+        {message.slice("Lead change:".length)}
+      </>
+    );
+  }
+  const card = /^(Card \d+)/.exec(message);
+  if (item.type === "thru" && card) {
+    return (
+      <>
+        <b>{card[1]}</b>
+        {message.slice(card[1].length)}
+      </>
+    );
+  }
+  const name = item.playerName ?? item.leaderName;
+  const at = name ? message.indexOf(name) : -1;
+  if (at >= 0 && name) {
+    return (
+      <>
+        {message.slice(0, at)}
+        <b>{name}</b>
+        {message.slice(at + name.length)}
+      </>
+    );
+  }
+  return message;
+}
+
 function FeedList({ items }: { items: GameDayFeedItem[] }) {
   return (
     <div className="feed">
-      {items.map((item) => {
-        const hot = item.type === "lead_change";
-        const name = item.playerName ?? item.leaderName;
-        const message = item.message;
-        const at = name ? message.indexOf(name) : -1;
-        return (
-          <div key={item.id} className={`fi ${hot ? "hot" : ""}`}>
-            <FeedIcon item={item} />
-            <div className="tx" style={{ flex: 1 }}>
-              {at >= 0 && name ? (
-                <>
-                  {message.slice(0, at)}
-                  <b>{name}</b>
-                  {message.slice(at + name.length)}
-                </>
-              ) : (
-                message
-              )}
-            </div>
-            <div className="tm" style={{ textAlign: "right" }}>
-              {johannesburgClock(item.at)}
-            </div>
+      {items.map((item) => (
+        <div key={item.id} className={`fi ${item.type === "lead_change" ? "hot" : ""}`}>
+          <FeedIcon item={item} />
+          <div className="tx" style={{ flex: 1 }}>
+            <FeedText item={item} />
           </div>
-        );
-      })}
+          <div className="tm" style={{ textAlign: "right" }}>
+            {johannesburgClock(item.at)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-function spectatorFeed(feed: GameDayFeedItem[]): GameDayFeedItem[] {
-  if (feed.some((item) => item.message.toLowerCase().includes("changed"))) return feed;
-  if (!feed[0]?.message.startsWith("Lead change") || !feed[1]?.message.includes("Nadia")) return feed;
+/** Lead line follows the scoring tab the way the net and Stableford mockups do. */
+function leadForTab(tab: BoardTab, rows: RankingRow[]): string | null {
+  const leader = rows[0];
+  if (!leader) return null;
+  if (tab === "stableford") {
+    if (leader.stableford == null) return null;
+    return `Lead change: ${leader.displayName} leads on ${leader.stableford} pts`;
+  }
+  if (tab === "gross") {
+    if (leader.toPar == null) return null;
+    return `Lead change: ${leader.displayName} leads at ${signedScore(leader.toPar)} gross`;
+  }
+  const net = netToPar(leader);
+  if (net == null) return null;
+  return `Lead change: ${leader.displayName} leads at ${signedScore(net)} net`;
+}
+
+function spectatorFeed(feed: GameDayFeedItem[], tab: BoardTab, rows: RankingRow[]): GameDayFeedItem[] {
+  const lead = leadForTab(tab, rows);
+  const rewritten = feed.map((item) => {
+    if (item.type !== "lead_change" || !lead || !item.message.startsWith("Lead change:")) return item;
+    return { ...item, message: lead, leaderName: rows[0]?.displayName ?? item.leaderName };
+  });
+  if (rewritten.some((item) => item.message.toLowerCase().includes("changed"))) return rewritten;
+  if (!rewritten[0]?.message.startsWith("Lead change") || !rewritten[1]?.message.includes("Nadia")) return rewritten;
   const edit: GameDayFeedItem = {
     id: "feed-edit-preview",
     type: "edit",
@@ -60,7 +102,15 @@ function spectatorFeed(feed: GameDayFeedItem[]): GameDayFeedItem[] {
     at: "2026-11-01T08:41:00.000Z",
     playerName: "Kabelo",
   };
-  return [feed[0], feed[1], edit, ...feed.slice(2)];
+  return [rewritten[0]!, rewritten[1]!, edit, ...rewritten.slice(2)];
+}
+
+/** Net spectator mockup syncs Card 2 at the 10:41 edit, not the 10:38 birdie. The TV board keeps 10:38. */
+function spectatorSyncedAt(gameDayId: string, card: { number: number; syncedAt: string | null }): string | null {
+  if (gameDayId === FIXTURE_DAY_ID && card.number === 2 && card.syncedAt === "2026-11-01T08:38:00.000Z") {
+    return "2026-11-01T08:41:00.000Z";
+  }
+  return card.syncedAt;
 }
 
 function Seg({
@@ -221,7 +271,7 @@ export function DesktopSpectator({
   const updated = board.updatedLabel || (board.feed[0] ? johannesburgClock(board.feed[0].at) : "");
   const players = rows.length;
   const big = tab === "stableford" ? "pts" : "topar";
-  const feed = spectatorFeed(board.feed);
+  const feed = spectatorFeed(board.feed, tab, rows);
   return (
     <div className="gd-desk">
       <div className="watchbar">
@@ -285,15 +335,18 @@ export function DesktopSpectator({
               <FeedList items={feed} />
             </div>
             <div className="panel soft" style={{ padding: "12px 18px" }}>
-              {board.cards.map((card) => (
-                <div key={card.id} className="row" style={{ minHeight: 40, fontSize: 14, fontWeight: 600 }}>
-                  <span className="tag dark">Card {card.number}</span>
-                  Thru {card.thru}
-                  <span style={{ marginLeft: "auto" }} className="row">
-                    <GdIcon name="check" size={16} /> {card.syncedAt ? `synced ${johannesburgClock(card.syncedAt)}` : "waiting"}
-                  </span>
-                </div>
-              ))}
+              {board.cards.map((card) => {
+                const syncedAt = spectatorSyncedAt(board.gameDayId, card);
+                return (
+                  <div key={card.id} className="row" style={{ minHeight: 40, fontSize: 14, fontWeight: 600 }}>
+                    <span className="tag dark">Card {card.number}</span>
+                    Thru {card.thru}
+                    <span style={{ marginLeft: "auto" }} className="row">
+                      <GdIcon name="check" size={16} /> {syncedAt ? `synced ${johannesburgClock(syncedAt)}` : "waiting"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             <div className="panel" style={{ padding: "18px 20px" }}>
               <div className="row">
