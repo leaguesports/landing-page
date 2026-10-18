@@ -1,4 +1,3 @@
-import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { sanityImageUrl } from "@/lib/venues/photo";
 import { PLAY_RESULTS_SPORT_SLUGS } from "@/lib/venues/play-chrome";
 import {
@@ -15,6 +14,10 @@ import {
   screeningListingDays,
 } from "@/lib/venues/watch-week";
 import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
+import {
+  metadataForMissingVenue,
+  resolvePublishedVenueRoute,
+} from "@/lib/venues/published-route";
 import { getUpcomingFixtures } from "@/services/events";
 import {
   getVenueBySlug,
@@ -24,8 +27,8 @@ import {
 } from "@/services/venues";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { after } from "next/server";
-import { DeepLinkRecovery } from "@/components/conversion/DeepLinkRecovery";
 import { buildVenueJsonLd } from "./_components/venueJsonLd";
 import { VenueProfile } from "./_components/VenueProfile";
 
@@ -71,13 +74,11 @@ export async function generateMetadata({
   params: Promise<{ venue: string }>;
 }): Promise<Metadata> {
   const { venue: slug } = await params;
-  const venue = await getVenueBySlug(slug);
-  if (!venue) {
-    return {
-      title: missingObjectOgTitle("venue", slug),
-      robots: { index: false, follow: false },
-    };
+  const resolved = resolvePublishedVenueRoute(await getVenueBySlug(slug));
+  if (resolved.kind === "not-found") {
+    return metadataForMissingVenue(slug);
   }
+  const venue = resolved.venue;
 
   const title = venueProfileTitle(venue);
   const description = venueProfileDescription(venue);
@@ -113,14 +114,11 @@ export async function generateMetadata({
 export default async function VenuePage({ params, searchParams }: Props) {
   const { venue: venueSlug } = await params;
   const query = await searchParams;
-  const venue = await getVenueBySlug(venueSlug);
-  if (!venue) {
-    return (
-      <div className="min-h-screen bg-[#0c0f0c] text-white">
-        <DeepLinkRecovery kind="venue" objectName={venueSlug} />
-      </div>
-    );
+  const resolved = resolvePublishedVenueRoute(await getVenueBySlug(venueSlug));
+  if (resolved.kind === "not-found") {
+    notFound();
   }
+  const venue = resolved.venue;
 
   const cookie = (await cookies()).toString();
   after(() =>

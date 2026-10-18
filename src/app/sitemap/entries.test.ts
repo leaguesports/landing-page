@@ -140,6 +140,17 @@ describe("static and CMS row mappers", () => {
       [`${ORIGIN}/venues/ok-venue`],
     );
     assert.deepEqual(
+      venueSitemapRoutes(
+        ORIGIN,
+        [
+          { slug: "bryanston-sports-club-bowls" },
+          { slug: "bryanston-sports-club" },
+        ],
+        NOW,
+      ).map((row) => row.url),
+      [`${ORIGIN}/venues/bryanston-sports-club`],
+    );
+    assert.deepEqual(
       guideSitemapRoutes(
         ORIGIN,
         [{ slug: "" }, { slug: "Best_Padel" }, { slug: "joburg-padel" }],

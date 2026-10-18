@@ -2,6 +2,20 @@ import type { SitemapDataSource } from "@/app/sitemap/entries";
 
 const FETCH_TIMEOUT_MS = 12_000;
 
+/**
+ * Published venues only. Draft ids (`drafts.**`) are unpublished copies and
+ * must not appear in the sitemap. Redirected slugs are dropped later in
+ * `venueSitemapRoutes`.
+ */
+export const SITEMAP_PUBLISHED_VENUES_QUERY = `*[
+  _type == "venue"
+  && defined(slug.current)
+  && !(_id in path("drafts.**"))
+] {
+  "slug": slug.current,
+  "updatedAt": _updatedAt
+}`;
+
 function isSanityConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SANITY_PROJECT_ID &&
@@ -44,12 +58,7 @@ export function createCmsSource(): SitemapDataSource {
           const { sanityClient } = await import("@/sanity/client");
           const rows = await sanityClient.fetch<
             { slug: string | null; updatedAt: string | null }[]
-          >(`
-          *[_type == "venue" && defined(slug.current)] {
-            "slug": slug.current,
-            "updatedAt": _updatedAt
-          }
-        `);
+          >(SITEMAP_PUBLISHED_VENUES_QUERY);
           return Array.isArray(rows) ? rows : [];
         },
         [],
