@@ -42,9 +42,10 @@ const headerPillClass =
   "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/45 bg-[#161a16] px-4 text-sm font-semibold text-white";
 
 function ActionIcon({ label }: { label: string }) {
-  if (label === "Board") return <List className="h-4 w-4" aria-hidden />;
-  if (label === "Score") return <Pencil className="h-4 w-4" aria-hidden />;
-  if (label === "Watching" || label.startsWith("Watching")) return <Eye className="h-4 w-4" aria-hidden />;
+  const icon = "h-5 w-5";
+  if (label === "Board") return <List className={icon} strokeWidth={2.25} aria-hidden />;
+  if (label === "Score") return <Pencil className={icon} strokeWidth={2.25} aria-hidden />;
+  if (label === "Watching" || label.startsWith("Watching")) return <Eye className={icon} strokeWidth={2.25} aria-hidden />;
   return null;
 }
 
@@ -80,12 +81,10 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 w-full items-center justify-between gap-3 px-4 xl:px-6">
           <Link
             href="/"
-            className="inline-flex min-w-0 items-center gap-2 font-display text-[22px] leading-none tracking-tight text-white"
+            className="inline-flex min-w-0 items-center gap-2 font-display text-[22px] leading-none tracking-[-0.06em] text-white xl:text-[26px]"
           >
-            <BrandMark className="h-9 w-9 shrink-0" size={36} priority />
-            <span className="truncate">
-              LEAGUE<span className="text-[#3dff8a]">SPORTS</span>
-            </span>
+            <BrandMark className="h-8 w-8 shrink-0 xl:h-9 xl:w-9" size={36} priority />
+            <span className="truncate">LEAGUE<span className="text-[#3dff8a]">SPORTS</span></span>
           </Link>
           {action.sports ? (
             <nav className="hidden items-center gap-4 xl:flex" aria-label="Sports">
