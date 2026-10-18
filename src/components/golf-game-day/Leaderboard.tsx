@@ -145,7 +145,7 @@ export function LeaderboardView({
         ) : (
           <div className="mx-auto w-full max-w-[420px] px-4 pb-10 pt-6">
             <div className="flex items-end justify-between gap-3">
-              <h1 className="font-display text-[28px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+              <h1 className="font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
               {updated ? <p className="pb-1 text-xs text-zinc-500">Updated {updated}</p> : null}
             </div>
             <div className="mt-4">
@@ -187,7 +187,7 @@ export function LeaderboardView({
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Live leaderboard · {scoringName(board.format)} · {board.venueName}
             </p>
-            <h1 className="mt-1 font-display text-4xl leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-1 font-display text-[56px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
           <div className="flex shrink-0 items-center gap-3 pb-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
@@ -424,7 +424,7 @@ function SpectatorPhone({
         <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
           {scoringName(board.format)} · {players} players · {cards} cards
         </p>
-        <h1 className="mt-1 font-display text-[28px] leading-none tracking-wide text-zinc-950">{headline}</h1>
+        <h1 className="mt-1 font-display text-[42px] leading-none tracking-wide text-zinc-950">{headline}</h1>
 
         <section className="mt-5" aria-label="Latest">
           <h2 className="text-sm font-semibold text-zinc-950">Latest</h2>

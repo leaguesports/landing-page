@@ -30,7 +30,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 
 export function ScreenTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="mt-2 font-display text-[28px] leading-none tracking-wide text-zinc-950">
+    <h1 className="mt-2 font-display text-[42px] leading-none tracking-wide text-zinc-950">
       {children}
     </h1>
   );

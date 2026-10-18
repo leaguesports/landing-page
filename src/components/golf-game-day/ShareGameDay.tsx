@@ -94,7 +94,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Stroke play · {day.defaultTee} tee
             </p>
-            <h1 className="mt-1 font-display text-2xl leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-1 font-display text-[34px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Join code</p>
-              <p className="mt-1 font-display text-4xl leading-none tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
+              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
             </div>
             <p className="pb-1 text-right text-xs font-semibold leading-snug text-zinc-950">
               leaguesports.co.za

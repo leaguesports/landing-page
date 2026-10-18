@@ -64,7 +64,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
           ✓ {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
         </span>
       </div>
-      <h1 className="mt-3 font-display text-[28px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+      <h1 className="mt-3 font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
 
       <article className="mt-5 rounded-3xl bg-zinc-950 px-5 py-6 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">

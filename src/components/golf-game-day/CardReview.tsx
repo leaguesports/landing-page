@@ -169,7 +169,7 @@ export function CardReview({
             New
           </span>
         </div>
-        <h1 className="mt-2 font-display text-[28px] leading-none tracking-wide text-zinc-950">Check your card</h1>
+        <h1 className="mt-2 font-display text-[42px] leading-none tracking-wide text-zinc-950">Check your card</h1>
         <p className="mt-2 text-sm text-zinc-600">Tap any score to fix it before you confirm.</p>
 
         <NineTable title="Front" totalLabel="Out" players={front} onEditHole={onEditHole} />
