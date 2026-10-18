@@ -5,6 +5,7 @@ import type {
   RankingRow,
 } from "../../types/golf-game-day.ts";
 import { formatGameDayDate, gameDayHeadline } from "./paths.ts";
+import { finishedRound } from "./scoring-ui.ts";
 
 const FIXTURE_DATE = "2026-11-01";
 const FIXTURE_VENUE = "Zebula Golf Estate & Spa";
@@ -136,40 +137,73 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
   };
 }
 
-export function fixtureResults(): GameDayLeaderboard {
-  const winner: RankingRow = {
-    position: "1",
-    positionNumber: 1,
+function finishedPlayer(input: {
+  name: string;
+  handicapIndex: number;
+  playingHandicap: number;
+  gross: number;
+  countbackNote: string | null;
+  you?: boolean;
+}): RankingRow {
+  const scores = finishedRound(input.gross, input.playingHandicap);
+  return {
+    position: "0",
+    positionNumber: 0,
     tied: false,
-    playerId: "nadia",
-    displayName: "Nadia",
-    you: false,
-    cardId: "card-3",
-    cardNumber: 3,
-    handicapIndex: 4,
-    playingHandicap: 4,
-    thru: 18,
-    gross: 68,
-    toPar: 4,
-    net: 64,
-    stableford: 38,
-    countbackNote: null,
+    playerId: input.name.toLowerCase(),
+    displayName: input.name,
+    you: input.you ?? false,
+    cardId: "card-1",
+    cardNumber: 1,
+    handicapIndex: input.handicapIndex,
+    playingHandicap: input.playingHandicap,
+    thru: scores.thru,
+    gross: scores.gross,
+    toPar: scores.toPar,
+    net: scores.net,
+    stableford: scores.stableford,
+    countbackNote: input.countbackNote,
   };
-  const rest = liveRows.slice(1).map((item, index) => ({
-    ...item,
-    thru: 18,
-    you: false,
-    position: String(index + 2),
-    positionNumber: index + 2,
-  }));
-  const gross = [winner, ...rest];
+}
+
+/** Countback order is the source order inside a tied score. */
+const finishedPlayers: RankingRow[] = [
+  finishedPlayer({ name: "Nadia", handicapIndex: 4, playingHandicap: 4, gross: 70, countbackNote: "Back nine" }),
+  finishedPlayer({ name: "Brandon", handicapIndex: 14, playingHandicap: 14, gross: 80, countbackNote: "Back nine" }),
+  finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: null, you: true }),
+  finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 83, countbackNote: "Back six" }),
+  finishedPlayer({ name: "Pieter", handicapIndex: 18, playingHandicap: 18, gross: 92, countbackNote: "Back six" }),
+  finishedPlayer({ name: "Ruan", handicapIndex: 22, playingHandicap: 22, gross: 98, countbackNote: null }),
+];
+
+function orderFinished(
+  rows: RankingRow[],
+  score: (row: RankingRow) => number,
+  direction: "asc" | "desc",
+): RankingRow[] {
+  const indexed = rows.map((row, index) => ({ row, index }));
+  indexed.sort((left, right) => {
+    const delta = score(left.row) - score(right.row);
+    if (delta !== 0) return direction === "asc" ? delta : -delta;
+    return left.index - right.index;
+  });
+  return place(indexed.map((item) => item.row));
+}
+
+export function fixtureResults(): GameDayLeaderboard {
+  const gross = orderFinished(finishedPlayers, (row) => row.gross ?? 999, "asc");
+  const net = orderFinished(finishedPlayers, (row) => row.net ?? 999, "asc");
+  const stableford = orderFinished(finishedPlayers, (row) => row.stableford ?? 0, "desc");
   return {
     ...fixtureLeaderboard("player"),
     status: "final",
     access: "player",
     cardsConfirmed: 3,
-    rankings: { gross, net: gross, stableford: gross },
-    podium: { gross, net: gross, stableford: gross },
+    cardsTotal: 3,
+    countback: "last 9, 6, 3, 1",
+    countbackApplied: true,
+    rankings: { gross, net, stableford },
+    podium: { gross: gross.slice(0, 3), net: net.slice(0, 3), stableford: stableford.slice(0, 3) },
   };
 }
 

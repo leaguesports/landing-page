@@ -20,6 +20,8 @@ type LeaderboardViewProps = {
   tab: BoardTab;
   onTab: (tab: BoardTab) => void;
   yourCardHref: string | null;
+  /** Mid-animation translateY, in px, for a lead-change still. */
+  rowShift?: Record<string, number>;
 };
 
 function feedClass(type: string): string {
@@ -58,7 +60,7 @@ function rowTone(you: boolean): string {
   return you ? "bg-[#e5f6d8]" : "bg-white";
 }
 
-export function LeaderboardView({ board, tab, onTab, yourCardHref }: LeaderboardViewProps) {
+export function LeaderboardView({ board, tab, onTab, yourCardHref, rowShift }: LeaderboardViewProps) {
   const rows = board.rankings[tab];
   const orderKey = rows.map((row) => row.playerId).join("|");
   const bind = useRowSlide(orderKey);
@@ -113,6 +115,7 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
                 key={row.playerId}
                 ref={bind(row.playerId)}
                 className={`flex items-center gap-3 px-2 py-3 ${rowTone(row.you)}`}
+                style={rowShift?.[row.playerId] ? { transform: `translateY(${rowShift[row.playerId]}px)` } : undefined}
               >
                 <MobileRow row={row} tab={tab} />
               </li>
@@ -131,12 +134,21 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.playerId} ref={bind(`desk-${row.playerId}`)} className={rowTone(row.you)}>
-                  <td className="py-3 pr-3 font-semibold tabular-nums text-zinc-950">
+              {rows.map((row) => {
+                const shift = rowShift?.[row.playerId];
+                const shiftStyle = shift
+                  ? { transform: `translateY(${shift}px)`, position: "relative" as const, zIndex: 2 }
+                  : undefined;
+                return (
+                <tr
+                  key={row.playerId}
+                  ref={bind(`desk-${row.playerId}`)}
+                  className={rowTone(row.you)}
+                >
+                  <td className="py-3 pr-3 font-semibold tabular-nums text-zinc-950" style={shiftStyle}>
                     {row.position ?? "–"}
                   </td>
-                  <td className="py-3 pr-3">
+                  <td className="py-3 pr-3" style={shiftStyle}>
                     <div className="font-semibold text-zinc-950">
                       {row.displayName}
                       {row.you ? (
@@ -149,17 +161,18 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
                       {[formatHandicap(row.handicapIndex), row.countbackNote].filter(Boolean).join(" · ")}
                     </div>
                   </td>
-                  <td className="py-3 pr-3 tabular-nums text-zinc-700">{row.thru}</td>
-                  <td className="py-3 pr-3 tabular-nums text-zinc-950">
+                  <td className="py-3 pr-3 tabular-nums text-zinc-700" style={shiftStyle}>{row.thru}</td>
+                  <td className="py-3 pr-3 tabular-nums text-zinc-950" style={shiftStyle}>
                     {row.gross ?? "–"}
                     <span className="ml-1 text-zinc-500">{formatToPar(row.toPar)}</span>
                   </td>
-                  <td className="py-3 pr-3 tabular-nums text-zinc-950">{row.net ?? "–"}</td>
-                  <td className="py-3 font-semibold tabular-nums text-green-800">
+                  <td className="py-3 pr-3 tabular-nums text-zinc-950" style={shiftStyle}>{row.net ?? "–"}</td>
+                  <td className="py-3 font-semibold tabular-nums text-green-800" style={shiftStyle}>
                     {row.stableford ?? "–"}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
 

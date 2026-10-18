@@ -138,7 +138,29 @@ export function ScoreEntry({
           </span>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-4 grid grid-cols-[repeat(18,minmax(0,1fr))] gap-1">
+          {holes.map((hole) => (
+            <button
+              key={hole.number}
+              type="button"
+              aria-label={`Hole ${hole.number}, ${hole.sync}`}
+              aria-current={hole.number === holeNumber ? "true" : undefined}
+              onClick={() => onSelectHole(hole.number)}
+              className="min-w-0"
+            >
+              <span className={holeClass(hole, holeNumber)}>{hole.number}</span>
+            </button>
+          ))}
+        </div>
+        <ul className="mt-2 space-y-1">
+          {lines.map((line) => (
+            <li key={line} className="text-sm text-zinc-600">
+              {line}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4">
           {players.map((player) => (
             <div key={player.slot} className="border-b border-zinc-200 py-4">
               <div className="flex items-baseline justify-between gap-3">
@@ -189,28 +211,6 @@ export function ScoreEntry({
             </div>
           ))}
         </div>
-
-        <div className="mt-5 grid grid-cols-[repeat(18,minmax(0,1fr))] gap-1">
-          {holes.map((hole) => (
-            <button
-              key={hole.number}
-              type="button"
-              aria-label={`Hole ${hole.number}, ${hole.sync}`}
-              aria-current={hole.number === holeNumber ? "true" : undefined}
-              onClick={() => onSelectHole(hole.number)}
-              className="min-w-0"
-            >
-              <span className={holeClass(hole, holeNumber)}>{hole.number}</span>
-            </button>
-          ))}
-        </div>
-        <ul className="mt-3 space-y-1">
-          {lines.map((line) => (
-            <li key={line} className="text-sm text-zinc-600">
-              {line}
-            </li>
-          ))}
-        </ul>
       </div>
 
       <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">

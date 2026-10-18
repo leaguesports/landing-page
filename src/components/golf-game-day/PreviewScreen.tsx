@@ -206,6 +206,18 @@ export function PreviewScreen({ screen }: { screen: string }) {
     );
   }
 
+  if (screen === "desktop") {
+    return (
+      <LeaderboardView
+        board={fixtureLeaderboard("player")}
+        tab="stableford"
+        onTab={setTab}
+        yourCardHref={gameDayCardPath(FIXTURE_DAY_ID, "card-2")}
+        rowShift={{ nadia: 58, brandon: -58 }}
+      />
+    );
+  }
+
   if (screen === "spectator") {
     return (
       <LeaderboardView

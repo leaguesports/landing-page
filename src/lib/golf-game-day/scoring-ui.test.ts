@@ -9,8 +9,11 @@ import {
   STROKE_MIN,
   boardBadge,
   defaultBoardTab,
+  finishedRound,
   formatBoardScore,
   formatToPar,
+  GAME_DAY_COURSE_PAR,
+  resultsWinnerLine,
   gameDayCardStartBody,
   holeStatusLines,
   holeSyncLabel,
@@ -110,6 +113,19 @@ describe("game day scoring UI", () => {
     assert.equal(overallSyncLabel(["saving", "offline"]), "Offline — will sync");
   });
 
+  it("keeps a finished round arithmetically consistent", () => {
+    const round = finishedRound(70, 4, GAME_DAY_COURSE_PAR);
+    assert.deepEqual(round, { gross: 70, toPar: -2, net: 66, stableford: 42, thru: 18 });
+    assert.equal(
+      resultsWinnerLine({
+        tab: "net",
+        row: round,
+        countbackApplied: true,
+      }),
+      "Net 66 (−6) · won on countback",
+    );
+  });
+
   it("formats to-par, board scores, and the v2 winner hero", () => {
     assert.equal(formatToPar(0), "E");
     assert.equal(formatToPar(4), "+4");
@@ -204,7 +220,17 @@ describe("game day scoring UI", () => {
     const live = board({ version: 1, you: false, access: "watch" });
     live.rankings.stableford[0]!.stableford = 38;
     assert.equal(defaultBoardTab(live), "stableford");
-    assert.equal(defaultBoardTab({ ...live, status: "final" }), "gross");
+    assert.equal(defaultBoardTab({ ...live, status: "final" }), "net");
+    const scratch = {
+      ...live,
+      status: "final" as const,
+      rankings: {
+        gross: [{ ...live.rankings.gross[0]!, handicapIndex: null, playingHandicap: null }],
+        net: [{ ...live.rankings.net[0]!, handicapIndex: null, playingHandicap: null }],
+        stableford: [{ ...live.rankings.stableford[0]!, handicapIndex: null, playingHandicap: null }],
+      },
+    };
+    assert.equal(defaultBoardTab(scratch), "gross");
   });
 });
 

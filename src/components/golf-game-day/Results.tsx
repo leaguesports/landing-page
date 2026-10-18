@@ -1,62 +1,74 @@
 "use client";
 
 import { useState } from "react";
-import type { BoardTab, GameDayLeaderboard } from "@/types/golf-game-day";
-import {
-  formatBoardScore,
-  formatHandicap,
-  resultShareText,
-  winnerHero,
-} from "@/lib/golf-game-day/scoring-ui";
+import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
+import {
+  defaultBoardTab,
+  formatHandicap,
+  formatToPar,
+  GAME_DAY_COURSE_PAR,
+  resultShareText,
+  resultsWinnerLine,
+} from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
-import { Eyebrow, GameDayColumn, primaryLinkClass, WhatsAppIcon } from "./ui";
+import { GameDayColumn, primaryLinkClass, WhatsAppIcon } from "./ui";
 
 type ResultsViewProps = {
   board: GameDayLeaderboard;
   weekendHref: string | null;
-  holesPlayed?: number;
 };
 
-export function ResultsView({ board, weekendHref, holesPlayed = 18 }: ResultsViewProps) {
-  const [tab, setTab] = useState<BoardTab>("gross");
+const TABS: BoardTab[] = ["gross", "net", "stableford"];
+
+export function ResultsView({ board, weekendHref }: ResultsViewProps) {
+  const [tab, setTab] = useState<BoardTab>(() => defaultBoardTab(board));
   const shown = presentGameDay(board);
   useGameDayAction("Sign in", "/login");
   const rows = board.rankings[tab];
-  const winner = rows.find((row) => row.positionNumber === 1) ?? null;
-  const hero = winner ? winnerHero(tab, winner, holesPlayed) : null;
-  const shareText = winner && hero
+  const winner = rows.find((row) => row.positionNumber === 1) ?? rows[0] ?? null;
+  const line = winner
+    ? resultsWinnerLine({
+        tab,
+        row: winner,
+        coursePar: GAME_DAY_COURSE_PAR,
+        countbackApplied: board.countbackApplied,
+      })
+    : "";
+  const shareText = winner
     ? resultShareText({
         name: winner.displayName,
         headline: shown.headline,
-        score: hero.score,
-        line: hero.line,
+        score: line,
+        line: winner.countbackNote ?? "",
       })
-    : board.headline;
+    : shown.headline;
 
   return (
     <GameDayColumn>
-      <article className="-mx-5 bg-zinc-950 px-6 py-12 text-white">
-        <Eyebrow>
-          <span className="text-zinc-400">{shown.headline}</span>
-        </Eyebrow>
-        <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
-          Winner
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Final</p>
+        <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+          ✓ {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
+        </span>
+      </div>
+      <h1 className="mt-3 font-display text-5xl tracking-wide text-zinc-950">{shown.dateLabel}</h1>
+
+      <article className="mt-5 rounded-3xl bg-zinc-950 px-5 py-6 text-white">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
+          🏆 Winner · {tab}
         </p>
-        <h1 className="mt-1 font-display text-7xl tracking-wide text-white">
+        <h2 className="mt-3 font-display text-6xl tracking-wide text-white">
           {winner?.displayName ?? "No winner yet"}
-        </h1>
-        <p className="mt-2 font-display text-9xl leading-none text-[#C6FF00]">
-          {hero?.score ?? "–"}
-        </p>
-        <p className="mt-1 text-3xl text-white">{hero?.line}</p>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-          {hero?.caption}
-        </p>
+        </h2>
+        <p className="mt-3 text-lg text-white">{line}</p>
+        {winner?.countbackNote ? (
+          <p className="mt-2 text-sm text-zinc-400">{winner.countbackNote}</p>
+        ) : null}
       </article>
 
       <div className="mt-5 flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label="Result">
-        {(["gross", "net", "stableford"] as const).map((item) => (
+        {TABS.map((item) => (
           <button
             key={item}
             type="button"
@@ -74,40 +86,84 @@ export function ResultsView({ board, weekendHref, holesPlayed = 18 }: ResultsVie
         ))}
       </div>
 
-      <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200">
-        {rows.map((row) => {
-          const score = formatBoardScore(tab, row);
-          return (
-            <li key={row.playerId} className="flex items-center gap-3 py-3">
-              <span className="w-8 font-semibold tabular-nums">{row.position ?? "–"}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{row.displayName}</span>
-                <span className="block text-xs text-zinc-500">
-                  {formatHandicap(row.handicapIndex)}
-                </span>
-              </span>
-              <span className="text-right font-display text-3xl leading-none tabular-nums">
-                {score.primary}
-                {score.suffix ? (
-                  <span className="ml-1 font-sans text-[11px] font-semibold uppercase text-green-800">
-                    {score.suffix}
-                  </span>
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-b border-zinc-200 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              <th className="py-2 pr-2 font-semibold">Pos</th>
+              <th className="py-2 pr-2 font-semibold">Player</th>
+              <th className="py-2 pr-2 text-right font-semibold">To par</th>
+              <th className="py-2 pr-2 text-right font-semibold">Net</th>
+              <th className="py-2 text-right font-semibold">Gross</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <ResultRow key={row.playerId} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-8`}>
-        <WhatsAppIcon />
-        Share result
-      </a>
-      {weekendHref ? (
-        <a href={weekendHref} className="mt-4 block text-center text-sm font-semibold text-zinc-950">
-          Weekend leaderboard
-        </a>
+      {board.countback ? (
+        <p className="mt-4 text-sm text-zinc-500">Ties split on countback: {board.countback}</p>
       ) : null}
+
+      <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-6`}>
+        <WhatsAppIcon />
+        Share results
+      </a>
+
+      <section className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-zinc-300 px-4 py-4">
+        <div>
+          <p className="text-sm font-semibold text-zinc-950">Add to weekend event</p>
+          <p className="mt-1 text-sm text-zinc-500">Keep this round on the weekend board.</p>
+        </div>
+        {weekendHref ? (
+          <a
+            href={weekendHref}
+            className="inline-flex shrink-0 items-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Add
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="inline-flex shrink-0 items-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Add
+          </button>
+        )}
+      </section>
     </GameDayColumn>
+  );
+}
+
+function ResultRow({ row }: { row: RankingRow }) {
+  const under = (row.toPar ?? 0) < 0;
+  const detail = row.countbackNote ?? formatHandicap(row.handicapIndex);
+  return (
+    <tr className="border-b border-zinc-200">
+      <td className="py-3 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
+      <td className="py-3 pr-2">
+        <span className="font-semibold text-zinc-950">
+          {row.displayName}
+          {row.you ? (
+            <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+              You
+            </span>
+          ) : null}
+        </span>
+        {detail ? <span className="mt-0.5 block text-xs text-zinc-500">{detail}</span> : null}
+      </td>
+      <td
+        className={`py-3 pr-2 text-right font-display text-3xl leading-none tabular-nums ${under ? "text-green-800" : "text-zinc-950"}`}
+      >
+        {formatToPar(row.toPar)}
+      </td>
+      <td className="py-3 pr-2 text-right tabular-nums text-zinc-950">{row.net ?? "–"}</td>
+      <td className="py-3 text-right tabular-nums text-zinc-950">{row.gross ?? "–"}</td>
+    </tr>
   );
 }

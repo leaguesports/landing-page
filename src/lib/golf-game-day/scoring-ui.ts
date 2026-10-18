@@ -168,8 +168,60 @@ export function boardBadge(status: string, access: string): "Live" | "Watching" 
   return "Live";
 }
 
+/** Zebula scorecard par. Finished-round maths uses this unless a course par is passed. */
+export const GAME_DAY_COURSE_PAR = 72;
+
+/**
+ * A completed 18-hole card.
+ * to-par is gross minus par. Net is gross minus playing handicap.
+ * Stableford starts at 36 for a net even-par round: 36 + (par − net).
+ */
+export function finishedRound(
+  gross: number,
+  playingHandicap: number,
+  par = GAME_DAY_COURSE_PAR,
+): { gross: number; toPar: number; net: number; stableford: number; thru: 18 } {
+  const toPar = gross - par;
+  const net = gross - playingHandicap;
+  const stableford = 36 + (par - net);
+  return { gross, toPar, net, stableford, thru: 18 };
+}
+
+export function resultsWinnerLine(input: {
+  tab: BoardTab;
+  row: Pick<RankingRow, "gross" | "net" | "toPar" | "stableford">;
+  coursePar?: number;
+  countbackApplied: boolean;
+}): string {
+  const par = input.coursePar ?? GAME_DAY_COURSE_PAR;
+  const rel = (value: number) => {
+    if (value === 0) return "E";
+    if (value < 0) return `−${Math.abs(value)}`;
+    return `+${value}`;
+  };
+  let line = "";
+  if (input.tab === "net" && input.row.net != null) {
+    line = `Net ${input.row.net} (${rel(input.row.net - par)})`;
+  } else if (input.tab === "stableford") {
+    line = `${input.row.stableford ?? "–"} pts`;
+  } else {
+    line = `Gross ${input.row.gross ?? "–"} (${rel(input.row.toPar ?? 0)})`;
+  }
+  if (input.countbackApplied && input.tab !== "stableford") {
+    return `${line} · won on countback`;
+  }
+  return line;
+}
+
 export function defaultBoardTab(board: Pick<GameDayLeaderboard, "rankings" | "status">): BoardTab {
-  if (board.status === "final") return "gross";
+  if (board.status === "final") {
+    const hasHandicap = (["gross", "net", "stableford"] as const).some((tab) =>
+      board.rankings[tab].some(
+        (row) => row.handicapIndex != null || row.playingHandicap != null,
+      ),
+    );
+    return hasHandicap ? "net" : "gross";
+  }
   const hasPoints = board.rankings.stableford.some((row) => row.stableford != null);
   return hasPoints ? "stableford" : "gross";
 }
