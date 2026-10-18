@@ -97,7 +97,7 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
   const mark = (rows: RankingRow[]) =>
     rows.map((item) => ({
       ...item,
-      you: access === "player" && item.playerId === "mike",
+      you: access === "player" && item.playerId === "brandon",
     }));
   const gross = mark(placeTied(byGross(liveRows), (row) => row.toPar ?? 999));
   const net = mark(placeTied(byNet(liveRows), (row) => netToPar(row) ?? 999));

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, List } from "lucide-react";
+import { Eye, List, Pencil } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -38,28 +38,35 @@ export function useGameDayAction(
   }, [setAction, label, href, tone, sports]);
 }
 
+const headerPillClass =
+  "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/45 bg-[#161a16] px-4 text-sm font-semibold text-white";
+
+function ActionIcon({ label }: { label: string }) {
+  if (label === "Board") return <List className="h-4 w-4" aria-hidden />;
+  if (label === "Score") return <Pencil className="h-4 w-4" aria-hidden />;
+  if (label === "Watching" || label.startsWith("Watching")) return <Eye className="h-4 w-4" aria-hidden />;
+  return null;
+}
+
 function ActionPill({ action }: { action: GameDayAction }) {
   if (action.tone === "watch") {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#3dff8a] px-3 py-1.5 text-xs font-semibold text-zinc-950">
-        {action.label === "Watching" ? <Eye className="h-3.5 w-3.5" aria-hidden /> : null}
+      <span className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[#3dff8a] px-4 text-sm font-semibold text-zinc-950">
+        <ActionIcon label={action.label} />
         {action.label}
       </span>
     );
   }
   if (action.tone === "account") {
     return (
-      <span className="inline-flex shrink-0 items-center text-sm font-semibold text-white">
+      <span className={headerPillClass}>
         {action.label}
       </span>
     );
   }
   return (
-    <Link
-      href={action.href}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/50 px-3 py-1.5 text-xs font-semibold text-white"
-    >
-      {action.label === "Board" ? <List className="h-3.5 w-3.5" aria-hidden /> : null}
+    <Link href={action.href} className={headerPillClass}>
+      <ActionIcon label={action.label} />
       {action.label}
     </Link>
   );
@@ -73,11 +80,11 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 w-full items-center justify-between gap-3 px-4 xl:px-6">
           <Link
             href="/"
-            className="inline-flex min-w-0 items-center gap-2 font-display text-2xl tracking-wide text-white"
+            className="inline-flex min-w-0 items-center gap-1.5 font-display text-[1.65rem] leading-none tracking-tight text-white"
           >
-            <BrandMark className="h-8 w-8 shrink-0" size={32} priority />
+            <BrandMark className="h-7 w-7 shrink-0" size={28} priority />
             <span className="truncate">
-              LEAGUE <span className="text-[#3dff8a]">SPORTS</span>
+              LEAGUE<span className="text-[#3dff8a]">SPORTS</span>
             </span>
           </Link>
           {action.sports ? (

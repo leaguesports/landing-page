@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { GameDayPreview, JoinResult } from "@/types/golf-game-day";
 import type { GolfCourseCms } from "@/types/golf-round";
@@ -26,9 +27,7 @@ import {
 } from "@/lib/golf-game-day/storage";
 import { useGameDayAction } from "./GameDayChrome";
 import {
-  ChoiceChip,
   Eyebrow,
-  FieldLabel,
   GameDayColumn,
   PrimaryButton,
   ScreenTitle,
@@ -433,7 +432,8 @@ export function JoinGameDay({
     <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
       <div className="flex-1 px-5 pb-4 pt-6">
         <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
-        <p className="mt-3 text-base font-semibold text-zinc-950">
+        <ScreenTitle>{shown.headline}</ScreenTitle>
+        <p className="mt-2 text-sm font-semibold text-zinc-950">
           {shown.place} · {preview.format === "stroke" ? "Stroke play" : preview.format}
         </p>
 
@@ -461,35 +461,32 @@ export function JoinGameDay({
                   onClick={() => setPlayerId(player.id)}
                   className={
                     player.taken
-                      ? "min-h-[4.5rem] rounded-2xl border border-zinc-200 px-2 py-2 text-left text-zinc-400"
+                      ? "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl bg-zinc-200 px-1 py-2 text-center text-zinc-600"
                       : selected
-                        ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-white"
-                        : "min-h-[4.5rem] rounded-2xl border border-zinc-300 bg-white px-2 py-2 text-left text-zinc-950"
+                        ? "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl bg-zinc-950 px-1 py-2 text-center text-white"
+                        : "flex min-h-[4.75rem] flex-col items-center justify-center rounded-2xl border border-zinc-300 bg-white px-1 py-2 text-center text-zinc-950"
                   }
                 >
                   <span className="block text-sm font-semibold">{player.displayName}</span>
-                  <span className={`mt-1 block text-[11px] ${selected ? "text-white/80" : "text-zinc-500"}`}>
+                  <span className={`mt-1 block text-[11px] ${selected && !player.taken ? "font-semibold text-[#3dff8a]" : "text-zinc-500"}`}>
                     {status}
                   </span>
                 </button>
               );
             })}
-            <button
-              type="button"
-              aria-pressed={playerId === "new"}
-              onClick={() => setPlayerId("new")}
-              className={
-                playerId === "new"
-                  ? "min-h-[4.5rem] rounded-2xl bg-zinc-950 px-2 py-2 text-left text-white"
-                  : "min-h-[4.5rem] rounded-2xl border border-dashed border-zinc-400 bg-white px-2 py-2 text-left text-zinc-950"
-              }
-            >
-              <span className="block text-sm font-semibold">+ Add me</span>
-              <span className={`mt-1 block text-[11px] ${playerId === "new" ? "text-white/80" : "text-zinc-500"}`}>
-                not on the list
-              </span>
-            </button>
           </div>
+          <button
+            type="button"
+            aria-pressed={playerId === "new"}
+            onClick={() => setPlayerId("new")}
+            className={
+              playerId === "new"
+                ? "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl bg-zinc-950 px-3 text-sm font-semibold text-white"
+                : "mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-400 bg-white px-3 text-sm font-semibold text-zinc-950"
+            }
+          >
+            + Add me · not on the list
+          </button>
           {playerId === "new" ? (
             <input
               value={addedName}
@@ -502,44 +499,53 @@ export function JoinGameDay({
         </fieldset>
 
         <label className="mt-5 flex items-center justify-between gap-3">
-          <FieldLabel>Handicap · optional</FieldLabel>
+          <span className="text-sm font-semibold text-zinc-950">Handicap optional</span>
           <input
             value={handicap}
             onChange={(event) => setHandicap(event.target.value)}
             inputMode="decimal"
-            placeholder="e.g. 6"
+            placeholder="6"
             aria-label="Handicap"
-            className="w-24 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-right text-sm text-zinc-950"
+            className="w-16 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-center text-sm font-semibold text-zinc-950"
           />
         </label>
 
         <fieldset className="mt-5 rounded-2xl border border-dashed border-zinc-400 p-4">
           <legend className="sr-only">Your tee</legend>
           <div className="flex items-center justify-between gap-3">
-            <FieldLabel>Your tee</FieldLabel>
-            <span className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
-              Option
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
+              Your tee
+              <span className="rounded-full border border-dashed border-zinc-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                Option
+              </span>
             </span>
+            <span className="text-sm text-zinc-500">organiser&apos;s: {preview.defaultTee}</span>
           </div>
-          <p className="mt-2 text-sm text-zinc-500">organiser&apos;s: {preview.defaultTee}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {preview.teeOptions.map((option) => (
-              <ChoiceChip
-                key={option}
-                selected={(tee || preview.defaultTee) === option}
-                onClick={() => setTee(option)}
-              >
-                <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${teeDotClass(option)}`} />
-                {option}
-              </ChoiceChip>
-            ))}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {preview.teeOptions.map((option) => {
+              const selected = (tee || preview.defaultTee) === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setTee(option)}
+                  className={
+                    selected
+                      ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-zinc-950 px-2 text-sm font-semibold text-white"
+                      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-2 text-sm font-semibold text-zinc-950"
+                  }
+                >
+                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${teeDotClass(option)}`} />
+                  {option}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
 
         <section className="mt-6">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Pick a card
-          </h2>
+          <h2 className="text-sm font-semibold text-zinc-950">Pick a card</h2>
           <div className="mt-3 space-y-2">
             {preview.cards.map((card) => {
               const seats = card.players.length;
@@ -563,19 +569,31 @@ export function JoinGameDay({
                   onClick={() => setCardChoice(card.id)}
                   className={
                     selected
-                      ? "w-full rounded-2xl bg-zinc-950 px-4 py-3 text-left text-white"
-                      : "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-left text-zinc-950"
+                      ? "w-full rounded-2xl border-2 border-zinc-950 bg-white px-4 py-3 text-left text-zinc-950"
+                      : card.full
+                        ? "w-full rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-left text-zinc-950"
+                        : "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-left text-zinc-950"
                   }
                 >
                   <span className="flex items-center justify-between gap-3 text-sm font-semibold">
-                    <span>Card {card.number}</span>
-                    <span className="text-[11px] uppercase tracking-[0.12em]">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className={
+                          selected
+                            ? "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-950"
+                            : "inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-400"
+                        }
+                        aria-hidden
+                      >
+                        {selected ? <span className="h-2.5 w-2.5 rounded-full bg-zinc-950" /> : null}
+                      </span>
+                      Card {card.number}
+                    </span>
+                    <span className="text-xs font-semibold text-zinc-600">
                       {card.full ? `Full · ${seats}/4` : `${seats}/4 · ${open} open`}
                     </span>
                   </span>
-                  <span className={`mt-1 block text-sm ${selected ? "text-white/80" : "text-zinc-600"}`}>
-                    {members}
-                  </span>
+                  <span className="mt-1 block pl-7 text-sm text-zinc-600">{members}</span>
                 </button>
               );
             })}
@@ -585,11 +603,12 @@ export function JoinGameDay({
               onClick={() => setCardChoice("new")}
               className={
                 cardChoice === "new"
-                  ? "w-full rounded-2xl bg-zinc-950 px-4 py-3 text-left text-sm font-semibold text-white"
-                  : "w-full rounded-2xl border border-dashed border-zinc-400 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-950"
+                  ? "inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-zinc-950 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-950"
+                  : "inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-400 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-950"
               }
             >
-              + Start new card · you&apos;ll score
+              <Plus className="h-4 w-4" aria-hidden />
+              Start new card · you&apos;ll score
             </button>
           </div>
         </section>

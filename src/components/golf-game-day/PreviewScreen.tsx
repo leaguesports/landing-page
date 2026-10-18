@@ -39,10 +39,10 @@ const HOLES = Array.from({ length: 18 }, (_, index) => ({
 const HEADLINE = gameDayHeadline("Zebula Golf Estate & Spa", "2026-11-01");
 
 const SCORE_PLAYERS = [
-  { slot: 1, name: "Mike", strokes: 4, total: 30, toPar: "+3", dots: 1 },
+  { slot: 1, name: "Mike", strokes: 4, total: 30, toPar: "+3", dots: 0 },
   { slot: 2, name: "Lerato", strokes: 5, total: 35, toPar: "+8", dots: 0 },
-  { slot: 3, name: "Pieter", strokes: 4, total: 29, toPar: "+2", dots: 0 },
-  { slot: 4, name: "Kabelo", strokes: 5, total: 33, toPar: "+6", dots: 0 },
+  { slot: 3, name: "Pieter", strokes: 4, total: 29, toPar: "+2", dots: 1 },
+  { slot: 4, name: "Kabelo", strokes: 5, total: 33, toPar: "+6", dots: 1 },
 ];
 
 export function PreviewScreen({ screen }: { screen: string }) {

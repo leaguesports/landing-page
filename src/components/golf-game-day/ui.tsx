@@ -98,11 +98,7 @@ export function ChoiceChip({
 }
 
 export function FieldLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-950">
-      {children}
-    </span>
-  );
+  return <span className="text-sm font-semibold text-zinc-950">{children}</span>;
 }
 
 export function textFieldClass(): string {

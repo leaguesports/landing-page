@@ -143,31 +143,40 @@ export function LeaderboardView({
             headline={shown.headline}
           />
         ) : (
-          <div className="mx-auto w-full max-w-[420px] px-4 pb-10 pt-6">
-            <div className="flex items-end justify-between gap-3">
-              <h1 className="font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
-              {updated ? <p className="pb-1 text-xs text-zinc-500">Updated {updated}</p> : null}
+          <div className="mx-auto w-full max-w-[420px] overflow-x-hidden px-4 pb-10 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-950 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
+                <span className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`} aria-hidden />
+                Live
+              </span>
+              {updated ? <p className="text-sm text-zinc-500">Updated {updated}</p> : null}
             </div>
+            <h1 className="mt-3 font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
             <div className="mt-4">
               <TabBar tab={tab} onTab={onTab} label="Scoring" />
             </div>
-            <div className="mt-4 grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] gap-2 border-b border-zinc-200 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-              <span>Pos</span>
-              <span>Player</span>
-              <span className="text-right">Pts</span>
-              <span className="text-right">Thru</span>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
+              <div className="grid grid-cols-[4.6rem_minmax(0,1fr)_2.4rem_2rem] gap-1 bg-zinc-100 px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                <span>Pos</span>
+                <span>Player</span>
+                <span className="text-right">{tab === "stableford" ? "Pts" : "To par"}</span>
+                <span className="text-right">Thru</span>
+              </div>
+              <ul>
+                {rows.map((row) => (
+                  <li
+                    key={row.playerId}
+                    ref={bind(row.playerId)}
+                    className={`relative grid grid-cols-[4.6rem_minmax(0,1fr)_2.4rem_2rem] items-center gap-1 border-b border-zinc-200 px-2 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                  >
+                    {row.positionNumber === 1 ? (
+                      <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden />
+                    ) : null}
+                    <MobileRow row={row} tab={tab} />
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul>
-              {rows.map((row) => (
-                <li
-                  key={row.playerId}
-                  ref={bind(row.playerId)}
-                  className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-3 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
-                >
-                  <MobileRow row={row} />
-                </li>
-              ))}
-            </ul>
             {board.countback ? (
               <p className="mt-4 flex items-start gap-2 text-sm text-zinc-500">
                 <Flag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -277,43 +286,53 @@ function DesktopRow({
   );
 }
 
-function MovePill({ move }: { move: number | null | undefined }) {
+function MovePill({ move, compact = false }: { move: number | null | undefined; compact?: boolean }) {
   if (move == null || move === 0) return null;
+  const size = compact ? "px-1 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs";
   if (move > 0) {
     return (
-      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+      <span className={`inline-flex items-center rounded-full bg-[#3dff8a] font-semibold text-zinc-950 ${size}`}>
         ▲{move}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+    <span className={`inline-flex items-center rounded-full bg-red-100 font-semibold text-red-700 ${size}`}>
       ▼{Math.abs(move)}
     </span>
   );
 }
 
-function MobileRow({ row }: { row: RankingRow }) {
+function MobileRow({ row, tab }: { row: RankingRow; tab: BoardTab }) {
   const handicap = formatHandicap(row.handicapIndex);
+  const score =
+    tab === "stableford"
+      ? row.stableford == null
+        ? "–"
+        : String(row.stableford)
+      : tab === "gross"
+        ? signedScore(row.toPar)
+        : signedScore(netToPar(row));
   return (
     <>
-      <span className="font-display text-3xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="font-display text-2xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+        <MovePill move={row.move} compact />
+      </span>
       <span className="min-w-0">
-        <span className="block truncate font-semibold text-zinc-950">
+        <span className="block truncate text-sm font-semibold text-zinc-950">
           {row.displayName}
           {row.you ? (
-            <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
+            <span className="ml-1.5 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
               You
             </span>
           ) : null}
         </span>
-        <span className="block text-xs text-zinc-500">
+        <span className="block truncate text-[11px] text-zinc-500">
           Card {row.cardNumber} · {handicap ?? "no hcp"}
         </span>
       </span>
-      <span className="text-right font-display text-3xl leading-none text-zinc-950 tabular-nums">
-        {row.stableford ?? "–"}
-      </span>
+      <span className="text-right font-display text-2xl leading-none text-zinc-950 tabular-nums">{score}</span>
       <span className="text-right text-sm tabular-nums text-zinc-700">{row.thru}</span>
     </>
   );
@@ -373,15 +392,16 @@ function FeedRow({ item }: { item: GameDayFeedItem }) {
   const lead = item.type === "lead_change";
   return (
     <li
-      className={`flex items-center gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
+      className={`relative flex items-start gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
     >
+      {lead ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
       <FeedMark item={item} />
       <p className={`min-w-0 flex-1 text-sm leading-snug ${lead ? "font-semibold text-zinc-950" : "text-zinc-800"}`}>
         {item.message}
+        <time className="ml-2 whitespace-nowrap text-xs font-normal tabular-nums text-zinc-500" dateTime={item.at}>
+          {johannesburgClock(item.at)}
+        </time>
       </p>
-      <time className="shrink-0 text-xs tabular-nums text-zinc-500" dateTime={item.at}>
-        {johannesburgClock(item.at)}
-      </time>
     </li>
   );
 }

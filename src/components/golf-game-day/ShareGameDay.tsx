@@ -99,12 +99,10 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
         </div>
 
         <section className="mt-6 rounded-2xl border border-zinc-300 p-4">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Join · for players
-          </h2>
+          <h2 className="text-sm font-semibold text-zinc-950">Join · for players</h2>
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Join code</p>
+              <p className="text-sm font-semibold text-zinc-950">Join code</p>
               <p className="mt-1 font-display text-[52px] leading-none tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
             </div>
             <p className="pb-1 text-right text-xs font-semibold leading-snug text-zinc-950">
