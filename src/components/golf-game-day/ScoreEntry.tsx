@@ -78,7 +78,7 @@ export function ScoreEntry({
   const hit = GAME_DAY_STEPPER_PX;
   const [menu, setMenu] = useState(false);
   const lines = holeStatusLines(holes);
-  useGameDayAction("Score", boardHref);
+  useGameDayAction("Board", boardHref);
   const last = holeNumber >= holesPlayed;
   const savedLine = lines.find((line) => line.includes("synced"));
   const waitingLine = lines.find((line) => line.includes("waiting"));
@@ -203,14 +203,14 @@ export function ScoreEntry({
             <div key={player.slot} className="flex items-center justify-between gap-2 border-b border-zinc-200 py-3">
               <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-2">
-                  <span className="text-lg font-bold text-zinc-950">{player.name}</span>
+                  <span className="text-lg font-extrabold text-zinc-950">{player.name}</span>
                   {player.shotChip ? (
-                    <span className="inline-flex rounded-full bg-[#e9fff1] px-2 py-0.5 text-xs font-semibold text-zinc-950">
+                    <span className="inline-flex rounded-full bg-zinc-950 px-2 py-0.5 text-xs font-semibold text-[#3dff8a]">
                       {player.shotChip}
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 text-sm text-zinc-500">
+                <p className="mt-0.5 text-sm font-bold text-zinc-800">
                   Total {player.total ?? "–"} · {player.toPar}
                 </p>
               </div>
