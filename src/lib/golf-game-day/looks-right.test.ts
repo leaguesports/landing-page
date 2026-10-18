@@ -114,21 +114,13 @@ describe("looks right contract", () => {
 
   it("renders each pill from the server flag", () => {
     const players = card().players;
-    assert.deepEqual(looksRightPill(players[0]!), {
-      label: "Scorer",
-      filled: false,
-      interactive: false,
-    });
+    assert.equal(looksRightPill(players[0]!), null);
     assert.deepEqual(looksRightPill(players[1]!), {
       label: "Looks right",
       filled: true,
       interactive: false,
     });
-    assert.deepEqual(looksRightPill({ ...players[2]!, you: true }), {
-      label: "Looks right?",
-      filled: false,
-      interactive: true,
-    });
+    assert.equal(looksRightPill({ ...players[2]!, you: true }), null);
     assert.deepEqual(looksRightPill(players[2]!), {
       label: "Looks right?",
       filled: false,

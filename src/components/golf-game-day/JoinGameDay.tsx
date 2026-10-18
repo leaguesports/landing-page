@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeftRight, List, Plus, Smartphone } from "lucide-react";
+import { List, Plus, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { GameDayPreview, JoinResult } from "@/types/golf-game-day";
 import type { GolfCourseCms } from "@/types/golf-round";
@@ -12,7 +12,6 @@ import {
   joinCard,
   joinGameDay,
   startCard,
-  takeOverCard,
 } from "@/lib/golf-game-day/api";
 import { gameDayBoardPath, gameDayCardPath, presentGameDay } from "@/lib/golf-game-day/paths";
 import { gameDayCardStartBody, mergeCard } from "@/lib/golf-game-day/scoring-ui";
@@ -294,23 +293,6 @@ export function JoinGameDay({
     }
   }
 
-  async function onTakeOver(cardId: string) {
-    if (!preview || !session) return;
-    if (previewMode) {
-      router.push("/golf/game-day/preview/score");
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      await takeOverCard(preview.id, cardId, session.deviceToken);
-      router.push(gameDayCardPath(preview.id, cardId));
-    } catch (cause) {
-      setError(cause instanceof GameDayApiError ? cause.message : "Could not take over scoring.");
-      setPending(false);
-    }
-  }
-
   if (!preview) {
     return (
       <GameDayColumn>
@@ -342,12 +324,11 @@ export function JoinGameDay({
           (player) => player.displayName.toLowerCase() === session.displayName.toLowerCase(),
         ),
       );
-    const scorer = seatedCard?.players.find((player) => player.scoring) ?? null;
     const seatedPlayers = seatedCard?.players ?? [];
     const openSpots = seatedCard?.openSlots ?? 0;
     return (
-      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
-        <div className="flex-1 px-5 pb-4 pt-5">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+        <div className="flex-1 px-5 pt-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
             You&apos;re in{seatedCard ? ` · Card ${seatedCard.number}` : ""}
           </p>
@@ -406,18 +387,11 @@ export function JoinGameDay({
                         <span className="block font-semibold text-zinc-950">{player.displayName}</span>
                         <span className="mt-0.5 block text-sm text-zinc-600">{detail}</span>
                       </span>
-                      {player.scoring || you ? (
+                      {you ? (
                         <span className="ml-auto flex shrink-0 items-center gap-1.5">
-                          {player.scoring ? (
-                            <span className="rounded-full bg-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-white">
-                              Scoring
-                            </span>
-                          ) : null}
-                          {you ? (
-                            <span className="rounded-full border border-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-zinc-950">
-                              You
-                            </span>
-                          ) : null}
+                          <span className="rounded-full border border-zinc-950 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-zinc-950">
+                            You
+                          </span>
                         </span>
                       ) : null}
                     </li>
@@ -430,30 +404,6 @@ export function JoinGameDay({
                   </li>
                 ) : null}
               </ul>
-              {scorer ? (
-                <div className="mt-3 rounded-2xl bg-zinc-100 px-4 py-3">
-                  <div className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-2">
-                    <div className="col-start-2 flex items-baseline gap-2">
-                      <p className="font-semibold text-zinc-950">{scorer.displayName} is scoring</p>
-                      <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
-                        New
-                      </span>
-                    </div>
-                    <ArrowLeftRight className="col-start-1 row-start-2 mt-2 h-5 w-5 text-zinc-950" aria-hidden />
-                    <p className="col-start-2 row-start-2 mt-2 text-sm text-zinc-800">
-                      Battery low or swapping? Anyone on the card can take over. Scores so far stay.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onTakeOver(seatedCard.id)}
-                    disabled={pending}
-                    className="mt-3 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-base font-semibold text-white disabled:opacity-40"
-                  >
-                    Take over scoring
-                  </button>
-                </div>
-              ) : null}
             </section>
           ) : null}
 
@@ -464,7 +414,8 @@ export function JoinGameDay({
           ) : null}
 
         </div>
-        <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-30">
+          <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-5 py-3">
           {seatedCard ? (
             <a
               href={gameDayBoardPath(preview.id)}
@@ -478,6 +429,7 @@ export function JoinGameDay({
               Start card {nextCard}
             </PrimaryButton>
           )}
+          </div>
         </div>
       </div>
     );
@@ -608,9 +560,7 @@ export function JoinGameDay({
             {preview.cards.map((card) => {
               const seats = card.players.length;
               const selected = cardChoice === card.id;
-              const names = card.players.map((player) =>
-                player.scoring ? `${player.displayName} (scoring)` : player.displayName,
-              );
+              const names = card.players.map((player) => player.displayName);
               const joining =
                 selected &&
                 !card.players.some(

@@ -9,6 +9,12 @@ export function gameDayWatchPath(token: string): string {
   return `/w/${encodeURIComponent(token)}`;
 }
 
+/** Opens the share screen and restores the organiser token on that phone. */
+export function gameDayOrganiserPath(gameDayId: string, organiserToken: string): string {
+  const params = new URLSearchParams({ organiser: organiserToken });
+  return `/golf/game-day/${gameDayId}?${params.toString()}`;
+}
+
 export function gameDayBoardPath(gameDayId: string): string {
   return `/golf/game-day/${gameDayId}/board`;
 }

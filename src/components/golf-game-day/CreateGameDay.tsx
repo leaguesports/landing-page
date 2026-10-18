@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Calendar, ChevronDown, ChevronLeft, Link2, MapPin, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { createGameDay, GameDayApiError } from "@/lib/golf-game-day/api";
+import { claimGameDay, createGameDay, GameDayApiError } from "@/lib/golf-game-day/api";
+import { localStorageStore, rememberCreatedGameDay, writeOrganiser } from "@/lib/golf-game-day/storage";
 import {
   defaultGameDayDate,
   formatGameDayDateLong,
@@ -16,7 +17,6 @@ import { preferredDefaultTee, teeChipLabel } from "@/lib/golf-game-day/scoring-u
 import { useGameDayAction } from "./GameDayChrome";
 import {
   Eyebrow,
-  GameDayColumn,
   PrimaryButton,
   ScreenTitle,
   teeDotClass,
@@ -89,7 +89,7 @@ export function CreateGameDay({
 
   function addName() {
     const name = draftName.trim();
-    if (!name || players.length >= 16) return;
+    if (!name || players.length >= 40) return;
     setPlayers((current) => [...current, name]);
     setDraftName("");
   }
@@ -97,10 +97,6 @@ export function CreateGameDay({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (preview) return;
-    if (!auth.isAuthenticated) {
-      auth.signIn("/golf/game-day/new");
-      return;
-    }
     if (!venue) {
       setError("Pick a course with a published scorecard.");
       return;
@@ -108,44 +104,38 @@ export function CreateGameDay({
     setPending(true);
     setError(null);
     try {
+      const named = players.map((displayName) => ({ displayName, teeName: tee }));
+      const [organiserPlayer, ...rest] = named;
       const created = await createGameDay({
         venueCmsId: venue.id,
         date,
         defaultTee: tee,
         teeOptions: venue.tees.map((item) => item.name),
         format: "stroke",
-        players: players.map((displayName) => ({ displayName, teeName: tee })),
+        ...(organiserPlayer ? { organiserPlayer } : {}),
+        players: rest,
         ...(weekend ? { weekendEvent: { name: `${venue.name} weekend` } } : {}),
       });
+      const store = localStorageStore();
+      rememberCreatedGameDay(store, created);
+      if (auth.isAuthenticated && created.claimed === false && created.organiserToken) {
+        const token = created.organiserToken;
+        void claimGameDay(created.id, token)
+          .then((claimed) => {
+            writeOrganiser(store, {
+              gameDayId: created.id,
+              organiserToken: token,
+              organiserPlayerId: claimed.organiserPlayerId ?? created.organiserPlayerId ?? null,
+              claimed: true,
+            });
+          })
+          .catch(() => undefined);
+      }
       router.push(`/golf/game-day/${created.id}`);
     } catch (cause) {
       setError(cause instanceof GameDayApiError ? cause.message : "Could not create the game day.");
       setPending(false);
     }
-  }
-
-  if (!preview && auth.isLoading) {
-    return (
-      <GameDayColumn>
-        <p className="text-sm text-zinc-500">Loading…</p>
-      </GameDayColumn>
-    );
-  }
-
-  if (!preview && !auth.isAuthenticated) {
-    return (
-      <GameDayColumn>
-        <ScreenTitle>New game day</ScreenTitle>
-        <p className="mt-3 text-sm text-zinc-600">
-          Sign in to start a game day. Players can join without an account.
-        </p>
-        <div className="mt-8">
-          <PrimaryButton type="button" onClick={() => auth.signIn("/golf/game-day/new")}>
-            Sign in
-          </PrimaryButton>
-        </div>
-      </GameDayColumn>
-    );
   }
 
   return (

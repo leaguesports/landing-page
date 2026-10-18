@@ -24,6 +24,7 @@ export type ScorePlayerRow = {
   toPar: string;
   relation: string;
   shotChip: string | null;
+  changedBy?: string | null;
 };
 
 type ScoreEntryProps = {
@@ -33,11 +34,10 @@ type ScoreEntryProps = {
   holesPlayed: number;
   par: number;
   strokeIndex: number;
-  takeoverName: string | null;
-  takeoverDetail?: string | null;
   holes: ScoreHoleChip[];
   players: ScorePlayerRow[];
   canScore: boolean;
+  conflictNotice?: string | null;
   reviewHref: string;
   boardHref: string;
   onStep: (slot: number, delta: number) => void;
@@ -64,11 +64,10 @@ export function ScoreEntry({
   holesPlayed,
   par,
   strokeIndex,
-  takeoverName,
-  takeoverDetail = null,
   holes,
   players,
   canScore,
+  conflictNotice = null,
   reviewHref,
   boardHref,
   onStep,
@@ -84,7 +83,7 @@ export function ScoreEntry({
   const waitingLine = lines.find((line) => line.includes("waiting"));
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col overflow-x-hidden pb-[6.75rem]">
       <div className="flex h-12 items-center gap-1 px-2">
         <Link
           href={boardHref}
@@ -115,20 +114,6 @@ export function ScoreEntry({
           <Link href={boardHref} className="block py-2 text-sm font-semibold">
             Leaderboard
           </Link>
-        </div>
-      ) : null}
-
-      {takeoverName ? (
-        <div className="mx-4 mt-2 flex items-center gap-3 rounded-2xl bg-zinc-950 px-4 py-2.5 text-white">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3dff8a] text-zinc-950">
-            <Check className="h-4 w-4" aria-hidden />
-          </span>
-          <p className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">
-              {takeoverName} is now scoring Card {cardNumber}
-            </span>
-            {takeoverDetail ? <span className="mt-0.5 block text-sm text-zinc-400">{takeoverDetail}</span> : null}
-          </p>
         </div>
       ) : null}
 
@@ -196,6 +181,11 @@ export function ScoreEntry({
               ) : null}
             </div>
           ) : null}
+          {conflictNotice ? (
+            <p role="status" className="mt-2 text-xs font-semibold text-zinc-950">
+              {conflictNotice}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-2">
@@ -213,6 +203,9 @@ export function ScoreEntry({
                 <p className="mt-0.5 text-sm font-bold text-zinc-800">
                   Total {player.total ?? "–"} · {player.toPar}
                 </p>
+                {player.changedBy ? (
+                  <p className="mt-0.5 text-xs font-medium text-zinc-500">{player.changedBy}</p>
+                ) : null}
               </div>
               <div
                 role="group"
@@ -258,7 +251,8 @@ export function ScoreEntry({
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 z-30">
+        <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-4 py-3">
         <button
           type="button"
           disabled={!canScore}
@@ -268,6 +262,7 @@ export function ScoreEntry({
           {last ? `Save hole ${holeNumber} · review` : `Save hole ${holeNumber} · next`}
           {last ? null : <ChevronRight className="h-5 w-5" aria-hidden />}
         </button>
+        </div>
       </div>
     </div>
   );

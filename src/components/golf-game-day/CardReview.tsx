@@ -33,6 +33,10 @@ type CardReviewProps = {
   onConfirm: () => void;
   onEditHole?: (holeNumber: number) => void;
   onLooksRight?: (slot: number) => void;
+  canUnlock?: boolean;
+  unlocking?: boolean;
+  onUnlock?: () => void;
+  notice?: string | null;
 };
 
 function sumStrokes(holes: ReviewPlayer["holes"]): number | null {
@@ -138,6 +142,10 @@ export function CardReview({
   onConfirm,
   onEditHole,
   onLooksRight,
+  canUnlock = false,
+  unlocking = false,
+  onUnlock,
+  notice = null,
 }: CardReviewProps) {
   useGameDayAction("Board", boardHref);
   const front = players.map((player) => ({
@@ -151,8 +159,8 @@ export function CardReview({
   const lastHole = players[0]?.holes.at(-1)?.number ?? 18;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col">
-      <div className="flex-1 px-4 pb-4 pt-4">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[420px] flex-col pb-[6.75rem]">
+      <div className="flex-1 px-4 pt-4">
         <div className="flex h-10 items-center justify-between">
           <Link href={scoreHref} className="inline-flex items-center gap-0.5 text-sm font-semibold text-zinc-950">
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -190,7 +198,6 @@ export function CardReview({
           {players.map((player) => {
             const pill = looksRightPill({
               looksRight: player.looksRight === true,
-              isScorer: player.scorer === true,
               you: player.you === true,
             });
             const summary =
@@ -199,7 +206,7 @@ export function CardReview({
                 : player.handicap
                   ? `${player.gross} gross · ${player.net ?? "–"} net · ${player.points ?? "–"} pts`
                   : `${player.gross} gross · no hcp · ${player.points ?? "–"} pts`;
-            const pillClass = pill.filled
+            const pillClass = pill?.filled
               ? "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-zinc-950 bg-[#3dff8a] px-3 text-sm font-semibold text-zinc-950"
               : "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-950";
             return (
@@ -208,17 +215,17 @@ export function CardReview({
                   <p className="font-bold text-zinc-950">{player.name}</p>
                   <p className="mt-0.5 text-sm font-semibold text-zinc-800">{summary}</p>
                 </div>
-                {pill.interactive ? (
+                {pill?.interactive ? (
                   <button type="button" onClick={() => onLooksRight?.(player.slot)} className={pillClass}>
                     <Check className="h-3.5 w-3.5" aria-hidden />
                     {pill.label}
                   </button>
-                ) : (
+                ) : pill ? (
                   <span className={pillClass}>
                     <Check className="h-3.5 w-3.5" aria-hidden />
                     {pill.label}
                   </span>
-                )}
+                ) : null}
               </li>
             );
           })}
@@ -226,6 +233,11 @@ export function CardReview({
         <p className="mt-2 text-xs text-zinc-500">
           Players can tick &quot;Looks right&quot; on their own phone. Optional.
         </p>
+        {notice ? (
+          <p role="status" className="mt-4 text-xs font-medium text-zinc-600">
+            {notice}
+          </p>
+        ) : null}
         {blockedReason ? (
           <p role="alert" className="mt-4 text-sm text-zinc-600">
             {blockedReason}
@@ -233,13 +245,18 @@ export function CardReview({
         ) : null}
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3">
-        <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
-          {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
-        </PrimaryButton>
-        <p className="mt-2 text-center text-xs text-zinc-500">
-          Only the scorer confirms. The organiser can still fix mistakes.
-        </p>
+      <div className="fixed inset-x-0 bottom-0 z-30">
+        <div className="mx-auto w-full max-w-[420px] border-t border-zinc-200 bg-white px-4 py-3">
+          {canUnlock ? (
+            <PrimaryButton type="button" disabled={unlocking} onClick={onUnlock} className="!text-lg">
+              {unlocking ? "Unlocking…" : "Unlock"}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
+              {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
+            </PrimaryButton>
+          )}
+        </div>
       </div>
     </div>
   );

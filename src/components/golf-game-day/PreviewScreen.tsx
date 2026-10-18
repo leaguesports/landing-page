@@ -80,6 +80,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         day={fixtureCreated()}
         origin="https://leaguesports.co.za"
         cardHref="/golf/game-day/preview/score"
+        organiserToken="org-preview-token"
       />
     );
   }
@@ -144,8 +145,9 @@ export function PreviewScreen({ screen }: { screen: string }) {
         holesPlayed={18}
         par={current.par}
         strokeIndex={current.strokeIndex}
-        takeoverName="Mike"
-        takeoverDetail="Pieter's phone switched to view only"
+        conflictNotice={
+          current.number === 8 ? "Lerato · hole 8 was 5 on another phone, now 4" : null
+        }
         holes={HOLES.map((item) => ({
           number: item.number,
           sync: item.number <= 6 ? "saved" : item.number === 7 ? "offline" : "open",
@@ -154,12 +156,17 @@ export function PreviewScreen({ screen }: { screen: string }) {
           slot: player.slot,
           name: player.name,
           handicap: player.slot === 1 ? "hcp 6" : null,
-          strokes: player.slot === 1 ? strokes : player.strokes,
+          strokes:
+            player.slot === 1 ? strokes : current.number === 8 && player.slot === 2 ? 4 : player.strokes,
           dots: player.dots,
           total: player.total,
           toPar: player.toPar,
-          relation: scoreRelation(player.slot === 1 ? strokes : player.strokes, current.par),
+          relation: scoreRelation(
+            player.slot === 1 ? strokes : current.number === 8 && player.slot === 2 ? 4 : player.strokes,
+            current.par,
+          ),
           shotChip: shotChipLabel(player.dots),
+          changedBy: current.number === 8 && player.slot === 2 ? "changed by Mike" : null,
         }))}
         canScore
         reviewHref="/golf/game-day/preview/review"
@@ -205,7 +212,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
             points: round.stableford,
             scorer: line.scorer,
             looksRight: line.looksRight,
-            you: false,
+            you: line.name === "Lerato",
           };
         })}
         canConfirm
@@ -214,6 +221,49 @@ export function PreviewScreen({ screen }: { screen: string }) {
         scoreHref="/golf/game-day/preview/score"
         boardHref="/golf/game-day/preview/leaderboard"
         onConfirm={() => undefined}
+        onEditHole={() => undefined}
+      />
+    );
+  }
+
+  if (screen === "unlock") {
+    const pars = [...CARD_REVIEW_FRONT_PAR, ...CARD_REVIEW_BACK_PAR];
+    return (
+      <CardReview
+        headline={HEADLINE}
+        cardNumber={2}
+        overallSyncLabel="Saved"
+        players={CARD_REVIEW_LINES.map((line, index) => {
+          const strokes = [...line.front, ...line.back];
+          const gross = sumNine(line.front) + sumNine(line.back);
+          const round = finishedRound(gross, line.playingHandicap);
+          return {
+            slot: index + 1,
+            name: line.name,
+            handicap: formatHandicap(line.handicapIndex),
+            holes: strokes.map((value, holeIndex) => ({
+              number: holeIndex + 1,
+              strokes: value,
+              par: pars[holeIndex],
+            })),
+            gross,
+            toPar: formatToPar(round.toPar),
+            net: line.handicapIndex == null ? null : round.net,
+            points: round.stableford,
+            scorer: line.scorer,
+            looksRight: line.looksRight,
+            you: false,
+          };
+        })}
+        canConfirm={false}
+        confirming={false}
+        canUnlock
+        unlocking={false}
+        blockedReason={null}
+        scoreHref="/golf/game-day/preview/score"
+        boardHref="/golf/game-day/preview/leaderboard"
+        onConfirm={() => undefined}
+        onUnlock={() => undefined}
         onEditHole={() => undefined}
       />
     );

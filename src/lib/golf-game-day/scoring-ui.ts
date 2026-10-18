@@ -362,9 +362,11 @@ export function mergeCard(
   incoming: GameDayCard,
   playerId: string | null,
 ): GameDayCard {
+  const seated =
+    playerId != null && incoming.players.some((player) => player.playerId === playerId);
   return {
     ...incoming,
-    scoring: playerId != null && incoming.scorer.playerId === playerId,
+    scoring: incoming.scoring === true || seated,
     players: incoming.players.map((player) => ({
       ...player,
       you: playerId != null && player.playerId === playerId,

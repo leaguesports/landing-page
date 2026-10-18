@@ -7,11 +7,24 @@ import type { GameDayCard, QueuedHolePut, QueuedLooksRight } from "@/types/golf-
 import {
   confirmCard,
   fetchCard,
+  fetchOrganiserGameDay,
   GameDayApiError,
   markLooksRight,
   putHole,
+  unlockCard,
 } from "@/lib/golf-game-day/api";
 import { gameDayBoardPath, gameDayCardPath, gameDayReviewPath, presentGameDay } from "@/lib/golf-game-day/paths";
+import {
+  applyCardUnlocked,
+  applyScoreUpdated,
+  cardActions,
+  changedByNote,
+  conflictNotice,
+  holePutBody,
+  holePutOutcome,
+  holesBlockingConfirm,
+  nextQueuedHole,
+} from "@/lib/golf-game-day/multi-scorer";
 import {
   enqueueHolePut,
   enqueueLooksRight,
@@ -42,6 +55,7 @@ import {
   readDevice,
   readHoleQueue,
   readLooksRightQueue,
+  readOrganiser,
   writeLooksRightQueue,
 } from "@/lib/golf-game-day/storage";
 import { withLooksRight } from "@/lib/golf-game-day/looks-right";
@@ -64,9 +78,14 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
   const [holeNumber, setHoleNumber] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+  const [organiser, setOrganiser] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const queueRef = useRef<QueuedHolePut[]>([]);
   const looksRef = useRef<QueuedLooksRight[]>([]);
+  const cardRef = useRef<GameDayCard | null>(null);
+  const organiserRef = useRef(false);
   const flushing = useRef(false);
   const timer = useRef<number | null>(null);
 
@@ -83,6 +102,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     (incoming: GameDayCard, playerId: string | null) => {
       const pending = looksRef.current.map((item) => item.playerId);
       const merged = overlayQueuedLooksRight(mergeCard(incoming, playerId), pending);
+      cardRef.current = merged;
       setCard(merged);
       cacheCard(store, merged);
       return merged;
@@ -101,7 +121,9 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
 
   const flush = useCallback(async () => {
     const session = readDevice(store, gameDayId);
-    if (!session?.deviceToken) return;
+    const storedOrganiser = readOrganiser(store, gameDayId);
+    const locked = cardRef.current?.status === "locked";
+    if (!session?.deviceToken && !(locked && (storedOrganiser || organiserRef.current))) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       remember(queueRef.current.map((item) => ({ ...item, state: "offline" as const })));
       return;
@@ -118,24 +140,35 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           return { ok: true, reason: "replay" };
         }
         try {
+          const writingLocked = cardRef.current?.status === "locked";
+          const auth =
+            writingLocked && (storedOrganiser || organiserRef.current)
+              ? { organiserToken: storedOrganiser?.organiserToken ?? null }
+              : { deviceToken: session?.deviceToken ?? null };
           const response = await putHole(
             gameDayId,
             cardId,
             latest.holeNumber,
-            session.deviceToken,
-            { clientTimestamp: latest.clientTimestamp, strokes: latest.strokes },
+            auth,
+            holePutBody(latest),
           );
-          showCard(response.card, session.playerId);
-          if (response.reason === "stale") {
-            setDrafts((current) => {
-              const copy = { ...current };
-              delete copy[latest.holeNumber];
-              return copy;
-            });
+          showCard(response.card, session?.playerId ?? storedOrganiser?.organiserPlayerId ?? null);
+          if (response.reason !== "replay" && response.conflict) {
+            const names = Object.fromEntries(
+              (cardRef.current?.players ?? []).map((player) => [player.slot, player.displayName]),
+            );
+            setNotice(
+              conflictNotice(response.conflicts, latest.holeNumber, {
+                strokes: latest.strokes,
+                names,
+              }),
+            );
+          } else {
+            setNotice(null);
           }
-          return { ok: true, reason: response.reason };
+          return holePutOutcome(response);
         } catch (cause) {
-          if (cause instanceof GameDayApiError && (cause.status === 401 || cause.status === 403)) {
+          if (cause instanceof GameDayApiError && (cause.status === 401 || cause.status === 403 || cause.status === 429)) {
             setError(cause.message);
             return { ok: false, kind: "auth", message: cause.message };
           }
@@ -207,8 +240,23 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     }
     setReady(true);
     const session = readDevice(store, gameDayId);
+    const storedOrganiser = readOrganiser(store, gameDayId);
+    if (storedOrganiser) {
+      organiserRef.current = true;
+      setOrganiser(true);
+    } else {
+      fetchOrganiserGameDay(gameDayId)
+        .then(() => {
+          organiserRef.current = true;
+          setOrganiser(true);
+        })
+        .catch(() => undefined);
+    }
     let cancelled = false;
-    fetchCard(gameDayId, cardId, { deviceToken: session?.deviceToken })
+    fetchCard(gameDayId, cardId, {
+      deviceToken: session?.deviceToken,
+      organiserToken: storedOrganiser?.organiserToken,
+    })
       .then((incoming) => {
         if (cancelled) return;
         const merged = showCard(incoming, session?.playerId ?? null);
@@ -232,21 +280,75 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
       return;
     }
     const channel = client.channels.get(`golf-gameday:${gameDayId}`);
-    const onEvent = (message: Ably.Message) => {
+    const onScore = (message: Ably.Message) => {
       if (cancelled) return;
-      const data = message.data as { card?: GameDayCard } | undefined;
-      if (!data?.card || data.card.id !== cardId) return;
-      const session = readDevice(store, gameDayId);
-      showCard(data.card, session?.playerId ?? null);
+      const data = message.data as { cardId?: string; holeNumber?: number; scores?: GameDayCard["holes"][number]["scores"] };
+      if (data?.cardId !== cardId || typeof data.holeNumber !== "number" || !data.scores?.length) return;
+      setCard((current) => {
+        if (!current) return current;
+        const next = applyScoreUpdated(current, {
+          cardId,
+          holeNumber: data.holeNumber as number,
+          scores: data.scores ?? [],
+        });
+        cacheCard(store, next);
+        return next;
+      });
     };
-    channel.subscribe("score.updated", onEvent);
-    channel.subscribe("card.locked", onEvent);
+    const onUnlocked = (message: Ably.Message) => {
+      if (cancelled) return;
+      const data = message.data as { cardId?: string };
+      if (data?.cardId !== cardId) return;
+      setCard((current) => {
+        if (!current) return current;
+        const next = applyCardUnlocked(current, { cardId });
+        cacheCard(store, next);
+        return next;
+      });
+    };
+    const onLocked = (message: Ably.Message) => {
+      if (cancelled) return;
+      const data = message.data as { cardId?: string; card?: GameDayCard };
+      if (data?.cardId !== cardId && data?.card?.id !== cardId) return;
+      if (data.card?.id === cardId) {
+        const session = readDevice(store, gameDayId);
+        showCard(data.card, session?.playerId ?? null);
+        return;
+      }
+      setCard((current) => {
+        if (!current) return current;
+        const next = { ...current, status: "locked" as const };
+        cacheCard(store, next);
+        return next;
+      });
+    };
+    channel.subscribe("score.updated", onScore);
+    channel.subscribe("card.locked", onLocked);
+    channel.subscribe("card.unlocked", onUnlocked);
     return () => {
       cancelled = true;
-      channel.unsubscribe("score.updated", onEvent);
-      channel.unsubscribe("card.locked", onEvent);
+      channel.unsubscribe("score.updated", onScore);
+      channel.unsubscribe("card.locked", onLocked);
+      channel.unsubscribe("card.unlocked", onUnlocked);
       client?.close();
     };
+  }, [cardId, gameDayId, showCard, store]);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      const session = readDevice(store, gameDayId);
+      const storedOrganiser = readOrganiser(store, gameDayId);
+      fetchCard(gameDayId, cardId, {
+        deviceToken: session?.deviceToken,
+        organiserToken: storedOrganiser?.organiserToken,
+      })
+        .then((incoming) => {
+          showCard(incoming, session?.playerId ?? storedOrganiser?.organiserPlayerId ?? null);
+        })
+        .catch(() => undefined);
+    }, 20000);
+    return () => window.clearInterval(timerId);
   }, [cardId, gameDayId, showCard, store]);
 
   useEffect(() => {
@@ -274,25 +376,36 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
 
   function commit(current: GameDayCard, hole: number, strokes: Record<string, number>) {
     const session = readDevice(store, gameDayId);
-    if (!session) return;
-    const saved = current.holes.find((item) => item.number === hole)?.strokes;
-    const unchanged =
-      saved &&
-      Object.keys(strokes).every((key) => saved[key] === strokes[key]) &&
-      Object.keys(saved).every((key) => strokes[key] === saved[key]);
-    if (unchanged && !queueRef.current.some((item) => item.holeNumber === hole)) return;
+    const storedOrganiser = readOrganiser(store, gameDayId);
+    if (!session && !(current.status === "locked" && (storedOrganiser || organiserRef.current))) return;
+    const savedHole = current.holes.find((item) => item.number === hole);
+    const pending = queueRef.current.find((item) => item.holeNumber === hole) ?? null;
+    const next = nextQueuedHole(pending, strokes, savedHole);
+    if (Object.keys(next.strokes).length === 0) {
+      if (pending) remember(queueRef.current.filter((item) => item.holeNumber !== hole));
+      return;
+    }
     const item: QueuedHolePut = {
       gameDayId,
       cardId,
       holeNumber: hole,
       clientTimestamp: new Date().toISOString(),
-      strokes,
+      strokes: next.strokes,
+      expectedUpdatedAt: next.expectedUpdatedAt,
       state: typeof navigator !== "undefined" && navigator.onLine ? "saving" : "offline",
       attempts: 0,
     };
     remember(enqueueHolePut(queueRef.current, item));
     scheduleFlush();
   }
+
+  useEffect(() => {
+    cardRef.current = card;
+  }, [card]);
+
+  useEffect(() => {
+    organiserRef.current = organiser;
+  }, [organiser]);
 
   if (!ready || !card || holeNumber == null) {
     return (
@@ -313,20 +426,27 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     setHoleNumber(nextHole);
   }
 
-  if (mode === "review") {
-    const open = holesStillOpen(
+  const viewer = readDevice(store, gameDayId);
+  const you = card.players.find((player) => player.you) ?? null;
+  const queuedHoles = cardQueue.map((item) => item.holeNumber);
+  const open = [...new Set([
+    ...holesBlockingConfirm(card.missingHoles, queuedHoles),
+    ...holesStillOpen(
       ordered,
       card.holes.map((hole) => hole.number),
-      cardQueue.map((item) => item.holeNumber),
-    );
-    const pendingSync = cardQueue.length > 0;
-    const blockedReason = pendingSync
-      ? "Scores are still on this phone. They'll confirm once they sync."
-      : open.length > 0
-        ? `Still to score: ${open.join(", ")}`
-        : card.scoring
-          ? null
-          : "Only the scorer can confirm.";
+      queuedHoles,
+    ),
+  ])].sort((left, right) => left - right);
+  const actions = cardActions({
+    status: card.status,
+    seated: card.scoring,
+    organiser,
+    pendingSync: cardQueue.length > 0,
+    openHoles: open,
+  });
+
+  if (mode === "review") {
+    const blockedReason = actions.reason;
     return (
       <CardReview
         headline={presentGameDay({
@@ -361,7 +481,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             toPar: gross == null ? "–" : formatToPar(gross - parTotal),
             net: player.handicapIndex == null ? null : round?.net ?? null,
             points: round?.stableford ?? null,
-            scorer: player.isScorer,
+            scorer: player.playerId === card.scorer.playerId,
             looksRight: player.looksRight,
             you: player.you,
           };
@@ -374,7 +494,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
           const current = card;
           if (!session || !current) return;
           const player = current.players.find((item) => item.slot === slot);
-          if (!player || !player.you || player.isScorer || player.looksRight) return;
+          if (!player || !player.you || player.looksRight) return;
           const optimistic = withLooksRight(current, player.playerId, true);
           setCard(optimistic);
           cacheCard(store, optimistic);
@@ -404,18 +524,40 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
               setError(cause instanceof GameDayApiError ? cause.message : "Could not mark the card");
             });
         }}
-        canConfirm={blockedReason == null && card.status === "live"}
+        canConfirm={actions.canConfirm}
         confirming={confirming}
+        canUnlock={actions.canUnlock}
+        unlocking={unlocking}
+        notice={notice}
         blockedReason={error ?? blockedReason}
         scoreHref={gameDayCardPath(gameDayId, cardId)}
         boardHref={gameDayBoardPath(gameDayId)}
+        onUnlock={() => {
+          const stored = readOrganiser(store, gameDayId);
+          setUnlocking(true);
+          setError(null);
+          unlockCard(gameDayId, cardId, stored?.organiserToken)
+            .then((result) => {
+              showCard(result.card, viewer?.playerId ?? stored?.organiserPlayerId ?? null);
+              setUnlocking(false);
+            })
+            .catch((cause: unknown) => {
+              setError(cause instanceof GameDayApiError ? cause.message : "Could not unlock.");
+              setUnlocking(false);
+            });
+        }}
         onConfirm={() => {
           const session = readDevice(store, gameDayId);
-          if (!session) return;
+          const stored = readOrganiser(store, gameDayId);
+          if (!actions.canConfirm) return;
+          if (!session?.deviceToken && !organiser) return;
           setConfirming(true);
-          confirmCard(gameDayId, cardId, session.deviceToken)
+          const auth = card.scoring && session?.deviceToken
+            ? { deviceToken: session.deviceToken }
+            : { organiserToken: stored?.organiserToken ?? null };
+          confirmCard(gameDayId, cardId, auth)
             .then((result) => {
-              showCard(result.card, session.playerId);
+              showCard(result.card, session?.playerId ?? stored?.organiserPlayerId ?? null);
               router.push(gameDayBoardPath(gameDayId));
             })
             .catch((cause: unknown) => {
@@ -427,6 +569,8 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
     );
   }
 
+  const holeScores = card.holes.find((hole) => hole.number === holeNumber)?.scores ?? [];
+
   return (
     <>
       <ScoreEntry
@@ -436,7 +580,7 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
         holesPlayed={card.holesPlayed}
         par={par}
         strokeIndex={courseHole?.strokeIndex ?? holeNumber}
-        takeoverName={card.scoring ? card.scorer.displayName : null}
+        conflictNotice={notice}
         holes={ordered.map((number) => ({
           number,
           sync: card.holes.some((hole) => hole.number === number) || cardQueue.some((item) => item.holeNumber === number)
@@ -469,13 +613,20 @@ export function CardClient({ gameDayId, cardId, mode }: CardClientProps) {
             toPar: formatToPar(totalStrokes - totalPar),
             relation: scoreRelation(strokes, par),
             shotChip: shotChipLabel(dots),
+            changedBy: changedByNote(
+              holeScores.find((score) => score.slot === player.slot),
+              {
+                playerId: you?.playerId ?? viewer?.playerId ?? null,
+                displayName: you?.displayName ?? viewer?.displayName ?? null,
+              },
+            ),
           };
         })}
-        canScore={card.scoring && card.status === "live"}
+        canScore={actions.canScore}
         reviewHref={gameDayReviewPath(gameDayId, cardId)}
         boardHref={gameDayBoardPath(gameDayId)}
         onStep={(slot, delta) => {
-          if (!card.scoring) return;
+          if (!actions.canScore) return;
           const currentStrokes = strokesFor(card, holeNumber);
           const next = {
             ...currentStrokes,
