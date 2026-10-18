@@ -70,9 +70,13 @@ function TabBar({
   label: string;
   large?: boolean;
 }) {
-  const height = large ? "min-h-11 text-[15px]" : "min-h-10 text-sm";
+  const height = large ? "h-[38px] text-[15px]" : "min-h-10 text-sm";
   return (
-    <div className="flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label={label}>
+    <div
+      className={large ? "flex w-full gap-0 pr-1.5" : "flex gap-1 rounded-full bg-zinc-100 p-1"}
+      role="tablist"
+      aria-label={label}
+    >
       {TABS.map((item) => {
         const selected = item === tab;
         return (
@@ -85,7 +89,7 @@ function TabBar({
             className={
               selected
                 ? `${height} flex-1 rounded-full bg-zinc-950 font-semibold capitalize text-white`
-                : `${height} flex-1 rounded-full font-semibold capitalize text-zinc-600`
+                : `${height} flex-1 rounded-full font-semibold capitalize ${large ? "text-zinc-800" : "text-zinc-600"}`
             }
           >
             {item}
@@ -197,50 +201,53 @@ export function LeaderboardView({
         )}
       </div>
 
-      <div className={`mx-auto w-full px-6 py-4 ${desktopClass}`}>
-        <div className="flex items-end justify-between gap-6">
-          <div className="min-w-0">
+      <div className={`mx-auto w-full px-10 py-5 ${desktopClass}`}>
+        <div className="flex items-start justify-between gap-7">
+          <div className="min-w-0 pt-1">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#006045]">
               Live leaderboard · {scoringName(board.format)} · {board.venueName}
             </p>
-            <h1 className="mt-1 font-display text-[60px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
+            <h1 className="mt-3 font-display text-[60px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
           </div>
-          <div className="flex shrink-0 items-center gap-3 pb-1">
-            <span className="inline-flex h-9 items-center gap-2 rounded-full border border-zinc-300 px-4 text-sm font-semibold uppercase tracking-[0.14em] text-zinc-950">
-              <span
-                className={`h-2.5 w-2.5 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`}
-                aria-hidden
-              />
-              {board.status === "final" ? "Final" : "Live"}
-            </span>
-            {updated ? <span className="text-[15px] text-zinc-500">Updated {updated}</span> : null}
+          <div className="flex w-[396px] shrink-0 flex-col gap-5">
+            <div className="flex items-center justify-end gap-3.5">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-950 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                <span
+                  className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`}
+                  aria-hidden
+                />
+                {board.status === "final" ? "Final" : "Live"}
+              </span>
+              {updated ? <span className="text-[15px] font-medium text-zinc-800">Updated {updated}</span> : null}
+            </div>
+            <TabBar tab={tab} onTab={onTab} label="Scoring" large />
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_380px] items-start gap-6">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-7">
           <div className="overflow-hidden rounded-2xl border border-zinc-300">
             <table className="w-full table-fixed border-collapse text-left">
               <caption className="sr-only">Live leaderboard</caption>
               <colgroup>
-                <col className="w-[9%]" />
-                <col className="w-[8%]" />
-                <col className="w-[22%]" />
-                <col className="w-[16%]" />
+                <col className="w-[10%]" />
+                <col className="w-[6.4%]" />
+                <col className="w-[23%]" />
+                <col className="w-[14.5%]" />
+                <col className="w-[10%]" />
                 <col className="w-[11%]" />
                 <col className="w-[11%]" />
-                <col className="w-[12%]" />
-                <col className="w-[11%]" />
+                <col className="w-[14.1%]" />
               </colgroup>
               <thead>
-                <tr className="border-b border-zinc-200 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                  <th className="py-3 pl-4 pr-2 font-semibold">Pos</th>
-                  <th className="px-2 py-3 font-semibold">Move</th>
-                  <th className="px-2 py-3 font-semibold">Player</th>
-                  <th className="px-2 py-3 font-semibold">Card</th>
-                  <th className="px-2 py-3 text-right font-semibold">Thru</th>
-                  <th className="px-2 py-3 text-right font-semibold">Gross</th>
-                  <th className="px-2 py-3 text-right font-semibold">Net</th>
-                  <th className="py-3 pl-2 pr-4 text-right font-semibold">Pts</th>
+                <tr className="h-10 border-b border-zinc-200 bg-zinc-100 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                  <th className="pl-8 pr-2 text-left font-semibold">Pos</th>
+                  <th className="px-2 text-left font-semibold">Move</th>
+                  <th className="px-2 text-left font-semibold">Player</th>
+                  <th className="px-2 text-left font-semibold">Card</th>
+                  <th className="px-2 text-right font-semibold">Thru</th>
+                  <th className="px-2 text-right font-semibold">Gross</th>
+                  <th className="px-2 text-right font-semibold">Net</th>
+                  <th className="pl-2 pr-6 text-right font-semibold">Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,7 +259,6 @@ export function LeaderboardView({
           </div>
 
           <aside className="min-w-0" aria-label="Live feed">
-            <TabBar tab={tab} onTab={onTab} label="Scoring" large />
             <FeedBlock board={board} large />
           </aside>
         </div>
@@ -279,26 +285,26 @@ function DesktopRow({
 }) {
   const leader = row.positionNumber === 1;
   return (
-    <tr ref={bind} className={leader ? "bg-[#e9fff1]" : "bg-white"}>
-      <td className="relative border-b border-zinc-200 py-2 pl-4 pr-2 font-display text-[32px] leading-none tracking-wide text-zinc-950">
+    <tr ref={bind} className={`h-[50px] ${leader ? "bg-[#e9fff1]" : "bg-white"}`}>
+      <td className="relative border-b border-zinc-200 pl-8 pr-2 font-display text-[32px] leading-none tracking-wide text-zinc-950">
         {leader ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
         {row.position ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2.5">
+      <td className="border-b border-zinc-200 px-2">
         <MovePill move={row.move} />
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2 text-[15px] font-bold text-zinc-950">{row.displayName}</td>
-      <td className="border-b border-zinc-200 px-2 py-2 text-[15px] whitespace-nowrap text-zinc-700">
+      <td className="border-b border-zinc-200 px-2 text-[15px] font-bold text-zinc-950">{row.displayName}</td>
+      <td className="border-b border-zinc-200 px-2 text-[15px] whitespace-nowrap text-zinc-700">
         Card {row.cardNumber}
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2 text-right text-[15px] tabular-nums text-zinc-700">{row.thru}</td>
-      <td className="border-b border-zinc-200 px-2 py-2 text-right text-[15px] tabular-nums text-zinc-950">
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-700">{row.thru}</td>
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-950">
         {row.gross ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 px-2 py-2 text-right text-[15px] tabular-nums text-zinc-950">
+      <td className="border-b border-zinc-200 px-2 text-right text-[15px] tabular-nums text-zinc-950">
         {row.net ?? "–"}
       </td>
-      <td className="border-b border-zinc-200 py-2 pl-2 pr-4 text-right font-display text-[36px] leading-none tracking-wide text-zinc-950">
+      <td className="border-b border-zinc-200 pl-2 pr-6 text-right font-display text-[36px] leading-none tracking-wide text-zinc-950">
         {row.stableford ?? "–"}
       </td>
     </tr>
@@ -370,7 +376,7 @@ function FeedBlock({
   const copy = large ? "text-[15px]" : "text-sm";
   return (
     <>
-      <div className="mt-4 flex items-center justify-between gap-2">
+      <div className={`flex items-center justify-between gap-2 ${large ? "" : "mt-4"}`}>
         <h2 className={`inline-flex items-center gap-2 font-semibold text-zinc-950 ${large ? "text-base" : "text-sm"}`}>
           Live feed
           <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
@@ -379,7 +385,7 @@ function FeedBlock({
         </h2>
         <p className="text-xs text-zinc-500">newest first</p>
       </div>
-      <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
+      <ul className={`overflow-hidden rounded-2xl border border-zinc-300 ${large ? "mt-2.5" : "mt-2"}`}>
         {feed.length === 0 ? (
           <li className="px-3 py-3 text-sm text-zinc-500">Scores will show up here.</li>
         ) : (
@@ -387,17 +393,28 @@ function FeedBlock({
         )}
       </ul>
       {showCards && board.cards.length > 0 ? (
-        <ul className="mt-4 overflow-hidden rounded-2xl border border-zinc-300" aria-label="Card sync">
+        <ul
+          className={
+            large
+              ? "mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 py-2.5"
+              : "mt-4 overflow-hidden rounded-2xl border border-zinc-300"
+          }
+          aria-label="Card sync"
+        >
           {board.cards.map((card) => (
             <li
               key={card.id}
-              className={`flex items-center justify-between gap-2 border-b border-zinc-200 px-3 last:border-b-0 ${large ? "py-3" : "py-2.5"}`}
+              className={
+                large
+                  ? "flex h-[38px] items-center gap-3 px-4"
+                  : "flex items-center gap-3 border-b border-zinc-200 px-3 py-2.5 last:border-b-0"
+              }
             >
-              <span className={`rounded-full bg-zinc-950 px-2.5 py-1 font-semibold uppercase tracking-[0.12em] text-white ${large ? "text-xs" : "text-[10px]"}`}>
+              <span className="rounded-full bg-zinc-950 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                 Card {card.number}
               </span>
               <span className={`tabular-nums text-zinc-700 ${copy}`}>Thru {card.thru}</span>
-              <span className={`font-semibold text-green-800 ${copy}`}>
+              <span className={`ml-auto font-semibold text-green-800 ${copy}`}>
                 {card.syncedAt ? `✓ synced ${johannesburgClock(card.syncedAt)}` : "Waiting"}
               </span>
             </li>
@@ -426,10 +443,10 @@ function FeedRow({ item, large = false }: { item: GameDayFeedItem; large?: boole
   const lead = item.type === "lead_change";
   return (
     <li
-      className={`relative flex items-start gap-3 border-b border-zinc-200 px-3 last:border-b-0 ${large ? "py-3" : "py-2.5"} ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
+      className={`relative flex gap-3 border-b border-zinc-200 last:border-b-0 ${large ? "h-[50px] items-center px-4" : "items-start px-3 py-2.5"} ${lead ? "bg-[#e9fff1]" : "bg-white"}`}
     >
       {lead ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
-      <FeedMark item={item} />
+      <FeedMark item={item} large={large} />
       <p className={`min-w-0 flex-1 leading-snug ${large ? "text-[15px]" : "text-sm"} ${lead ? "font-medium text-zinc-950" : "text-zinc-800"}`}>
         <FeedMessage item={item} />
       </p>
@@ -548,31 +565,32 @@ function spectatorCell(tab: BoardTab, row: RankingRow): { text: string; under: b
   return { text: signedScore(value), under: (value ?? 0) < 0 };
 }
 
-function FeedMark({ item }: { item: GameDayFeedItem }) {
+function FeedMark({ item, large = false }: { item: GameDayFeedItem; large?: boolean }) {
+  const size = large ? "h-6 w-6" : "h-7 w-7";
   if (item.type === "lead_change") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white" aria-hidden>
-        <Star className="h-3.5 w-3.5 fill-current" />
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white`} aria-hidden>
+        <Star className={large ? "h-3 w-3 fill-current" : "h-3.5 w-3.5 fill-current"} />
       </span>
     );
   }
   if (item.type === "birdie") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950">
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950`}>
         B
       </span>
     );
   }
   if (item.type === "thru") {
     return (
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950">
+      <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-950`}>
         {item.holeNumber ?? "·"}
       </span>
     );
   }
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-950">
-      <Check className="h-3.5 w-3.5" aria-hidden />
+    <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-950`}>
+      <Check className={large ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
     </span>
   );
 }

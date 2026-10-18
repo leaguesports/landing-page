@@ -139,7 +139,7 @@ export function ScoreEntry({
             aria-label="Previous hole"
             disabled={holeNumber <= 1}
             onClick={() => onSelectHole(holeNumber - 1)}
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-zinc-950 disabled:opacity-30"
+            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-zinc-950 text-zinc-950 disabled:opacity-30"
           >
             <ChevronLeft className="h-6 w-6" aria-hidden />
           </button>
@@ -149,7 +149,7 @@ export function ScoreEntry({
             aria-label="Next hole"
             disabled={holeNumber >= holesPlayed}
             onClick={() => onSelectHole(holeNumber + 1)}
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-zinc-950 disabled:opacity-30"
+            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-zinc-300 text-zinc-950 disabled:opacity-30"
           >
             <ChevronRight className="h-6 w-6" aria-hidden />
           </button>
@@ -163,7 +163,7 @@ export function ScoreEntry({
           </span>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 rounded-xl bg-zinc-100 px-2 py-2.5">
           <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]">
             {holes.map((hole) => (
               <button
@@ -181,7 +181,7 @@ export function ScoreEntry({
           {savedLine || waitingLine ? (
             <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold">
               {savedLine ? (
-                <span className="inline-flex min-w-0 items-center gap-1 text-green-800">
+                <span className="inline-flex min-w-0 items-center gap-1 text-zinc-950">
                   <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {savedLine}
                 </span>
@@ -189,7 +189,7 @@ export function ScoreEntry({
                 <span />
               )}
               {waitingLine ? (
-                <span className="inline-flex min-w-0 items-center justify-end gap-1 text-right text-amber-700">
+                <span className="inline-flex min-w-0 items-center justify-end gap-1 text-right text-amber-900">
                   <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {waitingLine}
                 </span>

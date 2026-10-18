@@ -70,11 +70,11 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
           🏆 Winner · {tab}
         </p>
-        <h2 className="mt-3 font-display text-6xl tracking-wide text-white">
+        <h2 className="mt-2 font-display text-6xl leading-[0.72] tracking-wide text-white">
           {winner?.displayName ?? "No winner yet"}
         </h2>
-        <p className="mt-3 text-lg text-white">{line}</p>
-        {tiebreak ? <p className="mt-2 text-sm text-zinc-400">{tiebreak}</p> : null}
+        <p className="mt-2 text-lg leading-tight text-white">{line}</p>
+        {tiebreak ? <p className="mt-1 text-sm text-zinc-400">{tiebreak}</p> : null}
       </article>
 
       <div className="mt-5 flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label="Result">
