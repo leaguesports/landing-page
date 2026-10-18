@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Flag } from "lucide-react";
+import { Check, ChevronLeft, Flag, Link2, MessageCircle } from "lucide-react";
 import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { gameDayBoardPath, presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
 import {
@@ -15,7 +15,7 @@ import {
   resultsWinnerLine,
 } from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
-import { GameDayColumn, primaryLinkClass, WhatsAppIcon } from "./ui";
+import { GameDayColumn, primaryLinkClass } from "./ui";
 
 type ResultsViewProps = {
   board: GameDayLeaderboard;
@@ -60,8 +60,9 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       </div>
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">Final</p>
-        <span className="rounded-full border border-zinc-300 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
-          ✓ {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#3dff8a] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+          <Check className="h-3 w-3" aria-hidden />
+          {board.cardsConfirmed}/{board.cardsTotal} cards confirmed
         </span>
       </div>
       <h1 className="mt-3 font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
@@ -77,7 +78,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         {tiebreak ? <p className="mt-1 text-sm text-zinc-400">{tiebreak}</p> : null}
       </article>
 
-      <div className="mt-5 flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label="Result">
+      <div className="mt-5 flex gap-1 rounded-full border border-zinc-300 bg-white p-1" role="tablist" aria-label="Result">
         {TABS.map((item) => (
           <button
             key={item}
@@ -88,7 +89,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
             className={
               item === tab
                 ? "min-h-10 flex-1 rounded-full bg-zinc-950 text-sm font-semibold capitalize text-white"
-                : "min-h-10 flex-1 rounded-full text-sm font-semibold capitalize text-zinc-600"
+                : "min-h-10 flex-1 rounded-full text-sm font-semibold capitalize text-zinc-800"
             }
           >
             {item}
@@ -96,10 +97,10 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-zinc-200 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            <tr className="border-b border-zinc-200 bg-zinc-100 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
               <th className="py-2 pr-2 font-semibold">Pos</th>
               <th className="py-2 pr-2 font-semibold">Player</th>
               <th className="py-2 pr-2 text-right font-semibold">
@@ -125,19 +126,22 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       ) : null}
 
       <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-6`}>
-        <WhatsAppIcon />
+        <MessageCircle className="h-5 w-5" aria-hidden />
         Share results
       </a>
 
       <section className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-zinc-300 px-4 py-4">
-        <div>
-          <p className="text-sm font-semibold text-zinc-950">Add to weekend event</p>
-          <p className="mt-1 text-sm text-zinc-500">Optional. Link with Sunday for one combined board.</p>
+        <div className="flex min-w-0 items-start gap-3">
+          <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" aria-hidden />
+          <div>
+            <p className="text-sm font-semibold text-zinc-950">Add to weekend event</p>
+            <p className="mt-1 text-sm text-zinc-800">Optional. Link with Sunday for one combined board.</p>
+          </div>
         </div>
         {weekendHref ? (
           <a
             href={weekendHref}
-            className="inline-flex shrink-0 items-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white"
+            className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-950"
           >
             Add
           </a>
@@ -145,7 +149,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
           <button
             type="button"
             disabled
-            className="inline-flex shrink-0 items-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-40"
           >
             Add
           </button>
@@ -170,7 +174,7 @@ function ResultRow({
     <tr className="border-b border-zinc-200">
       <td className="py-3 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
       <td className="py-3 pr-2">
-        <span className="font-semibold text-zinc-950">
+        <span className="font-bold text-zinc-950">
           {row.displayName}
           {row.you ? (
             <span className="ml-2 rounded-full bg-zinc-950 px-1.5 py-0.5 align-middle font-sans text-[10px] font-semibold uppercase tracking-wide text-white">

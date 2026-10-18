@@ -64,16 +64,23 @@ function TabBar({
   onTab,
   label,
   large = false,
+  boxed = false,
 }: {
   tab: BoardTab;
   onTab: (tab: BoardTab) => void;
   label: string;
   large?: boolean;
+  boxed?: boolean;
 }) {
   const height = large ? "h-[38px] text-[15px]" : "min-h-10 text-sm";
+  const track = large
+    ? "flex w-full gap-0 pr-1.5"
+    : boxed
+      ? "flex gap-1 rounded-full border border-zinc-300 bg-white p-1"
+      : "flex gap-1 rounded-full bg-zinc-100 p-1";
   return (
     <div
-      className={large ? "flex w-full gap-0 pr-1.5" : "flex gap-1 rounded-full bg-zinc-100 p-1"}
+      className={track}
       role="tablist"
       aria-label={label}
     >
@@ -89,7 +96,7 @@ function TabBar({
             className={
               selected
                 ? `${height} flex-1 rounded-full bg-zinc-950 font-semibold capitalize text-white`
-                : `${height} flex-1 rounded-full font-semibold capitalize ${large ? "text-zinc-800" : "text-zinc-600"}`
+                : `${height} flex-1 rounded-full font-semibold capitalize ${large || boxed ? "text-zinc-800" : "text-zinc-600"}`
             }
           >
             {item}
@@ -225,7 +232,7 @@ export function LeaderboardView({
         </div>
 
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-7">
-          <div className="overflow-hidden rounded-2xl border border-zinc-300">
+          <div className="overflow-hidden rounded-xl border border-zinc-300">
             <table className="w-full table-fixed border-collapse text-left">
               <caption className="sr-only">Live leaderboard</caption>
               <colgroup>
@@ -264,7 +271,8 @@ export function LeaderboardView({
         </div>
 
         <footer className="mt-4 flex items-center justify-between gap-4 text-sm text-zinc-500">
-          <p>
+          <p className="flex items-center gap-2">
+            <Flag className="h-4 w-4 shrink-0" aria-hidden />
             {board.countback
               ? `Ties split on countback: ${board.countback} (applied at the finish)`
               : "Ties split on countback at the finish"}
@@ -287,7 +295,7 @@ function DesktopRow({
   return (
     <tr ref={bind} className={`h-[50px] ${leader ? "bg-[#e9fff1]" : "bg-white"}`}>
       <td className="relative border-b border-zinc-200 pl-8 pr-2 font-display text-[32px] leading-none tracking-wide text-zinc-950">
-        {leader ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
+        {leader ? <span className="absolute inset-y-0 left-0 w-[5px] bg-zinc-950" aria-hidden /> : null}
         {row.position ?? "–"}
       </td>
       <td className="border-b border-zinc-200 px-2">
@@ -489,7 +497,7 @@ function SpectatorPhone({
       </div>
       <div className="px-4 pt-4">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-950 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
             <span className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`} aria-hidden />
             Live
           </span>
@@ -510,11 +518,11 @@ function SpectatorPhone({
         </section>
 
         <div className="mt-4">
-          <TabBar tab={tab} onTab={onTab} label="Scoring" />
+          <TabBar tab={tab} onTab={onTab} label="Scoring" boxed />
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-300">
-          <div className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] gap-2 border-b border-zinc-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <div className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] gap-2 border-b border-zinc-200 bg-zinc-100 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             <span>Pos</span>
             <span>Player</span>
             <span className="text-right">{tab === "stableford" ? "Pts" : "To par"}</span>
@@ -527,9 +535,9 @@ function SpectatorPhone({
                 <li
                   key={row.playerId}
                   ref={bind(row.playerId)}
-                  className={`grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
+                  className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2.5 last:border-b-0"
                 >
-                  <span className="font-display text-3xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+                  <span className="font-display text-2xl leading-none text-zinc-950">{row.position ?? "–"}</span>
                   <span className="min-w-0">
                     <span className="block truncate font-bold text-zinc-950">{row.displayName}</span>
                     <span className="block text-xs text-zinc-500">

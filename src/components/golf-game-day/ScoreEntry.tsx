@@ -200,7 +200,7 @@ export function ScoreEntry({
 
         <div className="mt-2">
           {players.map((player) => (
-            <div key={player.slot} className="flex items-center justify-between gap-2 border-b border-zinc-200 py-3">
+            <div key={player.slot} className="flex min-h-[100px] items-center justify-between gap-2 border-b border-zinc-200 py-3 last:border-b-0">
               <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-2">
                   <span className="text-lg font-extrabold text-zinc-950">{player.name}</span>

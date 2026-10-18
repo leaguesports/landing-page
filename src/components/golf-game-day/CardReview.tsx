@@ -52,10 +52,10 @@ function ScoreCell({
   const mark = strokes != null && par != null ? scoreMark(strokes, par) : "plain";
   const className =
     mark === "birdie"
-      ? "inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-950 text-xs font-semibold tabular-nums text-zinc-950"
+      ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-950 text-sm font-semibold tabular-nums text-zinc-950"
       : mark === "double"
-        ? "inline-flex h-6 w-6 items-center justify-center bg-zinc-200 text-xs font-semibold tabular-nums text-zinc-950"
-        : "inline-flex h-6 w-6 items-center justify-center text-xs font-semibold tabular-nums text-zinc-950";
+        ? "inline-flex h-7 w-7 items-center justify-center bg-zinc-200 text-sm font-semibold tabular-nums text-zinc-950"
+        : "inline-flex h-7 w-7 items-center justify-center text-sm font-semibold tabular-nums text-zinc-950";
   const label = strokes == null ? "–" : String(strokes);
   if (!onEdit) return <span className={className}>{label}</span>;
   return (
@@ -84,31 +84,31 @@ function NineTable({
     <section className="mt-5" aria-label={title}>
       <table className="w-full border-collapse text-center">
         <thead>
-          <tr className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400">
-            <th className="py-1 pr-1 text-left font-semibold text-zinc-500">{title}</th>
+          <tr className="bg-zinc-100 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
+            <th className="bg-zinc-100 py-1.5 pr-1 text-left font-semibold">{title}</th>
             {holes.map((hole) => (
-              <th key={hole.number} className="px-0.5 py-1 font-semibold">
+              <th key={hole.number} className="bg-zinc-100 px-0.5 py-1.5 font-semibold">
                 {hole.number}
               </th>
             ))}
-            <th className="py-1 pl-1 font-semibold">{totalLabel}</th>
+            <th className="bg-zinc-100 py-1.5 pl-1 font-semibold">{totalLabel}</th>
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-zinc-200">
-            <th className="py-1.5 pr-1 text-left text-xs font-semibold text-zinc-500">Par</th>
+          <tr className="border-b border-zinc-200 bg-zinc-100">
+            <th className="bg-zinc-100 py-1.5 pr-1 text-left text-xs font-semibold text-zinc-500">Par</th>
             {holes.map((hole) => (
-              <td key={hole.number} className="px-0.5 py-1.5 text-xs tabular-nums text-zinc-500">
+              <td key={hole.number} className="bg-zinc-100 px-0.5 py-1.5 text-xs tabular-nums text-zinc-500">
                 {hole.par ?? "–"}
               </td>
             ))}
-            <td className="py-1.5 pl-1 text-xs font-semibold tabular-nums text-zinc-950">{parTotal ?? "–"}</td>
+            <td className="bg-zinc-100 py-1.5 pl-1 text-xs font-semibold tabular-nums text-zinc-950">{parTotal ?? "–"}</td>
           </tr>
           {players.map((player) => (
             <tr key={player.slot} className="border-b border-zinc-100">
-              <th className="py-1 pr-1 text-left text-xs font-semibold text-zinc-950">{player.name}</th>
+              <th className="py-1.5 pr-1 text-left text-sm font-bold text-zinc-950">{player.name}</th>
               {player.holes.map((hole) => (
-                <td key={hole.number} className="px-0.5 py-1">
+                <td key={hole.number} className="px-0.5 py-1.5">
                   <ScoreCell
                     strokes={hole.strokes}
                     par={hole.par}
@@ -116,7 +116,7 @@ function NineTable({
                   />
                 </td>
               ))}
-              <td className="py-1 pl-1 text-xs font-semibold tabular-nums text-zinc-950">
+              <td className="bg-zinc-100 py-1.5 pl-1 text-sm font-bold tabular-nums text-zinc-950">
                 {sumStrokes(player.holes) ?? "–"}
               </td>
             </tr>
@@ -165,7 +165,7 @@ export function CardReview({
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">
             Card {cardNumber} · all 18 holes in
           </p>
-          <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+          <span className="shrink-0 rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
             New
           </span>
         </div>
@@ -200,7 +200,7 @@ export function CardReview({
                   ? `${player.gross} gross · ${player.net ?? "–"} net · ${player.points ?? "–"} pts`
                   : `${player.gross} gross · no hcp · ${player.points ?? "–"} pts`;
             const pillClass = pill.filled
-              ? "inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-[#3dff8a] px-3 text-sm font-semibold text-zinc-950"
+              ? "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-zinc-950 bg-[#3dff8a] px-3 text-sm font-semibold text-zinc-950"
               : "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-950";
             return (
               <li key={player.slot} className="flex items-center justify-between gap-3 border-b border-zinc-200 px-3 py-3 last:border-b-0">

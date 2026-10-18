@@ -87,7 +87,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
         </div>
 
         <div className="mt-4 flex items-start gap-3">
-          <span className="mt-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white">
+          <span className="mt-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-[#3dff8a]">
             <Check className="h-6 w-6" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -98,14 +98,14 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           </div>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-zinc-300 p-4">
-          <h2 className="text-sm font-semibold text-zinc-950">Join · for players</h2>
-          <div className="mt-3 flex items-end justify-between gap-3">
+        <h2 className="mt-6 text-sm font-semibold text-zinc-950">Join · for players</h2>
+        <section className="mt-3 rounded-2xl border border-zinc-300 p-4">
+          <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-zinc-950">Join code</p>
-              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.08em] text-zinc-950">{day.inviteCode}</p>
+              <p className="mt-1 font-display text-[52px] leading-none tracking-[0.28em] text-zinc-950">{day.inviteCode}</p>
             </div>
-            <p className="pb-1 text-right text-xs font-semibold leading-snug text-zinc-950">
+            <p className="pb-1 text-right text-xs font-normal leading-snug text-zinc-950">
               leaguesports.co.za
               <span className="block">/g/{day.inviteCode}</span>
             </p>
@@ -135,14 +135,16 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
 
         <section className="mt-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-[#006045]">Watch link</h2>
+            <h2 className="text-sm font-semibold text-zinc-950">Watch link</h2>
             <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
               New
             </span>
-            <span className="text-xs font-semibold text-zinc-500">view only</span>
+            <span className="ml-auto text-xs text-zinc-600">view only</span>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl bg-zinc-100 px-3 py-3">
-            <Eye className="h-5 w-5 shrink-0 text-zinc-700" aria-hidden />
+          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-100 px-3 py-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+              <Eye className="h-5 w-5 text-zinc-950" aria-hidden />
+            </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-zinc-950">Watch link · view only</p>
               <p className="mt-0.5 break-all text-xs text-zinc-600">leaguesports.co.za/w/{day.watchToken}</p>
@@ -150,26 +152,27 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
             <button
               type="button"
               onClick={() => copy("watch", watchUrl || watchPath)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-950"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-950"
             >
-              <Copy className="h-3.5 w-3.5" aria-hidden />
+              <Copy className="h-4 w-4" aria-hidden />
               {copied === "watch" ? "Copied" : "Copy"}
             </button>
           </div>
         </section>
 
         <section className="mt-6">
-          <h2 className="text-sm font-semibold text-zinc-950">
-            Players added · {day.players.length} names
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-800">{rosterLine(day.players)}</p>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-base font-bold text-zinc-950">Players added</h2>
+            <span className="text-sm font-semibold text-zinc-700">{day.players.length} names</span>
+          </div>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-800">{rosterLine(day.players)}</p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-700">
             Friends tap their name, pick a card (max 4) and play. Anyone else taps &quot;Add me&quot;.
           </p>
         </section>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-5 py-3">
+      <div className="sticky bottom-0 border-t border-zinc-300 bg-white px-5 py-3">
         <Link
           href={myCard}
           className="inline-flex min-h-16 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-base font-semibold text-zinc-950"
