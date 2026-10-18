@@ -12,6 +12,7 @@ export type GameDayPlayerSummary = {
   handicapIndex: number | null;
   teeName: string;
   joined: boolean;
+  isOrganiser?: boolean;
   cardId: string | null;
   cardNumber: number | null;
   slot: number | null;
@@ -20,8 +21,13 @@ export type GameDayPlayerSummary = {
 export type GameDayCreated = {
   id: string;
   inviteCode: string;
+  /** Present only on the 201 create response. */
+  organiserToken?: string;
   watchToken: string;
   watchPath: string;
+  claimed?: boolean;
+  organiserPlayerId?: string | null;
+  weekendClaimed?: boolean;
   venueCmsId: string;
   venueName: string;
   date: string;
@@ -42,12 +48,23 @@ export type CreateGameDayInput = {
   defaultTee: string;
   teeOptions: string[];
   format: GameDayFormat;
+  organiserPlayer?: {
+    displayName: string;
+    handicapIndex?: number | null;
+    teeName?: string;
+  };
   players: Array<{
     displayName: string;
     handicapIndex?: number | null;
     teeName?: string;
   }>;
   weekendEvent?: { name: string };
+};
+
+export type PatchGameDayPlayerInput = {
+  displayName?: string;
+  handicapIndex?: number | null;
+  teeName?: string;
 };
 
 export type InvitePlayer = {
@@ -112,11 +129,20 @@ export type CardPlayer = {
   you: boolean;
 };
 
+export type HoleScoreSlot = {
+  slot: number;
+  strokes: number;
+  updatedByPlayerId: string | null;
+  updatedByName: string | null;
+  updatedAt: string;
+};
+
 export type CardHole = {
   number: number;
   strokes: Record<string, number>;
   clientTimestamp: string;
   synced: boolean;
+  scores?: HoleScoreSlot[];
 };
 
 export type CardTee = {
@@ -146,11 +172,52 @@ export type GameDayCard = {
   missingHoles: number[];
 };
 
+export type HoleScoreConflict = {
+  slot: number;
+  previous: {
+    strokes: number;
+    updatedByPlayerId: string | null;
+    updatedByName: string | null;
+    updatedAt: string;
+  } | null;
+};
+
+export type HolePutBody = {
+  clientTimestamp: string;
+  strokes: Record<string, number>;
+  expectedUpdatedAt?: Record<string, string | null>;
+};
+
 export type HolePutResponse = {
   applied: boolean;
-  reason: "applied" | "replay" | "stale";
+  reason: "applied" | "replay";
+  conflict: boolean;
+  conflicts: HoleScoreConflict[];
   version: number;
   card: GameDayCard;
+};
+
+export type ScoreUpdatedEvent = {
+  version?: number;
+  gameDayId?: string;
+  cardId: string;
+  cardNumber?: number;
+  holeNumber: number;
+  updatedBy?: { playerId: string | null; displayName: string };
+  updatedAt?: string;
+  scores: HoleScoreSlot[];
+  leaderboard?: GameDayLeaderboard;
+};
+
+export type CardUnlockedEvent = {
+  version?: number;
+  gameDayId?: string;
+  cardId: string;
+  cardNumber?: number;
+  message?: string;
+  cardsConfirmed?: number;
+  cardsTotal?: number;
+  leaderboard?: GameDayLeaderboard;
 };
 
 export type RankingRow = {
@@ -195,6 +262,7 @@ export type LeaderboardCard = {
   thru: number;
   playerCount: number;
   syncedAt: string | null;
+  holes?: CardHole[];
 };
 
 export type GameDayLeaderboard = {
@@ -270,8 +338,16 @@ export type QueuedHolePut = {
   holeNumber: number;
   clientTimestamp: string;
   strokes: Record<string, number>;
+  expectedUpdatedAt?: Record<string, string | null>;
   state: "queued" | "saving" | "offline";
   attempts: number;
+};
+
+export type OrganiserSession = {
+  gameDayId: string;
+  organiserToken: string;
+  organiserPlayerId: string | null;
+  claimed: boolean;
 };
 
 /** One pending "looks right" mark per player. The server only sets the flag true. */

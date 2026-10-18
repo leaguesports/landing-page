@@ -2,24 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, Copy, Eye, MessageCircle } from "lucide-react";
-import type { GameDayCreated, GameDayPlayerSummary } from "@/types/golf-game-day";
+import { Check, ChevronLeft, Copy, Eye, Link2, MessageCircle } from "lucide-react";
+import type { GameDayCreated, GameDayPlayerSummary, PatchGameDayPlayerInput } from "@/types/golf-game-day";
 import {
   gameDayBoardPath,
   gameDayCardPath,
   gameDayInvitePath,
+  gameDayOrganiserPath,
   gameDayWatchPath,
   presentGameDay,
   whatsAppShareUrl,
 } from "@/lib/golf-game-day/paths";
 import { useGameDayAction } from "./GameDayChrome";
 import { primaryLinkClass } from "./ui";
-
-type ShareGameDayProps = {
-  day: GameDayCreated;
-  origin?: string;
-  cardHref?: string;
-};
 
 async function copyText(value: string): Promise<boolean> {
   try {
@@ -34,27 +29,47 @@ function rosterLine(players: GameDayPlayerSummary[]): string {
   return players
     .map((player, index) =>
       index === 0 && player.cardNumber
-        ? `${player.displayName} (Card ${player.cardNumber}, scoring)`
+        ? `${player.displayName} (Card ${player.cardNumber})`
         : player.displayName,
     )
     .join(", ");
 }
 
-export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) {
-  const [copied, setCopied] = useState<"invite" | "watch" | null>(null);
+type ShareGameDayProps = {
+  day: GameDayCreated;
+  origin?: string;
+  cardHref?: string;
+  organiserToken?: string | null;
+  onSavePlayer?: (playerId: string, body: PatchGameDayPlayerInput) => Promise<void>;
+};
+
+export function ShareGameDay({
+  day,
+  origin = "",
+  cardHref,
+  organiserToken = null,
+  onSavePlayer,
+}: ShareGameDayProps) {
+  const [copied, setCopied] = useState<"invite" | "watch" | "organiser" | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, { displayName: string; handicap: string; teeName: string }>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const shown = presentGameDay(day);
   useGameDayAction("Brandon", "/login", "account");
   const invitePath = gameDayInvitePath(day.inviteCode);
   const watchPath = gameDayWatchPath(day.watchToken);
   const inviteUrl = `${origin}${invitePath}`;
   const watchUrl = `${origin}${watchPath}`;
+  const organiserPath = organiserToken ? gameDayOrganiserPath(day.id, organiserToken) : "";
+  const organiserUrl = organiserPath ? `${origin}${organiserPath}` : "";
   const shareText = `Join the game day\n${inviteUrl}`;
   const seated = day.players.find((player) => player.cardId);
   const myCard =
     cardHref ??
     (seated?.cardId ? gameDayCardPath(day.id, seated.cardId) : gameDayBoardPath(day.id));
 
-  async function copy(kind: "invite" | "watch", value: string) {
+  async function copy(kind: "invite" | "watch" | "organiser", value: string) {
     const ok = await copyText(value);
     if (ok) {
       setCopied(kind);
@@ -160,12 +175,164 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           </div>
         </section>
 
+        {organiserToken ? (
+          <section className="mt-6">
+            <p className="text-sm text-zinc-600">Save your organiser link.</p>
+            <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-100 px-3 py-4">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+                <Link2 className="h-5 w-5 text-zinc-950" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-zinc-950">Organiser link</p>
+                <p className="mt-0.5 break-all text-xs text-zinc-600">
+                  leaguesports.co.za{organiserPath}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => copy("organiser", organiserUrl || organiserPath)}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-950"
+              >
+                <Copy className="h-4 w-4" aria-hidden />
+                {copied === "organiser" ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <section className="mt-6">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-base font-bold text-zinc-950">Players added</h2>
-            <span className="text-sm font-semibold text-zinc-700">{day.players.length} names</span>
+            <span className="flex items-center gap-3">
+              {onSavePlayer ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing((open) => !open);
+                    setDrafts(
+                      Object.fromEntries(
+                        day.players.map((player) => [
+                          player.id,
+                          {
+                            displayName: player.displayName,
+                            handicap: player.handicapIndex == null ? "" : String(player.handicapIndex),
+                            teeName: player.teeName,
+                          },
+                        ]),
+                      ),
+                    );
+                    setEditError(null);
+                  }}
+                  className="text-sm font-semibold text-zinc-950"
+                >
+                  {editing ? "Done" : "Edit"}
+                </button>
+              ) : null}
+              <span className="text-sm font-semibold text-zinc-700">{day.players.length} names</span>
+            </span>
           </div>
-          <p className="mt-2 text-base font-medium leading-snug text-zinc-950">{rosterLine(day.players)}</p>
+          {editing && onSavePlayer ? (
+            <ul className="mt-3 space-y-3">
+              {day.players.map((player) => {
+                const draft = drafts[player.id] ?? {
+                  displayName: player.displayName,
+                  handicap: player.handicapIndex == null ? "" : String(player.handicapIndex),
+                  teeName: player.teeName,
+                };
+                return (
+                  <li key={player.id} className="rounded-2xl border border-zinc-300 px-3 py-3">
+                    <label className="block text-sm font-semibold text-zinc-950">
+                      Name
+                      <input
+                        value={draft.displayName}
+                        aria-label={`Name for ${player.displayName}`}
+                        onChange={(event) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [player.id]: { ...draft, displayName: event.target.value },
+                          }))
+                        }
+                        className="mt-1 w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-base font-medium text-zinc-950"
+                      />
+                    </label>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <label className="block text-sm font-semibold text-zinc-950">
+                        Handicap
+                        <input
+                          value={draft.handicap}
+                          inputMode="decimal"
+                          aria-label={`Handicap for ${player.displayName}`}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [player.id]: { ...draft, handicap: event.target.value },
+                            }))
+                          }
+                          className="mt-1 w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-base font-medium text-zinc-950"
+                        />
+                      </label>
+                      <label className="block text-sm font-semibold text-zinc-950">
+                        Tee
+                        <select
+                          value={draft.teeName}
+                          aria-label={`Tee for ${player.displayName}`}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [player.id]: { ...draft, teeName: event.target.value },
+                            }))
+                          }
+                          className="mt-1 w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-base font-medium text-zinc-950"
+                        >
+                          {day.teeOptions.map((tee) => (
+                            <option key={tee} value={tee}>
+                              {tee}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={savingId === player.id}
+                      onClick={() => {
+                        const handicap = draft.handicap.trim();
+                        const parsed = handicap === "" ? null : Number(handicap);
+                        if (parsed != null && Number.isNaN(parsed)) {
+                          setEditError("Handicap needs to be a number.");
+                          return;
+                        }
+                        const body: PatchGameDayPlayerInput = {};
+                        if (draft.displayName.trim() && draft.displayName.trim() !== player.displayName) {
+                          body.displayName = draft.displayName.trim();
+                        }
+                        if (draft.teeName !== player.teeName) body.teeName = draft.teeName;
+                        if (parsed !== player.handicapIndex) body.handicapIndex = parsed;
+                        if (Object.keys(body).length === 0) return;
+                        setSavingId(player.id);
+                        setEditError(null);
+                        onSavePlayer(player.id, body)
+                          .catch((cause: unknown) => {
+                            setEditError(cause instanceof Error ? cause.message : "Could not save that player.");
+                          })
+                          .finally(() => setSavingId(null));
+                      }}
+                      className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-950 disabled:opacity-40"
+                    >
+                      {savingId === player.id ? "Saving…" : "Save"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-2 text-base font-medium leading-snug text-zinc-950">{rosterLine(day.players)}</p>
+          )}
+          {editError ? (
+            <p role="alert" className="mt-2 text-sm text-red-700">
+              {editError}
+            </p>
+          ) : null}
           <p className="mt-1 text-sm font-medium leading-snug text-zinc-800">
             Friends tap their name, pick a card (max 4) and play. Anyone else taps &quot;Add me&quot;.
           </p>

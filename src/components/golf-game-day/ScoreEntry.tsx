@@ -24,6 +24,7 @@ export type ScorePlayerRow = {
   toPar: string;
   relation: string;
   shotChip: string | null;
+  changedBy?: string | null;
 };
 
 type ScoreEntryProps = {
@@ -33,11 +34,10 @@ type ScoreEntryProps = {
   holesPlayed: number;
   par: number;
   strokeIndex: number;
-  takeoverName: string | null;
-  takeoverDetail?: string | null;
   holes: ScoreHoleChip[];
   players: ScorePlayerRow[];
   canScore: boolean;
+  conflictNotice?: string | null;
   reviewHref: string;
   boardHref: string;
   onStep: (slot: number, delta: number) => void;
@@ -64,11 +64,10 @@ export function ScoreEntry({
   holesPlayed,
   par,
   strokeIndex,
-  takeoverName,
-  takeoverDetail = null,
   holes,
   players,
   canScore,
+  conflictNotice = null,
   reviewHref,
   boardHref,
   onStep,
@@ -115,20 +114,6 @@ export function ScoreEntry({
           <Link href={boardHref} className="block py-2 text-sm font-semibold">
             Leaderboard
           </Link>
-        </div>
-      ) : null}
-
-      {takeoverName ? (
-        <div className="mx-4 mt-2 flex items-center gap-3 rounded-2xl bg-zinc-950 px-4 py-2.5 text-white">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3dff8a] text-zinc-950">
-            <Check className="h-4 w-4" aria-hidden />
-          </span>
-          <p className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">
-              {takeoverName} is now scoring Card {cardNumber}
-            </span>
-            {takeoverDetail ? <span className="mt-0.5 block text-sm text-zinc-400">{takeoverDetail}</span> : null}
-          </p>
         </div>
       ) : null}
 
@@ -197,6 +182,11 @@ export function ScoreEntry({
             </div>
           ) : null}
         </div>
+        {conflictNotice ? (
+          <p role="status" className="mt-2 px-1 text-xs font-medium text-zinc-600">
+            {conflictNotice}
+          </p>
+        ) : null}
 
         <div className="mt-2">
           {players.map((player) => (
@@ -213,6 +203,9 @@ export function ScoreEntry({
                 <p className="mt-0.5 text-sm font-bold text-zinc-800">
                   Total {player.total ?? "–"} · {player.toPar}
                 </p>
+                {player.changedBy ? (
+                  <p className="mt-0.5 text-xs font-medium text-zinc-500">{player.changedBy}</p>
+                ) : null}
               </div>
               <div
                 role="group"

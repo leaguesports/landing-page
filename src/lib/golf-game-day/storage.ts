@@ -2,6 +2,8 @@ import type {
   CachedGameDayCourse,
   DeviceSession,
   GameDayCard,
+  GameDayCreated,
+  OrganiserSession,
   QueuedHolePut,
   QueuedLooksRight,
 } from "../../types/golf-game-day.ts";
@@ -9,6 +11,7 @@ import type {
 export const HOLE_QUEUE_KEY = "golf-gameday:v1:queue";
 export const LOOKS_RIGHT_QUEUE_KEY = "golf-gameday:v1:looks-right";
 export const DEVICE_KEY = "golf-gameday:v1:device";
+export const ORGANISER_KEY = "golf-gameday:v1:organiser";
 export const COURSE_PREFIX = "golf-gameday:v1:course:";
 export const CARD_PREFIX = "golf-gameday:v1:card:";
 export const WATCH_SESSION_KEY = "golf-gameday:v1:watch-session";
@@ -166,6 +169,53 @@ export function writeDevice(store: KeyValueStore, session: DeviceSession): void 
   const all = readDevices(store);
   all[session.gameDayId] = session;
   store.set(DEVICE_KEY, JSON.stringify(all));
+}
+
+export function readOrganisers(store: KeyValueStore): Record<string, OrganiserSession> {
+  const parsed = readJson<unknown>(store, ORGANISER_KEY);
+  if (!parsed || typeof parsed !== "object") return {};
+  return parsed as Record<string, OrganiserSession>;
+}
+
+export function readOrganiser(
+  store: KeyValueStore,
+  gameDayId: string,
+): OrganiserSession | null {
+  return readOrganisers(store)[gameDayId] ?? null;
+}
+
+export function writeOrganiser(store: KeyValueStore, session: OrganiserSession): void {
+  const all = readOrganisers(store);
+  all[session.gameDayId] = session;
+  store.set(ORGANISER_KEY, JSON.stringify(all));
+}
+
+/**
+ * The create response shows organiserToken once. Keep it beside the device
+ * map, keyed by game day. When the creator is also a player, that same secret
+ * is their device token.
+ */
+export function rememberCreatedGameDay(store: KeyValueStore, created: GameDayCreated): void {
+  if (!created.organiserToken) return;
+  writeOrganiser(store, {
+    gameDayId: created.id,
+    organiserToken: created.organiserToken,
+    organiserPlayerId: created.organiserPlayerId ?? null,
+    claimed: created.claimed === true,
+  });
+  if (!created.organiserPlayerId) return;
+  const self = created.players.find((player) => player.id === created.organiserPlayerId);
+  if (!self) return;
+  writeDevice(store, {
+    gameDayId: created.id,
+    deviceToken: created.organiserToken,
+    playerId: self.id,
+    displayName: self.displayName,
+    teeName: self.teeName,
+    handicapIndex: self.handicapIndex,
+    inviteCode: created.inviteCode,
+    cardId: self.cardId,
+  });
 }
 
 export function cacheCourse(store: KeyValueStore, course: CachedGameDayCourse): void {

@@ -92,10 +92,29 @@ export function BoardClient({ gameDayId, watchToken }: BoardClientProps) {
     const channel = client.channels.get(`golf-gameday:${id}`);
     const onEvent = (message: Ably.Message) => {
       if (cancelled) return;
-      const data = message.data as { leaderboard?: GameDayLeaderboard; version?: number } | undefined;
-      if (data?.leaderboard) apply(data.leaderboard);
+      const data = message.data as {
+        leaderboard?: GameDayLeaderboard;
+        version?: number;
+        cardsConfirmed?: number;
+        cardsTotal?: number;
+      } | undefined;
+      if (data?.leaderboard?.rankings && data.leaderboard.gameDayId) {
+        apply(data.leaderboard);
+        return;
+      }
+      if (message.name !== "card.unlocked" && message.name !== "card.locked") return;
+      setBoard((current) => {
+        if (!current) return current;
+        if (typeof data?.version === "number" && data.version < current.version) return current;
+        return {
+          ...current,
+          version: typeof data?.version === "number" ? data.version : current.version,
+          cardsConfirmed: typeof data?.cardsConfirmed === "number" ? data.cardsConfirmed : current.cardsConfirmed,
+          cardsTotal: typeof data?.cardsTotal === "number" ? data.cardsTotal : current.cardsTotal,
+        };
+      });
     };
-    const names = ["score.updated", "feed.birdie", "feed.lead_change", "card.locked"] as const;
+    const names = ["score.updated", "feed.birdie", "feed.lead_change", "card.locked", "card.unlocked"] as const;
     for (const name of names) channel.subscribe(name, onEvent);
     void channel.history({ limit: 25, direction: "backwards" }).then((page) => {
       if (cancelled) return;

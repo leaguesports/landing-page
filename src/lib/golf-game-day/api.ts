@@ -1,18 +1,33 @@
-import { getRailwayApiOrigin } from "@/lib/api-origin";
-import { postLooksRight, type LooksRightResponse } from "@/lib/golf-game-day/looks-right";
+import { getRailwayApiOrigin } from "../api-origin.ts";
+import { postLooksRight, type LooksRightResponse } from "./looks-right.ts";
+import { gameDayUserMessage } from "./multi-scorer.ts";
 import type {
   CreateGameDayInput,
   GameDayCard,
   GameDayCreated,
   GameDayLeaderboard,
   GameDayPreview,
+  HolePutBody,
   HolePutResponse,
   JoinResult,
+  PatchGameDayPlayerInput,
   WeekendLeaderboard,
-} from "@/types/golf-game-day";
+} from "../../types/golf-game-day.ts";
 
 export const GAME_DAY_TOKEN_HEADER = "X-Game-Day-Token";
 export const GAME_DAY_WATCH_HEADER = "X-Game-Day-Watch-Token";
+export const GAME_DAY_ORGANISER_HEADER = "X-Game-Day-Organiser-Token";
+
+export type GameDayTransport = {
+  fetchImpl?: typeof fetch;
+  baseUrl?: string;
+};
+
+export type GameDayAuth = {
+  deviceToken?: string | null;
+  watchToken?: string | null;
+  organiserToken?: string | null;
+};
 
 export class GameDayApiError extends Error {
   status: number;
@@ -24,13 +39,12 @@ export class GameDayApiError extends Error {
   }
 }
 
-type RequestOptions = {
+type RequestOptions = GameDayTransport & {
   method?: string;
   body?: unknown;
   deviceToken?: string | null;
   watchToken?: string | null;
-  fetchImpl?: typeof fetch;
-  baseUrl?: string;
+  organiserToken?: string | null;
 };
 
 function requestBase(explicit?: string): string {
@@ -51,6 +65,7 @@ export async function gameDayRequest<T>(
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.deviceToken) headers[GAME_DAY_TOKEN_HEADER] = options.deviceToken;
   if (options.watchToken) headers[GAME_DAY_WATCH_HEADER] = options.watchToken;
+  if (options.organiserToken) headers[GAME_DAY_ORGANISER_HEADER] = options.organiserToken;
 
   const fetchImpl = options.fetchImpl ?? fetch;
   let response: Response;
@@ -67,25 +82,61 @@ export async function gameDayRequest<T>(
   }
 
   if (!response.ok) {
-    let message = "Request failed";
+    let server: string | undefined;
     try {
       const payload = (await response.json()) as { error?: string };
-      if (payload.error) message = payload.error;
+      if (payload.error) server = payload.error;
     } catch {
-      // Keep the generic message.
+      // Status mapping still applies.
     }
-    throw new GameDayApiError(response.status, message);
+    throw new GameDayApiError(response.status, gameDayUserMessage(response.status, server));
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
-export function createGameDay(input: CreateGameDayInput): Promise<GameDayCreated> {
-  return gameDayRequest("/api/golf-game-days", { method: "POST", body: input });
+export function createGameDay(
+  input: CreateGameDayInput,
+  transport?: GameDayTransport,
+): Promise<GameDayCreated> {
+  return gameDayRequest("/api/golf-game-days", { method: "POST", body: input, ...transport });
 }
 
-export function fetchOrganiserGameDay(id: string): Promise<GameDayCreated> {
-  return gameDayRequest(`/api/golf-game-days/${encodeURIComponent(id)}`);
+export function fetchOrganiserGameDay(
+  id: string,
+  organiserToken?: string | null,
+  transport?: GameDayTransport,
+): Promise<GameDayCreated> {
+  return gameDayRequest(`/api/golf-game-days/${encodeURIComponent(id)}`, {
+    organiserToken,
+    ...transport,
+  });
+}
+
+export function claimGameDay(
+  id: string,
+  organiserToken: string,
+  transport?: GameDayTransport,
+): Promise<GameDayCreated> {
+  return gameDayRequest(`/api/golf-game-days/${encodeURIComponent(id)}/claim`, {
+    method: "POST",
+    body: {},
+    organiserToken,
+    ...transport,
+  });
+}
+
+export function patchGameDayPlayer(
+  gameDayId: string,
+  playerId: string,
+  body: PatchGameDayPlayerInput,
+  organiserToken?: string | null,
+  transport?: GameDayTransport,
+): Promise<GameDayCreated> {
+  return gameDayRequest(
+    `/api/golf-game-days/${encodeURIComponent(gameDayId)}/players/${encodeURIComponent(playerId)}`,
+    { method: "PATCH", body, organiserToken, ...transport },
+  );
 }
 
 export function fetchInvite(code: string): Promise<GameDayPreview> {
@@ -140,12 +191,25 @@ export function putHole(
   gameDayId: string,
   cardId: string,
   holeNumber: number,
-  deviceToken: string,
-  body: { clientTimestamp: string; strokes: Record<string, number> },
+  auth: GameDayAuth,
+  body: HolePutBody,
+  transport?: GameDayTransport,
 ): Promise<HolePutResponse> {
   return gameDayRequest(
     `/api/golf-game-days/${encodeURIComponent(gameDayId)}/cards/${encodeURIComponent(cardId)}/holes/${holeNumber}`,
-    { method: "PUT", deviceToken, body },
+    { method: "PUT", body, ...auth, ...transport },
+  );
+}
+
+export function unlockCard(
+  gameDayId: string,
+  cardId: string,
+  organiserToken?: string | null,
+  transport?: GameDayTransport,
+): Promise<{ card: GameDayCard; version: number; leaderboard: GameDayLeaderboard }> {
+  return gameDayRequest(
+    `/api/golf-game-days/${encodeURIComponent(gameDayId)}/cards/${encodeURIComponent(cardId)}/unlock`,
+    { method: "POST", body: {}, organiserToken, ...transport },
   );
 }
 
@@ -166,25 +230,29 @@ export function markLooksRight(
     if (cause instanceof TypeError || status === 0) {
       throw new GameDayApiError(0, "You are offline. Scores stay on this phone.");
     }
-    throw new GameDayApiError(Number.isFinite(status) ? status : 0, message);
+    throw new GameDayApiError(
+      Number.isFinite(status) ? status : 0,
+      gameDayUserMessage(Number.isFinite(status) ? status : 0, message),
+    );
   });
 }
 
 export function confirmCard(
   gameDayId: string,
   cardId: string,
-  deviceToken: string,
+  auth: GameDayAuth,
+  transport?: GameDayTransport,
 ): Promise<{ card: GameDayCard; golfRoundId: string; version: number; leaderboard: GameDayLeaderboard }> {
   return gameDayRequest(
     `/api/golf-game-days/${encodeURIComponent(gameDayId)}/cards/${encodeURIComponent(cardId)}/confirm`,
-    { method: "POST", deviceToken, body: {} },
+    { method: "POST", body: {}, ...auth, ...transport },
   );
 }
 
 export function fetchCard(
   gameDayId: string,
   cardId: string,
-  auth: { deviceToken?: string | null; watchToken?: string | null },
+  auth: GameDayAuth,
 ): Promise<GameDayCard> {
   return gameDayRequest(
     `/api/golf-game-days/${encodeURIComponent(gameDayId)}/cards/${encodeURIComponent(cardId)}`,
@@ -194,7 +262,7 @@ export function fetchCard(
 
 export function fetchLeaderboard(
   gameDayId: string,
-  auth: { deviceToken?: string | null; watchToken?: string | null },
+  auth: GameDayAuth,
 ): Promise<GameDayLeaderboard> {
   return gameDayRequest(`/api/golf-game-days/${encodeURIComponent(gameDayId)}/leaderboard`, auth);
 }
@@ -207,7 +275,7 @@ export function fetchWatchLeaderboard(watchToken: string): Promise<GameDayLeader
 
 export function fetchWeekendLeaderboard(
   weekendEventId: string,
-  auth: { deviceToken?: string | null; watchToken?: string | null },
+  auth: GameDayAuth,
 ): Promise<WeekendLeaderboard> {
   return gameDayRequest(
     `/api/golf-game-days/weekends/${encodeURIComponent(weekendEventId)}/leaderboard`,

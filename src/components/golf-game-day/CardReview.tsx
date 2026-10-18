@@ -33,6 +33,10 @@ type CardReviewProps = {
   onConfirm: () => void;
   onEditHole?: (holeNumber: number) => void;
   onLooksRight?: (slot: number) => void;
+  canUnlock?: boolean;
+  unlocking?: boolean;
+  onUnlock?: () => void;
+  notice?: string | null;
 };
 
 function sumStrokes(holes: ReviewPlayer["holes"]): number | null {
@@ -138,6 +142,10 @@ export function CardReview({
   onConfirm,
   onEditHole,
   onLooksRight,
+  canUnlock = false,
+  unlocking = false,
+  onUnlock,
+  notice = null,
 }: CardReviewProps) {
   useGameDayAction("Board", boardHref);
   const front = players.map((player) => ({
@@ -226,6 +234,11 @@ export function CardReview({
         <p className="mt-2 text-xs text-zinc-500">
           Players can tick &quot;Looks right&quot; on their own phone. Optional.
         </p>
+        {notice ? (
+          <p role="status" className="mt-4 text-xs font-medium text-zinc-600">
+            {notice}
+          </p>
+        ) : null}
         {blockedReason ? (
           <p role="alert" className="mt-4 text-sm text-zinc-600">
             {blockedReason}
@@ -234,12 +247,15 @@ export function CardReview({
       </div>
 
       <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3">
-        <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
-          {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
-        </PrimaryButton>
-        <p className="mt-2 text-center text-xs text-zinc-500">
-          Only the scorer confirms. The organiser can still fix mistakes.
-        </p>
+        {canUnlock ? (
+          <PrimaryButton type="button" disabled={unlocking} onClick={onUnlock} className="!text-lg">
+            {unlocking ? "Unlocking…" : "Unlock"}
+          </PrimaryButton>
+        ) : (
+          <PrimaryButton type="button" disabled={!canConfirm || confirming} onClick={onConfirm} className="!text-lg">
+            {confirming ? "Confirming…" : `✓ Confirm Card ${cardNumber}`}
+          </PrimaryButton>
+        )}
       </div>
     </div>
   );
