@@ -123,7 +123,6 @@ export function BoardClient({ gameDayId, watchToken }: BoardClientProps) {
       <ResultsView
         board={board}
         weekendHref={weekendEventId ? gameDayWeekendPath(weekendEventId) : null}
-        holesPlayed={18}
       />
     );
   }
