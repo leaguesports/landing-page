@@ -7,19 +7,59 @@ import { BrandMark } from "@/components/BrandMark";
 export type GameDayAction = {
   label: string;
   href: string;
-  tone?: "default" | "watch";
+  tone?: "default" | "watch" | "account";
+  /** Desktop leaderboard shows the sport links beside the action. */
+  sports?: boolean;
 };
 
 const DEFAULT_ACTION: GameDayAction = { label: "Sign in", href: "/login", tone: "default" };
 
+const SPORT_LINKS = [
+  { label: "Soccer", href: "/play" },
+  { label: "Rugby", href: "/play" },
+  { label: "Cricket", href: "/play" },
+  { label: "Golf", href: "/play/golf" },
+  { label: "Venues", href: "/venues" },
+];
+
 const GameDayActionContext = createContext<((action: GameDayAction) => void) | null>(null);
 
-export function useGameDayAction(label: string, href: string, tone: "default" | "watch" = "default") {
+export function useGameDayAction(
+  label: string,
+  href: string,
+  tone: "default" | "watch" | "account" = "default",
+  sports = false,
+) {
   const setAction = useContext(GameDayActionContext);
   useEffect(() => {
-    setAction?.({ label, href, tone });
+    setAction?.({ label, href, tone, sports });
     return () => setAction?.(DEFAULT_ACTION);
-  }, [setAction, label, href, tone]);
+  }, [setAction, label, href, tone, sports]);
+}
+
+function ActionPill({ action }: { action: GameDayAction }) {
+  if (action.tone === "watch") {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-[#3dff8a] px-3 py-1.5 text-xs font-semibold text-zinc-950">
+        {action.label}
+      </span>
+    );
+  }
+  if (action.tone === "account") {
+    return (
+      <span className="inline-flex shrink-0 items-center text-sm font-semibold text-white">
+        {action.label}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={action.href}
+      className="inline-flex shrink-0 items-center rounded-full border border-white/40 px-3 py-1.5 text-xs font-semibold text-white"
+    >
+      {action.label}
+    </Link>
+  );
 }
 
 export function GameDayChrome({ children }: { children: ReactNode }) {
@@ -37,18 +77,19 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
               LEAGUE <span className="text-[#C6FF00]">SPORTS</span>
             </span>
           </Link>
-          {action.tone === "watch" ? (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-[#C6FF00] px-3 py-1.5 text-xs font-semibold text-zinc-950">
-              {action.label}
-            </span>
-          ) : (
-            <Link
-              href={action.href}
-              className="inline-flex shrink-0 items-center rounded-full border border-white/40 px-3 py-1.5 text-xs font-semibold text-white"
-            >
-              {action.label}
-            </Link>
-          )}
+          {action.sports ? (
+            <nav className="hidden items-center gap-4 xl:flex" aria-label="Sports">
+              {SPORT_LINKS.map((item) => (
+                <Link key={item.label} href={item.href} className="text-sm font-semibold text-white">
+                  {item.label}
+                </Link>
+              ))}
+              <ActionPill action={action} />
+            </nav>
+          ) : null}
+          <div className={action.sports ? "xl:hidden" : ""}>
+            <ActionPill action={action} />
+          </div>
         </div>
       </header>
       {children}

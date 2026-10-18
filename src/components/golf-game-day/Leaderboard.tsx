@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { BoardTab, GameDayFeedItem, GameDayLeaderboard, RankingRow } from "@/types/golf-game-day";
 import { johannesburgClock, presentGameDay } from "@/lib/golf-game-day/paths";
-import { boardBadge, formatBoardScore, formatHandicap } from "@/lib/golf-game-day/scoring-ui";
+import {
+  formatHandicap,
+  LEAD_DOT_HALF_MS,
+  LEAD_SLIDE_MS,
+  leadChangePlan,
+} from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
-import { Eyebrow, GameDayColumn } from "./ui";
+import { GameDayColumn } from "./ui";
 
 const TABS: BoardTab[] = ["gross", "net", "stableford"];
 
@@ -15,6 +19,8 @@ type LeaderboardViewProps = {
   tab: BoardTab;
   onTab: (tab: BoardTab) => void;
   yourCardHref: string | null;
+  /** Phone mockups stay a column. Desktop is the 1280 board. Responsive follows the viewport. */
+  layout?: "phone" | "desktop" | "responsive";
 };
 
 function useRowSlide(orderKey: string) {
@@ -30,7 +36,7 @@ function useRowSlide(orderKey: string) {
       if (!reduce && before != null && before !== top) {
         element.animate(
           [{ transform: `translateY(${before - top}px)` }, { transform: "translateY(0)" }],
-          { duration: 480, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+          { duration: LEAD_SLIDE_MS, easing: "cubic-bezier(0.4, 0, 0.2, 1)" },
         );
       }
       next.set(id, top);
@@ -41,10 +47,6 @@ function useRowSlide(orderKey: string) {
     if (element) nodes.current.set(id, element);
     else nodes.current.delete(id);
   };
-}
-
-function rowTone(you: boolean): string {
-  return you ? "bg-[#e5f6d8]" : "bg-white";
 }
 
 function scoringName(format: string): string {
@@ -86,59 +88,87 @@ function TabBar({
   );
 }
 
-export function LeaderboardView({ board, tab, onTab, yourCardHref }: LeaderboardViewProps) {
+export function LeaderboardView({
+  board,
+  tab,
+  onTab,
+  yourCardHref,
+  layout = "responsive",
+}: LeaderboardViewProps) {
   const rows = board.rankings[tab];
   const orderKey = `${tab}:${rows.map((row) => row.playerId).join("|")}`;
   const bind = useRowSlide(orderKey);
-  const badge = boardBadge(board.status, board.access);
   const shown = presentGameDay(board);
   const updated = board.updatedLabel || (board.feed[0] ? johannesburgClock(board.feed[0].at) : "");
   const watching = board.access === "watch";
+  const desktopChrome = layout === "desktop";
+  const [blink, setBlink] = useState(false);
+  const previousIds = useRef<string[] | null>(null);
+  useEffect(() => {
+    const nextIds = rows.map((row) => row.playerId);
+    const previous = previousIds.current;
+    previousIds.current = nextIds;
+    if (!previous) return;
+    const plan = leadChangePlan(previous, nextIds);
+    if (!plan.blinkMs) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setBlink(true);
+    const timer = window.setTimeout(() => setBlink(false), plan.blinkMs);
+    return () => window.clearTimeout(timer);
+  }, [orderKey, rows]);
   useGameDayAction(
-    watching ? "Watching · view only" : "Sign in",
-    watching ? "/" : "/login",
-    watching ? "watch" : "default",
+    desktopChrome ? "Watching · view only" : watching ? "Watching" : "Score",
+    watching || desktopChrome ? "/" : yourCardHref || "/golf/game-day/preview/score",
+    desktopChrome || watching ? "watch" : "default",
+    desktopChrome,
   );
+  const phoneClass = layout === "desktop" ? "hidden" : layout === "responsive" ? "xl:hidden" : "";
+  const desktopClass = layout === "phone" ? "hidden" : layout === "responsive" ? "hidden xl:block" : "";
 
   return (
     <>
-      <div className="xl:hidden">
+      <style>{`@keyframes gameday-dot{0%,49%{background:#3dff8a}50%,100%{background:#14532d}}.gameday-dot-blink{animation:gameday-dot ${LEAD_DOT_HALF_MS * 2}ms steps(1,end) infinite}@media (prefers-reduced-motion:reduce){.gameday-dot-blink{animation:none}}`}</style>
+      <div className={phoneClass}>
         <GameDayColumn wide>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Eyebrow>{shown.headline}</Eyebrow>
-              <h1 className="mt-2 font-display text-5xl tracking-wide text-zinc-950">Leaderboard</h1>
-            </div>
-            <span className="mt-6 inline-flex rounded-full bg-zinc-950 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
-              {badge}
-            </span>
+          <div className="flex items-end justify-between gap-3">
+            <h1 className="font-display text-5xl tracking-wide text-zinc-950">{shown.headline}</h1>
+            {updated ? (
+              <p className="pb-1 text-xs text-zinc-500">
+                Updated {updated}
+                {watching ? " · refreshes itself" : ""}
+              </p>
+            ) : null}
           </div>
-          <p className="mt-2 text-sm text-zinc-500">
-            {board.cardsConfirmed} of {board.cardsTotal} cards confirmed
-          </p>
-          <div className="mt-5">
+          <div className="mt-4">
             <TabBar tab={tab} onTab={onTab} label="Scoring" />
           </div>
-          <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200">
+          <div className="mt-4 grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] gap-2 border-b border-zinc-200 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            <span>Pos</span>
+            <span>Player</span>
+            <span className="text-right">Pts</span>
+            <span className="text-right">Thru</span>
+          </div>
+          <ul>
             {rows.map((row) => (
               <li
                 key={row.playerId}
                 ref={bind(row.playerId)}
-                className={`flex items-center gap-3 px-2 py-3 ${rowTone(row.you)}`}
+                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_2.5rem] items-center gap-2 border-b border-zinc-200 py-2.5 ${row.positionNumber === 1 ? "bg-[#e9fff1]" : "bg-white"}`}
               >
-                <MobileRow row={row} tab={tab} />
+                <MobileRow row={row} />
               </li>
             ))}
           </ul>
-          {yourCardHref ? (
-            <Link href={yourCardHref} className="mt-5 inline-flex text-sm font-semibold text-zinc-950">
-              Your card
-            </Link>
+          {board.countback ? (
+            <p className="mt-4 text-sm text-zinc-500">Ties split on countback: {board.countback}</p>
           ) : null}
+          <div className="mt-5">
+            <FeedBlock board={board} />
+          </div>
         </GameDayColumn>
       </div>
 
-      <div className="mx-auto hidden w-full px-6 py-6 xl:block">
+      <div className={`mx-auto w-full px-6 py-6 ${desktopClass}`}>
         <div className="flex items-end justify-between gap-6">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-green-700">
@@ -148,7 +178,10 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
           </div>
           <div className="flex shrink-0 items-center gap-3 pb-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-950">
-              <span className="h-2 w-2 rounded-full bg-green-600" aria-hidden />
+              <span
+                className={`h-2 w-2 rounded-full bg-[#3dff8a] ${blink ? "gameday-dot-blink" : ""}`}
+                aria-hidden
+              />
               {board.status === "final" ? "Final" : "Live"}
             </span>
             {updated ? <span className="text-sm text-zinc-500">Updated {updated}</span> : null}
@@ -181,40 +214,7 @@ export function LeaderboardView({ board, tab, onTab, yourCardHref }: Leaderboard
 
           <aside className="min-w-0" aria-label="Live feed">
             <TabBar tab={tab} onTab={onTab} label="Scoring" />
-            <div className="mt-4 flex items-center justify-between gap-2">
-              <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
-                Live feed
-                <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
-                  New
-                </span>
-              </h2>
-              <p className="text-xs text-zinc-500">newest first</p>
-            </div>
-            <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
-              {board.feed.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-zinc-500">Scores will show up here.</li>
-              ) : (
-                board.feed.map((item) => <FeedRow key={item.id} item={item} />)
-              )}
-            </ul>
-            {board.cards.length > 0 ? (
-              <ul className="mt-4 overflow-hidden rounded-2xl border border-zinc-300" aria-label="Card sync">
-                {board.cards.map((card) => (
-                  <li
-                    key={card.id}
-                    className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0"
-                  >
-                    <span className="rounded-full bg-zinc-950 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-                      Card {card.number}
-                    </span>
-                    <span className="text-sm tabular-nums text-zinc-700">Thru {card.thru}</span>
-                    <span className="text-sm font-semibold text-green-800">
-                      {card.syncedAt ? `✓ synced ${johannesburgClock(card.syncedAt)}` : "Waiting"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            <FeedBlock board={board} />
           </aside>
         </div>
 
@@ -240,7 +240,7 @@ function DesktopRow({
 }) {
   const leader = row.positionNumber === 1;
   return (
-    <tr ref={bind} className={leader ? "bg-[#e5f6d8]" : "bg-white"}>
+    <tr ref={bind} className={leader ? "bg-[#e9fff1]" : "bg-white"}>
       <td className="relative border-b border-zinc-200 py-2.5 pl-4 pr-2 font-display text-4xl leading-none tracking-wide text-zinc-950">
         {leader ? <span className="absolute inset-y-0 left-0 w-1 bg-zinc-950" aria-hidden /> : null}
         {row.position ?? "–"}
@@ -280,13 +280,12 @@ function MovePill({ move }: { move: number | null | undefined }) {
   );
 }
 
-function MobileRow({ row, tab }: { row: RankingRow; tab: BoardTab }) {
-  const score = formatBoardScore(tab, row);
+function MobileRow({ row }: { row: RankingRow }) {
   const handicap = formatHandicap(row.handicapIndex);
   return (
     <>
-      <span className="w-8 shrink-0 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</span>
-      <span className="min-w-0 flex-1">
+      <span className="font-display text-3xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+      <span className="min-w-0">
         <span className="block truncate font-semibold text-zinc-950">
           {row.displayName}
           {row.you ? (
@@ -296,17 +295,54 @@ function MobileRow({ row, tab }: { row: RankingRow; tab: BoardTab }) {
           ) : null}
         </span>
         <span className="block text-xs text-zinc-500">
-          {[handicap, `thru ${row.thru}`, row.countbackNote].filter(Boolean).join(" · ")}
+          Card {row.cardNumber} · {handicap ?? "no hcp"}
         </span>
       </span>
-      <span className="text-right">
-        <span className="block font-display text-3xl leading-none text-zinc-950 tabular-nums">
-          {score.primary}
-        </span>
-        {score.suffix ? (
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-green-800">{score.suffix}</span>
-        ) : null}
+      <span className="text-right font-display text-3xl leading-none text-zinc-950 tabular-nums">
+        {row.stableford ?? "–"}
       </span>
+      <span className="text-right text-sm tabular-nums text-zinc-700">{row.thru}</span>
+    </>
+  );
+}
+
+function FeedBlock({ board }: { board: GameDayLeaderboard }) {
+  return (
+    <>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
+          Live feed
+          <span className="rounded-full bg-[#C6FF00] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
+            New
+          </span>
+        </h2>
+        <p className="text-xs text-zinc-500">newest first</p>
+      </div>
+      <ul className="mt-2 overflow-hidden rounded-2xl border border-zinc-300">
+        {board.feed.length === 0 ? (
+          <li className="px-3 py-3 text-sm text-zinc-500">Scores will show up here.</li>
+        ) : (
+          board.feed.map((item) => <FeedRow key={item.id} item={item} />)
+        )}
+      </ul>
+      {board.cards.length > 0 ? (
+        <ul className="mt-4 overflow-hidden rounded-2xl border border-zinc-300" aria-label="Card sync">
+          {board.cards.map((card) => (
+            <li
+              key={card.id}
+              className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2.5 last:border-b-0"
+            >
+              <span className="rounded-full bg-zinc-950 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                Card {card.number}
+              </span>
+              <span className="text-sm tabular-nums text-zinc-700">Thru {card.thru}</span>
+              <span className="text-sm font-semibold text-green-800">
+                {card.syncedAt ? `✓ synced ${johannesburgClock(card.syncedAt)}` : "Waiting"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
 }

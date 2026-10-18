@@ -16,7 +16,7 @@ export const FIXTURE_DAY_ID = "8c2f0a1e-6b4d-4a1e-8f3a-0b1c2d3e4f50";
 
 function livePlayer(input: {
   name: string;
-  handicapIndex: number;
+  handicapIndex: number | null;
   cardNumber: number;
   gross: number;
   parSoFar: number;
@@ -47,16 +47,16 @@ function livePlayer(input: {
 }
 
 const liveRows: RankingRow[] = [
-  livePlayer({ name: "Nadia", handicapIndex: 4, cardNumber: 3, gross: 38, parSoFar: 48, shotsReceived: 4, thru: 12, move: 5 }),
-  livePlayer({ name: "Brandon", handicapIndex: 14, cardNumber: 1, gross: 46, parSoFar: 48, shotsReceived: 10, thru: 12, move: -1 }),
-  livePlayer({ name: "Mike", handicapIndex: 6, cardNumber: 2, gross: 36, parSoFar: 44, shotsReceived: 6, thru: 11 }),
-  livePlayer({ name: "Sipho", handicapIndex: 9, cardNumber: 1, gross: 46, parSoFar: 48, shotsReceived: 8, thru: 12 }),
-  livePlayer({ name: "Pieter", handicapIndex: 18, cardNumber: 1, gross: 46, parSoFar: 44, shotsReceived: 12, thru: 11 }),
-  livePlayer({ name: "Ruan", handicapIndex: 22, cardNumber: 2, gross: 48, parSoFar: 44, shotsReceived: 14, thru: 11 }),
-  livePlayer({ name: "Lindi", handicapIndex: 8, cardNumber: 3, gross: 38, parSoFar: 40, shotsReceived: 8, thru: 10 }),
-  livePlayer({ name: "Johan", handicapIndex: 16, cardNumber: 3, gross: 48, parSoFar: 40, shotsReceived: 16, thru: 10 }),
-  livePlayer({ name: "Ayesha", handicapIndex: 11, cardNumber: 2, gross: 37, parSoFar: 36, shotsReceived: 10, thru: 9 }),
-  livePlayer({ name: "Chris", handicapIndex: 20, cardNumber: 1, gross: 48, parSoFar: 36, shotsReceived: 18, thru: 9 }),
+  livePlayer({ name: "Nadia", handicapIndex: 16, cardNumber: 3, gross: 41, parSoFar: 40, shotsReceived: 9, thru: 10, move: 5 }),
+  livePlayer({ name: "Sipho", handicapIndex: 9, cardNumber: 1, gross: 52, parSoFar: 48, shotsReceived: 7, thru: 12, move: -1 }),
+  livePlayer({ name: "Pieter", handicapIndex: 12, cardNumber: 2, gross: 45, parSoFar: 43, shotsReceived: 7, thru: 11, move: -1 }),
+  livePlayer({ name: "Jaco", handicapIndex: 18, cardNumber: 1, gross: 58, parSoFar: 48, shotsReceived: 12, thru: 12, move: -1 }),
+  livePlayer({ name: "Mike", handicapIndex: 6, cardNumber: 2, gross: 44, parSoFar: 43, shotsReceived: 3, thru: 11, move: -1 }),
+  livePlayer({ name: "Kabelo", handicapIndex: 20, cardNumber: 2, gross: 53, parSoFar: 43, shotsReceived: 12, thru: 11, move: -1 }),
+  livePlayer({ name: "Brandon", handicapIndex: 14, cardNumber: 1, gross: 58, parSoFar: 48, shotsReceived: 9, thru: 12 }),
+  livePlayer({ name: "Thandi", handicapIndex: 22, cardNumber: 1, gross: 65, parSoFar: 48, shotsReceived: 15, thru: 12 }),
+  livePlayer({ name: "Ruan", handicapIndex: 11, cardNumber: 3, gross: 50, parSoFar: 40, shotsReceived: 7, thru: 10 }),
+  livePlayer({ name: "Lerato", handicapIndex: null, cardNumber: 2, gross: 55, parSoFar: 43, shotsReceived: 0, thru: 11 }),
 ];
 
 function byStableford(rows: RankingRow[]): RankingRow[] {
@@ -125,55 +125,59 @@ export function fixtureLeaderboard(access: "player" | "watch" = "player"): GameD
       {
         id: "feed-1",
         type: "lead_change",
-        message: "Nadia leads · 38 pts",
+        message: "Lead change: Nadia leads on 28 pts",
         at: "2026-11-01T08:42:00.000Z",
         leaderName: "Nadia",
         metric: "stableford",
-        value: 38,
+        value: 28,
       },
       {
         id: "feed-2",
         type: "birdie",
-        message: "Nadia birdie · 10",
-        at: "2026-11-01T08:41:00.000Z",
+        message: "Nadia birdie on 10 · Card 3 thru 10",
+        at: "2026-11-01T08:42:00.000Z",
         playerName: "Nadia",
+        cardNumber: 3,
         holeNumber: 10,
       },
       {
         id: "feed-3",
-        type: "thru",
-        message: "Card 3 thru 9",
-        at: "2026-11-01T08:28:00.000Z",
-        cardNumber: 3,
-        holeNumber: 9,
+        type: "birdie",
+        message: "Sipho birdie on 12 · Card 1 thru 12",
+        at: "2026-11-01T08:40:00.000Z",
+        playerName: "Sipho",
+        cardNumber: 1,
+        holeNumber: 12,
       },
       {
         id: "feed-4",
         type: "birdie",
-        message: "Pieter birdie · 6",
-        at: "2026-11-01T08:12:00.000Z",
-        playerName: "Pieter",
-        holeNumber: 6,
+        message: "Mike birdie on 11 · Card 2 thru 11",
+        at: "2026-11-01T08:38:00.000Z",
+        playerName: "Mike",
+        cardNumber: 2,
+        holeNumber: 11,
       },
       {
         id: "feed-5",
-        type: "card_locked",
-        message: "Card 1 confirmed",
-        at: "2026-11-01T08:05:00.000Z",
-        cardNumber: 1,
+        type: "thru",
+        message: "Card 3 thru 9",
+        at: "2026-11-01T08:31:00.000Z",
+        cardNumber: 3,
+        holeNumber: 9,
       },
     ],
     cards: [
-      { id: "card-1", number: 1, status: "live", thru: 12, playerCount: 4, syncedAt: "2026-11-01T08:18:00.000Z" },
-      { id: "card-2", number: 2, status: "live", thru: 11, playerCount: 3, syncedAt: "2026-11-01T08:36:00.000Z" },
-      { id: "card-3", number: 3, status: "live", thru: 12, playerCount: 3, syncedAt: "2026-11-01T08:42:00.000Z" },
+      { id: "card-1", number: 1, status: "live", thru: 12, playerCount: 4, syncedAt: "2026-11-01T08:40:00.000Z" },
+      { id: "card-2", number: 2, status: "live", thru: 11, playerCount: 4, syncedAt: "2026-11-01T08:38:00.000Z" },
+      { id: "card-3", number: 3, status: "live", thru: 10, playerCount: 2, syncedAt: "2026-11-01T08:42:00.000Z" },
     ],
   };
 }
 
 function finishedPlayer(input: {
   name: string;
-  handicapIndex: number;
+  handicapIndex: number | null;
   playingHandicap: number;
   gross: number;
   countbackNote: string | null;
@@ -202,12 +206,12 @@ function finishedPlayer(input: {
 
 /** Countback order is the source order inside a tied score. */
 const finishedPlayers: RankingRow[] = [
-  finishedPlayer({ name: "Nadia", handicapIndex: 4, playingHandicap: 4, gross: 70, countbackNote: "Won countback" }),
-  finishedPlayer({ name: "Brandon", handicapIndex: 14, playingHandicap: 14, gross: 80, countbackNote: "Lost countback (last 9)" }),
+  finishedPlayer({ name: "Pieter", handicapIndex: 12, playingHandicap: 12, gross: 78, countbackNote: "Won countback" }),
+  finishedPlayer({ name: "Nadia", handicapIndex: 16, playingHandicap: 16, gross: 82, countbackNote: "Lost countback (last 9)" }),
+  finishedPlayer({ name: "Jaco", handicapIndex: 18, playingHandicap: 18, gross: 85, countbackNote: null }),
   finishedPlayer({ name: "Mike", handicapIndex: 6, playingHandicap: 6, gross: 76, countbackNote: null, you: true }),
   finishedPlayer({ name: "Sipho", handicapIndex: 9, playingHandicap: 9, gross: 83, countbackNote: null }),
-  finishedPlayer({ name: "Pieter", handicapIndex: 18, playingHandicap: 18, gross: 94, countbackNote: null }),
-  finishedPlayer({ name: "Ruan", handicapIndex: 22, playingHandicap: 22, gross: 100, countbackNote: null }),
+  finishedPlayer({ name: "Lerato", handicapIndex: null, playingHandicap: 0, gross: 89, countbackNote: null }),
 ];
 
 function orderFinished(

@@ -25,7 +25,7 @@ const TABS: BoardTab[] = ["gross", "net", "stableford"];
 export function ResultsView({ board, weekendHref }: ResultsViewProps) {
   const [tab, setTab] = useState<BoardTab>(() => defaultBoardTab(board));
   const shown = presentGameDay(board);
-  useGameDayAction("Sign in", "/login");
+  useGameDayAction("Brandon", "/login", "account");
   const rows = board.rankings[tab];
   const winner = rows.find((row) => row.positionNumber === 1) ?? rows[0] ?? null;
   const tiebreak = board.countbackApplied ? resultsTiebreakLine(rows, tab) : null;

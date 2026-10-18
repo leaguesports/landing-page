@@ -18,7 +18,11 @@ import {
   resultsToParCell,
   resultsWinnerLine,
   gameDayCardStartBody,
+  LEAD_DOT_HALF_MS,
+  LEAD_SLIDE_MS,
+  LEAD_TINT_HOLD_MS,
   holeStatusLines,
+  leadChangePlan,
   holeSyncLabel,
   holeSyncState,
   initialHoleStrokes,
@@ -135,6 +139,20 @@ describe("game day scoring UI", () => {
       }),
       "Gross 70 (−2)",
     );
+  });
+
+  it("plans a lead-change tint that cuts off after the slide", () => {
+    const before = ["sipho", "nadia", "pieter"];
+    const after = ["nadia", "sipho", "pieter"];
+    const plan = leadChangePlan(before, after);
+    assert.equal(plan.moved, true);
+    assert.equal(plan.tintId, "nadia");
+    assert.equal(plan.slideMs, LEAD_SLIDE_MS);
+    assert.equal(plan.tintMs, LEAD_SLIDE_MS + LEAD_TINT_HOLD_MS);
+    assert.equal(plan.blinkMs, plan.tintMs);
+    assert.equal(LEAD_DOT_HALF_MS * 2, 666);
+    assert.equal(leadChangePlan(after, after).tintId, null);
+    assert.equal(leadChangePlan([], after).moved, false);
   });
 
   it("follows the active tab for to-par and countback labels", () => {

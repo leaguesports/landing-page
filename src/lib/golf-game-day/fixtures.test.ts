@@ -36,31 +36,31 @@ describe("finished results fixture", () => {
     const net = board.rankings.net;
     const gross = board.rankings.gross;
     const points = board.rankings.stableford;
-    assert.equal(net[0]?.displayName, "Nadia");
+    assert.equal(net[0]?.displayName, "Pieter");
     assert.equal(net[0]?.net, 66);
     assert.equal((net[0]?.net ?? 0) - GAME_DAY_COURSE_PAR, -6);
-    assert.equal(net[1]?.displayName, "Brandon");
+    assert.equal(net[1]?.displayName, "Nadia");
     assert.equal(net[1]?.net, 66);
     assert.equal(net[0]?.countbackNote, "Won countback");
     assert.equal(net[1]?.countbackNote, "Lost countback (last 9)");
     assert.equal(resultsToParCell("net", net[0]!).text, "−6");
     assert.equal(resultsToParCell("net", net[0]!).under, true);
-    assert.equal(resultsToParCell("gross", gross[0]!).text, "−2");
-    assert.equal(resultsToParCell("gross", gross[0]!).under, true);
+    assert.equal(resultsToParCell("gross", net[0]!).text, "+6");
+    assert.equal(resultsToParCell("gross", gross[0]!).text, "+4");
     assert.equal(resultsToParCell("stableford", points[0]!).text, "42");
     assert.equal(resultsToParCell("stableford", points[0]!).under, false);
     assert.equal(resultsRowDetail(net[0]!, net, "net"), "Won countback");
     assert.equal(resultsRowDetail(net[1]!, net, "net"), "Lost countback (last 9)");
-    assert.equal(resultsRowDetail(net[2]!, net, "net"), "hcp 6");
-    assert.equal(resultsTiebreakLine(net, "net"), "Tied with Brandon on 66; better last 9.");
-    assert.equal(resultsRowDetail(gross[0]!, gross, "gross"), "hcp 4");
+    assert.equal(resultsRowDetail(net[2]!, net, "net"), "hcp 18");
+    assert.equal(resultsTiebreakLine(net, "net"), "Tied with Nadia on 66; better last 9.");
+    assert.equal(resultsRowDetail(gross[0]!, gross, "gross"), "hcp 6");
     assert.equal(resultsTiebreakLine(gross, "gross"), null);
     assert.ok((net[0]?.net ?? 99) <= (net[1]?.net ?? 99));
     assert.ok((net[1]?.net ?? 99) <= (net[2]?.net ?? 99));
 
-    assert.equal(gross[0]?.displayName, "Nadia");
-    assert.equal(gross[0]?.gross, 70);
-    assert.equal(gross[0]?.toPar, -2);
+    assert.equal(gross[0]?.displayName, "Mike");
+    assert.equal(gross[0]?.gross, 76);
+    assert.equal(gross[0]?.toPar, 4);
     for (let index = 1; index < gross.length; index += 1) {
       assert.ok((gross[index - 1]?.gross ?? 0) <= (gross[index]?.gross ?? 0));
     }
@@ -79,7 +79,7 @@ describe("live leaderboard fixture", () => {
     assert.equal(rows.length, 10);
     assert.equal(rows[0]?.displayName, "Nadia");
     assert.equal(rows[0]?.position, "1");
-    assert.equal(rows[0]?.stableford, 38);
+    assert.equal(rows[0]?.stableford, 28);
     assert.equal(rows[0]?.move, 5);
     assert.equal(rows[1]?.position, "T2");
     assert.equal(rows[1]?.tied, true);

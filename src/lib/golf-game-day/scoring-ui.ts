@@ -11,6 +11,27 @@ import type {
 
 /** Minimum +/− hit target on the game day score screen. */
 export const GAME_DAY_STEPPER_PX = 64;
+
+/** Lead-change slide, measured from the desktop gif at 18fps. */
+export const LEAD_SLIDE_MS = 900;
+/** Tint stays after the row settles, then cuts off with no fade. */
+export const LEAD_TINT_HOLD_MS = 1000;
+/** Bright/dim halves of the live-dot blink. */
+export const LEAD_DOT_HALF_MS = 333;
+
+export function leadChangePlan(
+  previousIds: readonly string[],
+  nextIds: readonly string[],
+): { moved: boolean; tintId: string | null; slideMs: number; tintMs: number; blinkMs: number } {
+  const leader = nextIds[0] ?? null;
+  const moved = previousIds.length > 0 && previousIds.join("|") !== nextIds.join("|");
+  const leaderChanged = moved && previousIds[0] !== leader;
+  if (!leaderChanged || !leader) {
+    return { moved, tintId: null, slideMs: moved ? LEAD_SLIDE_MS : 0, tintMs: 0, blinkMs: 0 };
+  }
+  const tintMs = LEAD_SLIDE_MS + LEAD_TINT_HOLD_MS;
+  return { moved: true, tintId: leader, slideMs: LEAD_SLIDE_MS, tintMs, blinkMs: tintMs };
+}
 export const STROKE_MIN = 1;
 export const STROKE_MAX = 15;
 
@@ -233,7 +254,7 @@ export function resultsRowDetail(
     tab === "net" ? item.net : tab === "gross" ? item.gross : item.stableford;
   const tied = rows.filter((item) => metric(item) === metric(row)).length > 1;
   if (tied && row.countbackNote) return row.countbackNote;
-  return formatHandicap(row.handicapIndex);
+  return formatHandicap(row.handicapIndex) ?? "no hcp";
 }
 
 export function resultsTiebreakLine(

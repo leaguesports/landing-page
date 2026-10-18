@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, X } from "lucide-react";
+import { Check, Clock, Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -34,6 +34,7 @@ type ScoreEntryProps = {
   par: number;
   strokeIndex: number;
   takeoverName: string | null;
+  takeoverDetail?: string | null;
   holes: ScoreHoleChip[];
   players: ScorePlayerRow[];
   canScore: boolean;
@@ -46,7 +47,7 @@ type ScoreEntryProps = {
 
 function holeClass(hole: ScoreHoleChip, current: number): string {
   const base =
-    "flex h-7 w-full items-center justify-center rounded-full text-[10px] font-semibold";
+    "mx-auto flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-semibold leading-none";
   if (hole.number === current) return `${base} bg-green-700 text-white`;
   if (hole.sync === "offline" || hole.sync === "saving") return `${base} bg-amber-500 text-zinc-950`;
   if (hole.sync === "saved") return `${base} bg-zinc-950 text-white`;
@@ -60,6 +61,7 @@ export function ScoreEntry({
   par,
   strokeIndex,
   takeoverName,
+  takeoverDetail = null,
   holes,
   players,
   canScore,
@@ -80,7 +82,10 @@ export function ScoreEntry({
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[420px] flex-col">
       {banner ? (
         <div className="flex items-center justify-between gap-3 bg-zinc-950 px-4 py-2.5 text-sm text-white">
-          <p>{banner} is now scoring Card {cardNumber}</p>
+          <p>
+            {banner} is now scoring Card {cardNumber}
+            {takeoverDetail ? <span className="mt-0.5 block text-zinc-300">{takeoverDetail}</span> : null}
+          </p>
           <button
             type="button"
             aria-label="Dismiss takeover"
@@ -138,27 +143,40 @@ export function ScoreEntry({
           </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-[repeat(18,minmax(0,1fr))] gap-1">
-          {holes.map((hole) => (
-            <button
-              key={hole.number}
-              type="button"
-              aria-label={`Hole ${hole.number}, ${hole.sync}`}
-              aria-current={hole.number === holeNumber ? "true" : undefined}
-              onClick={() => onSelectHole(hole.number)}
-              className="min-w-0"
-            >
-              <span className={holeClass(hole, holeNumber)}>{hole.number}</span>
-            </button>
-          ))}
+        <div className="mt-4 rounded-2xl bg-zinc-100 px-2 py-3">
+          <div className="grid grid-cols-[repeat(18,minmax(0,1fr))]">
+            {holes.map((hole) => (
+              <button
+                key={hole.number}
+                type="button"
+                aria-label={`Hole ${hole.number}, ${hole.sync}`}
+                aria-current={hole.number === holeNumber ? "true" : undefined}
+                onClick={() => onSelectHole(hole.number)}
+                className="min-w-0"
+              >
+                <span className={holeClass(hole, holeNumber)}>{hole.number}</span>
+              </button>
+            ))}
+          </div>
+          <ul className="mt-2 space-y-1">
+            {lines.map((line) => {
+              const waiting = line.includes("waiting");
+              return (
+                <li
+                  key={line}
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${waiting ? "text-amber-700" : "text-green-800"}`}
+                >
+                  {waiting ? (
+                    <Clock className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {line}
+                </li>
+              );
+            })}
+          </ul>
         </div>
-        <ul className="mt-2 space-y-1">
-          {lines.map((line) => (
-            <li key={line} className="text-sm text-zinc-600">
-              {line}
-            </li>
-          ))}
-        </ul>
 
         <div className="mt-4">
           {players.map((player) => (

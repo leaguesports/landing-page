@@ -35,9 +35,9 @@ const HEADLINE = gameDayHeadline("Zebula Golf Estate & Spa", "2026-11-01");
 
 const SCORE_PLAYERS = [
   { slot: 1, name: "Mike", strokes: 4, total: 30, toPar: "+3", dots: 1 },
-  { slot: 2, name: "Sipho", strokes: 5, total: 32, toPar: "+5", dots: 0 },
-  { slot: 3, name: "Pieter", strokes: 4, total: 33, toPar: "+6", dots: 0 },
-  { slot: 4, name: "Ruan", strokes: 6, total: 36, toPar: "+9", dots: 0 },
+  { slot: 2, name: "Lerato", strokes: 5, total: 35, toPar: "+8", dots: 0 },
+  { slot: 3, name: "Pieter", strokes: 4, total: 29, toPar: "+2", dots: 0 },
+  { slot: 4, name: "Kabelo", strokes: 5, total: 33, toPar: "+6", dots: 0 },
 ];
 
 export function PreviewScreen({ screen }: { screen: string }) {
@@ -50,7 +50,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
       <CreateGameDay
         preview
         initialDate="2026-11-01"
-        initialPlayers={["Brandon", "Sipho"]}
+        initialPlayers={["Brandon", "Sipho", "Jaco", "Thandi", "Mike", "Lerato", "Pieter", "Kabelo", "Nadia"]}
         initialVenueSlug="zebula-golf-estate-spa"
         venues={[
           {
@@ -133,6 +133,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         par={current.par}
         strokeIndex={current.strokeIndex}
         takeoverName="Mike"
+        takeoverDetail="Pieter's phone switched to view only"
         holes={HOLES.map((item) => ({
           number: item.number,
           sync: item.number <= 6 ? "saved" : item.number === 7 ? "offline" : "open",
@@ -202,6 +203,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         tab={tab}
         onTab={setTab}
         yourCardHref={gameDayCardPath(FIXTURE_DAY_ID, "card-2")}
+        layout="phone"
       />
     );
   }
@@ -209,10 +211,11 @@ export function PreviewScreen({ screen }: { screen: string }) {
   if (screen === "desktop") {
     return (
       <LeaderboardView
-        board={fixtureLeaderboard("player")}
+        board={fixtureLeaderboard("watch")}
         tab="stableford"
         onTab={setTab}
-        yourCardHref={gameDayCardPath(FIXTURE_DAY_ID, "card-2")}
+        yourCardHref={null}
+        layout="desktop"
       />
     );
   }
@@ -224,6 +227,7 @@ export function PreviewScreen({ screen }: { screen: string }) {
         tab={tab}
         onTab={setTab}
         yourCardHref={null}
+        layout="phone"
       />
     );
   }

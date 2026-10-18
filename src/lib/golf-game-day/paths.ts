@@ -58,6 +58,15 @@ export function formatGameDayDate(isoDate: string): string {
   return `${pick("weekday")} ${pick("day")} ${month}`;
 }
 
+/** Create-screen date, weekday derived in Johannesburg. "Sun, 1 Nov 2026". */
+export function formatGameDayDateLong(isoDate: string): string {
+  const short = formatGameDayDate(isoDate);
+  const match = /^(\w+)\s+(\d+)\s+(\w+)$/.exec(short);
+  const year = isoDate.slice(0, 4);
+  if (!match) return short;
+  return `${match[1]}, ${match[2]} ${match[3]} ${year}`;
+}
+
 export function gameDayPlaceName(venueName: string): string {
   return venueName.trim().split(/\s+/)[0] || venueName.trim() || "Game";
 }

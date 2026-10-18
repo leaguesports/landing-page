@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { createGameDay, GameDayApiError } from "@/lib/golf-game-day/api";
 import {
   defaultGameDayDate,
-  formatGameDayDate,
+  formatGameDayDateLong,
   localIsoDate,
   ZEBULA_VENUE_SLUG,
 } from "@/lib/golf-game-day/paths";
@@ -22,6 +23,14 @@ import {
   teeDotClass,
   textFieldClass,
 } from "./ui";
+
+function LinkBack() {
+  return (
+    <Link href="/play/golf" className="mb-4 inline-flex text-sm font-semibold text-zinc-950">
+      ‹ Golf
+    </Link>
+  );
+}
 
 export type GameDayVenueChoice = {
   id: string;
@@ -63,13 +72,12 @@ export function CreateGameDay({
   );
   const [players, setPlayers] = useState(initialPlayers);
   const [draftName, setDraftName] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [weekend, setWeekend] = useState("");
+  const [weekend, setWeekend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  useGameDayAction("Sign in", "/login");
+  useGameDayAction("Brandon", "/login", "account");
 
-  const dateLabel = formatGameDayDate(date);
+  const dateLabel = formatGameDayDateLong(date);
   const teeNames = useMemo(() => venue?.tees ?? [], [venue]);
 
   function selectVenue(slug: string) {
@@ -85,7 +93,6 @@ export function CreateGameDay({
     if (!name || players.length >= 16) return;
     setPlayers((current) => [...current, name]);
     setDraftName("");
-    setAdding(false);
   }
 
   async function onSubmit(event: FormEvent) {
@@ -109,7 +116,7 @@ export function CreateGameDay({
         teeOptions: venue.tees.map((item) => item.name),
         format: "stroke",
         players: players.map((displayName) => ({ displayName, teeName: tee })),
-        ...(weekend.trim() ? { weekendEvent: { name: weekend.trim() } } : {}),
+        ...(weekend ? { weekendEvent: { name: `${venue.name} weekend` } } : {}),
       });
       router.push(`/golf/game-day/${created.id}`);
     } catch (cause) {
@@ -145,27 +152,37 @@ export function CreateGameDay({
   return (
     <GameDayColumn>
       <form onSubmit={onSubmit}>
+        <LinkBack />
         <Eyebrow>New game day</Eyebrow>
-        <ScreenTitle>New game day</ScreenTitle>
         <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-          One course, a few cards, live for everyone who joins.
+          Pick the course and day. You&apos;ll get a link for the group.
         </p>
 
-        <label className="mt-8 block">
-          <FieldLabel>Venue</FieldLabel>
-          <select
-            value={venue?.slug ?? ""}
-            onChange={(event) => selectVenue(event.target.value)}
-            className={textFieldClass()}
-          >
-            {venues.length === 0 ? <option value="">No scorecard published</option> : null}
-            {venues.map((item) => (
-              <option key={item.id} value={item.slug}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="mt-8">
+          <FieldLabel>Course</FieldLabel>
+          <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl border border-zinc-300 px-4 py-3">
+            <span>
+              <span className="block font-semibold text-zinc-950">{venue?.name ?? "Choose a course"}</span>
+              <span className="mt-0.5 block text-sm text-zinc-500">Bela-Bela · Limpopo</span>
+            </span>
+            <label className="shrink-0 text-sm font-semibold text-zinc-950">
+              Change
+              <select
+                value={venue?.slug ?? ""}
+                onChange={(event) => selectVenue(event.target.value)}
+                aria-label="Course"
+                className="sr-only"
+              >
+                {venues.length === 0 ? <option value="">No scorecard published</option> : null}
+                {venues.map((item) => (
+                  <option key={item.id} value={item.slug}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
 
         <label className="relative mt-6 block">
           <FieldLabel>Date</FieldLabel>
@@ -183,7 +200,7 @@ export function CreateGameDay({
 
         <fieldset className="mt-6">
           <legend>
-            <FieldLabel>Default tee</FieldLabel>
+            <FieldLabel>Tee default for everyone</FieldLabel>
           </legend>
           <div className="mt-3 flex flex-wrap gap-2">
             {teeNames.map((item) => (
@@ -199,62 +216,85 @@ export function CreateGameDay({
           </div>
         </fieldset>
 
+        <fieldset className="mt-6">
+          <legend>
+            <FieldLabel>Format</FieldLabel>
+          </legend>
+          <div className="mt-3 rounded-2xl border border-zinc-950 px-4 py-3">
+            <p className="font-semibold text-zinc-950">Stroke play</p>
+            <p className="mt-1 text-sm text-zinc-500">Gross, net or Stableford on the board.</p>
+          </div>
+          <div className="mt-2 rounded-2xl border border-zinc-200 px-4 py-3 text-zinc-400">
+            <p className="flex items-center gap-2 font-semibold">
+              Scramble
+              <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                Coming later
+              </span>
+            </p>
+            <p className="mt-1 text-sm">Team format</p>
+          </div>
+        </fieldset>
+
         <fieldset className="mt-8">
           <legend>
-            <FieldLabel>Players — add names (optional)</FieldLabel>
+            <FieldLabel>Players (new) optional · they tap their name to join</FieldLabel>
           </legend>
-          <ul className="mt-3">
+          <ul className="mt-3 flex flex-wrap gap-2">
             {players.map((name, index) => (
               <li
                 key={`${name}-${index}`}
-                className="flex items-center justify-between border-b border-zinc-200 py-3 text-base"
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-1.5 text-sm"
               >
                 <span>{name}</span>
-                <button
-                  type="button"
-                  className="text-sm text-zinc-500"
-                  onClick={() => setPlayers((current) => current.filter((_, item) => item !== index))}
-                >
-                  Remove
-                </button>
+                {index === 0 ? (
+                  <span className="text-xs font-semibold uppercase text-zinc-500">you</span>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${name}`}
+                    className="text-zinc-500"
+                    onClick={() => setPlayers((current) => current.filter((_, item) => item !== index))}
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             ))}
           </ul>
-          {adding ? (
-            <div className="mt-3 flex gap-2">
-              <input
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value)}
-                placeholder="Name"
-                aria-label="Player name"
-                className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-base"
-              />
-              <button
-                type="button"
-                onClick={addName}
-                className="shrink-0 rounded-full border border-zinc-300 bg-white px-4 text-sm font-semibold"
-              >
-                Add
-              </button>
-            </div>
-          ) : (
+          <div className="mt-3 flex gap-2">
+            <input
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              placeholder="Add a name"
+              aria-label="Player name"
+              className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-base"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addName();
+                }
+              }}
+            />
             <button
               type="button"
-              onClick={() => setAdding(true)}
-              className="mt-3 text-sm font-semibold text-zinc-950"
+              onClick={addName}
+              className="shrink-0 rounded-full border border-zinc-300 bg-white px-4 text-sm font-semibold"
             >
-              + Add a name
+              Add
             </button>
-          )}
+          </div>
         </fieldset>
 
-        <label className="mt-6 block">
-          <FieldLabel>Weekend name (optional)</FieldLabel>
+        <label className="mt-6 flex items-start justify-between gap-3 rounded-2xl border border-zinc-300 px-4 py-4">
+          <span>
+            <span className="block text-sm font-semibold text-zinc-950">Add to weekend event</span>
+            <span className="mt-1 block text-sm text-zinc-500">Optional. Combine leaderboards across days.</span>
+          </span>
           <input
-            value={weekend}
-            onChange={(event) => setWeekend(event.target.value)}
-            placeholder="Zebula weekend"
-            className={textFieldClass()}
+            type="checkbox"
+            checked={weekend}
+            onChange={(event) => setWeekend(event.target.checked)}
+            className="mt-1 h-5 w-5"
           />
         </label>
 
@@ -269,9 +309,6 @@ export function CreateGameDay({
             {pending ? "Creating…" : "Create game day"}
           </PrimaryButton>
         </div>
-        <p className="mt-4 text-center text-xs text-zinc-500">
-          Scramble is coming later. This day is stroke play.
-        </p>
       </form>
     </GameDayColumn>
   );
