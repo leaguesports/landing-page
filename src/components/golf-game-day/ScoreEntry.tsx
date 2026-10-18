@@ -132,7 +132,7 @@ export function ScoreEntry({
         </div>
       ) : null}
 
-      <div className="flex-1 px-4 pb-6 pt-5">
+      <div className="px-4 pb-0 pt-5">
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
@@ -154,7 +154,7 @@ export function ScoreEntry({
             <ChevronRight className="h-6 w-6" aria-hidden />
           </button>
         </div>
-        <div className="mt-4 flex items-center justify-center gap-2">
+        <div className="mt-0 flex items-center justify-center gap-2">
           <span className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-950">
             Par <span className="font-bold">{par}</span>
           </span>
@@ -163,7 +163,7 @@ export function ScoreEntry({
           </span>
         </div>
 
-        <div className="mt-4 rounded-xl bg-zinc-100 px-2 py-2.5">
+        <div className="mt-2 rounded-xl bg-zinc-100 px-2 py-2.5">
           <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]">
             {holes.map((hole) => (
               <button

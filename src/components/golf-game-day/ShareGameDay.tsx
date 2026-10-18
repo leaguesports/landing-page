@@ -98,7 +98,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
           </div>
         </div>
 
-        <h2 className="mt-6 text-sm font-semibold text-zinc-950">Join · for players</h2>
+        <h2 className="mt-2 text-sm font-semibold text-zinc-950">Join · for players</h2>
         <section className="mt-3 rounded-2xl border border-zinc-300 p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
@@ -141,7 +141,7 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
             </span>
             <span className="ml-auto text-xs text-zinc-600">view only</span>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-100 px-3 py-3">
+          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-100 px-3 py-4">
             <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
               <Eye className="h-5 w-5 text-zinc-950" aria-hidden />
             </span>

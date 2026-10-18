@@ -537,7 +537,7 @@ function SpectatorPhone({
                   ref={bind(row.playerId)}
                   className="grid grid-cols-[2.4rem_minmax(0,1fr)_3.2rem_2.4rem] items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2.5 last:border-b-0"
                 >
-                  <span className="font-display text-2xl leading-none text-zinc-950">{row.position ?? "–"}</span>
+                  <span className="font-display text-[22px] leading-none text-zinc-950">{row.position ?? "–"}</span>
                   <span className="min-w-0">
                     <span className="block truncate font-bold text-zinc-950">{row.displayName}</span>
                     <span className="block text-xs text-zinc-500">

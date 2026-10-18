@@ -356,7 +356,7 @@ export function JoinGameDay({
           </h1>
 
           {courseSaved ? (
-            <div className="relative mt-5 rounded-2xl border border-zinc-950 bg-[#e9fff1] px-4 py-4">
+            <div className="relative mt-4 rounded-2xl border border-zinc-950 bg-[#dcfce7] px-4 py-3">
               <span className="absolute -top-2.5 right-4 rounded-full border border-zinc-950 bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
                 New
               </span>
@@ -377,7 +377,7 @@ export function JoinGameDay({
           )}
 
           {seatedCard ? (
-            <section className="mt-5" aria-label={`Card ${seatedCard.number}`}>
+            <section className="mt-4" aria-label={`Card ${seatedCard.number}`}>
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-base font-bold text-zinc-950">Card {seatedCard.number}</h2>
                 {seatedCard.teeTime ? (
@@ -397,7 +397,7 @@ export function JoinGameDay({
                   return (
                     <li
                       key={`${player.displayName}-${player.slot}`}
-                      className="flex items-center gap-3 border-b border-zinc-200 px-4 py-3 last:border-b-0"
+                      className="flex items-center gap-3 border-b border-zinc-200 px-4 py-2 last:border-b-0"
                     >
                       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-sm font-semibold text-white">
                         {player.displayName.slice(0, 1).toUpperCase()}
@@ -422,18 +422,18 @@ export function JoinGameDay({
                   );
                 })}
                 {openSpots > 0 ? (
-                  <li className="px-4 py-3 text-sm font-semibold text-zinc-500">+ {openSpots} open spot</li>
+                  <li className="px-4 py-2 text-sm font-semibold text-zinc-500">+ {openSpots} open spot</li>
                 ) : null}
               </ul>
               {scorer ? (
-                <div className="mt-4 rounded-2xl bg-zinc-100 px-4 py-4">
+                <div className="mt-3 rounded-2xl bg-zinc-100 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-zinc-950">{scorer.displayName} is scoring</p>
                     <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
                       New
                     </span>
                   </div>
-                  <div className="mt-3 flex items-start gap-3">
+                  <div className="mt-2 flex items-start gap-3">
                     <ArrowLeftRight className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" aria-hidden />
                     <p className="text-sm text-zinc-800">
                       Battery low or swapping? Anyone on the card can take over. Scores so far stay.
@@ -443,7 +443,7 @@ export function JoinGameDay({
                     type="button"
                     onClick={() => onTakeOver(seatedCard.id)}
                     disabled={pending}
-                    className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white disabled:opacity-40"
+                    className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Take over scoring
                   </button>

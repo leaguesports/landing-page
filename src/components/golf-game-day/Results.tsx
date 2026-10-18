@@ -67,7 +67,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       </div>
       <h1 className="mt-3 font-display text-[42px] leading-none tracking-wide text-zinc-950">{shown.headline}</h1>
 
-      <article className="mt-5 rounded-3xl bg-zinc-950 px-5 py-6 text-white">
+      <article className="mt-4 rounded-3xl bg-zinc-950 px-5 py-5 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C6FF00]">
           🏆 Winner · {tab}
         </p>
@@ -119,13 +119,13 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
       </div>
 
       {board.countback ? (
-        <p className="mt-4 flex items-start gap-2 text-sm text-zinc-500">
+        <p className="mt-2 flex items-start gap-2 text-sm text-zinc-500">
           <Flag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           Ties split on countback: {board.countback}
         </p>
       ) : null}
 
-      <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-6`}>
+      <a href={whatsAppShareUrl(shareText)} className={`${primaryLinkClass} mt-3`}>
         <MessageCircle className="h-5 w-5" aria-hidden />
         Share results
       </a>
@@ -172,8 +172,8 @@ function ResultRow({
   const detail = resultsRowDetail(row, rows, tab);
   return (
     <tr className="border-b border-zinc-200">
-      <td className="py-3 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
-      <td className="py-3 pr-2">
+      <td className="py-2 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
+      <td className="py-2 pr-2">
         <span className="font-bold text-zinc-950">
           {row.displayName}
           {row.you ? (
@@ -185,12 +185,12 @@ function ResultRow({
         {detail ? <span className="mt-0.5 block text-xs text-zinc-500">{detail}</span> : null}
       </td>
       <td
-        className={`py-3 pr-2 text-right font-display text-3xl leading-none tabular-nums ${cell.under ? "text-green-800" : "text-zinc-950"}`}
+        className={`py-2 pr-2 text-right font-display text-3xl leading-none tabular-nums ${cell.under ? "text-green-800" : "text-zinc-950"}`}
       >
         {cell.text}
       </td>
-      <td className="py-3 pr-2 text-right tabular-nums text-zinc-950">{row.net ?? "–"}</td>
-      <td className="py-3 text-right tabular-nums text-zinc-950">{row.gross ?? "–"}</td>
+      <td className="py-2 pr-2 text-right tabular-nums text-zinc-950">{row.net ?? "–"}</td>
+      <td className="py-2 text-right tabular-nums text-zinc-950">{row.gross ?? "–"}</td>
     </tr>
   );
 }
