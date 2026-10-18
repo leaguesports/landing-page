@@ -162,6 +162,8 @@ export type RankingRow = {
   net: number | null;
   stableford: number | null;
   countbackNote: string | null;
+  /** Places gained since the previous board. Positive is up. */
+  move?: number | null;
 };
 
 export type GameDayFeedItem = {
@@ -206,6 +208,8 @@ export type GameDayLeaderboard = {
   podium: Record<BoardTab, RankingRow[]> | null;
   feed: GameDayFeedItem[];
   cards: LeaderboardCard[];
+  updatedLabel?: string | null;
+  watchLabel?: string | null;
 };
 
 export type WeekendRankingRow = {

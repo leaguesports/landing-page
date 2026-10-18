@@ -13,6 +13,9 @@ import {
   formatBoardScore,
   formatToPar,
   GAME_DAY_COURSE_PAR,
+  resultsRowDetail,
+  resultsTiebreakLine,
+  resultsToParCell,
   resultsWinnerLine,
   gameDayCardStartBody,
   holeStatusLines,
@@ -124,6 +127,50 @@ describe("game day scoring UI", () => {
       }),
       "Net 66 (−6) · won on countback",
     );
+  });
+
+  it("follows the active tab for to-par and countback labels", () => {
+    const nadia = {
+      displayName: "Nadia",
+      handicapIndex: 4,
+      gross: 70,
+      toPar: -2,
+      net: 66,
+      stableford: 42,
+      countbackNote: "Won countback",
+    };
+    const brandon = {
+      displayName: "Brandon",
+      handicapIndex: 14,
+      gross: 80,
+      toPar: 8,
+      net: 66,
+      stableford: 42,
+      countbackNote: "Lost countback (last 9)",
+    };
+    const mike = {
+      displayName: "Mike",
+      handicapIndex: 6,
+      gross: 76,
+      toPar: 4,
+      net: 70,
+      stableford: 38,
+      countbackNote: null,
+    };
+    const rows = [nadia, brandon, mike];
+    assert.equal(resultsToParCell("net", nadia).text, "−6");
+    assert.equal(resultsToParCell("net", nadia).under, true);
+    assert.equal(resultsToParCell("gross", nadia).text, "−2");
+    assert.equal(resultsToParCell("stableford", nadia).text, "42");
+    assert.equal(resultsToParCell("stableford", brandon).under, false);
+    assert.equal(resultsRowDetail(nadia, rows, "net"), "Won countback");
+    assert.equal(resultsRowDetail(brandon, rows, "net"), "Lost countback (last 9)");
+    assert.equal(resultsRowDetail(mike, rows, "net"), "hcp 6");
+    assert.equal(resultsRowDetail(nadia, rows, "gross"), "hcp 4");
+    assert.equal(resultsRowDetail(nadia, rows, "stableford"), "Won countback");
+    assert.equal(resultsTiebreakLine(rows, "net"), "Tied with Brandon on 66; better last 9.");
+    assert.equal(resultsTiebreakLine(rows, "gross"), null);
+    assert.equal(resultsTiebreakLine(rows, "stableford"), "Tied with Brandon on 42; better last 9.");
   });
 
   it("formats to-par, board scores, and the v2 winner hero", () => {

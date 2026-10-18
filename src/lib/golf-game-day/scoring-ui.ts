@@ -187,6 +187,68 @@ export function finishedRound(
   return { gross, toPar, net, stableford, thru: 18 };
 }
 
+/** Partial round: 2 stableford points per hole, plus one per net stroke under the par so far. */
+export function midRound(input: {
+  gross: number;
+  parSoFar: number;
+  shotsReceived: number;
+  thru: number;
+}): { gross: number; toPar: number; net: number; stableford: number; thru: number } {
+  const toPar = input.gross - input.parSoFar;
+  const net = input.gross - input.shotsReceived;
+  const stableford = 2 * input.thru + (input.parSoFar - net);
+  return { gross: input.gross, toPar, net, stableford, thru: input.thru };
+}
+
+export function signedScore(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "–";
+  if (value === 0) return "E";
+  if (value < 0) return `−${Math.abs(value)}`;
+  return `+${value}`;
+}
+
+/** The results "to par" cell follows the active tab. */
+export function resultsToParCell(
+  tab: BoardTab,
+  row: Pick<RankingRow, "toPar" | "net" | "stableford">,
+  coursePar = GAME_DAY_COURSE_PAR,
+): { text: string; under: boolean } {
+  if (tab === "stableford") {
+    return { text: row.stableford == null ? "–" : String(row.stableford), under: false };
+  }
+  if (tab === "net") {
+    if (row.net == null) return { text: "–", under: false };
+    const value = row.net - coursePar;
+    return { text: signedScore(value), under: value < 0 };
+  }
+  return { text: signedScore(row.toPar), under: (row.toPar ?? 0) < 0 };
+}
+
+export function resultsRowDetail(
+  row: Pick<RankingRow, "countbackNote" | "handicapIndex" | "net" | "gross" | "stableford">,
+  rows: readonly Pick<RankingRow, "net" | "gross" | "stableford">[],
+  tab: BoardTab,
+): string | null {
+  const metric = (item: Pick<RankingRow, "net" | "gross" | "stableford">) =>
+    tab === "net" ? item.net : tab === "gross" ? item.gross : item.stableford;
+  const tied = rows.filter((item) => metric(item) === metric(row)).length > 1;
+  if (tied && row.countbackNote) return row.countbackNote;
+  return formatHandicap(row.handicapIndex);
+}
+
+export function resultsTiebreakLine(
+  rows: readonly Pick<RankingRow, "displayName" | "net" | "gross" | "stableford">[],
+  tab: BoardTab,
+): string | null {
+  const winner = rows[0];
+  const next = rows[1];
+  if (!winner || !next) return null;
+  const metric = (item: Pick<RankingRow, "net" | "gross" | "stableford">) =>
+    tab === "net" ? item.net : tab === "gross" ? item.gross : item.stableford;
+  if (metric(winner) == null || metric(winner) !== metric(next)) return null;
+  return `Tied with ${next.displayName} on ${metric(winner)}; better last 9.`;
+}
+
 export function resultsWinnerLine(input: {
   tab: BoardTab;
   row: Pick<RankingRow, "gross" | "net" | "toPar" | "stableford">;

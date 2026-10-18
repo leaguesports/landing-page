@@ -5,10 +5,11 @@ import type { BoardTab, GameDayLeaderboard, RankingRow } from "@/types/golf-game
 import { presentGameDay, whatsAppShareUrl } from "@/lib/golf-game-day/paths";
 import {
   defaultBoardTab,
-  formatHandicap,
-  formatToPar,
   GAME_DAY_COURSE_PAR,
   resultShareText,
+  resultsRowDetail,
+  resultsTiebreakLine,
+  resultsToParCell,
   resultsWinnerLine,
 } from "@/lib/golf-game-day/scoring-ui";
 import { useGameDayAction } from "./GameDayChrome";
@@ -35,6 +36,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
         countbackApplied: board.countbackApplied,
       })
     : "";
+  const tiebreak = board.countbackApplied ? resultsTiebreakLine(rows, tab) : null;
   const shareText = winner
     ? resultShareText({
         name: winner.displayName,
@@ -62,9 +64,7 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
           {winner?.displayName ?? "No winner yet"}
         </h2>
         <p className="mt-3 text-lg text-white">{line}</p>
-        {winner?.countbackNote ? (
-          <p className="mt-2 text-sm text-zinc-400">{winner.countbackNote}</p>
-        ) : null}
+        {tiebreak ? <p className="mt-2 text-sm text-zinc-400">{tiebreak}</p> : null}
       </article>
 
       <div className="mt-5 flex gap-1 rounded-full bg-zinc-100 p-1" role="tablist" aria-label="Result">
@@ -92,14 +92,16 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
             <tr className="border-b border-zinc-200 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
               <th className="py-2 pr-2 font-semibold">Pos</th>
               <th className="py-2 pr-2 font-semibold">Player</th>
-              <th className="py-2 pr-2 text-right font-semibold">To par</th>
+              <th className="py-2 pr-2 text-right font-semibold">
+                {tab === "stableford" ? "Pts" : "To par"}
+              </th>
               <th className="py-2 pr-2 text-right font-semibold">Net</th>
               <th className="py-2 text-right font-semibold">Gross</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <ResultRow key={row.playerId} row={row} />
+              <ResultRow key={row.playerId} row={row} rows={rows} tab={tab} />
             ))}
           </tbody>
         </table>
@@ -140,9 +142,17 @@ export function ResultsView({ board, weekendHref }: ResultsViewProps) {
   );
 }
 
-function ResultRow({ row }: { row: RankingRow }) {
-  const under = (row.toPar ?? 0) < 0;
-  const detail = row.countbackNote ?? formatHandicap(row.handicapIndex);
+function ResultRow({
+  row,
+  rows,
+  tab,
+}: {
+  row: RankingRow;
+  rows: RankingRow[];
+  tab: BoardTab;
+}) {
+  const cell = resultsToParCell(tab, row, GAME_DAY_COURSE_PAR);
+  const detail = resultsRowDetail(row, rows, tab);
   return (
     <tr className="border-b border-zinc-200">
       <td className="py-3 pr-2 font-semibold tabular-nums text-zinc-950">{row.position ?? "–"}</td>
@@ -158,9 +168,9 @@ function ResultRow({ row }: { row: RankingRow }) {
         {detail ? <span className="mt-0.5 block text-xs text-zinc-500">{detail}</span> : null}
       </td>
       <td
-        className={`py-3 pr-2 text-right font-display text-3xl leading-none tabular-nums ${under ? "text-green-800" : "text-zinc-950"}`}
+        className={`py-3 pr-2 text-right font-display text-3xl leading-none tabular-nums ${cell.under ? "text-green-800" : "text-zinc-950"}`}
       >
-        {formatToPar(row.toPar)}
+        {cell.text}
       </td>
       <td className="py-3 pr-2 text-right tabular-nums text-zinc-950">{row.net ?? "–"}</td>
       <td className="py-3 text-right tabular-nums text-zinc-950">{row.gross ?? "–"}</td>
