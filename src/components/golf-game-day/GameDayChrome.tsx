@@ -80,9 +80,9 @@ export function GameDayChrome({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 w-full items-center justify-between gap-3 px-4 xl:px-6">
           <Link
             href="/"
-            className="inline-flex min-w-0 items-center gap-1.5 font-display text-[1.65rem] leading-none tracking-tight text-white"
+            className="inline-flex min-w-0 items-center gap-2 font-display text-[22px] leading-none tracking-tight text-white"
           >
-            <BrandMark className="h-7 w-7 shrink-0" size={28} priority />
+            <BrandMark className="h-9 w-9 shrink-0" size={36} priority />
             <span className="truncate">
               LEAGUE<span className="text-[#3dff8a]">SPORTS</span>
             </span>

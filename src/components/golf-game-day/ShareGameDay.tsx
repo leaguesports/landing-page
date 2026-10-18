@@ -135,11 +135,11 @@ export function ShareGameDay({ day, origin = "", cardHref }: ShareGameDayProps) 
 
         <section className="mt-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006045]">Watch link</h2>
+            <h2 className="text-sm font-semibold text-[#006045]">Watch link</h2>
             <span className="rounded-full bg-[#3dff8a] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-950">
               New
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">view only</span>
+            <span className="text-xs font-semibold text-zinc-500">view only</span>
           </div>
           <div className="mt-3 flex items-center gap-3 rounded-2xl bg-zinc-100 px-3 py-3">
             <Eye className="h-5 w-5 shrink-0 text-zinc-700" aria-hidden />

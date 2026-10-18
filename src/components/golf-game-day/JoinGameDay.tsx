@@ -336,7 +336,7 @@ export function JoinGameDay({
         ),
       );
     const scorer = seatedCard?.players.find((player) => player.scoring) ?? null;
-    const seatedOthers = seatedCard?.players.filter((player) => !player.scoring) ?? [];
+    const seatedPlayers = seatedCard?.players ?? [];
     const openSpots = seatedCard?.openSlots ?? 0;
     return (
       <GameDayColumn>
@@ -364,7 +364,7 @@ export function JoinGameDay({
               </p>
             ) : null}
             <ul className="mt-3 divide-y divide-zinc-200">
-              {seatedOthers.map((player) => {
+              {seatedPlayers.map((player) => {
                 const you = player.displayName.toLowerCase() === session.displayName.toLowerCase();
                 return (
                   <li key={`${player.displayName}-${player.slot}`} className="py-3">
@@ -434,7 +434,7 @@ export function JoinGameDay({
         <Eyebrow>You&apos;re invited · code {code}</Eyebrow>
         <ScreenTitle>{shown.headline}</ScreenTitle>
         <p className="mt-2 text-sm font-semibold text-zinc-950">
-          {shown.place} · {preview.format === "stroke" ? "Stroke play" : preview.format}
+          {preview.venueName} · {preview.format === "stroke" ? "Stroke play" : preview.format}
         </p>
 
         <fieldset className="mt-6">

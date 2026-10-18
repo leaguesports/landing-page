@@ -101,9 +101,9 @@ export function PreviewScreen({ screen }: { screen: string }) {
     const card = preview.cards.find((item) => item.number === 2);
     if (card) {
       card.players = [
+        { displayName: "Pieter", slot: 1, scoring: true, handicapLabel: "hcp 12", teeName: "White" },
         { displayName: "Lerato", slot: 2, scoring: false, handicapLabel: "no hcp", teeName: "White" },
-        { displayName: "Mike", slot: 1, scoring: false, handicapLabel: "hcp 6", teeName: "White" },
-        { displayName: "Pieter", slot: 3, scoring: true, handicapLabel: "hcp 12", teeName: "White" },
+        { displayName: "Mike", slot: 3, scoring: false, handicapLabel: "hcp 6", teeName: "White" },
       ];
       card.openSlots = 1;
       card.full = false;

@@ -47,7 +47,7 @@ type ScoreEntryProps = {
 
 function holeClass(hole: ScoreHoleChip, current: number): string {
   const base =
-    "flex h-[18px] w-full items-center justify-center rounded-[4px] text-[8px] font-semibold leading-none";
+    "flex h-[22px] w-full items-center justify-center rounded-[5px] text-[8px] font-semibold leading-none";
   if (hole.number === current) return `${base} border border-green-700 bg-[#3dff8a] text-zinc-950`;
   if (hole.sync === "offline" || hole.sync === "saving") return `${base} border border-amber-600 bg-amber-400 text-zinc-950`;
   if (hole.sync === "saved") return `${base} border border-zinc-950 bg-zinc-950 text-white`;
@@ -76,7 +76,6 @@ export function ScoreEntry({
   onNext,
 }: ScoreEntryProps) {
   const hit = GAME_DAY_STEPPER_PX;
-  const [banner, setBanner] = useState(takeoverName);
   const [menu, setMenu] = useState(false);
   const lines = holeStatusLines(holes);
   useGameDayAction("Score", boardHref);
@@ -119,25 +118,17 @@ export function ScoreEntry({
         </div>
       ) : null}
 
-      {banner ? (
-        <div className="mx-4 mt-2 flex items-start gap-3 rounded-2xl bg-zinc-950 px-4 py-3 text-white">
+      {takeoverName ? (
+        <div className="mx-4 mt-2 flex items-center gap-3 rounded-2xl bg-zinc-950 px-4 py-2.5 text-white">
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3dff8a] text-zinc-950">
             <Check className="h-4 w-4" aria-hidden />
           </span>
           <p className="min-w-0 flex-1">
             <span className="block text-sm font-bold">
-              {banner} is now scoring Card {cardNumber}
+              {takeoverName} is now scoring Card {cardNumber}
             </span>
             {takeoverDetail ? <span className="mt-0.5 block text-sm text-zinc-400">{takeoverDetail}</span> : null}
           </p>
-          <button
-            type="button"
-            aria-label="Dismiss takeover"
-            onClick={() => setBanner(null)}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
         </div>
       ) : null}
 
@@ -152,7 +143,7 @@ export function ScoreEntry({
           >
             <ChevronLeft className="h-6 w-6" aria-hidden />
           </button>
-          <h1 className="font-display text-6xl leading-none tracking-wide text-zinc-950">HOLE {holeNumber}</h1>
+          <h1 className="font-display text-[68px] leading-none tracking-wide text-zinc-950">HOLE {holeNumber}</h1>
           <button
             type="button"
             aria-label="Next hole"
@@ -173,7 +164,7 @@ export function ScoreEntry({
         </div>
 
         <div className="mt-4">
-          <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] gap-px">
+          <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]">
             {holes.map((hole) => (
               <button
                 key={hole.number}
