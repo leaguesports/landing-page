@@ -12,7 +12,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-function modeParam(value: string | string[] | undefined): string | null {
+function firstParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
 }
@@ -20,8 +20,13 @@ function modeParam(value: string | string[] | undefined): string | null {
 export default async function PlayPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string | string[] }>;
+  searchParams: Promise<{ mode?: string | string[]; feed?: string | string[] }>;
 }) {
   const params = await searchParams;
-  return <PlayModeApp initialModeParam={modeParam(params.mode)} />;
+  return (
+    <PlayModeApp
+      initialModeParam={firstParam(params.mode)}
+      initialFeedParam={firstParam(params.feed)}
+    />
+  );
 }

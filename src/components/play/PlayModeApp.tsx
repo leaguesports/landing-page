@@ -7,6 +7,7 @@ import Link from "next/link";
 import "./play-mode.css";
 import { GolfHome } from "./GolfHome";
 import { PadelHome } from "./PadelHome";
+import { SocialHome } from "./SocialHome";
 import {
   PLAY_MODE_COPY,
   PLAY_MODE_SESSION_LIVE,
@@ -110,7 +111,13 @@ function remember(mode: PlayMode) {
   }
 }
 
-export function PlayModeApp({ initialModeParam }: { initialModeParam: string | null }) {
+export function PlayModeApp({
+  initialModeParam,
+  initialFeedParam = null,
+}: {
+  initialModeParam: string | null;
+  initialFeedParam?: string | null;
+}) {
   const urlPresent = initialModeParam !== null;
   const [sheet, dispatch] = useReducer(
     reduceModeSheet,
@@ -219,10 +226,7 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
         ) : mode === "padel" ? (
           <PadelHome />
         ) : (
-          <>
-            <h1>{copy.label}</h1>
-            <p className="soon">Coming soon</p>
-          </>
+          <SocialHome initialFeed={initialFeedParam} />
         )}
       </div>
       {sheet.open ? (

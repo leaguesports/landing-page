@@ -123,7 +123,7 @@ describe("padel home empty screen", () => {
     assert.equal(reducePadelNotice("Coming soon", "join", true), "Coming soon");
   });
 
-  it("keeps the session API unwired and leaves Social on the stub", () => {
+  it("keeps the session API unwired and leaves Social on its home", () => {
     const home = readFileSync(new URL("./padel-home.ts", import.meta.url), "utf8");
     const shell = readFileSync(
       new URL("../../components/play/PadelHome.tsx", import.meta.url),
@@ -148,7 +148,8 @@ describe("padel home empty screen", () => {
     assert.match(app, /PadelHome/);
     assert.match(app, /mode === "golf"/);
     assert.match(app, /GolfHome/);
-    assert.match(app, /className="soon">Coming soon/);
+    assert.match(app, /<SocialHome/);
+    assert.doesNotMatch(app, /className="soon">Coming soon/);
     assert.match(css, /\.padel-home[\s\S]*border-radius:\s*999px/);
     assert.match(css, /#006045/);
     assert.match(css, /#3dff8a/);
