@@ -1,9 +1,11 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
+import { getLoginPageHref } from "@/lib/auth-return-to";
 import { useEffect, useReducer, useRef } from "react";
+import Link from "next/link";
 import "./play-mode.css";
 import {
-  PLAY_MODE_AVATAR_MARK,
   PLAY_MODE_COPY,
   PLAY_MODE_SESSION_LIVE,
   PLAY_MODES,
@@ -59,6 +61,42 @@ function Glyph({ mode, size }: { mode: PlayMode; size: number }) {
       <circle cx="17" cy="9" r="2.6" />
       <path d="M17 14.5c2.3 0 4 1.4 4.6 4" />
     </svg>
+  );
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]!.charAt(0)}${parts[1]!.charAt(0)}`.toUpperCase();
+  }
+  return parts[0]?.slice(0, 2).toUpperCase() ?? "";
+}
+
+function ModeAvatar() {
+  const { isAuthenticated, isLoading, user, displayName } = useAuth();
+
+  if (isLoading || !isAuthenticated || !user) {
+    return (
+      <Link href={getLoginPageHref("/play")} className="av av-guest" aria-label="Sign in">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 19.5c.8-3.4 3.2-5 7-5s6.2 1.6 7 5" />
+        </svg>
+      </Link>
+    );
+  }
+
+  if (user.avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- remote OAuth avatars
+      <img src={user.avatarUrl} alt="" className="av av-photo" referrerPolicy="no-referrer" />
+    );
+  }
+
+  return (
+    <span className="av" aria-hidden>
+      {initials(displayName)}
+    </span>
   );
 }
 
@@ -166,12 +204,12 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
           </span>
           {copy.label}
           <span className="chev" aria-hidden>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#09090b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#09090b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 9l6 6 6-6" />
             </svg>
           </span>
         </button>
-        <span className="av" aria-hidden>{PLAY_MODE_AVATAR_MARK}</span>
+        <ModeAvatar />
       </div>
       <div className="content">
         <h1>{copy.label}</h1>
@@ -190,22 +228,17 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
             event.preventDefault();
             dispatch({ type: "close" });
           }}
+          style={{ maxWidth: "100%", maxHeight: "100%", width: "100%", height: "100%", margin: 0 }}
           onClick={(event) => {
-            const rect = event.currentTarget.getBoundingClientRect();
-            const inside =
-              event.clientX >= rect.left &&
-              event.clientX <= rect.right &&
-              event.clientY >= rect.top &&
-              event.clientY <= rect.bottom;
-            if (!inside) dispatch({ type: "close" });
+            if (event.target === event.currentTarget) dispatch({ type: "close" });
           }}
         >
-          <div className="grab" aria-hidden />
-          <div className="sheet-head">
-            <h2 id="play-mode-sheet-title">Switch mode</h2>
-            <p className="hint">Swipe the top bar too</p>
-          </div>
-          {modeSheetRows(mode).map((row) =>
+          <div className="sheet-panel">
+            <div className="grab" aria-hidden />
+            <div className="sheet-head">
+              <h2 id="play-mode-sheet-title">Switch mode</h2>
+            </div>
+            {modeSheetRows(mode).map((row) =>
             row.id === "add" ? (
               <div key={row.id}>
                 <div className="rule" />
@@ -247,7 +280,8 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
                 ) : null}
               </button>
             ),
-          )}
+            )}
+          </div>
         </dialog>
       ) : null}
     </div>

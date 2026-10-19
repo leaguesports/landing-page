@@ -35,7 +35,7 @@
 .play-mode .ic,
 .play-mode .mi { border-radius: 50%; display: grid; place-items: center; flex: none; }
 .play-mode .ic { width: 32px; height: 32px; }
-.play-mode .chev { opacity: 0.8; margin-left: 2px; display: grid; }
+.play-mode .chev { margin-left: 2px; display: grid; }
 .play-mode .av {
   width: 38px;
   height: 38px;
@@ -46,7 +46,14 @@
   font-size: 14px;
   background: var(--ink);
   color: var(--mint);
+  overflow: hidden;
+  text-decoration: none;
 }
+.play-mode .av-guest {
+  background: #f4f4f5;
+  color: #3f3f46;
+}
+.play-mode .av-photo { object-fit: cover; }
 .play-mode .content { padding: 6px 16px 32px; }
 .play-mode h1,
 .play-mode .sheet h2 {
@@ -61,21 +68,30 @@
 
 .play-mode dialog.sheet {
   position: fixed;
-  inset: auto 0 0 0;
+  inset: 0;
   width: 100%;
-  max-width: none;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   margin: 0;
   border: 0;
-  padding: 10px 16px 30px;
-  border-radius: 28px 28px 0 0;
-  background: #fff;
+  padding: 0;
+  background: transparent;
   color: var(--ink);
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.25);
-  max-height: min(640px, calc(100dvh - 24px));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 .play-mode dialog.sheet::backdrop {
   background: rgba(9, 9, 11, 0.45);
   backdrop-filter: blur(2px);
+}
+.play-mode .sheet-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 28px 28px 0 0;
+  padding: 10px 16px max(30px, env(safe-area-inset-bottom));
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.25);
 }
 .play-mode .grab {
   width: 40px;
@@ -85,14 +101,9 @@
   margin: 0 auto 16px;
 }
 .play-mode .sheet-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   margin: 0 4px 14px;
-  gap: 12px;
 }
 .play-mode .sheet h2 { font-size: 34px; margin: 0; }
-.play-mode .hint { color: var(--sub); font-size: 13px; font-weight: 500; }
 .play-mode .mrow {
   width: 100%;
   display: flex;

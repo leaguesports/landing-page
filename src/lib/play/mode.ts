@@ -1,6 +1,6 @@
 /**
  * Sport mode for /play. Social, Golf, and Padel swap the whole screen.
- * Darts stays on /play/darts. Session stats are static until that API exists.
+ * Darts stays on /play/darts. Sheet lines are static until session stats exist.
  */
 
 export const PLAY_MODES = ["social", "golf", "padel"] as const;
@@ -9,9 +9,8 @@ export type PlayMode = (typeof PLAY_MODES)[number];
 export const DEFAULT_PLAY_MODE: PlayMode = "social";
 export const PLAY_MODE_STORAGE_KEY = "leaguesports.play.mode";
 
-/** Live session is not wired. Header mark and sheet lines stay static. */
+/** Live session stats are not wired. The header avatar uses the auth session. */
 export const PLAY_MODE_SESSION_LIVE = false;
-export const PLAY_MODE_AVATAR_MARK = "BL";
 
 export const PLAY_MODE_COPY: Record<
   PlayMode,
@@ -24,12 +23,12 @@ export const PLAY_MODE_COPY: Record<
   },
   golf: {
     label: "Golf",
-    detail: "HCP 14.2 · 2 rounds this month",
+    detail: "Rounds, scores and handicap",
     color: "#006045",
   },
   padel: {
     label: "Padel",
-    detail: "Intermediate · 3 matches",
+    detail: "Matches and open games",
     color: "#0e7490",
   },
 };
