@@ -270,7 +270,7 @@ export function GolfCaptureForm({
                   strokes: seeded[hole.number] ?? {},
                 })),
               },
-              ...teeRatings,
+              ...(teeRatings ?? {}),
             },
             toGolfRoundVenue(venue)!,
           ),

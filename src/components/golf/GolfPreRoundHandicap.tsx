@@ -13,7 +13,8 @@ import {
 type GolfPreRoundHandicapProps = {
   profileHi: number | null;
   signedIn: boolean;
-  ratings: GolfTeeRatings;
+  /** Null until a tee is chosen. Unknown ratings are not "missing". */
+  ratings: GolfTeeRatings | null;
   roundHi: number | null;
   onRoundHiChange: (value: number | null) => void;
 };
@@ -127,7 +128,7 @@ export function GolfPreRoundHandicap({
           )}
         </div>
       )}
-      {ratingsReady ? (
+      {ratings && ratingsReady ? (
         <p className="text-xs text-zinc-500">
           Tee ratings ready: CR {ratings.courseRating} · Slope{" "}
           {ratings.slopeRating}
