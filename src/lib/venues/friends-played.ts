@@ -1,6 +1,6 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
-import { dartsNewHref, golfNewHref, padelNewHref } from "./quick-start.ts";
+import { HUB_PLAY_HREF, hubPlaySportHref } from "../sports/hub-ia.ts";
 
 export const FRIENDS_PLAYED_CAP = 6 as const;
 
@@ -252,17 +252,16 @@ export function friendsPlayedCtaLabel(
   return FRIENDS_PLAYED_DEFAULT_CTA;
 }
 
-/** Start the venue’s primary play sport with `?venue=` prefilled. */
+/** Closest surviving sport hub. Scorecard start URLs were removed. */
 export function friendsPlayedStartHref(input: {
   venueSlug?: string | null;
   primarySport?: string | null;
 }): string {
-  const slug = input.venueSlug?.trim() ?? "";
   const sport = input.primarySport?.trim().toLowerCase() ?? "";
-  if (sport === "golf") return golfNewHref(slug || null);
-  if (sport === "darts") return dartsNewHref(slug || null);
-  if (sport === "padel") return padelNewHref(slug || null);
-  return "/play";
+  if (sport === "golf" || sport === "darts" || sport === "padel") {
+    return hubPlaySportHref(sport);
+  }
+  return HUB_PLAY_HREF;
 }
 
 export function formatFriendsPlayedAt(

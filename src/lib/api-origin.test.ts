@@ -12,12 +12,7 @@ import {
   shouldProxyApiPath,
 } from "./api-origin.ts";
 import { COVERAGE_PROXY_SOURCES } from "./conversion/coverage.ts";
-import { LOBBY_PROXY_SOURCES } from "./lobby/lobby.ts";
 import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
-import { TEAM_MATCH_PROXY_SOURCES } from "./team-matches/team-matches.ts";
-import { TEAM_PROXY_SOURCES } from "./teams/teams.ts";
-import { TOURNAMENT_PROXY_SOURCES } from "./tournaments/tournaments.ts";
-import { GOLF_TOUR_PROXY_SOURCES } from "./golf-tours/golf-tours.ts";
 import { OPENF1_PROXY_SOURCES } from "./openf1/openf1.ts";
 
 const ORIGIN_ENV_KEYS = [
@@ -73,22 +68,7 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/venues/sanity-venue-1"), true);
   });
 
-  it("proxies match identity to Railway and keeps Ably events local", () => {
-    assert.equal(shouldProxyApiPath("/api/matches"), true);
-    assert.equal(shouldProxyApiPath("/api/matches/capture"), true);
-    assert.equal(shouldProxyApiPath("/api/matches/abc"), true);
-    assert.equal(shouldProxyApiPath("/api/matches/abc/lock"), true);
-    assert.equal(shouldProxyApiPath("/api/golf-rounds"), true);
-    assert.equal(shouldProxyApiPath("/api/golf-rounds/capture"), true);
-    assert.equal(shouldProxyApiPath("/api/golf-rounds/abc"), true);
-    assert.equal(shouldProxyApiPath("/api/golf-rounds/abc/lock"), true);
-    assert.equal(shouldProxyApiPath("/api/darts"), true);
-    assert.equal(shouldProxyApiPath("/api/darts/capture"), true);
-    assert.equal(shouldProxyApiPath("/api/darts/abc"), true);
-    assert.equal(shouldProxyApiPath("/api/darts/abc/turns"), true);
-    assert.equal(shouldProxyApiPath("/api/venues/sanity-court/matches"), true);
-    assert.equal(shouldProxyApiPath("/api/venues/sanity-court/golf-rounds"), true);
-    assert.equal(shouldProxyApiPath("/api/venues/sanity-pub/darts"), true);
+  it("proxies surviving hub routes and keeps local Next routes", () => {
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
     assert.equal(
       shouldProxyApiPath("/api/venues/sanity-court/leaderboards"),
@@ -101,78 +81,13 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/communities"), true);
-    assert.equal(shouldProxyApiPath("/api/me/training/plans"), true);
-    assert.equal(shouldProxyApiPath("/api/me/training/enrollments"), true);
-    assert.equal(shouldProxyApiPath("/api/me/training/enrollments/enr-1"), true);
-    assert.equal(shouldProxyApiPath("/api/me/integrations"), true);
-    assert.equal(shouldProxyApiPath("/api/me/integrations/generic-import"), true);
-    assert.equal(
-      shouldProxyApiPath("/api/me/integrations/generic-import/connect"),
-      true,
-    );
-    assert.equal(
-      shouldProxyApiPath("/api/me/integrations/generic-import/sync"),
-      true,
-    );
     assert.equal(shouldProxyApiPath("/api/communities"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1"), true);
     assert.equal(shouldProxyApiPath("/api/communities/c1/join"), true);
-    assert.equal(shouldProxyApiPath("/api/teams"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/join"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/search"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/matches"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/tournaments"), true);
-    assert.equal(shouldProxyApiPath("/api/team-matches"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments/join"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments/mine"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments/c1"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments/c1/open-registration"), true);
-    assert.equal(shouldProxyApiPath("/api/tournaments/c1/fixtures/s1/start"), true);
-    assert.equal(shouldProxyApiPath("/api/team-matches/join"), true);
-    assert.equal(shouldProxyApiPath("/api/team-matches/mine"), true);
-    assert.equal(shouldProxyApiPath("/api/team-matches/m1"), true);
-    assert.equal(shouldProxyApiPath("/api/team-matches/m1/start"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/invite"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/invite-link"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/leave"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/transfer-ownership"), true);
-    assert.equal(shouldProxyApiPath("/api/teams/t1/members/u2"), true);
-    assert.equal(shouldProxyApiPath("/api/pools"), true);
-    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34"), true);
-    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/join"), true);
-    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/picks"), true);
-    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/result"), true);
-    assert.equal(shouldProxyApiPath("/api/pools/ab12cd34/standings"), true);
-    assert.equal(shouldProxyApiPath("/api/me/badges"), true);
     assert.equal(shouldProxyApiPath("/api/me/preferences"), true);
     assert.equal(shouldProxyApiPath("/api/users/search"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1/accept"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends/user-1"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games/game-1"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/invites"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/rsvp"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/start"), true);
-    assert.equal(shouldProxyApiPath("/api/organised-games/game-1/cancel"), true);
-    assert.equal(
-      shouldProxyApiPath("/api/organised-games/invite/abc123"),
-      true,
-    );
-    assert.equal(
-      shouldProxyApiPath("/api/organised-games/invite/abc123/join"),
-      true,
-    );
-    assert.equal(shouldProxyApiPath("/api/me/organised-games"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/looking"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/open-games"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/open-games/og-1/join"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/open-games/og-1/kick"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/proposals"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/proposals/p-1/accept"), true);
-    assert.equal(shouldProxyApiPath("/api/lobby/proposals/p-1/pass"), true);
     assert.equal(shouldProxyApiPath("/api/me/notifications"), true);
     assert.equal(shouldProxyApiPath("/api/me/notifications/read-all"), true);
     assert.equal(
@@ -195,7 +110,6 @@ describe("shouldProxyApiPath", () => {
     );
     assert.equal(shouldProxyApiPath("/api/openf1/sessions"), true);
     assert.equal(shouldProxyApiPath("/api/openf1/sessions/latest"), true);
-    assert.equal(shouldProxyApiPath("/api/matches/abc/events"), false);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
@@ -408,15 +322,11 @@ describe("getApiProxyRewrites", () => {
           assert.equal(sources.includes(source), true, source);
         }
         assert.equal(sources.includes("/api"), true);
-        assert.equal(
-          sources.some((source) => source.includes("matches/:id/events")),
-          false,
-        );
         assert.deepEqual(rewrites.slice(-2), [
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+              "/api/:path((?!realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -437,139 +347,10 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+          "/api/:path((?!realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/matches")?.destination,
-          "https://api.example.test/api/matches",
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/matches/capture")
-            ?.destination,
-          "https://api.example.test/api/matches/capture",
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/golf-rounds/capture")
-            ?.destination,
-          "https://api.example.test/api/golf-rounds/capture",
-        );
         const rewriteSources = rewrites.map((rule) => rule.source);
-        assert.ok(
-          rewriteSources.indexOf("/api/matches/capture") <
-            rewriteSources.indexOf("/api/matches/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/golf-rounds/capture") <
-            rewriteSources.indexOf("/api/golf-rounds/:id"),
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/darts/capture")
-            ?.destination,
-          "https://api.example.test/api/darts/capture",
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/darts/capture") <
-            rewriteSources.indexOf("/api/darts/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/darts/:id/turns") <
-            rewriteSources.indexOf("/api/darts/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/organised-games/invite/:token") <
-            rewriteSources.indexOf("/api/organised-games/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/teams/join") <
-            rewriteSources.indexOf("/api/teams/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/teams/search") <
-            rewriteSources.indexOf("/api/teams/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/team-matches/join") <
-            rewriteSources.indexOf("/api/team-matches/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/team-matches/mine") <
-            rewriteSources.indexOf("/api/team-matches/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/tournaments/join") <
-            rewriteSources.indexOf("/api/tournaments/:id"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/tournaments/mine") <
-            rewriteSources.indexOf("/api/tournaments/:id"),
-        );
-        const teamSources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/teams" || source.startsWith("/api/teams/"),
-        );
-        assert.deepEqual(teamSources, [...TEAM_PROXY_SOURCES]);
-        const teamMatchSources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/team-matches" ||
-            source.startsWith("/api/team-matches/"),
-        );
-        assert.deepEqual(teamMatchSources, [...TEAM_MATCH_PROXY_SOURCES]);
-        const tournamentSources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/tournaments" ||
-            source.startsWith("/api/tournaments/"),
-        );
-        assert.deepEqual(tournamentSources, [...TOURNAMENT_PROXY_SOURCES]);
-        const golfTourSources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/golf-tours" ||
-            source.startsWith("/api/golf-tours/"),
-        );
-        assert.deepEqual(golfTourSources, [...GOLF_TOUR_PROXY_SOURCES]);
-        assert.ok(
-          rewriteSources.indexOf("/api/golf-tours/mine") <
-            rewriteSources.indexOf("/api/golf-tours/:id"),
-        );
-        const lobbySources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/lobby" || source.startsWith("/api/lobby/"),
-        );
-        assert.deepEqual(lobbySources, [...LOBBY_PROXY_SOURCES]);
-        assert.ok(
-          rewriteSources.indexOf("/api/lobby/looking") <
-            rewriteSources.indexOf("/api/lobby/open-games/:id/join"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/lobby/open-games") <
-            rewriteSources.indexOf("/api/lobby/open-games/:id/join"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/lobby/proposals") <
-            rewriteSources.indexOf("/api/lobby/proposals/:id/accept"),
-        );
-        assert.ok(
-          API_PROXY_EXPLICIT_SOURCES.includes("/api/teams/:id/tournaments"),
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/teams")?.destination,
-          "https://api.example.test/api/teams",
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/teams/join")
-            ?.destination,
-          "https://api.example.test/api/teams/join",
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/organised-games")
-            ?.destination,
-          "https://api.example.test/api/organised-games",
-        );
-        assert.equal(
-          rewrites.find((rule) => rule.source === "/api/me/organised-games")
-            ?.destination,
-          "https://api.example.test/api/me/organised-games",
-        );
         assert.ok(
           rewriteSources.indexOf("/api/me/notifications/read-all") <
             rewriteSources.indexOf("/api/me/notifications/:id/read"),
@@ -590,9 +371,8 @@ describe("getApiProxyRewrites", () => {
           )?.destination,
           "https://api.example.test/api/me/notifications/:id/read",
         );
-        const roadmapSources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/roadmap" || source.startsWith("/api/roadmap/"),
+        const roadmapSources = API_PROXY_EXPLICIT_SOURCES.filter((source) =>
+          source.startsWith("/api/roadmap/"),
         );
         assert.deepEqual(roadmapSources, [...ROADMAP_PROXY_SOURCES]);
         const coverageSources = API_PROXY_EXPLICIT_SOURCES.filter(
@@ -601,9 +381,8 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/intents/coverage/"),
         );
         assert.deepEqual(coverageSources, [...COVERAGE_PROXY_SOURCES]);
-        const openF1Sources = API_PROXY_EXPLICIT_SOURCES.filter(
-          (source) =>
-            source === "/api/openf1" || source.startsWith("/api/openf1/"),
+        const openF1Sources = API_PROXY_EXPLICIT_SOURCES.filter((source) =>
+          source.startsWith("/api/openf1/"),
         );
         assert.deepEqual(openF1Sources, [...OPENF1_PROXY_SOURCES]);
         assert.ok(
@@ -675,14 +454,6 @@ describe("getApiProxyRewrites", () => {
       assert.equal(
         rewrites.some(
           (rule) => rule.destination === `${PRODUCTION_RAILWAY_API_ORIGIN}/api`,
-        ),
-        true,
-      );
-      assert.equal(
-        rewrites.some(
-          (rule) =>
-            rule.destination ===
-            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/matches`,
         ),
         true,
       );

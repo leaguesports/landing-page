@@ -34,15 +34,15 @@ describe("createFlowHref", () => {
         venue: "the-grid",
         city: "cape-town",
       }),
-      "/padel/new?venue=the-grid&sport=padel&city=cape-town",
+      "/play/padel?venue=the-grid&sport=padel&city=cape-town",
     );
     assert.equal(
       createFlowHref("start", { sport: "golf", city: "johannesburg" }),
-      "/golf/new?sport=golf&city=johannesburg",
+      "/play/golf?sport=golf&city=johannesburg",
     );
     assert.equal(
       createFlowHref("organise", { sport: "padel", venue: "the-grid" }),
-      "/padel/organise?venue=the-grid&sport=padel",
+      "/play/padel?venue=the-grid&sport=padel",
     );
     assert.equal(
       createFlowHref("organise", {
@@ -50,7 +50,7 @@ describe("createFlowHref", () => {
         venue: "glendower",
         city: "johannesburg",
       }),
-      "/golf/organise?venue=glendower&sport=golf&city=johannesburg",
+      "/play/golf?venue=glendower&sport=golf&city=johannesburg",
     );
   });
 });
@@ -65,7 +65,7 @@ describe("selectCtaMatrix", () => {
     });
     assert.equal(matrix.primary.id, "start_match");
     assert.equal(matrix.primary.label, "Start a match");
-    assert.match(matrix.primary.href, /\/padel\/new/);
+    assert.match(matrix.primary.href, /\/play\/padel/);
     assert.match(matrix.primary.href, /sport=padel/);
     assert.match(matrix.primary.href, /city=cape-town/);
     assert.equal(matrix.secondary.id, "find_venues");
@@ -82,7 +82,7 @@ describe("selectCtaMatrix", () => {
     });
     assert.equal(matrix.primary.id, "find_venues");
     assert.equal(matrix.primary.label, "Find venues");
-    assert.notEqual(matrix.primary.href.includes("/padel/new"), true);
+    assert.equal(matrix.primary.href.includes("/play/padel"), false);
     assert.equal(matrix.secondary.id, "browse_sport");
     assert.equal(matrix.fallback, "notify_roadmap");
   });

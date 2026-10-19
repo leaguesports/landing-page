@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { GolfCourseCms } from "../../types/golf-round.ts";
+import type { GolfCourseCms } from "../../types/golf-course.ts";
 import {
   classifyVenuePage,
   venueAddressLine,
@@ -638,11 +638,8 @@ describe("customer about and play facts", () => {
     assert.equal(venueStartMatchLabel(" Golf "), "Start golf");
   });
 
-  it("opens match create with the venue and its one sport", () => {
-    assert.equal(
-      venueStartMatchHref(actionPadel),
-      "/padel/new?venue=action-padel-century-city",
-    );
+  it("does not link a venue to a removed scorecard", () => {
+    assert.equal(venueStartMatchHref(actionPadel), null);
     assert.equal(
       venueStartMatchHref({
         slug: "extreme-go-karting",

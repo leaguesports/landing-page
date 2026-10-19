@@ -136,8 +136,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
       ["padel", "golf", "darts"],
     );
     assert.equal(hubPlayGridItems(SPORT_CATALOG)[0]?.href, "/play/padel");
-    assert.equal(isHubPlayDashboardSport("darts"), true);
-    assert.equal(hubLobbyHrefForSport("padel"), "/lobby?sport=padel");
+    assert.equal(isHubPlayDashboardSport("darts"), false);
+    assert.equal(hubLobbyHrefForSport("padel"), "/play?sport=padel");
     assert.equal(
       hubPlayDashboardActions("golf").some((action) => action.id === "handicap"),
       true,
@@ -155,20 +155,20 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
 
   it("puts Teams third on People under Friends + Communities", () => {
     assert.deepEqual(HUB_PEOPLE_BLOCKS, ["communities", "friends", "teams"]);
-    assert.equal(HUB_TEAMS_HREF, "/teams");
-    assert.equal(HUB_TEAMS_NEW_HREF, "/teams/new");
-    assert.equal(HUB_TEAM_MATCHES_HREF, "/team-matches");
-    assert.equal(HUB_TEAM_MATCHES_NEW_HREF, "/team-matches/new");
-    assert.equal(HUB_TOURNAMENTS_HREF, "/tournaments");
-    assert.equal(HUB_TOURNAMENTS_NEW_HREF, "/tournaments/new");
-    assert.equal(HUB_GOLF_TOURS_HREF, "/golf-tours");
-    assert.equal(HUB_GOLF_TOURS_NEW_HREF, "/golf-tours/new");
+    assert.equal(HUB_TEAMS_HREF, "/?tab=people");
+    assert.equal(HUB_TEAMS_NEW_HREF, "/?tab=people");
+    assert.equal(HUB_TEAM_MATCHES_HREF, "/play");
+    assert.equal(HUB_TEAM_MATCHES_NEW_HREF, "/play");
+    assert.equal(HUB_TOURNAMENTS_HREF, "/play");
+    assert.equal(HUB_TOURNAMENTS_NEW_HREF, "/play");
+    assert.equal(HUB_GOLF_TOURS_HREF, "/play/golf");
+    assert.equal(HUB_GOLF_TOURS_NEW_HREF, "/play/golf");
   });
 
   it("keeps Start actions inside Play only — never sticky or on Home", () => {
-    assert.equal(HUB_START_MATCH_HREF, "/padel/new");
-    assert.equal(HUB_START_GOLF_HREF, "/golf/new");
-    assert.equal(HUB_START_DARTS_HREF, "/darts/new");
+    assert.equal(HUB_START_MATCH_HREF, "/play/padel");
+    assert.equal(HUB_START_GOLF_HREF, "/play/golf");
+    assert.equal(HUB_START_DARTS_HREF, "/play/darts");
     assert.equal(HUB_STICKY_START_ACTIONS, false);
     assert.deepEqual(HUB_START_ACTION_TABS, ["play"]);
     assert.equal(hubShowsStartActions("play"), true);
@@ -183,9 +183,9 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.equal(hubOwnsRecentLocks("play"), false);
     assert.equal(hubOwnsRecentLocks("home"), false);
     assert.equal(hubOwnsRecentLocks("people"), false);
-    assert.equal(HUB_PADEL_HISTORY_HREF, "/padel/history");
-    assert.equal(HUB_GOLF_HISTORY_HREF, "/golf/history");
-    assert.equal(HUB_DARTS_HISTORY_HREF, "/darts/history");
+    assert.equal(HUB_PADEL_HISTORY_HREF, "/play/padel");
+    assert.equal(HUB_GOLF_HISTORY_HREF, "/play/golf");
+    assert.equal(HUB_DARTS_HISTORY_HREF, "/play/darts");
   });
 
   it("uses browse fixtures and venues — never a tools grid or Discover tab", () => {
@@ -214,16 +214,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     const playable = hubPlayableSports(SPORT_CATALOG);
     assert.deepEqual(
       playable.map((sport) => sport.slug),
-      ["padel", "golf", "darts"],
+      [],
     );
-    assert.deepEqual(Object.keys(HUB_PLAY_START_BY_SLUG), [
-      "padel",
-      "golf",
-      "darts",
-    ]);
-    assert.equal(hubPlayStartHref("padel"), HUB_START_MATCH_HREF);
-    assert.equal(hubPlayStartHref("golf"), HUB_START_GOLF_HREF);
-    assert.equal(hubPlayStartHref("darts"), HUB_START_DARTS_HREF);
+    assert.deepEqual(Object.keys(HUB_PLAY_START_BY_SLUG), []);
+    assert.equal(hubPlayStartHref("padel"), null);
+    assert.equal(hubPlayStartHref("golf"), null);
+    assert.equal(hubPlayStartHref("darts"), null);
     assert.equal(hubPlayStartHref("motorsport"), null);
     assert.equal(hubPlayStartHref("pool"), null);
     assert.equal(hubPlayStartHref("rugby"), null);
@@ -234,9 +230,9 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     const padel = SPORT_CATALOG.find((sport) => sport.slug === "padel");
     assert.ok(motorsport && darts && rugby && padel);
     assert.equal(isHubPlayableSport(motorsport), false);
-    assert.equal(isHubPlayableSport(darts), true);
+    assert.equal(isHubPlayableSport(darts), false);
     assert.equal(isHubPlayableSport(rugby), false);
-    assert.equal(isHubPlayableSport(padel), true);
+    assert.equal(isHubPlayableSport(padel), false);
     assert.ok(!playable.some((sport) => sport.capabilities.includes("watch") && !sport.capabilities.includes("play")));
   });
 
@@ -261,8 +257,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.equal(hubPlayVerbHref(HUB_PLAY_VERBS[2]), HUB_ORGANISE_HUB_HREF);
     assert.equal(hubPlayVerbOpensModal(HUB_PLAY_VERBS[2]), false);
     assert.equal(HUB_QUICK_START.href, HUB_QUICK_START_HREF);
-    assert.match(HUB_QUICK_START.label, /quick start/i);
-    assert.match(HUB_QUICK_START.description, /location/i);
+    assert.match(HUB_QUICK_START.label, /play/i);
+    assert.match(HUB_QUICK_START.description, /place to play/i);
   });
 
   it("puts Lobby, Team matches, and Tournaments under the Organise hub", () => {
@@ -293,24 +289,24 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     );
     assert.equal(
       HUB_ORGANISE_ROWS.find((row) => row.id === "golf-tours")?.href,
-      "/golf-tours",
+      "/play/golf",
     );
     assert.deepEqual(
       HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => [row.source, row.destination]),
       [
         ["/organise", "/play"],
         ["/play/organise", "/play"],
-        ["/play/padel/organise", "/padel/organise"],
-        ["/play/golf/organise", "/golf/organise"],
-        ["/play/lobby", "/lobby"],
-        ["/play/team-matches", "/team-matches"],
-        ["/play/team-matches/:path*", "/team-matches/:path*"],
-        ["/play/tournaments", "/tournaments"],
-        ["/play/tournaments/:path*", "/tournaments/:path*"],
-        ["/play/golf-tours", "/golf-tours"],
-        ["/play/golf-tours/:path*", "/golf-tours/:path*"],
-        ["/play/golf/tours", "/golf-tours"],
-        ["/play/golf/tours/:path*", "/golf-tours/:path*"],
+        ["/play/padel/organise", "/play/padel"],
+        ["/play/golf/organise", "/play/golf"],
+        ["/play/lobby", "/play"],
+        ["/play/team-matches", "/play"],
+        ["/play/team-matches/:path*", "/play"],
+        ["/play/tournaments", "/play"],
+        ["/play/tournaments/:path*", "/play"],
+        ["/play/golf-tours", "/play/golf"],
+        ["/play/golf-tours/:path*", "/play/golf"],
+        ["/play/golf/tours", "/play/golf"],
+        ["/play/golf/tours/:path*", "/play/golf"],
       ],
     );
     assert.equal(pendingLobbyProposalCount([]), 0);
@@ -345,71 +341,19 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.match(hubPlayModalDescription("capture"), /finished score/i);
     assert.match(hubPlayModalDescription("organise"), /venue/i);
 
-    const start = hubPlayModalSportOptions(SPORT_CATALOG, "start");
-    assert.deepEqual(
-      start.map((option) => [option.slug, option.href, option.verb]),
-      [
-        ["padel", HUB_START_MATCH_HREF, "start"],
-        ["golf", HUB_START_GOLF_HREF, "start"],
-        ["darts", HUB_START_DARTS_HREF, "start"],
-      ],
-    );
-    const capture = hubPlayModalSportOptions(SPORT_CATALOG, "capture");
-    assert.deepEqual(
-      capture.map((option) => [option.slug, option.href, option.verb]),
-      [
-        ["padel", HUB_CAPTURE_PADEL_HREF, "capture"],
-        ["golf", HUB_CAPTURE_GOLF_HREF, "capture"],
-        ["darts", HUB_CAPTURE_DARTS_HREF, "capture"],
-      ],
-    );
-    const organise = hubPlayModalSportOptions(SPORT_CATALOG, "organise");
-    assert.deepEqual(
-      organise.map((option) => [option.slug, option.href, option.verb]),
-      [
-        ["padel", HUB_ORGANISE_PADEL_HREF, "organise"],
-        ["golf", HUB_ORGANISE_GOLF_HREF, "organise"],
-      ],
-    );
-    assert.deepEqual(
-      hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.name),
-      ["Padel", "Golf", "Darts"],
-    );
+    assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "start"), []);
+    assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "capture"), []);
+    assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "organise"), []);
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
-    assert.deepEqual(
-      hubPlayModalSportOptions(SPORT_CATALOG, "start").map((option) => option.slug),
-      ["padel", "golf", "darts"],
-    );
   });
 
   it("maps playable slugs to create-flow hrefs and scopes by hub focus", () => {
-    const all = hubPlaySportOptions(SPORT_CATALOG, "all");
-    assert.deepEqual(
-      all.map((option) => [option.slug, option.href, option.verb]),
-      [
-        ["padel", HUB_START_MATCH_HREF, "start"],
-        ["golf", HUB_START_GOLF_HREF, "start"],
-        ["darts", HUB_START_DARTS_HREF, "start"],
-      ],
-    );
-    assert.deepEqual(
-      all.map((option) => option.label),
-      ["Start a match", "Start a round", "Start a game"],
-    );
-    assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "padel").map((option) => option.href),
-      [HUB_START_MATCH_HREF],
-    );
-    assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "golf").map((option) => option.href),
-      [HUB_START_GOLF_HREF],
-    );
+    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "all"), []);
+    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "padel"), []);
+    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "golf"), []);
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "rugby"), []);
-    assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "darts").map((option) => option.href),
-      [HUB_START_DARTS_HREF],
-    );
+    assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "darts"), []);
     assert.equal(hubPlayShowsPadel("all"), true);
     assert.equal(hubPlayShowsPadel("padel"), true);
     assert.equal(hubPlayShowsPadel("golf"), false);
@@ -420,91 +364,61 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
   });
 
   it("maps Capture results to finished-score routes for padel, golf, and darts", () => {
-    assert.equal(HUB_CAPTURE_PADEL_HREF, "/padel/capture");
-    assert.equal(HUB_CAPTURE_GOLF_HREF, "/golf/capture");
-    assert.equal(HUB_CAPTURE_DARTS_HREF, "/darts/capture");
-    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), [
-      "padel",
-      "golf",
-      "darts",
-    ]);
-    assert.equal(hubPlayCaptureHref("padel"), HUB_CAPTURE_PADEL_HREF);
-    assert.equal(hubPlayCaptureHref("golf"), HUB_CAPTURE_GOLF_HREF);
-    assert.equal(hubPlayCaptureHref("darts"), HUB_CAPTURE_DARTS_HREF);
-    assert.equal(hubPlayHrefForVerb("padel", "start"), HUB_START_MATCH_HREF);
-    assert.equal(hubPlayHrefForVerb("golf", "capture"), HUB_CAPTURE_GOLF_HREF);
+    assert.equal(HUB_CAPTURE_PADEL_HREF, "/play/padel");
+    assert.equal(HUB_CAPTURE_GOLF_HREF, "/play/golf");
+    assert.equal(HUB_CAPTURE_DARTS_HREF, "/play/darts");
+    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), []);
+    assert.equal(hubPlayCaptureHref("padel"), null);
+    assert.equal(hubPlayCaptureHref("golf"), null);
+    assert.equal(hubPlayCaptureHref("darts"), null);
+    assert.equal(hubPlayHrefForVerb("padel", "start"), null);
+    assert.equal(hubPlayHrefForVerb("golf", "capture"), null);
     assert.equal(hubPlayHrefForVerb("motorsport", "capture"), null);
 
-    const capture = hubPlaySportOptions(SPORT_CATALOG, "all", null, "capture");
     assert.deepEqual(
-      capture.map((option) => [option.slug, option.href, option.label]),
-      [
-        ["padel", HUB_CAPTURE_PADEL_HREF, "Capture padel"],
-        ["golf", HUB_CAPTURE_GOLF_HREF, "Capture golf"],
-        ["darts", HUB_CAPTURE_DARTS_HREF, "Capture darts"],
-      ],
-    );
-    assert.equal(
-      capture.every((option) => option.continueHref === null),
-      true,
+      hubPlaySportOptions(SPORT_CATALOG, "all", null, "capture"),
+      [],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "capture").map(
-        (option) => option.href,
-      ),
-      [HUB_CAPTURE_PADEL_HREF],
+      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "capture"),
+      [],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture").map(
-        (option) => option.href,
-      ),
-      [HUB_CAPTURE_DARTS_HREF],
+      hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture"),
+      [],
     );
   });
 
   it("maps Organise game to padel/golf create-flow hrefs and join/detail paths", () => {
-    assert.equal(HUB_ORGANISE_PADEL_HREF, "/padel/organise");
-    assert.equal(HUB_ORGANISE_GOLF_HREF, "/golf/organise");
-    assert.deepEqual(Object.keys(HUB_PLAY_ORGANISE_BY_SLUG), ["padel", "golf"]);
-    assert.equal(hubPlayOrganiseHref("padel"), HUB_ORGANISE_PADEL_HREF);
-    assert.equal(hubPlayOrganiseHref("golf"), HUB_ORGANISE_GOLF_HREF);
+    assert.equal(HUB_ORGANISE_PADEL_HREF, "/play/padel");
+    assert.equal(HUB_ORGANISE_GOLF_HREF, "/play/golf");
+    assert.deepEqual(Object.keys(HUB_PLAY_ORGANISE_BY_SLUG), []);
+    assert.equal(hubPlayOrganiseHref("padel"), null);
+    assert.equal(hubPlayOrganiseHref("golf"), null);
     assert.equal(hubPlayOrganiseHref("darts"), null);
-    assert.equal(hubPlayHrefForVerb("padel", "organise"), HUB_ORGANISE_PADEL_HREF);
-    assert.equal(hubPlayHrefForVerb("golf", "organise"), HUB_ORGANISE_GOLF_HREF);
+    assert.equal(hubPlayHrefForVerb("padel", "organise"), null);
+    assert.equal(hubPlayHrefForVerb("golf", "organise"), null);
     assert.equal(hubPlayHrefForVerb("motorsport", "organise"), null);
 
-    const organise = hubPlaySportOptions(SPORT_CATALOG, "all", null, "organise");
     assert.deepEqual(
-      organise.map((option) => [option.slug, option.href, option.label, option.verb]),
-      [
-        ["padel", HUB_ORGANISE_PADEL_HREF, "Organise padel", "organise"],
-        ["golf", HUB_ORGANISE_GOLF_HREF, "Organise golf", "organise"],
-      ],
-    );
-    assert.equal(
-      organise.every((option) => option.continueHref === null),
-      true,
+      hubPlaySportOptions(SPORT_CATALOG, "all", null, "organise"),
+      [],
     );
     assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "organise").map(
-        (option) => option.href,
-      ),
-      [HUB_ORGANISE_PADEL_HREF],
+      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "organise"),
+      [],
     );
     assert.deepEqual(
       hubPlaySportOptions(SPORT_CATALOG, "darts", null, "organise"),
       [],
     );
-    assert.equal(hubOrganisedGameHref("game-1"), "/play/organised/game-1");
-    assert.equal(
-      hubOrganisedGameJoinHref("aa".repeat(16)),
-      `/play/join/${"aa".repeat(16)}`,
-    );
+    assert.equal(hubOrganisedGameHref("game-1"), "/play");
+    assert.equal(hubOrganisedGameJoinHref("aa".repeat(16)), "/play");
     assert.equal(hubOrganisedGameHref("  "), HUB_PLAY_HREF);
     assert.equal(hubOrganisedGameJoinHref(""), HUB_PLAY_HREF);
     assert.equal(HUB_ORGANISED_PREVIEW_LIMIT, 4);
-    assert.equal(HUB_LOBBY_HREF, "/lobby");
-    assert.equal(hubLobbyHref(), "/lobby");
+    assert.equal(HUB_LOBBY_HREF, "/play");
+    assert.equal(hubLobbyHref(), "/play");
   });
 
   it("omits Continue unless a live href is supplied — never from locked history", () => {
@@ -515,21 +429,12 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     );
     assert.equal(hubPlayContinueHref("padel"), null);
     assert.equal(hubPlayContinueHref("golf", {}), null);
-    assert.equal(
-      hubPlayContinueHref("darts", { darts: "/darts/abc" }),
-      "/darts/abc",
-    );
-    assert.equal(hubPlayContinueHref("pool", { pool: "/pool/abc" }), null);
-    assert.equal(
-      hubPlayContinueHref("padel", { padel: "/padel/live-1" }),
-      "/padel/live-1",
-    );
-    const withContinue = hubPlaySportOptions(SPORT_CATALOG, "golf", {
-      golf: "/golf/round-9",
-    });
+    assert.equal(hubPlayContinueHref("darts", { darts: "/play/darts" }), null);
+    assert.equal(hubPlayContinueHref("pool", { pool: "/play" }), null);
+    assert.equal(hubPlayContinueHref("padel", { padel: "/play/padel" }), null);
     assert.deepEqual(
-      withContinue.map((option) => option.continueHref),
-      ["/golf/round-9"],
+      hubPlaySportOptions(SPORT_CATALOG, "golf", { golf: "/play/golf" }),
+      [],
     );
   });
 
@@ -597,8 +502,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
   });
 
   it("keeps You links on shipped settings routes", () => {
-    assert.equal(HUB_TRAINING_HREF, "/training");
-    assert.equal(HUB_INTEGRATIONS_HREF, "/integrations");
+    assert.equal(HUB_TRAINING_HREF, "/athletes");
+    assert.equal(HUB_INTEGRATIONS_HREF, "/athletes");
   });
 
   it("counts only connected integrations", () => {

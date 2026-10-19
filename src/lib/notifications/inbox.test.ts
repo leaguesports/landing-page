@@ -91,19 +91,16 @@ describe("formatUnreadBadge", () => {
 });
 
 describe("organisedGameInviteHref", () => {
-  it("deep-links to organised game detail from payload", () => {
+  it("sends organised-game invites to the Play hub", () => {
     assert.equal(
       organisedGameInviteHref({ organisedGameId: "game-1" }),
-      "/play/organised/game-1",
+      HUB_PLAY_HREF,
     );
-    assert.equal(
-      inboxNotificationHref(INVITE),
-      "/play/organised/game-1",
-    );
+    assert.equal(inboxNotificationHref(INVITE), HUB_PLAY_HREF);
     assert.equal(organisedGameInviteHref({ organisedGameId: "  " }), HUB_PLAY_HREF);
   });
 
-  it("deep-links lobby proposal and organise fill notifications", () => {
+  it("sends lobby notifications to the Play hub", () => {
     assert.equal(
       inboxNotificationHref({
         id: "n-lobby",
@@ -113,7 +110,7 @@ describe("organisedGameInviteHref", () => {
         readAt: null,
         createdAt: INVITE.createdAt,
       }),
-      "/lobby?proposal=prop-1",
+      HUB_PLAY_HREF,
     );
     assert.equal(
       inboxNotificationHref({
@@ -124,7 +121,7 @@ describe("organisedGameInviteHref", () => {
         readAt: null,
         createdAt: INVITE.createdAt,
       }),
-      "/play/organised/org-3",
+      HUB_PLAY_HREF,
     );
     assert.equal(
       inboxNotificationCopy({

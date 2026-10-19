@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { GolfCourseCms } from "../../types/golf-round.ts";
+import type { GolfCourseCms } from "../../types/golf-course.ts";
 import { venueDetailNavLinks } from "./watch-chrome.ts";
 import {
   isFixtureSportLabel,

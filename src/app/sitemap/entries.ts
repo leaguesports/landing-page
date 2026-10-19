@@ -89,7 +89,6 @@ const STATIC_PATHS: Array<{
   { path: "/communities", changeFrequency: "weekly", priority: 0.8 },
   { path: "/athletes", changeFrequency: "weekly", priority: 0.85 },
   { path: "/guides", changeFrequency: "weekly", priority: 0.8 },
-  { path: "/integrations", changeFrequency: "weekly", priority: 0.7 },
   { path: "/roadmap", changeFrequency: "weekly", priority: 0.7 },
   { path: "/site-map", changeFrequency: "weekly", priority: 0.6 },
   { path: "/watch/soccer", changeFrequency: "daily", priority: 0.9 },

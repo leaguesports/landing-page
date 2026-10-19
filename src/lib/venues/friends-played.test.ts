@@ -109,7 +109,7 @@ describe("friends-played API client", () => {
 });
 
 describe("friends-played visibility", () => {
-  const startHref = "/padel/new?venue=the-grid";
+  const startHref = "/play/padel";
 
   it("hides the block when anonymous", () => {
     const view = friendsPlayedView({
@@ -191,38 +191,38 @@ describe("friends-played overflow +N from total", () => {
   });
 });
 
-describe("friends-played Start href with venue prefilled", () => {
-  it("opens the primary play sport start flow with ?venue=", () => {
+describe("friends-played start href", () => {
+  it("opens the surviving sport hub, not a removed scorecard", () => {
     assert.equal(
       friendsPlayedStartHref({
         venueSlug: "glendower-golf-club",
         primarySport: "golf",
       }),
-      "/golf/new?venue=glendower-golf-club",
+      "/play/golf",
     );
     assert.equal(
       friendsPlayedStartHref({
         venueSlug: "the-grid",
         primarySport: "padel",
       }),
-      "/padel/new?venue=the-grid",
+      "/play/padel",
     );
     assert.equal(
       friendsPlayedStartHref({
         venueSlug: "the-dartboard",
         primarySport: "darts",
       }),
-      "/darts/new?venue=the-dartboard",
+      "/play/darts",
     );
   });
 
-  it("encodes the venue slug on the start URL", () => {
+  it("falls back to the Play hub for other sports", () => {
     assert.equal(
       friendsPlayedStartHref({
         venueSlug: "padel & co",
         primarySport: "padel",
       }),
-      `/padel/new?venue=${encodeURIComponent("padel & co")}`,
+      "/play/padel",
     );
     assert.equal(
       friendsPlayedStartHref({
@@ -235,7 +235,7 @@ describe("friends-played Start href with venue prefilled", () => {
 });
 
 describe("friendsPlayedView signed-in states", () => {
-  const startHref = "/golf/new?venue=glendower";
+  const startHref = "/play/golf";
 
   it("shows the empty section with the first-to-play CTA", () => {
     const view = friendsPlayedView({
@@ -279,6 +279,6 @@ describe("friendsPlayedView signed-in states", () => {
     assert.equal(view.overflow, 6);
     assert.equal(view.overflowLabel, "+6");
     assert.equal(view.ctaLabel, FRIENDS_PLAYED_DEFAULT_CTA);
-    assert.equal(view.startHref, "/golf/new?venue=glendower");
+    assert.equal(view.startHref, "/play/golf");
   });
 });

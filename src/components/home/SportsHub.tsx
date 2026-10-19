@@ -1,17 +1,11 @@
 "use client";
 
-import { BadgesPanel } from "@/components/home/BadgesPanel";
-import type { BadgesSnapshot } from "@/lib/badges/api";
 import { CommunitiesPanel } from "@/components/home/CommunitiesPanel";
 import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { HubBottomNav } from "@/components/hub/HubBottomNav";
-import { TeamsPanel } from "@/components/home/TeamsPanel";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
-import { DartsHistoryList } from "@/components/darts/DartsHistoryList";
 import { GolfHandicapIndexField } from "@/components/golf/GolfHandicapIndexField";
 import { VenueLeaderboardPreference } from "@/components/venue-leaderboards/VenueLeaderboardPreference";
-import { GolfHistoryList } from "@/components/golf/GolfHistoryList";
-import { PadelHistoryList } from "@/components/padel/PadelHistoryList";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -19,22 +13,10 @@ import {
 } from "@/lib/athletes/overview";
 import type { MyCommunity } from "@/lib/communities/communities";
 import {
-  emptyTeamsSnapshot,
-  type TeamsSnapshot,
-} from "@/lib/teams/teams";
-import {
-  emptyIntegrationsSnapshot,
-  type IntegrationsSnapshot,
-} from "@/lib/integrations/integrations";
-import {
   emptyFriendsSnapshot,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
-import {
-  type OrganisedGamesSnapshot,
-} from "@/lib/organised-games/organised-games";
 import { updatePreferences } from "@/lib/preferences/preferences";
-import { summarisePlayerHistory } from "@/lib/padel/history";
 import {
   ALL_SPORTS_SLUG,
   defaultHubPreferences,
@@ -47,20 +29,11 @@ import {
   type SportDefinition,
 } from "@/lib/sports/catalog";
 import {
-  HUB_DARTS_HISTORY_HREF,
-  HUB_GOLF_HISTORY_HREF,
-  HUB_INTEGRATIONS_HREF,
-  HUB_PADEL_HISTORY_HREF,
   HUB_PEOPLE_PREVIEW_LIMIT,
-  HUB_PLAY_HREF,
-  HUB_RECENT_LOCK_LIMIT,
-  HUB_TRAINING_HREF,
-  hubConnectedCount,
   hubEventsHref,
   hubForYouEmptyCtas,
   hubShowsSportControl,
   parseHubTabParam,
-  takeHubPreview,
   type HubTabId,
 } from "@/lib/sports/hub-ia";
 import {
@@ -68,9 +41,6 @@ import {
   formatHubWhen,
   type HubFeedItem,
 } from "@/lib/sports/hub-feed";
-import type { DartsHistoryItem } from "@/types/darts-match";
-import type { GolfHistoryItem } from "@/types/golf-round";
-import type { PadelHistoryItem } from "@/types/padel-match";
 import type { FollowedVenue } from "@/lib/venues/follow";
 import {
   ArrowUpRight,
@@ -166,39 +136,16 @@ function HubAvatar({
   );
 }
 
-/** Locked-activity counts derived on the server — not full history rows. */
-export type LockedActivityCounts = {
-  padel: number;
-  golf: number;
-  darts?: number;
-  /** Set when a padel, golf, or darts lookup failed — Games must not look certain. */
-  error: string | null;
-};
-
 type SportsHubProps = {
   user: AuthUser;
-  historyError: string | null;
-  historyItems: PadelHistoryItem[];
-  golfHistoryError?: string | null;
-  golfHistoryItems?: GolfHistoryItem[];
-  dartsHistoryError?: string | null;
-  dartsHistoryItems?: DartsHistoryItem[];
-  /** Prefer this over shipping full golf history into the client hub. */
-  lockedActivity?: LockedActivityCounts;
   followedVenues?: FollowedVenue[];
   /** Resolved fixtures the user follows — personal broadcast calendar (#106). */
   followedFixtures?: HubFeedItem[];
   /** Raw follow count from the API (may exceed resolved CMS rows). */
   followedFixtureCount?: number;
   friends?: FriendsSnapshot;
-  organisedGames?: OrganisedGamesSnapshot;
   /** Prefetched `GET /api/me/communities` — empty on failure. */
   myCommunities?: MyCommunity[];
-  /** Prefetched `GET /api/teams` — empty on failure. */
-  myTeams?: TeamsSnapshot;
-  /** Prefetched `GET /api/me/integrations` — connectable providers only. */
-  integrations?: IntegrationsSnapshot;
-  badges?: BadgesSnapshot;
   sports: SportDefinition[];
   feed: HubFeedItem[];
   nowIso: string;
@@ -504,22 +451,11 @@ function HubSportControl({
 
 export function SportsHub({
   user,
-  historyError,
-  historyItems,
-  golfHistoryError = null,
-  golfHistoryItems = [],
-  dartsHistoryError = null,
-  dartsHistoryItems = [],
-  lockedActivity,
   followedVenues = [],
   followedFixtures = [],
   followedFixtureCount = 0,
   friends = emptyFriendsSnapshot(),
-  organisedGames: _organisedGames,
   myCommunities = [],
-  myTeams = emptyTeamsSnapshot(),
-  integrations = emptyIntegrationsSnapshot(),
-  badges = { badges: [], fromApi: false },
   sports,
   feed,
   nowIso,
@@ -528,19 +464,7 @@ export function SportsHub({
   initialTab = null,
 }: SportsHubProps) {
   const knownSlugs = useMemo(() => sports.map((sport) => sport.slug), [sports]);
-  const padelLocked = lockedActivity?.padel ?? historyItems.length;
-  const golfLocked = lockedActivity?.golf ?? golfHistoryItems.length;
-  const dartsLocked = lockedActivity?.darts ?? dartsHistoryItems.length;
-  const activityError = lockedActivity?.error ?? historyError;
-  const gamesKnown = !activityError;
-  const gamesPlayed = padelLocked + golfLocked + dartsLocked;
-  const seedFollowed = useMemo(() => {
-    const seeds: string[] = [...initialFollowedSports];
-    if (padelLocked > 0) seeds.push("padel");
-    if (golfLocked > 0) seeds.push("golf");
-    if (dartsLocked > 0) seeds.push("darts");
-    return seeds;
-  }, [dartsLocked, golfLocked, initialFollowedSports, padelLocked]);
+  const seedFollowed = initialFollowedSports;
   const [prefs, setPrefs] = useHubPreferences(
     user.id,
     knownSlugs,
@@ -602,25 +526,13 @@ export function SportsHub({
     (item) => item.id !== nextUp?.id && !followedRestIds.has(item.id),
   );
   const nextUpIsFollowedFixture = Boolean(nextUp?.followedFixture);
-  const stats = summarisePlayerHistory(historyItems, user.id);
   const activeSport =
     active === ALL_SPORTS_SLUG
       ? null
       : sports.find((sport) => sport.slug === active) ?? null;
-  const recentPadel = takeHubPreview(historyItems, HUB_RECENT_LOCK_LIMIT);
-  const recentGolf = takeHubPreview(golfHistoryItems, HUB_RECENT_LOCK_LIMIT);
-  const recentDarts = takeHubPreview(dartsHistoryItems, HUB_RECENT_LOCK_LIMIT);
   const displayName = athleteDisplayName(user);
   const handle = athleteHandle(user);
-  const connectedCount = hubConnectedCount(integrations.providers);
   const showSportControl = hubShowsSportControl(tab);
-  const youHistoryEmpty =
-    recentPadel.length === 0 &&
-    !historyError &&
-    recentGolf.length === 0 &&
-    !golfHistoryError &&
-    recentDarts.length === 0 &&
-    !dartsHistoryError;
 
   function selectTab(id: HubTabId) {
     if (id === "play") return;
@@ -802,11 +714,10 @@ export function SportsHub({
               <SectionHeading
                 id="hub-you"
                 title="You"
-                description="Identity, form, badges, and recent locks."
+                description="Your profile and preferences."
               />
 
-              <div className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
-                <div>
+              <div className="max-w-md">
                   <div className="mb-8 flex items-center gap-3">
                     <HubAvatar name={displayName} avatarUrl={user.avatarUrl} />
                     <div className="min-w-0">
@@ -825,211 +736,7 @@ export function SportsHub({
                     <GolfHandicapIndexField />
                   </div>
 
-                  <div className="mb-8">
-                    <VenueLeaderboardPreference />
-                  </div>
-
-                  <div className="mb-8">
-                    <div className="mb-3 flex items-baseline gap-2">
-                      <span className="font-display text-2xl tracking-wide text-white tabular-nums">
-                        {gamesKnown ? gamesPlayed : "—"}
-                      </span>
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                        Games
-                      </span>
-                    </div>
-                    {activityError ? (
-                      <p className="mb-3 text-[11px] leading-snug text-amber-300/90">
-                        Couldn’t load all activity
-                      </p>
-                    ) : null}
-                    {stats.locked > 0 ? (
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-                        {[
-                          { label: "Locked", value: String(stats.locked) },
-                          { label: "Wins", value: String(stats.wins) },
-                          { label: "Win rate", value: `${stats.winRate}%` },
-                          {
-                            label: "Form",
-                            value:
-                              stats.recentForm.length > 0
-                                ? stats.recentForm.join(" ")
-                                : "—",
-                          },
-                        ].map((stat) => (
-                          <div
-                            key={stat.label}
-                            className="rounded-2xl border border-white/8 bg-[#141814] px-4 py-4"
-                          >
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                              {stat.label}
-                            </p>
-                            <p className="mt-1.5 font-display text-xl tracking-wide text-white tabular-nums">
-                              {stat.value}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed text-zinc-500">
-                        Lock a match to see form here.
-                      </p>
-                    )}
-                  </div>
-
-                  <BadgesPanel
-                    initial={badges}
-                    padelStats={stats}
-                    golfLocked={golfLocked}
-                    friendCount={friends.friends.length}
-                    variant="strip"
-                    className="mt-0"
-                  />
-
-                  <div className="mt-8 space-y-3">
-                    <Link
-                      href={HUB_INTEGRATIONS_HREF}
-                      className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
-                    >
-                      <span>
-                        {connectedCount > 0
-                          ? `Connected · ${connectedCount}`
-                          : "Connected services"}
-                      </span>
-                      <ArrowUpRight
-                        className="h-4 w-4 shrink-0 text-zinc-600"
-                        aria-hidden
-                      />
-                    </Link>
-                    <Link
-                      href={HUB_TRAINING_HREF}
-                      className="flex items-center justify-between gap-3 rounded-3xl border border-white/8 bg-[#141814] px-5 py-4 text-sm font-medium text-white transition-colors hover:border-white/16"
-                    >
-                      <span>Training</span>
-                      <ArrowUpRight
-                        className="h-4 w-4 shrink-0 text-zinc-600"
-                        aria-hidden
-                      />
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="mt-10 lg:mt-0">
-                  <div className="mb-5">
-                    <h3 className="font-display text-xl tracking-wide text-white">
-                      Recent locks
-                    </h3>
-                    <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-                      Locked padel, golf, and darts results.
-                    </p>
-                  </div>
-
-                  <div className="space-y-8 lg:space-y-6">
-                    <div>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                          Padel
-                        </p>
-                        {historyItems.length > 0 ? (
-                          <Link
-                            href={HUB_PADEL_HISTORY_HREF}
-                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                          >
-                            View all
-                          </Link>
-                        ) : null}
-                      </div>
-                      {historyError ? (
-                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
-                          <p className="text-sm text-red-300">{historyError}</p>
-                        </div>
-                      ) : recentPadel.length > 0 ? (
-                        <PadelHistoryList
-                          items={recentPadel}
-                          playerUserId={user.id}
-                        />
-                      ) : (
-                        <p className="text-sm leading-relaxed text-zinc-500">
-                          No locked padel matches yet.
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                          Golf
-                        </p>
-                        {golfHistoryItems.length > 0 ? (
-                          <Link
-                            href={HUB_GOLF_HISTORY_HREF}
-                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                          >
-                            View all
-                          </Link>
-                        ) : null}
-                      </div>
-                      {golfHistoryError ? (
-                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
-                          <p className="text-sm text-red-300">
-                            {golfHistoryError}
-                          </p>
-                        </div>
-                      ) : recentGolf.length > 0 ? (
-                        <GolfHistoryList items={recentGolf} />
-                      ) : (
-                        <p className="text-sm leading-relaxed text-zinc-500">
-                          No locked golf rounds yet.
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                          Darts
-                        </p>
-                        {dartsHistoryItems.length > 0 ? (
-                          <Link
-                            href={HUB_DARTS_HISTORY_HREF}
-                            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                          >
-                            View all
-                          </Link>
-                        ) : null}
-                      </div>
-                      {dartsHistoryError ? (
-                        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-5 py-6 sm:px-8">
-                          <p className="text-sm text-red-300">
-                            {dartsHistoryError}
-                          </p>
-                        </div>
-                      ) : recentDarts.length > 0 ? (
-                        <DartsHistoryList
-                          items={recentDarts}
-                          playerUserId={user.id}
-                        />
-                      ) : (
-                        <p className="text-sm leading-relaxed text-zinc-500">
-                          No locked darts games yet.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {youHistoryEmpty ? (
-                    <p className="mt-6 text-sm leading-relaxed text-zinc-500">
-                      Start or capture a result from{" "}
-                      <Link
-                        href={HUB_PLAY_HREF}
-                        className="font-medium text-emerald-300 hover:text-emerald-200"
-                      >
-                        Play
-                      </Link>{" "}
-                      to lock a result here.
-                    </p>
-                  ) : null}
-                </div>
+                  <VenueLeaderboardPreference />
               </div>
             </section>
           </div>
@@ -1049,7 +756,7 @@ export function SportsHub({
             <SectionHeading
               id="hub-people"
               title="People"
-              description="Friends, communities, and teams — short lists, then See all."
+              description="Friends and communities."
               action={
                 friendRequestCount > 0 ? (
                   <span className="inline-flex items-center gap-2 text-sm text-emerald-200">
@@ -1081,13 +788,6 @@ export function SportsHub({
             className="mt-0"
             showHeading
             onIncomingCountChange={setFriendRequestCount}
-          />
-          <TeamsPanel
-            initial={myTeams}
-            compact
-            previewLimit={HUB_PEOPLE_PREVIEW_LIMIT}
-            className="mt-8"
-            hubSport={active}
           />
         </div>
       </div>

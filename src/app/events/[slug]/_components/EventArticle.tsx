@@ -2,7 +2,6 @@ import { ConversionKit } from "@/components/conversion/ConversionKit";
 import { CoverageNotify } from "@/components/conversion/CoverageNotify";
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { FixtureFollowButton } from "@/components/events/FixtureFollowButton";
-import { FixturePoolPanel } from "@/components/events/FixturePoolPanel";
 import {
   FixtureFaqSection,
   FixtureInternalLinks,
@@ -31,7 +30,6 @@ export function EventArticle({
   sport,
   kickoffLabel,
   weekend,
-  kickoff,
   intro,
   localAngle,
   editorialFaqs,
@@ -96,7 +94,6 @@ export function EventArticle({
     hasEditorial ? { id: "about", label: "About" } : null,
     weekend ? { id: "weekend-timetable", label: "Timetable" } : null,
     { id: "where-to-watch", label: "Watch" },
-    { id: "prediction-pool", label: "Pool" },
     editorialFaqs.length > 0 ? { id: "questions", label: "Questions" } : null,
     related.length > 0 ? { id: "more", label: "More" } : null,
   ].filter((tab): tab is { id: string; label: string } => tab !== null);
@@ -227,17 +224,6 @@ export function EventArticle({
                     </div>
                   </div>
                 )}
-              </section>
-
-              <section id="prediction-pool" className="mt-8 scroll-mt-40 border-t border-zinc-200 pt-8">
-                <FixturePoolPanel
-                  slug={fixture.slug}
-                  fixtureTitle={fixture.title}
-                  kicksOffAt={kickoff}
-                  tone="light"
-                  layout="section"
-                  poolLine={voice.poolLine}
-                />
               </section>
 
               <FixtureFaqSection title={profile.headings.questions} faqs={editorialFaqs} />

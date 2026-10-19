@@ -1,7 +1,20 @@
 import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
-import { isLobbyInboxType, lobbyInboxHref } from "../lobby/lobby.ts";
-import { hubOrganisedGameHref } from "../sports/hub-ia.ts";
+import { HUB_PLAY_HREF } from "../sports/hub-ia.ts";
+
+const LOBBY_INBOX_TYPES = [
+  "lobby_proposal_ready",
+  "lobby_open_game_filled",
+  "lobby_open_game_joined",
+  "lobby_open_game_fits",
+] as const;
+
+function isLobbyInboxType(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    (LOBBY_INBOX_TYPES as readonly string[]).includes(value)
+  );
+}
 
 export const INBOX_CHANGED_EVENT = "leaguesports-inbox-changed";
 
@@ -104,11 +117,14 @@ export function isOrganisedGameInvite(
   return notification.type === ORGANISED_GAME_INVITE_TYPE;
 }
 
-/** Deep-link to organised game detail from an invite payload. */
+/**
+ * Organised-game and lobby pages are gone. Notices still list from
+ * `/api/me/notifications`; the click target is the Play hub.
+ */
 export function organisedGameInviteHref(
-  payload: Pick<OrganisedGameInvitePayload, "organisedGameId">,
+  _payload: Pick<OrganisedGameInvitePayload, "organisedGameId">,
 ): string {
-  return hubOrganisedGameHref(payload.organisedGameId);
+  return HUB_PLAY_HREF;
 }
 
 export function inboxNotificationHref(
@@ -118,7 +134,7 @@ export function inboxNotificationHref(
     return organisedGameInviteHref(notification.payload);
   }
   if (isLobbyInboxType(notification.type)) {
-    return lobbyInboxHref(notification.payload);
+    return HUB_PLAY_HREF;
   }
   return null;
 }

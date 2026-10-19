@@ -27,10 +27,10 @@ describe("relativeAuthReturnTo", () => {
   it("keeps path and query without becoming absolute", () => {
     assert.equal(
       relativeAuthReturnTo({
-        pathname: "/padel/new",
-        search: "?venue=the-grid",
+        pathname: "/play/padel",
+        search: "?city=cape-town",
       }),
-      "/padel/new?venue=the-grid",
+      "/play/padel?city=cape-town",
     );
     assert.equal(
       relativeAuthReturnTo({ pathname: "/venues/x", search: "" }),
@@ -51,8 +51,8 @@ describe("getLoginPageHref", () => {
       "/login?returnTo=%2Fvenues%2Fthe-grid",
     );
     assert.equal(
-      getLoginPageHref("/padel/new?venue=the-grid"),
-      "/login?returnTo=%2Fpadel%2Fnew%3Fvenue%3Dthe-grid",
+      getLoginPageHref("/play/padel?city=cape-town"),
+      "/login?returnTo=%2Fplay%2Fpadel%3Fcity%3Dcape-town",
     );
   });
 

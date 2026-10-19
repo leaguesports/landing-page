@@ -6,7 +6,7 @@ import {
   type NearbyVenueCard,
 } from "@/lib/venues/nearby";
 import { sanityClient } from "@/sanity/client";
-import type { GolfCourseCms } from "@/types/golf-round";
+import type { GolfCourseCms } from "@/types/golf-course";
 import {
   GOLF_COURSE_PROJECTION,
   mapGolfCourse,
@@ -95,8 +95,7 @@ export async function getVenueBySlug(
   const value = slug.trim();
   if (!value) return null;
 
-  // `/padel/new?venue=` and `/golf/new?venue=` accept slug or Sanity `_id`
-  // so venue QR / WhatsApp links can share either identifier (#116).
+  // Venue lookup accepts a slug or a Sanity `_id`.
   const row = await sanityClient.fetch<VenueRow | null>(
     `*[_type == "venue" && (slug.current == $value || _id == $value)][0] {
       ${VENUE_PROJECTION}
