@@ -132,6 +132,9 @@ describe("mode sheet", () => {
       ],
     );
     assert.equal(rows.some((row) => (row.id as string) === "darts"), false);
+    assert.equal(rows.find((row) => row.id === "social")?.detail, "Activity from everyone you follow");
+    assert.equal(rows.find((row) => row.id === "golf")?.detail, "Rounds, scores and handicap");
+    assert.equal(rows.find((row) => row.id === "padel")?.detail, "Matches and open games");
 
     const moved = reduceModeSheet(open, { type: "key", key: "ArrowDown" });
     assert.equal(moved.cursor, 1);
