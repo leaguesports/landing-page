@@ -245,10 +245,24 @@
   font-size: 15px;
   color: var(--text);
   padding: 0;
+  transition: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.play-mode .social-home .seg button[aria-selected="true"] {
-  background: var(--ink);
+.play-mode .social-home .seg button:hover,
+.play-mode .social-home .seg button:focus {
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+.play-mode .social-home .seg button[aria-selected="true"],
+.play-mode .social-home .seg button[aria-selected="true"]:hover,
+.play-mode .social-home .seg button[aria-selected="true"]:focus {
+  background: #09090b;
   color: #fff;
+}
+.play-mode .social-home .seg button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 .play-mode .social-home .feed {
   background: #fff;

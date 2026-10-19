@@ -182,6 +182,10 @@ describe("social empty feed", () => {
     assert.doesNotMatch(app, /className="soon"/);
     assert.match(page, /initialFeedParam/);
     assert.match(css, /\.social-home \.seg[\s\S]*border-radius:\s*999px/);
+    assert.match(css, /\.social-home \.seg button[\s\S]*transition:\s*none/);
+    assert.match(css, /\.social-home \.seg button\[aria-selected="true"\][\s\S]*background:\s*#09090b/);
+    assert.match(css, /\.social-home \.seg button:focus-visible[\s\S]*outline:\s*2px solid var\(--ink\)/);
+    assert.match(css, /\.social-home \.seg button:focus \{\s*background:\s*transparent/);
     assert.match(css, /\.social-home \.feed[\s\S]*border-radius:\s*16px/);
     assert.match(css, /\.fab[\s\S]*border-radius:\s*50%/);
     assert.match(css, /safe-area-inset-bottom/);
