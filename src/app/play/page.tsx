@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Play",
   description:
-    "Pick padel, golf, or darts to start a live scorecard, capture a result, or play with others.",
+    "Pick padel, golf, or darts to find a place to play.",
 };
 
 export default function PlayGridPage() {

@@ -32,7 +32,7 @@ describe("deepLinkRecovery", () => {
     assert.equal(deepLinkRecovery({ kind: "organise" }).primary.href, "/play");
     assert.equal(deepLinkRecovery({ kind: "event" }).primary.href, "/events");
     assert.equal(deepLinkRecovery({ kind: "venue" }).primary.href, "/venues");
-    assert.equal(deepLinkRecovery({ kind: "team" }).primary.href, "/teams");
+    assert.equal(deepLinkRecovery({ kind: "team" }).primary.href, "/?tab=people");
   });
 });
 

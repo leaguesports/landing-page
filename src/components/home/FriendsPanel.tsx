@@ -8,7 +8,7 @@ import {
   type FriendRequest,
   type FriendsSnapshot,
 } from "@/lib/friends/friends";
-import { HUB_LOBBY_HREF } from "@/lib/sports/hub-ia";
+import { HUB_PLAY_HREF } from "@/lib/sports/hub-ia";
 import {
   dispatchFriendsChanged,
   FRIENDS_CHANGED_EVENT,
@@ -206,7 +206,7 @@ export function FriendsPanel({
             </p>
           </div>
           <Link
-            href={HUB_LOBBY_HREF}
+            href={HUB_PLAY_HREF}
             className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
           >
             Looking for a game?
@@ -215,7 +215,7 @@ export function FriendsPanel({
       ) : (
         <p className="mb-3">
           <Link
-            href={HUB_LOBBY_HREF}
+            href={HUB_PLAY_HREF}
             className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
           >
             Looking for a game?
@@ -264,21 +264,14 @@ export function FriendsPanel({
       {empty ? (
         <div className="rounded-3xl border border-white/8 bg-[#141814] px-5 py-6">
           <p className="text-sm leading-relaxed text-zinc-400">
-            No friends yet. Add someone by their @handle — you can still play
-            with guests and WhatsApp share without being friends.
+            No friends yet. Add someone by their @handle.
           </p>
           <div className="mt-4 flex flex-col gap-2">
             <Link
-              href={HUB_LOBBY_HREF}
+              href={HUB_PLAY_HREF}
               className="inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
             >
-              Looking for a game?
-            </Link>
-            <Link
-              href="/padel/new"
-              className="inline-flex text-sm font-medium text-emerald-300 hover:text-emerald-200"
-            >
-              Challenge a friend to padel
+              Find a place to play
             </Link>
           </div>
         </div>
@@ -360,12 +353,6 @@ export function FriendsPanel({
                   </div>
                   {compact && !showFull ? null : (
                     <div className="flex shrink-0 items-center gap-2">
-                      <Link
-                        href="/padel/new"
-                        className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
-                      >
-                        Challenge
-                      </Link>
                       <button
                         type="button"
                         disabled={pending}

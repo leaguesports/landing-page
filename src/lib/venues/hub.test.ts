@@ -224,10 +224,10 @@ describe("favouritesSection", () => {
 });
 
 describe("venueHubDirectoryLinks", () => {
-  it("rejects noindex Play dashboards even when the path starts with /play", () => {
-    assert.equal(isVenueHubDirectoryHref("/play/golf"), false);
-    assert.equal(isVenueHubDirectoryHref("/play/darts"), false);
-    assert.equal(isVenueHubDirectoryHref("/play/padel"), false);
+  it("treats sport hubs as crawlable Play directory routes", () => {
+    assert.equal(isVenueHubDirectoryHref("/play/golf"), true);
+    assert.equal(isVenueHubDirectoryHref("/play/darts"), true);
+    assert.equal(isVenueHubDirectoryHref("/play/padel"), true);
     assert.equal(
       isVenueHubDirectoryHref(`/play/golf/${VENUE_HUB_PLAY_SEO_CITY}`),
       true,
@@ -243,22 +243,17 @@ describe("venueHubDirectoryLinks", () => {
     assert.ok(links.some((link) => link.group === "cities"));
     assert.ok(links.some((link) => link.group === "sports"));
 
-    const dashboardHrefs = ["/play/golf", "/play/darts", "/play/padel"];
-    for (const href of dashboardHrefs) {
-      assert.ok(
-        !links.some((link) => link.href === href),
-        `${href} is a noindex Play dashboard`,
-      );
-    }
-
     const golf = links.find((link) => link.label === "Golf");
     const darts = links.find((link) => link.label === "Darts");
+    const padel = links.find((link) => link.label === "Padel");
     assert.ok(golf);
     assert.ok(darts);
-    assert.equal(golf.href, `/play/golf/${VENUE_HUB_PLAY_SEO_CITY}`);
-    assert.equal(darts.href, `/play/darts/${VENUE_HUB_PLAY_SEO_CITY}`);
-    assert.ok(isHubPlayDashboardSport("golf"));
-    assert.ok(isHubPlayDashboardSport("darts"));
+    assert.ok(padel);
+    assert.equal(golf.href, "/play/golf");
+    assert.equal(darts.href, "/play/darts");
+    assert.equal(padel.href, "/watch/padel");
+    assert.equal(isHubPlayDashboardSport("golf"), false);
+    assert.equal(isHubPlayDashboardSport("darts"), false);
 
     for (const link of links) {
       assert.ok(

@@ -52,10 +52,10 @@ export function deepLinkRecovery(input: {
         ? `This ${name} scorecard is missing or the share link expired.`
         : "This scorecard is missing or the share link expired.",
       primary: {
-        href: input.startHref || "/padel/new",
-        label: "Start a new scorecard",
+        href: input.startHref || "/play",
+        label: "Find a place to play",
       },
-      secondary: { href: "/play", label: "Find a place to play" },
+      secondary: { href: "/venues", label: "Browse venues" },
     };
   }
   if (input.kind === "organise") {
@@ -64,7 +64,7 @@ export function deepLinkRecovery(input: {
       title: missingObjectOgTitle("organise", name),
       body: "This game link is invalid, expired, or you were not invited.",
       primary: { href: "/play", label: "Find a game" },
-      secondary: { href: "/padel/organise", label: "Organise a game" },
+      secondary: { href: "/venues", label: "Browse venues" },
     };
   }
   if (input.kind === "event") {
@@ -95,7 +95,7 @@ export function deepLinkRecovery(input: {
     body: name
       ? `${name} may have been removed, or you need to be a member to view it.`
       : "This squad may have been removed, or you need to be a member to view it.",
-    primary: { href: "/teams", label: "Back to teams" },
+    primary: { href: "/?tab=people", label: "People" },
     secondary: { href: "/play", label: "Find a game" },
   };
 }

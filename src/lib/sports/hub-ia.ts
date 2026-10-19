@@ -14,23 +14,20 @@ import {
 import { intentPath } from "../intent/paths.ts";
 import { parseVenueSearch } from "../search/venueSearch.ts";
 import { ALL_SPORTS_SLUG, type SportDefinition } from "./catalog.ts";
-import { HUB_QUICK_START_HREF } from "../play/quick-start.ts";
 import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./hub-redirects.ts";
 
 export { hubEventsHref };
 
 export { HUB_PLAY_DEEP_LINK_REDIRECTS };
 
-export { HUB_QUICK_START_HREF };
-
-export const HUB_START_MATCH_HREF = "/padel/new" as const;
-export const HUB_START_GOLF_HREF = "/golf/new" as const;
-export const HUB_START_DARTS_HREF = "/darts/new" as const;
-export const HUB_CAPTURE_PADEL_HREF = "/padel/capture" as const;
-export const HUB_CAPTURE_GOLF_HREF = "/golf/capture" as const;
-export const HUB_CAPTURE_DARTS_HREF = "/darts/capture" as const;
-export const HUB_ORGANISE_PADEL_HREF = "/padel/organise" as const;
-export const HUB_ORGANISE_GOLF_HREF = "/golf/organise" as const;
+export const HUB_START_MATCH_HREF = "/play/padel" as const;
+export const HUB_START_GOLF_HREF = "/play/golf" as const;
+export const HUB_START_DARTS_HREF = "/play/darts" as const;
+export const HUB_CAPTURE_PADEL_HREF = "/play/padel" as const;
+export const HUB_CAPTURE_GOLF_HREF = "/play/golf" as const;
+export const HUB_CAPTURE_DARTS_HREF = "/play/darts" as const;
+export const HUB_ORGANISE_PADEL_HREF = "/play/padel" as const;
+export const HUB_ORGANISE_GOLF_HREF = "/play/golf" as const;
 export const HUB_BROWSE_FIXTURES_HREF = "/events" as const;
 export const HUB_FIND_VENUES_HREF = "/venues" as const;
 export const HUB_PLAY_HREF = "/play" as const;
@@ -50,26 +47,26 @@ export const HUB_ORGANISE_HUB_SUBTITLE =
   "Find players, team fixtures, tournaments." as const;
 /** Profile HI editor — existing You-tab entry. */
 export const HUB_GOLF_HANDICAP_HREF = "/?tab=you" as const;
-export const HUB_LOBBY_HREF = "/lobby" as const;
+export const HUB_LOBBY_HREF = "/play" as const;
 export const HUB_WATCH_HREF = "/watch" as const;
 export const HUB_GUIDES_HREF = "/guides" as const;
-export const HUB_TRAINING_HREF = "/training" as const;
-export const HUB_INTEGRATIONS_HREF = "/integrations" as const;
-export const HUB_PADEL_HISTORY_HREF = "/padel/history" as const;
-export const HUB_GOLF_HISTORY_HREF = "/golf/history" as const;
-export const HUB_DARTS_HISTORY_HREF = "/darts/history" as const;
+export const HUB_TRAINING_HREF = "/athletes" as const;
+export const HUB_INTEGRATIONS_HREF = "/athletes" as const;
+export const HUB_PADEL_HISTORY_HREF = "/play/padel" as const;
+export const HUB_GOLF_HISTORY_HREF = "/play/golf" as const;
+export const HUB_DARTS_HISTORY_HREF = "/play/darts" as const;
 
 export const HUB_RECENT_LOCK_LIMIT = 8;
 export const HUB_BADGE_STRIP_LIMIT = 3;
 export const HUB_PEOPLE_PREVIEW_LIMIT = 5;
-export const HUB_TEAMS_HREF = "/teams" as const;
-export const HUB_TEAMS_NEW_HREF = "/teams/new" as const;
-export const HUB_TEAM_MATCHES_HREF = "/team-matches" as const;
-export const HUB_TEAM_MATCHES_NEW_HREF = "/team-matches/new" as const;
-export const HUB_TOURNAMENTS_HREF = "/tournaments" as const;
-export const HUB_TOURNAMENTS_NEW_HREF = "/tournaments/new" as const;
-export const HUB_GOLF_TOURS_HREF = "/golf-tours" as const;
-export const HUB_GOLF_TOURS_NEW_HREF = "/golf-tours/new" as const;
+export const HUB_TEAMS_HREF = "/?tab=people" as const;
+export const HUB_TEAMS_NEW_HREF = "/?tab=people" as const;
+export const HUB_TEAM_MATCHES_HREF = "/play" as const;
+export const HUB_TEAM_MATCHES_NEW_HREF = "/play" as const;
+export const HUB_TOURNAMENTS_HREF = "/play" as const;
+export const HUB_TOURNAMENTS_NEW_HREF = "/play" as const;
+export const HUB_GOLF_TOURS_HREF = "/play/golf" as const;
+export const HUB_GOLF_TOURS_NEW_HREF = "/play/golf" as const;
 /** People tab block order — Teams is third under Friends + Communities. */
 export const HUB_PEOPLE_BLOCKS = ["communities", "friends", "teams"] as const;
 /** Thin hosted/invited strip on Play — keep the verb grid the focus. */
@@ -249,78 +246,36 @@ export type HubOrganiseBadgeCounts = {
   tournaments?: number;
 };
 
-/** Location-based who / what / where entry from the Play tab. */
+/** Former quick-start entry. The page now redirects to the Play hub. */
+export const HUB_QUICK_START_HREF = "/play" as const;
 export const HUB_QUICK_START = {
   href: HUB_QUICK_START_HREF,
-  label: "Quick start",
-  description:
-    "Use your location to pick the nearest venue, sport, and friends.",
+  label: "Play",
+  description: "Find a place to play.",
 } as const;
 
 /**
  * Playable live create-flow map. Later sports (pool) plug in here —
  * catalog `play` capability alone is not enough (watch-only stays out).
  */
+/** Live scorecards were removed with the sport API. */
 export const HUB_PLAY_START_BY_SLUG: Readonly<
   Record<string, HubPlayStartSpec>
-> = {
-  padel: {
-    href: HUB_START_MATCH_HREF,
-    label: "Start a match",
-    description: "Live scorecard for a four-ball.",
-  },
-  golf: {
-    href: HUB_START_GOLF_HREF,
-    label: "Start a round",
-    description: "Hole-by-hole scorecard for your group.",
-  },
-  darts: {
-    href: HUB_START_DARTS_HREF,
-    label: "Start a game",
-    description: "501 double-out live scorecard.",
-  },
-};
+> = {};
 
 /**
  * Finished-score capture map. Same playable sports as live start for now.
  */
 export const HUB_PLAY_CAPTURE_BY_SLUG: Readonly<
   Record<string, HubPlayStartSpec>
-> = {
-  padel: {
-    href: HUB_CAPTURE_PADEL_HREF,
-    label: "Capture padel",
-    description: "Enter a finished four-ball score.",
-  },
-  golf: {
-    href: HUB_CAPTURE_GOLF_HREF,
-    label: "Capture golf",
-    description: "Enter a finished round score.",
-  },
-  darts: {
-    href: HUB_CAPTURE_DARTS_HREF,
-    label: "Capture darts",
-    description: "Enter a finished 501 game.",
-  },
-};
+> = {};
 
 /**
  * Organise-ahead map. Same playable sports as live start for v1.
  */
 export const HUB_PLAY_ORGANISE_BY_SLUG: Readonly<
   Record<string, HubPlayStartSpec>
-> = {
-  padel: {
-    href: HUB_ORGANISE_PADEL_HREF,
-    label: "Organise padel",
-    description: "Court, time, and optional friend invites.",
-  },
-  golf: {
-    href: HUB_ORGANISE_GOLF_HREF,
-    label: "Organise golf",
-    description: "Course, time, and optional friend invites.",
-  },
-};
+> = {};
 
 export type HubPlaySportOption = {
   slug: string;
@@ -378,20 +333,30 @@ export function isHubPlayDashboardSport(slug: string): boolean {
 export function hubPlayGridSports(
   sports: readonly SportDefinition[],
 ): SportDefinition[] {
-  return hubPlayableSports(sports);
+  return HUB_PLAY_GRID_SLUGS.flatMap((slug) => {
+    const sport = sports.find((item) => item.slug === slug);
+    return sport ? [sport] : [];
+  });
 }
+
+/** Sport hubs that still render without the removed scorecard API. */
+export const HUB_PLAY_GRID_SLUGS = ["padel", "golf", "darts"] as const;
 
 export function hubPlayGridItems(
   sports: readonly SportDefinition[],
 ): HubPlayGridItem[] {
-  return hubPlayGridSports(sports).map((sport) => ({
-    slug: sport.slug,
-    name: sport.name,
-    href: hubPlaySportHref(sport.slug),
-    description:
-      HUB_PLAY_START_BY_SLUG[sport.slug]?.description ??
-      `Play ${sport.name.toLowerCase()}.`,
-  }));
+  return HUB_PLAY_GRID_SLUGS.flatMap((slug) => {
+    const sport = sports.find((item) => item.slug === slug);
+    if (!sport) return [];
+    return [
+      {
+        slug: sport.slug,
+        name: sport.name,
+        href: hubPlaySportHref(sport.slug),
+        description: `Find a ${sport.noun} to play ${sport.name.toLowerCase()}.`,
+      },
+    ];
+  });
 }
 
 export function hubLobbyHrefForSport(slug: string): string {
@@ -550,16 +515,16 @@ export function hubPlaySpecForVerb(
   return HUB_PLAY_START_BY_SLUG[slug] ?? null;
 }
 
-/** Detail for a hosted or invited organised game. */
+/** Organised-game pages were removed. */
 export function hubOrganisedGameHref(id: string): string {
-  const trimmed = id.trim();
-  return trimmed ? `/play/organised/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
+  void id;
+  return HUB_PLAY_HREF;
 }
 
-/** Join-via-link page. FE builds this from host `inviteToken`. */
+/** Join-via-link page was removed. */
 export function hubOrganisedGameJoinHref(token: string): string {
-  const trimmed = token.trim();
-  return trimmed ? `/play/join/${encodeURIComponent(trimmed)}` : HUB_PLAY_HREF;
+  void token;
+  return HUB_PLAY_HREF;
 }
 
 /** Find players — Looking + open games. */
@@ -575,7 +540,8 @@ export function hubPlayVerbHref(verb: HubPlayVerbOption): string | null {
   return verb.href ?? null;
 }
 
-export function hubPlayVerbOpensModal(_verb: HubPlayVerbOption): boolean {
+export function hubPlayVerbOpensModal(verb: HubPlayVerbOption): boolean {
+  void verb;
   return false;
 }
 

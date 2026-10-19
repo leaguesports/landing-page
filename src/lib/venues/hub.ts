@@ -284,8 +284,7 @@ function playSportDirectoryHref(slug: string): string {
 
 /**
  * Footer directory links — crawlable Watch / Play / city / sport SEO routes only.
- * Never `/venues` catalog query strings, never an inline venue list, and never
- * noindex Play dashboards (`/play/golf`, `/play/darts`, `/play/padel`).
+ * Never `/venues` catalog query strings and never an inline venue list.
  */
 export function venueHubDirectoryLinks(): VenueHubDirectoryLink[] {
   const links: VenueHubDirectoryLink[] = [

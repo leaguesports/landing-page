@@ -7,16 +7,33 @@
  * No new CMS flags — same signals as quick start and the sport catalog.
  */
 
-import { isDartsSportLabel } from "../darts/venue-options.ts";
 import { hasPlayableGolfCourse } from "../golf/course.ts";
-import { isGolfSportLabel } from "../golf/venue-options.ts";
-import { isPadelSportLabel } from "../padel/venue-options.ts";
 import {
   resolveSportSlug,
   SPORT_CATALOG,
   toHubSportSlug,
 } from "../sports/catalog.ts";
-import type { GolfCourseCms } from "../../types/golf-round.ts";
+import type { GolfCourseCms } from "../../types/golf-course.ts";
+
+export function isPadelSportLabel(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v === "padel" || v === "paddle";
+}
+
+export function isGolfSportLabel(value: string): boolean {
+  return value.trim().toLowerCase() === "golf";
+}
+
+export function isDartsSportLabel(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return (
+    v === "darts" ||
+    v === "dart" ||
+    v === "autodarts" ||
+    v === "ar-darts" ||
+    v === "ar darts"
+  );
+}
 
 /** Hub sports whose locked results feed match history and venue leaderboards. */
 export const PLAY_RESULTS_SPORT_SLUGS = ["padel", "golf", "darts"] as const;

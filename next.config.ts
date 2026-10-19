@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 import { getApiProxyRewrites } from "./src/lib/api-origin";
 import { getSecurityHeaders } from "./src/lib/security-headers";
-import { HUB_PLAY_DEEP_LINK_REDIRECTS } from "./src/lib/sports/hub-redirects";
+import {
+  HUB_PLAY_DEEP_LINK_REDIRECTS,
+  REMOVED_SPORT_REDIRECTS,
+} from "./src/lib/sports/hub-redirects";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -69,17 +72,22 @@ const nextConfig: NextConfig = {
       ...HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => ({
         source: row.source,
         destination: row.destination,
-        permanent: false,
+        statusCode: 301,
+      })),
+      ...REMOVED_SPORT_REDIRECTS.map((row) => ({
+        source: row.source,
+        destination: row.destination,
+        statusCode: 301,
       })),
     ];
   },
   async rewrites() {
     // Browser calls `/api/*` on leaguesports.co.za; Vercel reverse-proxies
     // to Railway so OAuth Set-Cookie is first-party. Local Next routes
-    // (`/api/matches/:id/events`, `/api/realtime*`, `/api/venues/claim`,
-    // `/api/venues/search`, `/api/f1-replay*`) are excluded and win via the
-    // App Router filesystem. Explicit match
-    // and venue sources plus a catch-all proxy the rest to Railway.
+    // (`/api/realtime*`, `/api/venues/claim`, `/api/venues/search`,
+    // fixture feed/live, `/api/f1-replay*`) are excluded and win via the
+    // App Router filesystem. Explicit sources plus a catch-all proxy the
+    // rest to Railway.
     // No rewrites when the Railway origin is unset (Preview / local without env).
     return {
       beforeFiles: [

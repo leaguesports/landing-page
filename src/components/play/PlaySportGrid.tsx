@@ -22,7 +22,7 @@ export function PlaySportGrid({ items }: PlaySportGridProps) {
         Pick a sport
       </h1>
       <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-400">
-        Start a live scorecard, capture a finished game, or play with others.
+        Find a court, course, or board near you.
       </p>
 
       {items.length > 0 ? (

@@ -1,20 +1,15 @@
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
 import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
-import { toGolfVenueOption } from "@/lib/golf/venue-options";
 import { isVenueClaimable } from "@/lib/venues/contact-cta";
 import { scoreboardHeroImage } from "@/lib/venues/gallery";
 import {
   venueContactLinks,
-  venueCourtFacility,
   venueHoursLine,
   venuePlayPlace,
-  venueUsesPadelScoreboard,
   type VenueContactLink,
 } from "@/lib/venues/page-template";
-import { padelNewHref, venueQuickStartActivities } from "@/lib/venues/quick-start";
 import {
   venueShowsLeaderboards,
-  venueShowsMatchHistory,
   venueSupportsPlayResults,
 } from "@/lib/venues/play-chrome";
 import { isRemoteVenuePhoto, sanityImageUrl } from "@/lib/venues/photo";
@@ -29,13 +24,11 @@ import {
   venueProfileKind,
   venueProfileLede,
 } from "@/lib/venues/profile-seo";
-import type { VenueLockedResult } from "@/lib/venues/locked-results";
 import type { WatchVenueWeek } from "@/lib/venues/watch-week";
 import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
 import { hasVenueCoordinates, type VenueDetail } from "@/services/venues";
 import type { NearbyVenueCard } from "@/services/venues";
-import { SportIcon } from "@/components/icons/sports";
-import { ChevronRight, Globe, Mail, MapPin, MessageCircle, Phone, Star, Target } from "lucide-react";
+import { ChevronRight, Globe, Mail, MapPin, MessageCircle, Phone, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -44,7 +37,6 @@ import { VenueFixtureRows } from "./VenueFixtureRows";
 import { VenueFollowButton } from "./VenueFollowButton";
 import { VenueFriendsPlayed } from "./VenueFriendsPlayed";
 import { VenueMap } from "./VenueMap";
-import { VenueMatchHistory } from "./VenueMatchHistory";
 import { VenueSectionNav } from "./VenueSectionNav";
 
 const FILLED =
@@ -53,11 +45,6 @@ const OUTLINE =
   "inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-950";
 const ICON =
   "inline-flex h-11 w-11 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-900 transition-colors hover:border-zinc-950";
-
-function StartSportIcon({ sportSlug }: { sportSlug: string }) {
-  if (sportSlug === "darts") return <Target className="h-6 w-6" aria-hidden />;
-  return <SportIcon sportSlug={sportSlug} size={24} color="currentColor" />;
-}
 
 function ContactIcon({ kind }: { kind: VenueContactLink["kind"] }) {
   const className = "h-4 w-4";
@@ -182,7 +169,6 @@ export async function VenueProfile({
   jsonLd,
   week,
   nearby,
-  results,
   initialBoard,
   initialWindow,
 }: {
@@ -191,7 +177,6 @@ export async function VenueProfile({
   jsonLd: unknown;
   week: WatchVenueWeek | null;
   nearby: NearbyVenueCard[];
-  results: VenueLockedResult[];
   initialBoard?: string;
   initialWindow?: string;
 }) {
@@ -206,41 +191,21 @@ export async function VenueProfile({
   const hours = venueHoursLine(venue);
   const crumbs = venueProfileCrumbs(venue);
   const contacts = venueContactLinks(venue);
-  const activities = venueQuickStartActivities(toGolfVenueOption(venue));
-  const startLinks = activities.map((activity) => ({
-    href: activity.href,
-    label: activity.cta,
-    name: activity.name,
-    description: activity.description,
-    sportSlug: activity.sportSlug,
-  }));
-  if (
-    venueUsesPadelScoreboard(venue) &&
-    !startLinks.some((link) => link.href.includes("/padel/"))
-  ) {
-    startLinks.unshift({
-      href: padelNewHref(venue.slug),
-      label: "Start padel match",
-      name: "Padel",
-      description: "Open a live scorecard at this court.",
-      sportSlug: "padel",
-    });
-  }
-  const primaryStart = kind === "play" || kind === "hybrid" ? startLinks[0] : undefined;
   const showWatch = kind === "watch" || kind === "hybrid";
-  const showPlay = (kind === "play" || kind === "hybrid") && (primaryStart || results.length > 0);
-  const showBook = contacts.length > 0 || (showPlay && startLinks.length > 0);
-  const showHistory = showPlay && venueShowsMatchHistory(venue);
-  const showBoards = showPlay && venueShowsLeaderboards(venue);
-  const primarySport = primaryStart?.sportSlug ?? null;
+  const showBook = contacts.length > 0;
+  const showBoards = venueShowsLeaderboards(venue);
+  const primarySport =
+    venueSupportsPlayResults(venue)
+      ? (venue.sports ?? []).find((sport) =>
+          ["padel", "golf", "darts"].includes((sport.slug ?? "").toLowerCase()),
+        )?.slug ?? null
+      : null;
   const sectionTabs = [
     about.length > 0 ? { id: "about", label: "About" } : null,
     showBook ? { id: "book", label: "Book" } : null,
-    showPlay ? { id: "play", label: "Play" } : null,
     showWatch && week ? { id: "fixtures", label: "Fixtures" } : null,
     faqs.length > 0 ? { id: "questions", label: "Questions" } : null,
     sports.length > 0 ? { id: "sports", label: "Sports" } : null,
-    showHistory ? { id: "match-history", label: "Results" } : null,
     venueSupportsPlayResults(venue) ? { id: "friends-played", label: "Friends" } : null,
     showBoards ? { id: "leaderboards", label: "Boards" } : null,
     nearby.length > 0 ? { id: "nearby", label: "Nearby" } : null,
@@ -353,33 +318,6 @@ export async function VenueProfile({
           {showBook ? (
             <Block id="book" title={headings.book}>
               <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
-                {showPlay
-                  ? startLinks.map((link) => {
-                      const title = link.sportSlug
-                        ? link.sportSlug
-                            .replace(/-/g, " ")
-                            .replace(/\b\w/g, (letter) => letter.toUpperCase())
-                        : link.label;
-                      return (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="flex items-center justify-between gap-4 py-4 transition-colors hover:text-emerald-800"
-                        >
-                          <span className="min-w-0">
-                            <span className="block text-base font-semibold text-zinc-950">
-                              {title}
-                            </span>
-                            <span className="mt-0.5 block text-sm leading-relaxed text-zinc-600">
-                              {link.label} at {headings.shortName}.
-                            </span>
-                          </span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
-                        </Link>
-                      </li>
-                      );
-                    })
-                  : null}
                 {contacts.map((link) => {
                   const title =
                     link.kind === "phone"
@@ -418,67 +356,6 @@ export async function VenueProfile({
                   );
                 })}
               </ul>
-            </Block>
-          ) : null}
-
-          {showPlay ? (
-            <Block id="play" title={headings.play}>
-              {startLinks.length > 0 ? (
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {startLinks.map((link) => {
-                    const detail =
-                      link.sportSlug === "padel"
-                        ? venueCourtFacility(venue.description)
-                        : null;
-                    return (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="group flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-950"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-950">
-                              <StartSportIcon sportSlug={link.sportSlug} />
-                            </span>
-                            <span className="font-display text-2xl leading-none tracking-wide text-zinc-950 translate-y-px">
-                              {link.name}
-                            </span>
-                          </span>
-                          {detail ? (
-                            <span className="mt-1 text-xs font-medium text-zinc-500">{detail}</span>
-                          ) : null}
-                          <span className="mt-2 text-sm leading-snug text-zinc-600">
-                            {link.description}
-                          </span>
-                          <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-semibold text-zinc-950">
-                            {link.label}
-                            <ChevronRight
-                              className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                              aria-hidden
-                            />
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
-              {results.length > 0 ? (
-                <ul className="mt-4 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200">
-                  {results.map((result) => (
-                    <li key={result.id}>
-                      <Link href={result.href} className="block px-4 py-3.5 hover:bg-zinc-50">
-                        {result.when ? (
-                          <span className="block text-xs font-semibold uppercase tracking-wider text-emerald-800">
-                            {result.when}
-                          </span>
-                        ) : null}
-                        <span className="mt-1 block text-sm text-zinc-950">{result.summary}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
             </Block>
           ) : null}
 
@@ -574,21 +451,12 @@ export async function VenueProfile({
           </div>
           </div>
 
-        {showHistory ? (
-          <VenueMatchHistory
-            venueName={venue.name}
-            venueCmsId={venue._id}
-            startHref={primaryStart?.href}
-          />
-        ) : null}
-
         {venueSupportsPlayResults(venue) ? (
           <VenueFriendsPlayed
             venueId={venue._id}
             venueName={venue.name}
             venueSlug={venue.slug}
             primarySport={primarySport}
-            startHref={primaryStart?.href}
           />
         ) : null}
 

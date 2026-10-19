@@ -1,7 +1,6 @@
 import { eventsListHref, parseEventsSportParam } from "../events/scope.ts";
 import { intentOrDirectoryHref, intentPath } from "../intent/paths.ts";
 import { parseEventsCityParam } from "../sports/events-city.ts";
-import { padelNewHref, golfNewHref, dartsNewHref } from "../venues/quick-start.ts";
 import type { CtaSlot, PageType } from "../analytics/track.ts";
 
 export const SCORECARD_SPORTS = ["padel", "golf", "darts"] as const;
@@ -87,9 +86,16 @@ function appendParams(
   return serialized ? `${base}?${serialized}` : base;
 }
 
-/** Deep-link into a create / organise flow with venue, sport, and city prefills. */
+function sportPlayHref(sport: string): string {
+  if (sport === "golf") return "/play/golf";
+  if (sport === "darts") return "/play/darts";
+  if (sport === "padel") return "/play/padel";
+  return "/play";
+}
+
+/** Deep-link into the surviving sport hub, with venue, sport, and city prefills. */
 export function createFlowHref(
-  kind: "start" | "organise",
+  _kind: "start" | "organise",
   input: {
     sport?: string | null;
     venue?: string | null;
@@ -97,19 +103,8 @@ export function createFlowHref(
   } = {},
 ): string {
   const sport = input.sport?.trim().toLowerCase() ?? "";
-  let path = "/padel/new";
-  if (kind === "organise") {
-    path = sport === "golf" ? "/golf/organise" : "/padel/organise";
-  } else if (sport === "golf") {
-    path = golfNewHref(input.venue);
-  } else if (sport === "darts") {
-    path = dartsNewHref(input.venue);
-  } else {
-    path = padelNewHref(input.venue);
-  }
-
-  return appendParams(path, {
-    venue: kind === "organise" ? input.venue : undefined,
+  return appendParams(sportPlayHref(sport), {
+    venue: input.venue,
     sport: sport || undefined,
     city: input.city,
   });

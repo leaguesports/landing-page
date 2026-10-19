@@ -1,6 +1,6 @@
 import type { TypedObject } from "@portabletext/types";
 import type { SanityImageSource } from "@sanity/image-url";
-import type { GolfCourseCms } from "@/types/golf-round";
+import type { GolfCourseCms } from "@/types/golf-course";
 import {
   mapVenueGallery,
   type VenueGalleryImage,

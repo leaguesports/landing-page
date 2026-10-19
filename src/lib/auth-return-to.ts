@@ -3,7 +3,7 @@ const AUTH_RETURN_TO_KEY = "ls_auth_return_to";
 /**
  * Relative path + query for OAuth returnTo.
  * Prefer this over `usePathname()` alone — pathname drops `search`, which
- * breaks query-driven screens (e.g. `/padel/new?venue=…`).
+ * breaks query-driven screens (e.g. `/play/padel?city=…`).
  * Pass a relative value only; do not use `window.location.href`.
  */
 export function relativeAuthReturnTo(

@@ -69,36 +69,31 @@ describe("mergeHubSports", () => {
 });
 
 describe("utilities", () => {
-  it("gives padel a scorecard start plus court and watch links", () => {
+  it("gives padel court and watch links", () => {
     const padel = SPORT_CATALOG.find((sport) => sport.slug === "padel");
     assert.ok(padel);
     const hrefs = utilitiesForSport(padel).map((item) => item.href);
-    assert.ok(hrefs.includes("/padel/new"));
-    assert.ok(hrefs.includes("/padel/history"));
-    assert.ok(hrefs.includes("/training"));
+    assert.equal(hrefs.includes("/padel/new"), false);
+    assert.equal(hrefs.includes("/training"), false);
     assert.ok(hrefs.includes("/play/padel"));
     assert.ok(hrefs.includes("/watch/padel"));
   });
 
-  it("gives golf grouped activities: round, course, simulator, and driving range", () => {
+  it("gives golf grouped activities: course, simulator, and driving range", () => {
     const golf = SPORT_CATALOG.find((sport) => sport.slug === "golf");
     assert.ok(golf);
-    assert.ok(golf.capabilities.includes("scorecard"));
-    assert.ok(golf.activities && golf.activities.length >= 5);
+    assert.equal(golf.capabilities.includes("scorecard"), false);
+    assert.equal(golf.activities?.length, 3);
     const utilities = utilitiesForSport(golf);
     const hrefs = utilities.map((item) => item.href);
-    assert.ok(hrefs.includes("/golf/new"));
-    assert.ok(hrefs.includes("/golf/history"));
+    assert.equal(hrefs.includes("/golf/new"), false);
+    assert.equal(hrefs.includes("/golf/history"), false);
     assert.ok(hrefs.includes("/play/golf"));
     assert.ok(hrefs.includes("/play/indoor-golf"));
     assert.ok(hrefs.includes("/play/driving-range"));
     assert.equal(
-      utilities.some((item) => item.href === "/padel/new"),
+      utilities.some((item) => item.kind === "scorecard"),
       false,
-    );
-    assert.equal(
-      utilities.find((item) => item.kind === "scorecard")?.title,
-      "Start a round",
     );
     assert.equal(
       utilities.find((item) => item.href === "/play/indoor-golf")?.title,
@@ -128,7 +123,7 @@ describe("utilities", () => {
       "Find a track",
     );
     assert.equal(
-      utilities.some((item) => item.href === "/padel/new"),
+      utilities.some((item) => item.href === "/play/padel"),
       false,
     );
     assert.equal(
@@ -164,17 +159,17 @@ describe("utilities", () => {
     const hrefs = utilities.map((item) => item.href);
     assert.ok(hrefs.includes("/motorsport/f1/calendar"));
     assert.equal(
-      utilities.some((item) => item.href === "/padel/new"),
+      utilities.some((item) => item.href === "/play/padel"),
       false,
     );
   });
 
-  it("keeps the all-sports mix spanning play, watch, padel, and golf", () => {
+  it("keeps the all-sports mix spanning play and watch", () => {
     const utilities = utilitiesForActiveSport(ALL_SPORTS_SLUG, SPORT_CATALOG);
     const hrefs = utilities.map((item) => item.href);
-    assert.ok(hrefs.includes("/padel/new"));
-    assert.ok(hrefs.includes("/golf/new"));
-    assert.ok(hrefs.includes("/training"));
+    assert.equal(hrefs.includes("/padel/new"), false);
+    assert.equal(hrefs.includes("/golf/new"), false);
+    assert.equal(hrefs.includes("/training"), false);
     assert.ok(hrefs.includes("/play"));
     assert.ok(hrefs.includes("/watch"));
   });

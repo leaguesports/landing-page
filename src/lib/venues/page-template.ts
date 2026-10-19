@@ -11,15 +11,12 @@
  */
 
 import { hasPlayableGolfCourse } from "../golf/course.ts";
-import { isGolfSportLabel } from "../golf/venue-options.ts";
-import { isDartsSportLabel } from "../darts/venue-options.ts";
-import { isPadelSportLabel } from "../padel/venue-options.ts";
 import {
   resolveSportSlug,
   SPORT_CATALOG,
   toHubSportSlug,
 } from "../sports/catalog.ts";
-import type { GolfCourseCms } from "../../types/golf-round.ts";
+import type { GolfCourseCms } from "../../types/golf-course.ts";
 import {
   venueAmenityShown,
   venueSupportsWatch,
@@ -27,10 +24,12 @@ import {
   type VenueWatchChromeInput,
 } from "./watch-chrome.ts";
 import {
+  isDartsSportLabel,
+  isGolfSportLabel,
+  isPadelSportLabel,
   venuePlaySportLabels,
   type VenuePlayChromeInput,
 } from "./play-chrome.ts";
-import { venueQuickStartActivities } from "./quick-start.ts";
 import {
   buildVenueWhatsAppUrl,
   normalizePhoneForWhatsApp,
@@ -582,19 +581,8 @@ export function venueHoursLine(venue: object): string | null {
  * Match create with this venue and its one sport prefilled.
  * Null when that sport has no scorecard (karting, climbing).
  */
+/** Scorecard start links were removed with the sport routes. */
 export function venueStartMatchHref(venue: VenueTemplateInput): string | null {
-  const sports = venueDistinctPlaySports(venue);
-  if (sports.length !== 1) return null;
-  const sport = sports[0]!;
-  const slug = venue.slug?.trim() ?? "";
-  if (!slug) return null;
-  const activities = venueQuickStartActivities({
-    slug,
-    sports: venuePlaySportLabels(venue),
-    golfCourse: venue.golfCourse ?? null,
-  });
-  const activity =
-    activities.find((item) => item.sportSlug === sport.key) ?? null;
-  if (!activity?.href.includes("venue=")) return null;
-  return activity.href;
+  void venue;
+  return null;
 }

@@ -1,6 +1,5 @@
 import { missingObjectOgTitle } from "@/lib/conversion/deep-links";
 import { sanityImageUrl } from "@/lib/venues/photo";
-import { PLAY_RESULTS_SPORT_SLUGS } from "@/lib/venues/play-chrome";
 import {
   venueProfileDescription,
   venueProfileKeywords,
@@ -8,8 +7,6 @@ import {
   venueProfileTitle,
 } from "@/lib/venues/profile-seo";
 import { loadEventKickoffs } from "@/lib/venues/event-kickoffs";
-import { lookupVenueLockedResults } from "@/lib/venues/locked-results";
-import { venueDistinctPlaySports } from "@/lib/venues/page-template";
 import {
   buildWatchVenueWeek,
   screeningListingDays,
@@ -134,11 +131,8 @@ export default async function VenuePage({ params, searchParams }: Props) {
   const mapsSearchUrl = buildMapsUrl(venue);
   const pageUrl = `${getBaseUrl()}/venues/${venue.slug}`;
   const showWatch = kind === "watch" || kind === "hybrid";
-  const playSports = venueDistinctPlaySports(venue).filter((sport) =>
-    (PLAY_RESULTS_SPORT_SLUGS as readonly string[]).includes(sport.key),
-  );
 
-  const [week, nearby, resultLists] = await Promise.all([
+  const [week, nearby] = await Promise.all([
     showWatch
       ? (async () => {
           const days = screeningListingDays(venue.upcoming_screenings);
@@ -154,7 +148,6 @@ export default async function VenuePage({ params, searchParams }: Props) {
       city: venue.address.city,
       suburb: venue.address.suburb,
     }),
-    Promise.all(playSports.map((sport) => lookupVenueLockedResults(venue._id, sport.key))),
   ]);
 
   return (
@@ -164,7 +157,6 @@ export default async function VenuePage({ params, searchParams }: Props) {
       jsonLd={buildVenueJsonLd(venue, pageUrl)}
       week={week}
       nearby={nearby}
-      results={resultLists.flat()}
       initialBoard={firstQuery(query.board)}
       initialWindow={firstQuery(query.window)}
     />
