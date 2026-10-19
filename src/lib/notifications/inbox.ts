@@ -122,8 +122,9 @@ export function isOrganisedGameInvite(
  * `/api/me/notifications`; the click target is the Play hub.
  */
 export function organisedGameInviteHref(
-  _payload: Pick<OrganisedGameInvitePayload, "organisedGameId">,
+  payload: Pick<OrganisedGameInvitePayload, "organisedGameId">,
 ): string {
+  void payload;
   return HUB_PLAY_HREF;
 }
 

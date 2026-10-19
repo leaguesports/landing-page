@@ -516,12 +516,14 @@ export function hubPlaySpecForVerb(
 }
 
 /** Organised-game pages were removed. */
-export function hubOrganisedGameHref(_id: string): string {
+export function hubOrganisedGameHref(id: string): string {
+  void id;
   return HUB_PLAY_HREF;
 }
 
 /** Join-via-link page was removed. */
-export function hubOrganisedGameJoinHref(_token: string): string {
+export function hubOrganisedGameJoinHref(token: string): string {
+  void token;
   return HUB_PLAY_HREF;
 }
 
@@ -538,7 +540,8 @@ export function hubPlayVerbHref(verb: HubPlayVerbOption): string | null {
   return verb.href ?? null;
 }
 
-export function hubPlayVerbOpensModal(_verb: HubPlayVerbOption): boolean {
+export function hubPlayVerbOpensModal(verb: HubPlayVerbOption): boolean {
+  void verb;
   return false;
 }
 

@@ -582,6 +582,7 @@ export function venueHoursLine(venue: object): string | null {
  * Null when that sport has no scorecard (karting, climbing).
  */
 /** Scorecard start links were removed with the sport routes. */
-export function venueStartMatchHref(_venue: VenueTemplateInput): string | null {
+export function venueStartMatchHref(venue: VenueTemplateInput): string | null {
+  void venue;
   return null;
 }
