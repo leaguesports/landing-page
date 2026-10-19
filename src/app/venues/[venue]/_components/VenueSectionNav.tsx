@@ -1,19 +1,16 @@
 "use client";
 
 import {
-  Award,
   CalendarCheck,
   CircleHelp,
   History,
   Info,
-  MapPin,
   List,
   Medal,
   Play,
   Radio,
   Trophy,
   Tv,
-  Users,
   CalendarDays,
   type LucideIcon,
 } from "lucide-react";
@@ -27,9 +24,6 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   sports: Medal,
   questions: CircleHelp,
   "match-history": History,
-  "friends-played": Users,
-  leaderboards: Award,
-  nearby: MapPin,
   watch: Tv,
   "where-to-watch": Tv,
   timetable: CalendarDays,

@@ -5,7 +5,6 @@ import { FriendsPanel } from "@/components/home/FriendsPanel";
 import { HubBottomNav } from "@/components/hub/HubBottomNav";
 import { FriendsSnapshotSeed } from "@/components/providers/AppSessionProvider";
 import { GolfHandicapIndexField } from "@/components/golf/GolfHandicapIndexField";
-import { VenueLeaderboardPreference } from "@/components/venue-leaderboards/VenueLeaderboardPreference";
 import type { AuthUser } from "@/lib/api-client";
 import {
   athleteDisplayName,
@@ -732,11 +731,7 @@ export function SportsHub({
                     </div>
                   </div>
 
-                  <div className="mb-8">
-                    <GolfHandicapIndexField />
-                  </div>
-
-                  <VenueLeaderboardPreference />
+                  <GolfHandicapIndexField />
               </div>
             </section>
           </div>

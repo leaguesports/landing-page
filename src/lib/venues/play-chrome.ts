@@ -1,9 +1,9 @@
 /**
  * Venue-detail Play chrome (issue #257).
  *
- * Match history, leaderboards, and friends-played shells are the padel /
- * golf / darts product. Climbing, karting, and other play sports keep their
- * sport chips, but not locked padel/golf/darts boards or fixture CTAs.
+ * Match history is the padel / golf / darts product. Climbing, karting, and
+ * other play sports keep their sport chips, but not locked padel/golf/darts
+ * history or fixture CTAs.
  * No new CMS flags — same signals as quick start and the sport catalog.
  */
 
@@ -35,7 +35,7 @@ export function isDartsSportLabel(value: string): boolean {
   );
 }
 
-/** Hub sports whose locked results feed match history and venue leaderboards. */
+/** Hub sports whose locked results feed match history. */
 export const PLAY_RESULTS_SPORT_SLUGS = ["padel", "golf", "darts"] as const;
 
 export type PlayResultsSportSlug = (typeof PLAY_RESULTS_SPORT_SLUGS)[number];
@@ -105,8 +105,8 @@ export function isPlayResultsSportLabel(value: string): boolean {
 }
 
 /**
- * True when this venue hosts a sport with match-history and leaderboard
- * support: a linked padel, golf, or darts Play sport, or a playable CMS
+ * True when this venue hosts a sport with match-history support: a linked
+ * padel, golf, or darts Play sport, or a playable CMS
  * golf course (the same signal as starting a round).
  */
 export function venueSupportsPlayResults(
@@ -117,10 +117,6 @@ export function venueSupportsPlayResults(
 }
 
 export function venueShowsMatchHistory(venue: VenuePlayChromeInput): boolean {
-  return venueSupportsPlayResults(venue);
-}
-
-export function venueShowsLeaderboards(venue: VenuePlayChromeInput): boolean {
   return venueSupportsPlayResults(venue);
 }
 
