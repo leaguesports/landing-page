@@ -249,7 +249,7 @@ export function venueProfileLede(venue: VenueProfileInput): string {
   return joinSentences([
     `${name}${where} is a sports venue on LeagueSports`,
     amenities,
-    "Address, facilities, and nearby venues are on this page",
+    "Address, facilities, and directions are on this page",
   ]);
 }
 
@@ -459,7 +459,6 @@ export function venueProfileHeadings(venue: VenueProfileInput): {
   play: string;
   book: string;
   location: string;
-  nearby: string;
   sports: string;
   faq: string;
 } {
@@ -477,7 +476,6 @@ export function venueProfileHeadings(venue: VenueProfileInput): {
     play: `Play at ${shortName}`,
     book: `Book at ${shortName}`,
     location: `Where to find ${shortName}`,
-    nearby: `Venues near ${shortName}`,
     sports:
       kind === "watch"
         ? `Sports on at ${shortName}`

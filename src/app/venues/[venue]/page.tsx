@@ -15,7 +15,6 @@ import { ensureVenueFromCms } from "@/lib/venues/appVenueApi";
 import { getUpcomingFixtures } from "@/services/events";
 import {
   getVenueBySlug,
-  listNearbyVenues,
   resolveVenueImage,
   type VenueDetail,
 } from "@/services/venues";
@@ -28,7 +27,6 @@ import { VenueProfile } from "./_components/VenueProfile";
 
 type Props = {
   params: Promise<{ venue: string }>;
-  searchParams: Promise<{ board?: string | string[]; window?: string | string[] }>;
 };
 
 function getBaseUrl(): string {
@@ -56,10 +54,6 @@ function buildMapsUrl(venue: VenueDetail): string {
     .join(", ");
 
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query || venue.name)}`;
-}
-
-function firstQuery(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 export async function generateMetadata({
@@ -107,9 +101,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function VenuePage({ params, searchParams }: Props) {
+export default async function VenuePage({ params }: Props) {
   const { venue: venueSlug } = await params;
-  const query = await searchParams;
   const venue = await getVenueBySlug(venueSlug);
   if (!venue) {
     return (
@@ -132,23 +125,16 @@ export default async function VenuePage({ params, searchParams }: Props) {
   const pageUrl = `${getBaseUrl()}/venues/${venue.slug}`;
   const showWatch = kind === "watch" || kind === "hybrid";
 
-  const [week, nearby] = await Promise.all([
-    showWatch
-      ? (async () => {
-          const days = screeningListingDays(venue.upcoming_screenings);
-          const [fixtures, events] = await Promise.all([
-            getUpcomingFixtures({ limit: 48 }),
-            loadEventKickoffs(days),
-          ]);
-          return buildWatchVenueWeek({ venue, fixtures, events });
-        })()
-      : Promise.resolve(null),
-    listNearbyVenues({
-      slug: venue.slug,
-      city: venue.address.city,
-      suburb: venue.address.suburb,
-    }),
-  ]);
+  const week = showWatch
+    ? await (async () => {
+        const days = screeningListingDays(venue.upcoming_screenings);
+        const [fixtures, events] = await Promise.all([
+          getUpcomingFixtures({ limit: 48 }),
+          loadEventKickoffs(days),
+        ]);
+        return buildWatchVenueWeek({ venue, fixtures, events });
+      })()
+    : null;
 
   return (
     <VenueProfile
@@ -156,9 +142,6 @@ export default async function VenuePage({ params, searchParams }: Props) {
       mapsUrl={mapsSearchUrl}
       jsonLd={buildVenueJsonLd(venue, pageUrl)}
       week={week}
-      nearby={nearby}
-      initialBoard={firstQuery(query.board)}
-      initialWindow={firstQuery(query.window)}
     />
   );
 }

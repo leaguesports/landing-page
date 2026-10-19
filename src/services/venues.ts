@@ -1,10 +1,5 @@
 import { CITY_DIRECTORY, SEARCH_SPORTS } from "@/data/cities";
 import type { VenueSearchIntent } from "@/lib/search/venueSearch";
-import {
-  mapNearbyVenueRows,
-  NEARBY_VENUES_QUERY,
-  type NearbyVenueCard,
-} from "@/lib/venues/nearby";
 import { sanityClient } from "@/sanity/client";
 import type { GolfCourseCms } from "@/types/golf-course";
 import {
@@ -18,7 +13,6 @@ import {
   type VenueRow,
 } from "./venueQuery";
 
-export type { NearbyVenueCard } from "@/lib/venues/nearby";
 export type {
   Venue,
   VenueDetail,
@@ -174,26 +168,6 @@ export async function listVenueFilterOptions(): Promise<{
     };
   } catch {
     return { sports: staticSports, locations: staticLocations };
-  }
-}
-
-export async function listNearbyVenues(input: {
-  slug: string;
-  city?: string | null;
-  suburb?: string | null;
-}): Promise<NearbyVenueCard[]> {
-  const slug = input.slug.trim();
-  const city = input.city?.trim() ?? "";
-  const suburb = input.suburb?.trim() ?? "";
-  if (!slug || (!city && !suburb)) return [];
-
-  try {
-    const rows = await sanityClient.fetch<
-      { name?: unknown; slug?: unknown; suburb?: unknown; city?: unknown; rating?: unknown }[]
-    >(NEARBY_VENUES_QUERY, { slug, city, suburb });
-    return mapNearbyVenueRows(rows);
-  } catch {
-    return [];
   }
 }
 

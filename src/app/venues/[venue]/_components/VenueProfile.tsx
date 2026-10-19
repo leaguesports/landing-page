@@ -1,5 +1,4 @@
 import { DeepLinkLand } from "@/components/conversion/DeepLinkLand";
-import { VenueLeaderboardSection } from "@/components/venue-leaderboards/VenueLeaderboardSection";
 import { isVenueClaimable } from "@/lib/venues/contact-cta";
 import { scoreboardHeroImage } from "@/lib/venues/gallery";
 import {
@@ -8,10 +7,6 @@ import {
   venuePlayPlace,
   type VenueContactLink,
 } from "@/lib/venues/page-template";
-import {
-  venueShowsLeaderboards,
-  venueSupportsPlayResults,
-} from "@/lib/venues/play-chrome";
 import { isRemoteVenuePhoto, sanityImageUrl } from "@/lib/venues/photo";
 import {
   venueDirectoryLinks,
@@ -25,9 +20,7 @@ import {
   venueProfileLede,
 } from "@/lib/venues/profile-seo";
 import type { WatchVenueWeek } from "@/lib/venues/watch-week";
-import { venueLeaderboardPlayHref } from "@/lib/venue-leaderboards/boards";
 import { hasVenueCoordinates, type VenueDetail } from "@/services/venues";
-import type { NearbyVenueCard } from "@/services/venues";
 import { ChevronRight, Globe, Mail, MapPin, MessageCircle, Phone, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,7 +28,6 @@ import type { ReactNode } from "react";
 import { VenueClaimBar } from "./VenueClaimBar";
 import { VenueFixtureRows } from "./VenueFixtureRows";
 import { VenueFollowButton } from "./VenueFollowButton";
-import { VenueFriendsPlayed } from "./VenueFriendsPlayed";
 import { VenueMap } from "./VenueMap";
 import { VenueSectionNav } from "./VenueSectionNav";
 
@@ -168,17 +160,11 @@ export async function VenueProfile({
   mapsUrl,
   jsonLd,
   week,
-  nearby,
-  initialBoard,
-  initialWindow,
 }: {
   venue: VenueDetail;
   mapsUrl: string;
   jsonLd: unknown;
   week: WatchVenueWeek | null;
-  nearby: NearbyVenueCard[];
-  initialBoard?: string;
-  initialWindow?: string;
 }) {
   const kind = venueProfileKind(venue);
   const headings = venueProfileHeadings(venue);
@@ -193,22 +179,12 @@ export async function VenueProfile({
   const contacts = venueContactLinks(venue);
   const showWatch = kind === "watch" || kind === "hybrid";
   const showBook = contacts.length > 0;
-  const showBoards = venueShowsLeaderboards(venue);
-  const primarySport =
-    venueSupportsPlayResults(venue)
-      ? (venue.sports ?? []).find((sport) =>
-          ["padel", "golf", "darts"].includes((sport.slug ?? "").toLowerCase()),
-        )?.slug ?? null
-      : null;
   const sectionTabs = [
     about.length > 0 ? { id: "about", label: "About" } : null,
     showBook ? { id: "book", label: "Book" } : null,
     showWatch && week ? { id: "fixtures", label: "Fixtures" } : null,
     faqs.length > 0 ? { id: "questions", label: "Questions" } : null,
     sports.length > 0 ? { id: "sports", label: "Sports" } : null,
-    venueSupportsPlayResults(venue) ? { id: "friends-played", label: "Friends" } : null,
-    showBoards ? { id: "leaderboards", label: "Boards" } : null,
-    nearby.length > 0 ? { id: "nearby", label: "Nearby" } : null,
   ].filter((tab): tab is { id: string; label: string } => tab !== null);
 
   return (
@@ -450,64 +426,6 @@ export async function VenueProfile({
           </aside>
           </div>
           </div>
-
-        {venueSupportsPlayResults(venue) ? (
-          <VenueFriendsPlayed
-            venueId={venue._id}
-            venueName={venue.name}
-            venueSlug={venue.slug}
-            primarySport={primarySport}
-          />
-        ) : null}
-
-        {showBoards ? (
-          <VenueLeaderboardSection
-            venueId={venue._id}
-            venueName={venue.name}
-            playHref={venueLeaderboardPlayHref(primarySport)}
-            sport={primarySport}
-            initialBoard={initialBoard}
-            initialWindow={initialWindow}
-          />
-        ) : null}
-
-        {nearby.length > 0 ? (
-          <section id="nearby" className="scroll-mt-40 border-t border-zinc-200 py-12 sm:py-16">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <h2
-                id="nearby-title"
-                className="font-display text-3xl tracking-wide text-zinc-950 sm:text-4xl"
-              >
-                {headings.nearby}
-              </h2>
-              <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {nearby.map((item) => {
-                  const itemPlace = [item.suburb, item.city].filter(Boolean).join(", ");
-                  return (
-                    <li key={item.slug}>
-                      <Link
-                        href={`/venues/${item.slug}`}
-                        className="block rounded-2xl border border-zinc-200 px-4 py-3.5 transition-colors hover:border-zinc-950"
-                      >
-                        <span className="block text-sm font-semibold text-zinc-950">{item.name}</span>
-                        {itemPlace ? (
-                          <span className="mt-0.5 block text-xs text-zinc-500">
-                            {itemPlace}
-                            {typeof item.rating === "number" ? ` · ${item.rating.toFixed(1)}` : ""}
-                          </span>
-                        ) : typeof item.rating === "number" ? (
-                          <span className="mt-0.5 block text-xs text-zinc-500">
-                            {item.rating.toFixed(1)}
-                          </span>
-                        ) : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </section>
-        ) : null}
 
         {isVenueClaimable(venue) ? (
           <VenueClaimBar venueName={venue.name} venueSlug={venue.slug} />

@@ -8,7 +8,6 @@
  */
 
 import {
-  venueShowsLeaderboards,
   venueShowsMatchHistory,
   venueShowsSportsSection,
   type VenuePlayChromeInput,
@@ -191,9 +190,6 @@ export function venueDetailNavLinks(input: {
   }
   if (venueShowsMatchHistory(input.venue)) {
     links.push({ label: "Match history", href: "#match-history" });
-  }
-  if (venueShowsLeaderboards(input.venue)) {
-    links.push({ label: "Leaderboards", href: "#leaderboards" });
   }
   if (venueShowsSportsSection(input.venue)) {
     links.push({ label: "Sports", href: "#sports" });

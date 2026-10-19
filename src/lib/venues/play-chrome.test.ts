@@ -6,7 +6,6 @@ import {
   isFixtureSportLabel,
   isPlayResultsSportLabel,
   venueShowsFindFixtures,
-  venueShowsLeaderboards,
   venueShowsMatchHistory,
   venueShowsPlaySports,
   venueShowsSportsSection,
@@ -40,13 +39,11 @@ const padel: VenuePlayChromeInput = {
 };
 
 describe("venueSupportsPlayResults", () => {
-  it("hides match history and leaderboards for climbing and karting", () => {
+  it("hides match history for climbing and karting", () => {
     assert.equal(venueSupportsPlayResults(climbing), false);
     assert.equal(venueShowsMatchHistory(climbing), false);
-    assert.equal(venueShowsLeaderboards(climbing), false);
     assert.equal(venueSupportsPlayResults(karting), false);
     assert.equal(venueShowsMatchHistory(karting), false);
-    assert.equal(venueShowsLeaderboards(karting), false);
     assert.equal(
       venueSupportsPlayResults({
         sports: [{ name: "Go Karting", slug: "go-karting" }],
@@ -58,7 +55,6 @@ describe("venueSupportsPlayResults", () => {
   it("keeps them for linked padel, golf, and darts", () => {
     assert.equal(venueSupportsPlayResults(padel), true);
     assert.equal(venueShowsMatchHistory(padel), true);
-    assert.equal(venueShowsLeaderboards(padel), true);
     assert.equal(
       venueSupportsPlayResults({
         sports: [{ name: "Golf", slug: "golf" }],
@@ -197,7 +193,7 @@ describe("venueShowsFindFixtures", () => {
 });
 
 describe("venue detail nav", () => {
-  it("drops match history and leaderboards on climbing and karting", () => {
+  it("drops match history on climbing and karting", () => {
     const labels = venueDetailNavLinks({
       hasQuickStart: false,
       venue: climbing,
@@ -212,7 +208,7 @@ describe("venue detail nav", () => {
     );
   });
 
-  it("keeps match history and leaderboards for padel", () => {
+  it("keeps match history for padel without a boards jump", () => {
     const labels = venueDetailNavLinks({
       hasQuickStart: true,
       venue: padel,
@@ -221,10 +217,11 @@ describe("venue detail nav", () => {
       "Quick start",
       "About",
       "Match history",
-      "Leaderboards",
       "Sports",
       "Location",
     ]);
+    assert.equal(labels.includes("Leaderboards"), false);
+    assert.equal(labels.includes("Friends"), false);
   });
 
   it("drops the sports jump when a venue lists nothing", () => {

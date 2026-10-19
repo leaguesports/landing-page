@@ -1,22 +1,13 @@
-import { getRailwayApiOrigin, isApiConfigured } from "../api-origin.ts";
 import { invokeFetch } from "../invoke-fetch.ts";
 import { FIXTURE_TIMEZONE, fixtureCalendarDay } from "../sports/events-feed.ts";
 
-export const OPENF1_EVENTS_PATH = "/api/openf1/events" as const;
+/** Public historical meetings and sessions. No Railway proxy. */
+export const OPENF1_PUBLIC_ORIGIN = "https://api.openf1.org/v1";
 
-/**
- * Explicit Railway rewrite sources. Static collection paths before `:param`.
- */
-export const OPENF1_PROXY_SOURCES = [
-  "/api/openf1/meetings",
-  "/api/openf1/meetings/:meetingKey",
-  "/api/openf1/events/:eventSlug",
-  "/api/openf1/sessions",
-  "/api/openf1/sessions/:sessionKey",
-] as const;
-
-/** Align with `/events/[slug]` ISR (`revalidate = 300`). API caches 15 minutes. */
+/** Align with `/events/[slug]` ISR (`revalidate = 300`). */
 export const OPENF1_REVALIDATE_SECONDS = 300;
+
+const OPENF1_TIMEOUT_MS = 12_000;
 
 /** OpenF1 circuit maps and country flags are served from the F1 media CDN. */
 export const OPENF1_MEDIA_HOST = "media.formula1.com";
@@ -84,7 +75,6 @@ export type OpenF1SessionDayGroup = {
 
 export type OpenF1Deps = {
   fetch: typeof fetch;
-  baseUrl: string;
   signal?: AbortSignal;
 };
 
@@ -234,9 +224,92 @@ export function openF1EventSlugForFixture(fixture: {
   return openF1EventSlugFromNameAndInstant(fixture.title, fixture.startsAt);
 }
 
-export function openF1EventUrl(baseUrl: string, eventSlug: string): string {
-  const root = baseUrl.replace(/\/$/, "");
-  return `${root}${OPENF1_EVENTS_PATH}/${encodeURIComponent(eventSlug)}`;
+export function openF1PublicMeetingsUrl(year: number): string {
+  return `${OPENF1_PUBLIC_ORIGIN}/meetings?year=${year}`;
+}
+
+export function openF1PublicSessionsUrl(meetingKey: number): string {
+  return `${OPENF1_PUBLIC_ORIGIN}/sessions?meeting_key=${meetingKey}`;
+}
+
+function pickField(
+  row: Record<string, unknown>,
+  camel: string,
+  snake: string,
+): unknown {
+  return row[camel] ?? row[snake];
+}
+
+/**
+ * Public OpenF1 rows are snake_case and have no event slug. The slug is the
+ * meeting name plus the UTC end date (race day), matching the old weekend route.
+ */
+export function openF1MeetingFromPublicApi(value: unknown): OpenF1Meeting | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const meetingName = asString(pickField(row, "meetingName", "meeting_name"));
+  const dateEnd = asString(pickField(row, "dateEnd", "date_end"));
+  const nameSlug = slugifyOpenF1Name(meetingName);
+  const endDate = utcDateOnly(dateEnd);
+  const explicit = asString(pickField(row, "eventSlug", "event_slug")).toLowerCase();
+  const eventSlug = explicit || (nameSlug && endDate ? `${nameSlug}-${endDate}` : "");
+  return parseOpenF1Meeting({
+    meetingKey: pickField(row, "meetingKey", "meeting_key"),
+    meetingName,
+    meetingOfficialName:
+      asString(pickField(row, "meetingOfficialName", "meeting_official_name")) ||
+      meetingName,
+    eventSlug,
+    circuitKey: pickField(row, "circuitKey", "circuit_key"),
+    circuitShortName: pickField(row, "circuitShortName", "circuit_short_name"),
+    circuitType: pickField(row, "circuitType", "circuit_type"),
+    circuitImage: pickField(row, "circuitImage", "circuit_image"),
+    circuitInfoUrl: pickField(row, "circuitInfoUrl", "circuit_info_url"),
+    countryKey: pickField(row, "countryKey", "country_key"),
+    countryCode: pickField(row, "countryCode", "country_code"),
+    countryName: pickField(row, "countryName", "country_name"),
+    countryFlag: pickField(row, "countryFlag", "country_flag"),
+    dateStart: pickField(row, "dateStart", "date_start"),
+    dateEnd,
+    gmtOffset: pickField(row, "gmtOffset", "gmt_offset"),
+    isCancelled: pickField(row, "isCancelled", "is_cancelled"),
+    location: pickField(row, "location", "location"),
+    year: row.year,
+  });
+}
+
+export function openF1SessionFromPublicApi(value: unknown): OpenF1Session | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  return parseOpenF1Session({
+    sessionKey: pickField(row, "sessionKey", "session_key"),
+    sessionName: pickField(row, "sessionName", "session_name"),
+    sessionType: pickField(row, "sessionType", "session_type"),
+    meetingKey: pickField(row, "meetingKey", "meeting_key"),
+    circuitKey: pickField(row, "circuitKey", "circuit_key"),
+    circuitShortName: pickField(row, "circuitShortName", "circuit_short_name"),
+    countryKey: pickField(row, "countryKey", "country_key"),
+    countryCode: pickField(row, "countryCode", "country_code"),
+    countryName: pickField(row, "countryName", "country_name"),
+    dateStart: pickField(row, "dateStart", "date_start"),
+    dateEnd: pickField(row, "dateEnd", "date_end"),
+    gmtOffset: pickField(row, "gmtOffset", "gmt_offset"),
+    isCancelled: pickField(row, "isCancelled", "is_cancelled"),
+    location: pickField(row, "location", "location"),
+    year: row.year,
+  });
+}
+
+function meetingCoversEventSlug(meeting: OpenF1Meeting, eventSlug: string): boolean {
+  const parsed = parseOpenF1EventSlug(eventSlug);
+  if (!parsed) return false;
+  if (meeting.eventSlug === `${parsed.nameSlug}-${parsed.date}`) return true;
+  const name = slugifyOpenF1Name(meeting.meetingName);
+  if (name !== parsed.nameSlug) return false;
+  const start = utcDateOnly(meeting.dateStart);
+  const end = utcDateOnly(meeting.dateEnd);
+  if (!start || !end) return false;
+  return parsed.date >= start && parsed.date <= end;
 }
 
 export function parseOpenF1Meeting(value: unknown): OpenF1Meeting | null {
@@ -488,45 +561,84 @@ async function readJson(res: Response): Promise<unknown> {
   }
 }
 
+async function fetchOpenF1PublicJson(
+  url: string,
+  tag: string,
+  deps: OpenF1Deps,
+): Promise<unknown | null> {
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), OPENF1_TIMEOUT_MS);
+  const signal = deps.signal
+    ? AbortSignal.any([deps.signal, timeout.signal])
+    : timeout.signal;
+  try {
+    const init: NextFetchInit = {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "force-cache",
+      next: {
+        revalidate: OPENF1_REVALIDATE_SECONDS,
+        tags: [tag],
+      },
+      signal,
+    };
+    const res = await invokeFetch(deps.fetch, url, init);
+    if (!res.ok) return null;
+    return await readJson(res);
+  } catch (error) {
+    console.error("[openf1] weekend fetch failed", error);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function getOpenF1WeekendByEventSlugWith(
   eventSlugRaw: string,
   deps: OpenF1Deps,
 ): Promise<OpenF1Weekend | null> {
   const parsed = parseOpenF1EventSlug(eventSlugRaw);
-  if (!parsed || !deps.baseUrl) return null;
+  if (!parsed) return null;
   const eventSlug = `${parsed.nameSlug}-${parsed.date}`;
+  const year = Number(parsed.date.slice(0, 4));
 
-  try {
-    const init: NextFetchInit = {
-      method: "GET",
-      cache: "force-cache",
-      next: {
-        revalidate: OPENF1_REVALIDATE_SECONDS,
-        tags: [`openf1-event-${eventSlug}`],
-      },
-      signal: deps.signal,
-    };
-    const res = await invokeFetch(
-      deps.fetch,
-      openF1EventUrl(deps.baseUrl, eventSlug),
-      init,
-    );
-    if (!res.ok) return null;
-    return parseOpenF1Weekend(await readJson(res));
-  } catch (error) {
-    console.error("[openf1] weekend fetch failed", error);
-    return null;
-  }
+  const meetingsBody = await fetchOpenF1PublicJson(
+    openF1PublicMeetingsUrl(year),
+    `openf1-meetings-${year}`,
+    deps,
+  );
+  if (!Array.isArray(meetingsBody)) return null;
+
+  const meetings = meetingsBody
+    .map(openF1MeetingFromPublicApi)
+    .filter((meeting): meeting is OpenF1Meeting => meeting !== null)
+    .sort((a, b) => a.dateStart.localeCompare(b.dateStart));
+  const meeting = meetings.find((candidate) =>
+    meetingCoversEventSlug(candidate, eventSlug),
+  );
+  if (!meeting) return null;
+
+  const sessionsBody = await fetchOpenF1PublicJson(
+    openF1PublicSessionsUrl(meeting.meetingKey),
+    `openf1-sessions-${meeting.meetingKey}`,
+    deps,
+  );
+  if (!Array.isArray(sessionsBody)) return null;
+
+  const sessions = sessionsBody
+    .map(openF1SessionFromPublicApi)
+    .filter((session): session is OpenF1Session => session !== null)
+    .sort((a, b) => a.dateStart.localeCompare(b.dateStart));
+
+  return { meeting, sessions };
 }
 
 export async function getOpenF1WeekendByEventSlug(
   eventSlug: string,
   options: { signal?: AbortSignal } = {},
 ): Promise<OpenF1Weekend | null> {
-  if (!isApiConfigured()) return null;
   return getOpenF1WeekendByEventSlugWith(eventSlug, {
     fetch,
-    baseUrl: getRailwayApiOrigin(),
     signal: options.signal,
   });
 }

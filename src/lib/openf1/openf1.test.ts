@@ -9,14 +9,15 @@ import {
   isOpenF1EnrichableFixture,
   isOpenF1EventSlug,
   OPENF1_MEDIA_HOST,
-  OPENF1_PROXY_SOURCES,
+  OPENF1_PUBLIC_ORIGIN,
   OPENF1_REVALIDATE_SECONDS,
   openF1CircuitImageUrl,
   openF1CircuitLine,
   openF1CountryFlagUrl,
   openF1EventSlugForFixture,
   openF1EventSlugFromNameAndInstant,
-  openF1EventUrl,
+  openF1PublicMeetingsUrl,
+  openF1PublicSessionsUrl,
   openF1SessionStatus,
   parseOpenF1MediaUrl,
   parseOpenF1Weekend,
@@ -320,91 +321,150 @@ describe("OpenF1 session display", () => {
   });
 });
 
+function snakeRow(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    const snake = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    out[snake] = value;
+  }
+  delete out.event_slug;
+  return out;
+}
+
 describe("getOpenF1WeekendByEventSlugWith", () => {
-  it("GETs /api/openf1/events/:eventSlug with ISR cache hints", async () => {
-    let seenUrl = "";
-    let seenInit: RequestInit | undefined;
+  const meetingsUrl = openF1PublicMeetingsUrl(2026);
+  const sessionsUrl = openF1PublicSessionsUrl(1294);
+
+  function publicFetch(options: {
+    meetingsStatus?: number;
+    sessionsStatus?: number;
+    throwOn?: "meetings" | "sessions";
+  } = {}) {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    const fetchImpl: typeof fetch = async (url, init) => {
+      const seen = String(url);
+      calls.push({ url: seen, init });
+      if (seen === meetingsUrl && options.throwOn === "meetings") {
+        throw new Error("meetings down");
+      }
+      if (seen === sessionsUrl && options.throwOn === "sessions") {
+        throw new Error("sessions down");
+      }
+      if (seen === meetingsUrl) {
+        if ((options.meetingsStatus ?? 200) !== 200) {
+          return new Response("no", { status: options.meetingsStatus });
+        }
+        return new Response(
+          JSON.stringify([
+            snakeRow({
+              ...SPANISH_MEETING,
+              meetingName: "Monaco Grand Prix",
+              dateStart: "2026-06-05T11:30:00+00:00",
+              dateEnd: "2026-06-07T15:00:00+00:00",
+              meetingKey: 1200,
+            }),
+            snakeRow(SPANISH_MEETING),
+          ]),
+          { status: 200 },
+        );
+      }
+      if (seen === sessionsUrl) {
+        if ((options.sessionsStatus ?? 200) !== 200) {
+          return new Response("no", { status: options.sessionsStatus });
+        }
+        return new Response(
+          JSON.stringify(SPANISH_SESSIONS.map((session) => snakeRow(session))),
+          { status: 200 },
+        );
+      }
+      return new Response("unexpected", { status: 500 });
+    };
+    return { fetchImpl, calls };
+  }
+
+  it("maps a public meetings+sessions weekend and caches both reads", async () => {
+    const { fetchImpl, calls } = publicFetch();
     const weekend = await getOpenF1WeekendByEventSlugWith(
       "spanish-grand-prix-2026-09-13",
-      {
-        fetch: async (url, init) => {
-          seenUrl = String(url);
-          seenInit = init;
-          return new Response(
-            JSON.stringify({
-              meeting: SPANISH_MEETING,
-              sessions: SPANISH_SESSIONS,
-            }),
-            { status: 200 },
-          );
-        },
-        baseUrl: "https://api.example.test",
-      },
+      { fetch: fetchImpl },
     );
 
-    assert.equal(
-      seenUrl,
-      "https://api.example.test/api/openf1/events/spanish-grand-prix-2026-09-13",
-    );
-    assert.equal(seenInit?.method, "GET");
-    assert.equal(seenInit?.cache, "force-cache");
     assert.deepEqual(
-      (seenInit as { next?: { revalidate?: number; tags?: string[] } }).next,
+      calls.map((call) => call.url),
+      [meetingsUrl, sessionsUrl],
+    );
+    assert.equal(meetingsUrl, `${OPENF1_PUBLIC_ORIGIN}/meetings?year=2026`);
+    assert.equal(calls[0]?.init?.method, "GET");
+    assert.equal(calls[0]?.init?.cache, "force-cache");
+    assert.deepEqual(
+      (calls[0]?.init as { next?: { revalidate?: number; tags?: string[] } })
+        .next,
       {
         revalidate: OPENF1_REVALIDATE_SECONDS,
-        tags: ["openf1-event-spanish-grand-prix-2026-09-13"],
+        tags: ["openf1-meetings-2026"],
+      },
+    );
+    assert.deepEqual(
+      (calls[1]?.init as { next?: { revalidate?: number; tags?: string[] } })
+        .next,
+      {
+        revalidate: OPENF1_REVALIDATE_SECONDS,
+        tags: ["openf1-sessions-1294"],
       },
     );
     assert.equal(weekend?.meeting.location, "Madrid");
+    assert.equal(weekend?.meeting.eventSlug, "spanish-grand-prix-2026-09-13");
+    assert.equal(weekend?.sessions[2]?.sessionName, "Race");
     assert.equal(weekend?.sessions.length, 3);
   });
 
-  it("returns null on 404, 503, and malformed slugs without throwing", async () => {
-    const missing = await getOpenF1WeekendByEventSlugWith(
-      "spanish-grand-prix-2026-09-13",
-      {
-        fetch: async () => new Response("Not Found", { status: 404 }),
-        baseUrl: "https://api.example.test",
-      },
+  it("matches a slug that falls inside the meeting window", async () => {
+    const { fetchImpl, calls } = publicFetch();
+    const weekend = await getOpenF1WeekendByEventSlugWith(
+      "spanish-grand-prix-2026-09-11",
+      { fetch: fetchImpl },
     );
-    const unavailable = await getOpenF1WeekendByEventSlugWith(
-      "spanish-grand-prix-2026-09-13",
-      {
-        fetch: async () => new Response("upstream down", { status: 503 }),
-        baseUrl: "https://api.example.test",
-      },
+    assert.equal(weekend?.meeting.meetingKey, 1294);
+    assert.deepEqual(
+      calls.map((call) => call.url),
+      [meetingsUrl, sessionsUrl],
     );
-    const badSlug = await getOpenF1WeekendByEventSlugWith("spanish-grand-prix", {
-      fetch: async () => {
-        throw new Error("should not fetch");
-      },
-      baseUrl: "https://api.example.test",
-    });
-
-    assert.equal(missing, null);
-    assert.equal(unavailable, null);
-    assert.equal(badSlug, null);
   });
 
-  it("keeps static collection paths before :param routes", () => {
-    assert.deepEqual([...OPENF1_PROXY_SOURCES], [
-      "/api/openf1/meetings",
-      "/api/openf1/meetings/:meetingKey",
-      "/api/openf1/events/:eventSlug",
-      "/api/openf1/sessions",
-      "/api/openf1/sessions/:sessionKey",
-    ]);
-    assert.ok(
-      OPENF1_PROXY_SOURCES.indexOf("/api/openf1/meetings") <
-        OPENF1_PROXY_SOURCES.indexOf("/api/openf1/meetings/:meetingKey"),
+  it("returns null on 404, 503, network errors, and malformed slugs without throwing", async () => {
+    const missing = publicFetch({ meetingsStatus: 404 });
+    const unavailable = publicFetch({ sessionsStatus: 503 });
+    const thrown = publicFetch({ throwOn: "meetings" });
+    assert.equal(
+      await getOpenF1WeekendByEventSlugWith("spanish-grand-prix-2026-09-13", {
+        fetch: missing.fetchImpl,
+      }),
+      null,
     );
-    assert.ok(
-      OPENF1_PROXY_SOURCES.indexOf("/api/openf1/sessions") <
-        OPENF1_PROXY_SOURCES.indexOf("/api/openf1/sessions/:sessionKey"),
+    assert.deepEqual(
+      missing.calls.map((call) => call.url),
+      [meetingsUrl],
     );
     assert.equal(
-      openF1EventUrl("https://api.example.test/", "spanish-grand-prix-2026-09-13"),
-      "https://api.example.test/api/openf1/events/spanish-grand-prix-2026-09-13",
+      await getOpenF1WeekendByEventSlugWith("spanish-grand-prix-2026-09-13", {
+        fetch: unavailable.fetchImpl,
+      }),
+      null,
     );
+    assert.equal(
+      await getOpenF1WeekendByEventSlugWith("spanish-grand-prix-2026-09-13", {
+        fetch: thrown.fetchImpl,
+      }),
+      null,
+    );
+    let fetched = false;
+    const badSlug = await getOpenF1WeekendByEventSlugWith("spanish-grand-prix", {
+      fetch: async () => {
+        fetched = true;
+        throw new Error("should not fetch");
+      },
+    });
+    assert.equal(badSlug, null);
+    assert.equal(fetched, false);
   });
 });

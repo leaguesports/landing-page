@@ -148,8 +148,6 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/me/preferences",
   "/api/users/search",
   "/api/venues/:cmsId/follow",
-  "/api/venues/:cmsId/leaderboards",
-  "/api/venues/:cmsId/friends-played",
   "/api/fixtures/:slug/follow",
   "/api/venues/:cmsId",
   "/api/me/notifications",
@@ -163,11 +161,6 @@ export const API_PROXY_EXPLICIT_SOURCES = [
   "/api/roadmap/requests",
   "/api/intents/coverage",
   "/api/intents/coverage/unsubscribe",
-  "/api/openf1/meetings",
-  "/api/openf1/meetings/:meetingKey",
-  "/api/openf1/events/:eventSlug",
-  "/api/openf1/sessions",
-  "/api/openf1/sessions/:sessionKey",
 ] as const;
 
 /** next.config `afterFiles` rewrites. Empty when the API is not configured. */

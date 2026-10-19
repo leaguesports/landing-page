@@ -13,7 +13,6 @@ import {
 } from "./api-origin.ts";
 import { COVERAGE_PROXY_SOURCES } from "./conversion/coverage.ts";
 import { ROADMAP_PROXY_SOURCES } from "./roadmap/roadmap.ts";
-import { OPENF1_PROXY_SOURCES } from "./openf1/openf1.ts";
 
 const ORIGIN_ENV_KEYS = [
   "API_ORIGIN",
@@ -70,14 +69,6 @@ describe("shouldProxyApiPath", () => {
 
   it("proxies surviving hub routes and keeps local Next routes", () => {
     assert.equal(shouldProxyApiPath("/api/venues/sanity-court/follow"), true);
-    assert.equal(
-      shouldProxyApiPath("/api/venues/sanity-court/leaderboards"),
-      true,
-    );
-    assert.equal(
-      shouldProxyApiPath("/api/venues/sanity-court/friends-played"),
-      true,
-    );
     assert.equal(shouldProxyApiPath("/api/me/followed-venues"), true);
     assert.equal(shouldProxyApiPath("/api/me/friends"), true);
     assert.equal(shouldProxyApiPath("/api/me/communities"), true);
@@ -102,14 +93,6 @@ describe("shouldProxyApiPath", () => {
     assert.equal(shouldProxyApiPath("/api/roadmap/requests"), true);
     assert.equal(shouldProxyApiPath("/api/intents/coverage"), true);
     assert.equal(shouldProxyApiPath("/api/intents/coverage/unsubscribe"), true);
-    assert.equal(shouldProxyApiPath("/api/openf1/meetings"), true);
-    assert.equal(shouldProxyApiPath("/api/openf1/meetings/1294"), true);
-    assert.equal(
-      shouldProxyApiPath("/api/openf1/events/spanish-grand-prix-2026-09-13"),
-      true,
-    );
-    assert.equal(shouldProxyApiPath("/api/openf1/sessions"), true);
-    assert.equal(shouldProxyApiPath("/api/openf1/sessions/latest"), true);
     assert.equal(shouldProxyApiPath("/api/realtime"), false);
     assert.equal(shouldProxyApiPath("/api/realtime/token"), false);
     assert.equal(shouldProxyApiPath("/api/venues/claim"), false);
@@ -381,24 +364,6 @@ describe("getApiProxyRewrites", () => {
             source.startsWith("/api/intents/coverage/"),
         );
         assert.deepEqual(coverageSources, [...COVERAGE_PROXY_SOURCES]);
-        const openF1Sources = API_PROXY_EXPLICIT_SOURCES.filter((source) =>
-          source.startsWith("/api/openf1/"),
-        );
-        assert.deepEqual(openF1Sources, [...OPENF1_PROXY_SOURCES]);
-        assert.ok(
-          rewriteSources.indexOf("/api/openf1/meetings") <
-            rewriteSources.indexOf("/api/openf1/meetings/:meetingKey"),
-        );
-        assert.ok(
-          rewriteSources.indexOf("/api/openf1/sessions") <
-            rewriteSources.indexOf("/api/openf1/sessions/:sessionKey"),
-        );
-        assert.equal(
-          rewrites.find(
-            (rule) => rule.source === "/api/openf1/events/:eventSlug",
-          )?.destination,
-          "https://api.example.test/api/openf1/events/:eventSlug",
-        );
         assert.equal(
           rewrites.find((rule) => rule.source === "/api/intents/coverage")
             ?.destination,
@@ -462,22 +427,6 @@ describe("getApiProxyRewrites", () => {
           (rule) =>
             rule.destination ===
             `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/follow`,
-        ),
-        true,
-      );
-      assert.equal(
-        rewrites.some(
-          (rule) =>
-            rule.destination ===
-            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/leaderboards`,
-        ),
-        true,
-      );
-      assert.equal(
-        rewrites.some(
-          (rule) =>
-            rule.destination ===
-            `${PRODUCTION_RAILWAY_API_ORIGIN}/api/venues/:cmsId/friends-played`,
         ),
         true,
       );

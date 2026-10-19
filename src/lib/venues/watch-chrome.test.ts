@@ -133,6 +133,7 @@ describe("venueDetailNavLinks", () => {
     assert.ok(labels.includes("Amenities"));
     assert.equal(labels.includes("Match history"), false);
     assert.equal(labels.includes("Leaderboards"), false);
+    assert.equal(labels.includes("Friends"), false);
     assert.equal(labels[0], "Quick start");
   });
 });
