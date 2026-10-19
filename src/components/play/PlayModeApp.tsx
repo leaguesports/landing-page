@@ -6,6 +6,7 @@ import { useEffect, useReducer, useRef } from "react";
 import Link from "next/link";
 import "./play-mode.css";
 import { GolfHome } from "./GolfHome";
+import { PadelHome } from "./PadelHome";
 import {
   PLAY_MODE_COPY,
   PLAY_MODE_SESSION_LIVE,
@@ -215,6 +216,8 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
       <div className="content">
         {mode === "golf" ? (
           <GolfHome />
+        ) : mode === "padel" ? (
+          <PadelHome />
         ) : (
           <>
             <h1>{copy.label}</h1>
