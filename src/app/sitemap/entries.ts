@@ -1,4 +1,5 @@
 import { guideHref, isGuideSlug } from "../../lib/guides/slugs.ts";
+import { isRedirectedVenueSlug } from "../../lib/venues/redirects.ts";
 
 export const SITEMAP_FALLBACK_ORIGIN = "https://leaguesports.co.za";
 
@@ -221,7 +222,7 @@ export function venueSitemapRoutes(
 ): SitemapEntry[] {
   const routes: SitemapEntry[] = [];
   for (const row of collectRows<SitemapVenueRow>(rows)) {
-    if (!isSitemapSlug(row.slug)) continue;
+    if (!isSitemapSlug(row.slug) || isRedirectedVenueSlug(row.slug)) continue;
     const entry = sitemapEntry(sitemapAbsoluteUrl(origin, `/venues/${row.slug}`), {
       lastModified: toSitemapDate(
         typeof row.updatedAt === "string" ? row.updatedAt : null,
