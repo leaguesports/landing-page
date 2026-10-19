@@ -198,8 +198,8 @@ export function IntentVenuesSection({
           </div>
         )}
 
-        {intent === "watch" && relatedGuides.length > 0 ? (
-          <div className="mt-10" data-watch-related-guides="">
+        {relatedGuides.length > 0 ? (
+          <div className="mt-10" data-intent-related-links="">
             <h2 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
               Related guides
             </h2>
@@ -208,7 +208,9 @@ export function IntentVenuesSection({
                 <li key={guide.href}>
                   <Link
                     href={guide.href}
-                    className="text-sm font-medium text-sky-300 hover:text-white"
+                    className={`text-sm font-medium hover:text-white ${
+                      intent === "watch" ? "text-sky-300" : "text-emerald-300"
+                    }`}
                   >
                     {guide.label}
                   </Link>

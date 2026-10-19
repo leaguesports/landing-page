@@ -7,8 +7,11 @@ import {
 } from "../sports/catalog.ts";
 import type { IntentKind } from "./paths.ts";
 
-/** Local copy of sportSlugVariants so unit tests stay free of path aliases. */
-function sportSlugVariants(slug: string | null | undefined): string[] {
+/**
+ * Spellings of one directory slug. Series pages keep their own slug
+ * (`f1`, `formula-1`) and also list the hub sport they broadcast on.
+ */
+export function sportSlugVariants(slug: string | null | undefined): string[] {
   if (!slug) return [];
   if (slug === "soccer" || slug === "football") return ["soccer", "football"];
   if (slug === "padel" || slug === "paddle") return ["padel", "paddle"];
