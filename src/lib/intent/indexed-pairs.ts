@@ -130,3 +130,39 @@ export function collectIndexedIntentPairs(
 
   return [...pairs.values()];
 }
+
+const METRO_SLUG = /^[A-Za-z0-9._~-]+$/;
+
+/**
+ * Fold published `metroPage` docs into intent pairs.
+ * The URL's lastmod is the newer of the venue coverage timestamp and the
+ * metro document `_updatedAt`. A metro page with no venue pair is still listed.
+ */
+export function mergeMetroPageLastmods(
+  intent: IntentKind,
+  pairs: readonly IndexedIntentPair[],
+  pages: readonly {
+    intent?: unknown;
+    activitySlug?: unknown;
+    citySlug?: unknown;
+    updatedAt?: unknown;
+  }[],
+): IndexedIntentPair[] {
+  const merged = new Map<string, IndexedIntentPair>();
+  for (const pair of pairs) {
+    upsertPair(merged, pair.activitySlug, pair.locationSlug, pair.updatedAt);
+  }
+
+  for (const page of pages) {
+    const pageIntent = trimSlug(page.intent);
+    if (pageIntent !== intent) continue;
+    const activitySlug = trimSlug(page.activitySlug);
+    const citySlug = trimSlug(page.citySlug);
+    if (!activitySlug || !citySlug) continue;
+    if (!METRO_SLUG.test(activitySlug) || !METRO_SLUG.test(citySlug)) continue;
+    const updatedAt = trimSlug(page.updatedAt);
+    upsertPair(merged, activitySlug, citySlug, updatedAt);
+  }
+
+  return [...merged.values()];
+}

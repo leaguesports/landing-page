@@ -533,3 +533,72 @@ describe("fixture sitemap lastmod + XML guards", () => {
     );
   });
 });
+
+describe("activity hub lastmod", () => {
+  it("overrides static watch hubs with the sport doc _updatedAt and adds play, series, and city hubs", async () => {
+    const entries = await buildSitemapBucket("static", {
+      baseUrl: ORIGIN,
+      now: NOW,
+      source: {
+        getActivityHubs: async () => [
+          {
+            kind: "sport",
+            slug: "soccer",
+            updatedAt: "2026-08-01T00:00:00.000Z",
+          },
+          {
+            kind: "sport",
+            slug: "golf",
+            updatedAt: "2026-08-02T00:00:00.000Z",
+          },
+          {
+            kind: "series",
+            slug: "f1",
+            sportSlug: "motorsport",
+            updatedAt: "2026-08-03T00:00:00.000Z",
+          },
+          {
+            kind: "location",
+            slug: "johannesburg",
+            locationType: "city",
+            updatedAt: "2026-08-04T00:00:00.000Z",
+          },
+          {
+            kind: "location",
+            slug: "sandton",
+            locationType: "suburb",
+            parentSlug: "johannesburg",
+            updatedAt: "2026-08-05T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    const soccer = entries.find((entry) => entry.url === `${ORIGIN}/watch/soccer`);
+    assert.equal(soccer?.lastModified.toISOString(), "2026-08-01T00:00:00.000Z");
+    assert.equal(
+      entries.some((entry) => entry.url === `${ORIGIN}/play/golf`),
+      true,
+    );
+    assert.equal(
+      entries.some((entry) => entry.url === `${ORIGIN}/watch/golf`),
+      false,
+    );
+    assert.equal(
+      entries.some((entry) => entry.url === `${ORIGIN}/watch/f1`),
+      true,
+    );
+    const city = entries.find(
+      (entry) => entry.url === `${ORIGIN}/watch/johannesburg`,
+    );
+    assert.equal(city?.lastModified.toISOString(), "2026-08-04T00:00:00.000Z");
+    assert.equal(
+      entries.some((entry) => entry.url === `${ORIGIN}/watch/sandton`),
+      false,
+    );
+    assert.equal(
+      entries.some((entry) => entry.url === ORIGIN),
+      true,
+    );
+  });
+});

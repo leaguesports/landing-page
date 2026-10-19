@@ -216,6 +216,9 @@ describe("shouldProxyApiPath", () => {
     );
     assert.equal(shouldProxyApiPath("/api/f1-replay/meetings"), false);
     assert.equal(shouldProxyApiPath("/api/f1-replay-extra"), true);
+    assert.equal(shouldProxyApiPath("/api/revalidate"), false);
+    assert.equal(shouldProxyApiPath("/api/revalidate/event"), false);
+    assert.equal(shouldProxyApiPath("/api/revalidated"), true);
   });
 
   it("does not treat non-api paths as proxy targets", () => {
@@ -416,7 +419,7 @@ describe("getApiProxyRewrites", () => {
           { source: "/api", destination: "https://api.example.test/api" },
           {
             source:
-              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+              "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)|revalidate(?:/|$)).*)",
             destination: "https://api.example.test/api/:path",
           },
         ]);
@@ -437,7 +440,7 @@ describe("getApiProxyRewrites", () => {
         assert.ok(catchAll);
         assert.equal(
           catchAll.source,
-          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)).*)",
+          "/api/:path((?!matches/.+/events(?:/|$)|realtime(?:/|$)|venues/claim(?:/|$)|venues/search(?:/|$)|fixtures/.+/(?:feed|live)(?:/|$)|f1-replay(?:/|$)|revalidate(?:/|$)).*)",
         );
         assert.equal(catchAll.destination, "https://api.example.test/api/:path");
         assert.equal(

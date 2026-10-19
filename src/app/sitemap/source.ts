@@ -1,4 +1,13 @@
 import type { SitemapDataSource } from "@/app/sitemap/entries";
+import {
+  SITEMAP_EVENTS_QUERY,
+  SITEMAP_GUIDES_QUERY,
+  SITEMAP_LOCATIONS_QUERY,
+  SITEMAP_METRO_PAGES_QUERY,
+  SITEMAP_SERIES_QUERY,
+  SITEMAP_SPORTS_QUERY,
+  SITEMAP_VENUES_QUERY,
+} from "@/app/sitemap/queries";
 
 const FETCH_TIMEOUT_MS = 12_000;
 
@@ -34,6 +43,15 @@ async function withTimeout<T>(
   }
 }
 
+async function fetchFresh<T>(
+  query: string,
+  params: Record<string, unknown> = {},
+): Promise<T> {
+  const { sanityClient } = await import("@/sanity/client");
+  const client = sanityClient.withConfig({ useCdn: false });
+  return client.fetch<T>(query, params);
+}
+
 export function createCmsSource(): SitemapDataSource {
   return {
     async getVenues() {
@@ -41,15 +59,9 @@ export function createCmsSource(): SitemapDataSource {
       return withTimeout(
         "venues",
         async () => {
-          const { sanityClient } = await import("@/sanity/client");
-          const rows = await sanityClient.fetch<
+          const rows = await fetchFresh<
             { slug: string | null; updatedAt: string | null }[]
-          >(`
-          *[_type == "venue" && defined(slug.current)] {
-            "slug": slug.current,
-            "updatedAt": _updatedAt
-          }
-        `);
+          >(SITEMAP_VENUES_QUERY);
           return Array.isArray(rows) ? rows : [];
         },
         [],
@@ -62,15 +74,9 @@ export function createCmsSource(): SitemapDataSource {
         async () => {
           // Dedicated GROQ — do not import listGuides from the guides action
           // module (unguarded Sanity client + catch-all route graph).
-          const { sanityClient } = await import("@/sanity/client");
-          const rows = await sanityClient.fetch<
+          const rows = await fetchFresh<
             { slug: string | null; updatedAt: string | null }[]
-          >(`
-          *[_type == "guide" && defined(slug.current) && slug.current != ""] {
-            "slug": slug.current,
-            "updatedAt": coalesce(_updatedAt, _createdAt)
-          }
-        `);
+          >(SITEMAP_GUIDES_QUERY);
           return Array.isArray(rows) ? rows : [];
         },
         [],
@@ -82,8 +88,30 @@ export function createCmsSource(): SitemapDataSource {
         `intent:${intent}`,
         async () => {
           const { listIndexedIntentPairs } = await import("@/lib/intent/data");
+          const { mergeMetroPageLastmods } = await import(
+            "@/lib/intent/indexed-pairs"
+          );
           const rows = await listIndexedIntentPairs(intent);
-          return Array.isArray(rows) ? rows : [];
+          let metroPages: {
+            intent?: string | null;
+            activitySlug?: string | null;
+            citySlug?: string | null;
+            updatedAt?: string | null;
+          }[] = [];
+          try {
+            const fetched = await fetchFresh<typeof metroPages>(
+              SITEMAP_METRO_PAGES_QUERY,
+              { intent },
+            );
+            metroPages = Array.isArray(fetched) ? fetched : [];
+          } catch (error) {
+            console.error("[sitemap] metro pages failed", error);
+          }
+          return mergeMetroPageLastmods(
+            intent,
+            Array.isArray(rows) ? rows : [],
+            metroPages,
+          );
         },
         [],
       );
@@ -93,12 +121,55 @@ export function createCmsSource(): SitemapDataSource {
       return withTimeout(
         "fixtures",
         async () => {
-          const { getUpcomingFixtures } = await import("@/services/events");
-          const { toIndexableSitemapFixtures } = await import(
+          const { toPublishedEventSitemapRows } = await import(
             "@/lib/events/sitemap"
           );
-          const rows = await getUpcomingFixtures({ limit: 48 });
-          return toIndexableSitemapFixtures(Array.isArray(rows) ? rows : []);
+          const rows = await fetchFresh<
+            {
+              title?: string | null;
+              startsAt?: string | null;
+              updatedAt?: string | null;
+              seoIntro?: string | null;
+              localAngle?: string | null;
+              faqs?: { question?: string | null; answer?: string | null }[] | null;
+            }[]
+          >(SITEMAP_EVENTS_QUERY);
+          return toPublishedEventSitemapRows(Array.isArray(rows) ? rows : []);
+        },
+        [],
+      );
+    },
+    async getActivityHubs() {
+      if (!isSanityConfigured()) return [];
+      return withTimeout(
+        "activity-hubs",
+        async () => {
+          const [sports, series, locations] = await Promise.all([
+            fetchFresh<unknown[]>(SITEMAP_SPORTS_QUERY).catch((error) => {
+              console.error("[sitemap] sports failed", error);
+              return [];
+            }),
+            fetchFresh<unknown[]>(SITEMAP_SERIES_QUERY).catch((error) => {
+              console.error("[sitemap] series failed", error);
+              return [];
+            }),
+            fetchFresh<unknown[]>(SITEMAP_LOCATIONS_QUERY).catch((error) => {
+              console.error("[sitemap] locations failed", error);
+              return [];
+            }),
+          ]);
+          return [
+            ...(Array.isArray(sports) ? sports : []),
+            ...(Array.isArray(series) ? series : []),
+            ...(Array.isArray(locations) ? locations : []),
+          ] as {
+            kind?: string;
+            slug?: string;
+            updatedAt?: string | null;
+            sportSlug?: string | null;
+            locationType?: string | null;
+            parentSlug?: string | null;
+          }[];
         },
         [],
       );

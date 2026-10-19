@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fixtureSitemapRoutes } from "../../app/sitemap/entries.ts";
-import { toIndexableSitemapFixtures } from "./sitemap.ts";
+import {
+  toIndexableSitemapFixtures,
+  toPublishedEventSitemapRows,
+} from "./sitemap.ts";
 import type { UpcomingFixture } from "../sports/events-feed.ts";
 
 function words(count: number, seed: string): string {
@@ -100,5 +103,80 @@ describe("toIndexableSitemapFixtures", () => {
       .join("\n")}\n</urlset>`;
     assert.equal(xml.includes("&"), false);
     assert.match(xml, /^<\?xml /);
+  });
+});
+
+describe("toPublishedEventSitemapRows", () => {
+  const now = new Date("2026-09-06T08:00:00.000Z");
+  const origin = "https://leaguesports.co.za";
+
+  function published(overrides: Record<string, unknown> = {}) {
+    return {
+      title: "Springboks vs All Blacks",
+      startsAt: "2026-09-06T16:00:00.000Z",
+      updatedAt: "2026-09-02T08:00:00.000Z",
+      ...INDEXABLE_COPY,
+      ...overrides,
+    };
+  }
+
+  it("uses the event document _updatedAt as lastmod, not kickoff", () => {
+    const rows = toPublishedEventSitemapRows([published()], now);
+    const routes = fixtureSitemapRoutes(origin, rows, now);
+    assert.equal(routes.length, 1);
+    assert.equal(
+      routes[0]?.url,
+      `${origin}/events/springboks-vs-all-blacks-2026-09-06`,
+    );
+    assert.equal(
+      routes[0]?.lastModified.toISOString(),
+      "2026-09-02T08:00:00.000Z",
+    );
+  });
+
+  it("keeps future events and past events inside 90 days, and drops older ones", () => {
+    const rows = toPublishedEventSitemapRows(
+      [
+        published({
+          title: "Recent past",
+          startsAt: "2026-08-01T16:00:00.000Z",
+          updatedAt: "2026-08-02T00:00:00.000Z",
+        }),
+        published({
+          title: "Too old",
+          startsAt: "2026-01-01T16:00:00.000Z",
+          updatedAt: "2026-01-02T00:00:00.000Z",
+        }),
+        published({
+          title: "Next year",
+          startsAt: "2026-12-01T16:00:00.000Z",
+          updatedAt: "2026-09-01T00:00:00.000Z",
+        }),
+        published({
+          title: "Undated final",
+          startsAt: null,
+          updatedAt: "2026-07-01T00:00:00.000Z",
+        }),
+      ],
+      now,
+    );
+    const slugs = rows.map((row) => row.slug).sort();
+    assert.deepEqual(slugs, [
+      "next-year-2026-12-01",
+      "recent-past-2026-08-01",
+      "undated-final",
+    ]);
+    assert.equal(
+      rows.find((row) => row.slug === "recent-past-2026-08-01")?.updatedAt,
+      "2026-08-02T00:00:00.000Z",
+    );
+  });
+
+  it("still excludes thin stubs", () => {
+    const rows = toPublishedEventSitemapRows(
+      [published({ seoIntro: "too short", localAngle: "", faqs: [] })],
+      now,
+    );
+    assert.deepEqual(rows, []);
   });
 });
