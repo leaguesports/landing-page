@@ -89,7 +89,10 @@ describe("golf home empty screen", () => {
     assert.match(signedOut, /data-golf-action="join"/);
     assert.match(signedOut, /type="button"/);
     assert.match(signedOut, /Handicap index/);
-    assert.match(signedOut, /class="big"[^>]*>—</);
+    assert.equal(GOLF_HOME_COPY.handicapMark, "—");
+    assert.match(signedOut, /class="big"/);
+    assert.match(signedOut, /class="dash"/);
+    assert.doesNotMatch(signedOut, /class="big"[^>]*>\d/);
     assert.match(signedOut, /Play 3 rounds to get your index\./);
     assert.match(signedOut, /Recent rounds/);
     assert.match(signedOut, /No rounds yet\. Start one and it shows here\./);

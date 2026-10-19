@@ -228,7 +228,7 @@ export function GolfHomeView({
       createElement(
         "p",
         { className: "big", "aria-hidden": true },
-        GOLF_HOME_COPY.handicapMark,
+        createElement("span", { className: "dash" }),
       ),
       createElement("p", { className: "hint" }, GOLF_HOME_COPY.handicapHint),
     ),
