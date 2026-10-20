@@ -5,6 +5,7 @@ import { getLoginPageHref } from "@/lib/auth-return-to";
 import { useEffect, useReducer, useRef } from "react";
 import Link from "next/link";
 import "./play-mode.css";
+import { GolfHome } from "./GolfHome";
 import {
   PLAY_MODE_COPY,
   PLAY_MODE_SESSION_LIVE,
@@ -212,8 +213,14 @@ export function PlayModeApp({ initialModeParam }: { initialModeParam: string | n
         <ModeAvatar />
       </div>
       <div className="content">
-        <h1>{copy.label}</h1>
-        <p className="soon">Coming soon</p>
+        {mode === "golf" ? (
+          <GolfHome />
+        ) : (
+          <>
+            <h1>{copy.label}</h1>
+            <p className="soon">Coming soon</p>
+          </>
+        )}
       </div>
       {sheet.open ? (
         <dialog
