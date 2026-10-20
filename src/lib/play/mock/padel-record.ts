@@ -182,6 +182,58 @@ function nextGuestId(draft: PadelDraft, name: string): string {
   return id;
 }
 
+const UNNAMED_NAME = /^Player (\d+)$/;
+
+/** You is player 1. Any seated "Player N" name holds that number too. */
+export function nextUnnamedNumber(draft: PadelDraft): number {
+  const used = new Set<number>([1]);
+  for (const guest of draft.guests) {
+    const match = UNNAMED_NAME.exec(guest.name);
+    if (match) used.add(Number(match[1]));
+  }
+  let number = 2;
+  while (used.has(number)) number += 1;
+  return number;
+}
+
+function takenIds(draft: PadelDraft): Set<string> {
+  return new Set<string>([
+    ...draft.guests.map((guest) => guest.id),
+    ...draft.teamA.filter((id): id is string => Boolean(id)),
+    ...draft.teamB.filter((id): id is string => Boolean(id)),
+    ...PADEL_MOCK_PLAYERS.map((player) => player.id),
+  ]);
+}
+
+function nextUnnamedId(draft: PadelDraft, number: number): string {
+  const taken = takenIds(draft);
+  let id = `unnamed-${number}`;
+  let extra = 2;
+  while (taken.has(id)) {
+    id = `unnamed-${number}-${extra}`;
+    extra += 1;
+  }
+  return id;
+}
+
+/** Fills the slot with Player 2, Player 3, … using the lowest free number. */
+export function addUnnamedToSlot(draft: PadelDraft, slot: PadelSlotId): PadelDraft {
+  if (!courtSlots(draft.format).includes(slot)) return draft;
+  const number = nextUnnamedNumber(draft);
+  const guest = { id: nextUnnamedId(draft, number), name: `Player ${number}` };
+  return fillSlot({ ...draft, guests: [...draft.guests, guest] }, slot, guest.id);
+}
+
+/** Unnamed players already on court, so a later pick can swap them. */
+export function unnamedOnCourt(draft: PadelDraft, query = ""): PadelMockPlayer[] {
+  const needle = query.trim().toLowerCase();
+  return draft.guests
+    .filter((guest) => guest.id.startsWith("unnamed-"))
+    .filter((guest) => !needle || guest.name.toLowerCase().includes(needle))
+    .map((guest) => ({ id: guest.id, name: guest.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
 /** Trimmed name becomes a new guest in that slot. Blank names do nothing. */
 export function addGuestToSlot(draft: PadelDraft, slot: PadelSlotId, name: string): PadelDraft {
   if (!courtSlots(draft.format).includes(slot)) return draft;

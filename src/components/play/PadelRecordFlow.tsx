@@ -15,11 +15,13 @@ import {
 } from "@/lib/play/mock/padel-match-store";
 import {
   addGuestToSlot,
+  addUnnamedToSlot,
   clearSlot,
   fillSlot,
   initialPadelDraft,
   matchingPlayers,
   matchingVenues,
+  unnamedOnCourt,
   readSlot,
   resolvePadelPlayer,
   setDraftFormat,
@@ -268,6 +270,13 @@ export function PadelRecordFlow({
     closeSheet();
   }
 
+  function addUnnamed() {
+    if (sheet?.kind !== "player") return;
+    const slot = sheet.slot;
+    setDraft((current) => addUnnamedToSlot(current, slot));
+    closeSheet();
+  }
+
   return (
     <section className="padel-record" aria-label="Record a match" data-flow-step={step} data-padel-mock="on">
       <div className="flow-head">
@@ -332,6 +341,7 @@ export function PadelRecordFlow({
               onGuestName={setGuestName}
               onPick={pickPlayer}
               onGuest={confirmGuest}
+              onUnnamed={addUnnamed}
               onClose={closeSheet}
             />
           ) : null}
@@ -586,6 +596,7 @@ function PlayerSheet({
   onGuestName,
   onPick,
   onGuest,
+  onUnnamed,
   onClose,
 }: {
   slot: PadelSlotId;
@@ -596,11 +607,18 @@ function PlayerSheet({
   onGuestName: (value: string) => void;
   onPick: (playerId: string) => void;
   onGuest: () => void;
+  onUnnamed: () => void;
   onClose: () => void;
 }) {
-  const players = matchingPlayers(query);
+  const players = [...unnamedOnCourt(draft, query), ...matchingPlayers(query)];
   return (
     <BottomSheet titleId="padel-player-sheet-title" title={`Choose ${slot}`} sheet="player" onClose={onClose}>
+      <button type="button" className="prow unnamed" data-unnamed="" onClick={onUnnamed}>
+        <span className="avatar" aria-hidden>
+          {initials("Unnamed player")}
+        </span>
+        <span className="who">Unnamed player</span>
+      </button>
       <label className="sheet-search">
         <span className="sheet-search-label">Search</span>
         <input

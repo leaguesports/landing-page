@@ -5,8 +5,10 @@ import {
   PADEL_MOCK_VENUES,
   PADEL_MOCK_YOU_ID,
 } from "./padel-mock-data.ts";
+import { buildSavedMatch, summaryFromDraft } from "./padel-match-store.ts";
 import {
   addGuestToSlot,
+  addUnnamedToSlot,
   clearSlot,
   courtSlots,
   fillSlot,
@@ -14,6 +16,7 @@ import {
   matchingPlayers,
   matchingVenues,
   readSlot,
+  resolvePadelPlayer,
   setDraftFormat,
   setDraftVenue,
   slotCount,
@@ -126,6 +129,63 @@ describe("padel court slots", () => {
     const singles = setDraftFormat(draft, "singles");
     assert.equal(teamsReady(singles), true);
     assert.equal(teamsReady(clearSlot(singles, "B1")), false);
+  });
+
+  it("numbers unnamed players from 2, reuses a cleared number, swaps, and saves", () => {
+    let draft = initialPadelDraft();
+    draft = addUnnamedToSlot(draft, "A2");
+    draft = addUnnamedToSlot(draft, "B1");
+    draft = addUnnamedToSlot(draft, "B2");
+    const name = (slot: "A1" | "A2" | "B1" | "B2", current = draft) =>
+      resolvePadelPlayer(current, readSlot(current, slot) ?? "")?.name;
+    assert.equal(name("A2"), "Player 2");
+    assert.equal(name("B1"), "Player 3");
+    assert.equal(name("B2"), "Player 4");
+    const ids = [readSlot(draft, "A2"), readSlot(draft, "B1"), readSlot(draft, "B2")];
+    assert.equal(new Set(ids).size, 3);
+
+    draft = clearSlot(draft, "A2");
+    draft = addUnnamedToSlot(draft, "A2");
+    assert.equal(name("A2"), "Player 2");
+    assert.equal(name("B1"), "Player 3");
+    assert.equal(name("B2"), "Player 4");
+
+    const player2 = readSlot(draft, "A2");
+    assert.ok(player2);
+    const swapped = fillSlot(draft, "B2", player2);
+    assert.equal(name("B2", swapped), "Player 2");
+    assert.equal(name("A2", swapped), "Player 4");
+    assert.equal(readSlot(swapped, "B1"), readSlot(draft, "B1"));
+
+    const withoutYou = addUnnamedToSlot(clearSlot(initialPadelDraft(), "A1"), "A1");
+    assert.equal(resolvePadelPlayer(withoutYou, readSlot(withoutYou, "A1") ?? "")?.name, "Player 2");
+
+    const named = addGuestToSlot(initialPadelDraft(), "A2", "Player 2");
+    const afterNamed = addUnnamedToSlot(named, "B1");
+    assert.equal(resolvePadelPlayer(afterNamed, readSlot(afterNamed, "B1") ?? "")?.name, "Player 3");
+
+    const singles = setDraftFormat(initialPadelDraft(), "singles");
+    assert.equal(addUnnamedToSlot(singles, "A2"), singles);
+
+    let ready = addUnnamedToSlot(initialPadelDraft(), "A2");
+    ready = fillSlot(ready, "B1", "sam-pillay");
+    ready = fillSlot(ready, "B2", "riley-botha");
+    ready = {
+      ...ready,
+      sets: [
+        { gamesA: 6, gamesB: 4, tiebreakA: null, tiebreakB: null },
+        { gamesA: 6, gamesB: 3, tiebreakA: null, tiebreakB: null },
+      ],
+    };
+    const now = new Date(2026, 9, 20, 9, 30);
+    const summary = summaryFromDraft(ready, now);
+    assert.equal(summary?.teamA, "You & Player 2");
+    assert.equal(summary?.teamB, "Sam Pillay & Riley Botha");
+    assert.equal(summary?.winner, "Team A");
+    const saved = buildSavedMatch(ready, { id: "unnamed", now });
+    assert.equal(saved?.teamA[1]?.name, "Player 2");
+    assert.equal(saved?.teamA[1]?.id.startsWith("unnamed-"), true);
+    assert.equal(saved?.winner, "A");
   });
 
   it("sets a venue without toggling, and filters the sheet lists", () => {

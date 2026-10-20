@@ -625,6 +625,9 @@
   overflow: auto;
   min-height: 0;
 }
+.play-mode .padel-record .unnamed {
+  margin: 0 4px 12px;
+}
 .play-mode .padel-record .sheet-search {
   display: block;
   margin: 0 4px 10px;
