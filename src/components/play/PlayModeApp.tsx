@@ -1,9 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { getLoginPageHref } from "@/lib/auth-return-to";
 import { useEffect, useReducer, useRef } from "react";
-import Link from "next/link";
 import "./play-mode.css";
 import { GolfHome } from "./GolfHome";
 import { PadelHome } from "./PadelHome";
@@ -64,42 +61,6 @@ function Glyph({ mode, size }: { mode: PlayMode; size: number }) {
       <circle cx="17" cy="9" r="2.6" />
       <path d="M17 14.5c2.3 0 4 1.4 4.6 4" />
     </svg>
-  );
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]!.charAt(0)}${parts[1]!.charAt(0)}`.toUpperCase();
-  }
-  return parts[0]?.slice(0, 2).toUpperCase() ?? "";
-}
-
-function ModeAvatar() {
-  const { isAuthenticated, isLoading, user, displayName } = useAuth();
-
-  if (isLoading || !isAuthenticated || !user) {
-    return (
-      <Link href={getLoginPageHref("/play")} className="av av-guest" aria-label="Sign in">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 19.5c.8-3.4 3.2-5 7-5s6.2 1.6 7 5" />
-        </svg>
-      </Link>
-    );
-  }
-
-  if (user.avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- remote OAuth avatars
-      <img src={user.avatarUrl} alt="" className="av av-photo" referrerPolicy="no-referrer" />
-    );
-  }
-
-  return (
-    <span className="av" aria-hidden>
-      {initials(displayName)}
-    </span>
   );
 }
 
@@ -218,7 +179,6 @@ export function PlayModeApp({
             </svg>
           </span>
         </button>
-        <ModeAvatar />
       </div>
       <div className="content">
         {mode === "golf" ? (

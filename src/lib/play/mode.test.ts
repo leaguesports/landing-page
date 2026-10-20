@@ -187,4 +187,29 @@ describe("mode sheet", () => {
     assert.match(app, /PLAY_MODE_SESSION_LIVE/);
     assert.match(chrome, /isPlayModeAppPath/);
   });
+
+  it("renders the site header on /play", () => {
+    const chrome = readFileSync(
+      new URL("../../components/ChromeFrame.tsx", import.meta.url),
+      "utf8",
+    );
+    const layout = readFileSync(new URL("../../app/layout.tsx", import.meta.url), "utf8");
+    const nav = readFileSync(
+      new URL("../../components/Navigation.tsx", import.meta.url),
+      "utf8",
+    );
+    const app = readFileSync(
+      new URL("../../components/play/PlayModeApp.tsx", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(layout, /nav=\{<Navigation \/>\}/);
+    assert.match(nav, /<header[\s\S]*aria-label="Main"/);
+    assert.match(nav, /HeaderSessionControls/);
+    assert.match(chrome, /\{nav\}/);
+    assert.doesNotMatch(chrome, /isPlayModeAppPath\(pathname\)\) \{\s*return \(/);
+    assert.match(chrome, /const play = isPlayModeAppPath\(pathname\)/);
+    assert.match(chrome, /\{play \? null : footer\}/);
+    assert.doesNotMatch(app, /function ModeAvatar|className="av"|aria-label="Sign in"/);
+  });
 });
