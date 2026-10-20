@@ -4,7 +4,7 @@
  * MOCK Record a match. Steps stay on /play. No network.
  */
 
-import { PADEL_MOCK_VENUES, padelMockPlayer } from "@/lib/play/mock/padel-mock-data";
+import { padelMockVenue } from "@/lib/play/mock/padel-mock-data";
 import {
   PADEL_MOCK_SHARE_TOAST,
   buildSavedMatch,
@@ -14,17 +14,23 @@ import {
   type SavedPadelMatch,
 } from "@/lib/play/mock/padel-match-store";
 import {
-  assignPlayer,
-  availablePlayers,
+  addGuestToSlot,
+  clearSlot,
+  fillSlot,
   initialPadelDraft,
-  removePlayer,
+  matchingPlayers,
+  matchingVenues,
+  readSlot,
+  resolvePadelPlayer,
   setDraftFormat,
   setDraftVenue,
   shortPlayerList,
-  slotCount,
+  slotOfPlayer,
+  slotsForSide,
   teamsReady,
   type PadelDraft,
   type PadelFormat,
+  type PadelSlotId,
 } from "@/lib/play/mock/padel-record";
 import {
   canSaveMatch,
@@ -41,7 +47,7 @@ import {
   type PadelSet,
   type PadelSide,
 } from "@/lib/play/mock/padel-score";
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type Step = "players" | "score" | "review" | "done";
 
@@ -63,9 +69,10 @@ function createMatchId(): string {
   return random ? `mock-${random}` : `mock-${Date.now()}`;
 }
 
-function namedPlayers(ids: readonly string[]) {
-  return ids.flatMap((id) => {
-    const player = padelMockPlayer(id);
+function namedSide(draft: PadelDraft, side: "A" | "B") {
+  return slotsForSide(draft.format, side).flatMap((slot) => {
+    const id = readSlot(draft, slot);
+    const player = id ? resolvePadelPlayer(draft, id) : null;
     return player ? [player] : [];
   });
 }
@@ -169,6 +176,10 @@ export function PadelRecordFlow({
   const [saved, setSaved] = useState<SavedPadelMatch | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [playedOn, setPlayedOn] = useState<Date | null>(null);
+  const [sheet, setSheet] = useState<{ kind: "player"; slot: PadelSlotId } | { kind: "venue" } | null>(null);
+  const [query, setQuery] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const openerRef = useRef<HTMLElement | null>(null);
 
   function back() {
     if (step === "score") setStep("players");
@@ -208,8 +219,8 @@ export function PadelRecordFlow({
     setStep("players");
   }
 
-  const teamA = namedPlayers(draft.teamA);
-  const teamB = namedPlayers(draft.teamB);
+  const teamA = namedSide(draft, "A");
+  const teamB = namedSide(draft, "B");
   const shortA = teamA.length ? shortPlayerList(teamA) : "Team A";
   const shortB = teamB.length ? shortPlayerList(teamB) : "Team B";
   const ready = teamsReady(draft);
@@ -218,6 +229,44 @@ export function PadelRecordFlow({
   const done = saved ? summaryFromMatch(saved) : null;
   const title = step === "done" ? (done ? `${done.winner} won` : "Saved") : STEP_TITLE[step];
   const openSets = setsForEntry(draft.sets);
+  const venue = draft.venueId ? padelMockVenue(draft.venueId) : null;
+
+  function openPlayer(slot: PadelSlotId, opener: HTMLElement) {
+    openerRef.current = opener;
+    setQuery("");
+    setGuestName("");
+    setSheet({ kind: "player", slot });
+  }
+
+  function openVenue(opener: HTMLElement) {
+    openerRef.current = opener;
+    setQuery("");
+    setGuestName("");
+    setSheet({ kind: "venue" });
+  }
+
+  function closeSheet() {
+    const opener = openerRef.current;
+    setSheet(null);
+    setQuery("");
+    setGuestName("");
+    requestAnimationFrame(() => opener?.focus());
+  }
+
+  function pickPlayer(playerId: string) {
+    if (sheet?.kind !== "player") return;
+    const slot = sheet.slot;
+    setDraft((current) => fillSlot(current, slot, playerId));
+    closeSheet();
+  }
+
+  function confirmGuest() {
+    if (sheet?.kind !== "player" || !guestName.trim()) return;
+    const slot = sheet.slot;
+    const name = guestName;
+    setDraft((current) => addGuestToSlot(current, slot, name));
+    closeSheet();
+  }
 
   return (
     <section className="padel-record" aria-label="Record a match" data-flow-step={step} data-padel-mock="on">
@@ -249,55 +298,59 @@ export function PadelRecordFlow({
               </button>
             ))}
           </div>
-          <TeamBlock
-            label="Team A"
-            ids={draft.teamA}
-            slots={slotCount(draft.format)}
-            onRemove={(id) => setDraft((current) => removePlayer(current, id))}
-          />
-          <TeamBlock
-            label="Team B"
-            ids={draft.teamB}
-            slots={slotCount(draft.format)}
-            onRemove={(id) => setDraft((current) => removePlayer(current, id))}
-          />
-          <p className="lbl picks-label">Add a player</p>
-          {availablePlayers(draft).length === 0 ? (
-            <p className="hint">Teams are full.</p>
-          ) : (
-            <div className="picks">
-              {availablePlayers(draft).map((player) => (
-                <button
-                  key={player.id}
-                  type="button"
-                  className="pick"
-                  data-player={player.id}
-                  onClick={() => setDraft((current) => assignPlayer(current, player.id))}
-                >
-                  {player.name}
-                </button>
-              ))}
-            </div>
-          )}
-          <p className="lbl picks-label">Venue</p>
-          <p className="hint">Optional</p>
-          <div className="picks">
-            {PADEL_MOCK_VENUES.map((venue) => (
-              <button
-                key={venue.id}
-                type="button"
-                className="pick"
-                data-venue={venue.id}
-                aria-pressed={draft.venueId === venue.id}
-                onClick={() => setDraft((current) => setDraftVenue(current, venue.id))}
-              >
-                {venue.name}
-              </button>
-            ))}
+          <div className="court">
+            <CourtSide
+              label="Team A"
+              slots={slotsForSide(draft.format, "A")}
+              draft={draft}
+              onOpen={openPlayer}
+              onClear={(slot) => setDraft((current) => clearSlot(current, slot))}
+            />
+            <CourtSide
+              label="Team B"
+              slots={slotsForSide(draft.format, "B")}
+              draft={draft}
+              onOpen={openPlayer}
+              onClear={(slot) => setDraft((current) => clearSlot(current, slot))}
+            />
           </div>
+          <VenueRow
+            name={venue?.name ?? null}
+            onOpen={openVenue}
+            onClear={() => setDraft((current) => setDraftVenue(current, null))}
+          />
           <button type="button" className="cta" disabled={!ready} onClick={() => setStep("score")}>
             Continue
           </button>
+          {sheet?.kind === "player" ? (
+            <PlayerSheet
+              slot={sheet.slot}
+              draft={draft}
+              query={query}
+              guestName={guestName}
+              onQuery={setQuery}
+              onGuestName={setGuestName}
+              onPick={pickPlayer}
+              onGuest={confirmGuest}
+              onClose={closeSheet}
+            />
+          ) : null}
+          {sheet?.kind === "venue" ? (
+            <VenueSheet
+              query={query}
+              selectedId={draft.venueId}
+              onQuery={setQuery}
+              onPick={(id) => {
+                setDraft((current) => setDraftVenue(current, id));
+                closeSheet();
+              }}
+              onSkip={() => {
+                setDraft((current) => setDraftVenue(current, null));
+                closeSheet();
+              }}
+              onClose={closeSheet}
+            />
+          ) : null}
         </>
       ) : null}
 
@@ -374,39 +427,301 @@ export function PadelRecordFlow({
   );
 }
 
-function TeamBlock({
+function CourtSide({
   label,
-  ids,
   slots,
-  onRemove,
+  draft,
+  onOpen,
+  onClear,
 }: {
   label: string;
-  ids: readonly string[];
-  slots: number;
-  onRemove: (id: string) => void;
+  slots: readonly PadelSlotId[];
+  draft: PadelDraft;
+  onOpen: (slot: PadelSlotId, opener: HTMLElement) => void;
+  onClear: (slot: PadelSlotId) => void;
 }) {
-  const players = namedPlayers(ids);
-  const empty = Math.max(0, slots - players.length);
   return (
-    <section className="team" aria-label={label}>
+    <section className="court-side" aria-label={label}>
       <p className="lbl">{label}</p>
-      {players.map((player) => (
-        <div key={player.id} className="slot" data-slot={player.id}>
-          <span className="avatar" aria-hidden>
-            {initials(player.name)}
-          </span>
-          <span className="who">{player.name}</span>
-          <button type="button" className="x" aria-label={`Remove ${player.name}`} onClick={() => onRemove(player.id)}>
-            ×
-          </button>
-        </div>
-      ))}
-      {Array.from({ length: empty }, (_, index) => (
-        <div key={`${label}-empty-${index}`} className="slot empty">
-          Add a player
-        </div>
-      ))}
+      {slots.map((slot) => {
+        const id = readSlot(draft, slot);
+        const player = id ? resolvePadelPlayer(draft, id) : null;
+        if (!player) {
+          return (
+            <button
+              key={slot}
+              type="button"
+              className="slot empty"
+              data-slot={slot}
+              aria-label={`${slot}, empty`}
+              onClick={(event) => onOpen(slot, event.currentTarget)}
+            >
+              <span className="slot-code">{slot}</span>
+              <span className="who">Tap to add</span>
+            </button>
+          );
+        }
+        return (
+          <div key={slot} className="slot" data-slot={slot} data-player={player.id}>
+            <button
+              type="button"
+              className="slot-hit"
+              aria-label={`${slot}, ${player.name}`}
+              onClick={(event) => onOpen(slot, event.currentTarget)}
+            >
+              <span className="avatar" aria-hidden>
+                {initials(player.name)}
+              </span>
+              <span className="slot-copy">
+                <span className="slot-code">{slot}</span>
+                <span className="who">{player.name}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="x"
+              aria-label={`Clear ${player.name}`}
+              onClick={() => onClear(slot)}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
     </section>
+  );
+}
+
+function VenueRow({
+  name,
+  onOpen,
+  onClear,
+}: {
+  name: string | null;
+  onOpen: (opener: HTMLElement) => void;
+  onClear: () => void;
+}) {
+  if (!name) {
+    return (
+      <button type="button" className="venue-row" data-venue-row="empty" onClick={(event) => onOpen(event.currentTarget)}>
+        <span className="slot-copy">
+          <span className="slot-code">Where did you play?</span>
+          <span className="who">Optional</span>
+        </span>
+      </button>
+    );
+  }
+  return (
+    <div className="venue-row" data-venue-row={name}>
+      <button type="button" className="slot-hit" onClick={(event) => onOpen(event.currentTarget)}>
+        <span className="slot-copy">
+          <span className="slot-code">Where did you play?</span>
+          <span className="who">{name}</span>
+        </span>
+      </button>
+      <button type="button" className="x" aria-label={`Clear ${name}`} onClick={onClear}>
+        ×
+      </button>
+    </div>
+  );
+}
+
+function BottomSheet({
+  titleId,
+  title,
+  sheet,
+  onClose,
+  children,
+}: {
+  titleId: string;
+  title: string;
+  sheet: "player" | "venue";
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector<HTMLElement>("[data-sheet-search]")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="sheet padel-sheet"
+      data-sheet={sheet}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      style={{ maxWidth: "100%", maxHeight: "100%", width: "100%", height: "100%", margin: 0 }}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="sheet-panel">
+        <div className="grab" aria-hidden />
+        <div className="sheet-head">
+          <h2 id={titleId}>{title}</h2>
+        </div>
+        {children}
+      </div>
+    </dialog>
+  );
+}
+
+function PlayerSheet({
+  slot,
+  draft,
+  query,
+  guestName,
+  onQuery,
+  onGuestName,
+  onPick,
+  onGuest,
+  onClose,
+}: {
+  slot: PadelSlotId;
+  draft: PadelDraft;
+  query: string;
+  guestName: string;
+  onQuery: (value: string) => void;
+  onGuestName: (value: string) => void;
+  onPick: (playerId: string) => void;
+  onGuest: () => void;
+  onClose: () => void;
+}) {
+  const players = matchingPlayers(query);
+  return (
+    <BottomSheet titleId="padel-player-sheet-title" title={`Choose ${slot}`} sheet="player" onClose={onClose}>
+      <label className="sheet-search">
+        <span className="sheet-search-label">Search</span>
+        <input
+          data-sheet-search=""
+          type="search"
+          placeholder="Search players"
+          value={query}
+          autoComplete="off"
+          onChange={(event) => onQuery(event.target.value)}
+        />
+      </label>
+      <div className="sheet-scroll">
+        {players.length === 0 ? (
+          <p className="hint">No players match.</p>
+        ) : (
+          <ul className="sheet-list">
+            {players.map((player) => {
+              const seated = slotOfPlayer(draft, player.id);
+              return (
+                <li key={player.id}>
+                  <button
+                    type="button"
+                    className={seated === slot ? "prow cur" : "prow"}
+                    data-player={player.id}
+                    aria-current={seated === slot ? "true" : undefined}
+                    onClick={() => onPick(player.id)}
+                  >
+                    <span className="avatar" aria-hidden>
+                      {initials(player.name)}
+                    </span>
+                    <span className="slot-copy">
+                      <span className="who">{player.name}</span>
+                      {seated ? (
+                        <span className="seat-note">{seated === slot ? "In this slot" : seated}</span>
+                      ) : null}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+      <div className="rule" />
+      <form
+        className="guest-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onGuest();
+        }}
+      >
+        <p className="lbl">Add guest by name</p>
+        <input
+          value={guestName}
+          placeholder="Name"
+          aria-label="Guest name"
+          autoComplete="off"
+          onChange={(event) => onGuestName(event.target.value)}
+        />
+        <button type="submit" className="cta" disabled={!guestName.trim()}>
+          Add guest
+        </button>
+      </form>
+    </BottomSheet>
+  );
+}
+
+function VenueSheet({
+  query,
+  selectedId,
+  onQuery,
+  onPick,
+  onSkip,
+  onClose,
+}: {
+  query: string;
+  selectedId: string | null;
+  onQuery: (value: string) => void;
+  onPick: (venueId: string) => void;
+  onSkip: () => void;
+  onClose: () => void;
+}) {
+  const venues = matchingVenues(query);
+  return (
+    <BottomSheet titleId="padel-venue-sheet-title" title="Where did you play?" sheet="venue" onClose={onClose}>
+      <label className="sheet-search">
+        <span className="sheet-search-label">Search</span>
+        <input
+          data-sheet-search=""
+          type="search"
+          placeholder="Search venues"
+          value={query}
+          autoComplete="off"
+          onChange={(event) => onQuery(event.target.value)}
+        />
+      </label>
+      <div className="sheet-scroll">
+        {venues.length === 0 ? (
+          <p className="hint">No venues match.</p>
+        ) : (
+          <ul className="sheet-list">
+            {venues.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={selectedId === item.id ? "prow cur" : "prow"}
+                  data-venue={item.id}
+                  aria-pressed={selectedId === item.id}
+                  onClick={() => onPick(item.id)}
+                >
+                  <span className="who">{item.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <button type="button" className="sec" onClick={onSkip}>
+        Skip
+      </button>
+    </BottomSheet>
   );
 }
 

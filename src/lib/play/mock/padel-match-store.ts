@@ -153,8 +153,8 @@ export function buildSavedMatch(
   if (!input.id || !teamsReady(draft) || !canSaveMatch(draft.sets)) return null;
   const sets = setsToSave(draft.sets);
   const winner = sets ? matchWinner(sets) : null;
-  const teamA = playersFromIds(draft.teamA);
-  const teamB = playersFromIds(draft.teamB);
+  const teamA = playersFromIds(draft, draft.teamA);
+  const teamB = playersFromIds(draft, draft.teamB);
   const playedOn = localDateISO(input.now);
   if (!sets || !winner || !teamA || !teamB || !playedOn) return null;
   const venue = draft.venueId ? padelMockVenue(draft.venueId) : null;

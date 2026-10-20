@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PLAY_MODE_SESSION_LIVE } from "../mode.ts";
 import { PADEL_HOME_COPY, PadelHomeView } from "../padel-home.ts";
-import { assignPlayer, initialPadelDraft, setDraftVenue } from "./padel-record.ts";
+import { fillSlot, initialPadelDraft, setDraftVenue } from "./padel-record.ts";
 import { stepGames, stepTiebreak, type PadelSet } from "./padel-score.ts";
 import {
   PADEL_MOCK_FLAG_KEY,
@@ -41,9 +41,9 @@ function pump(set: PadelSet, side: "A" | "B", times: number, tiebreak = false): 
 
 function doublesDraft() {
   let draft = initialPadelDraft();
-  for (const id of ["you", "alex-nkosi", "sam-pillay", "riley-botha"]) {
-    draft = assignPlayer(draft, id);
-  }
+  draft = fillSlot(draft, "A2", "alex-nkosi");
+  draft = fillSlot(draft, "B1", "sam-pillay");
+  draft = fillSlot(draft, "B2", "riley-botha");
   draft = setDraftVenue(draft, "harbour-padel");
   const setOne = pump(pump(draft.sets[0]!, "A", 6), "B", 4);
   const setTwo = pump(pump(draft.sets[1]!, "A", 3), "B", 6);
