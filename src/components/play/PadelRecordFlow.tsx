@@ -36,8 +36,8 @@ import {
   setWinner,
   stepGames,
   stepTiebreak,
+  setsForEntry,
   tiebreakOpen,
-  visibleSetCount,
   type PadelSet,
   type PadelSide,
 } from "@/lib/play/mock/padel-score";
@@ -217,7 +217,7 @@ export function PadelRecordFlow({
   const review = step === "review" && playedOn ? summaryFromDraft(draft, playedOn) : null;
   const done = saved ? summaryFromMatch(saved) : null;
   const title = step === "done" ? (done ? `${done.winner} won` : "Saved") : STEP_TITLE[step];
-  const openSets = draft.sets.slice(0, visibleSetCount(draft.sets));
+  const openSets = setsForEntry(draft.sets);
 
   return (
     <section className="padel-record" aria-label="Record a match" data-flow-step={step} data-padel-mock="on">

@@ -118,6 +118,12 @@ export function visibleSetCount(sets: readonly PadelSet[]): number {
   return 2;
 }
 
+/** Pads with an empty set so the third set can be entered once the match is 1-1. */
+export function setsForEntry(sets: readonly PadelSet[]): PadelSet[] {
+  const count = visibleSetCount(sets);
+  return Array.from({ length: count }, (_, index) => sets[index] ?? emptyPadelSet());
+}
+
 /** Save stays blocked until best-of-3 has a winner. */
 export function canSaveMatch(sets: readonly PadelSet[]): boolean {
   return matchWinner(sets) !== null;
@@ -206,11 +212,11 @@ export function canStepTiebreak(set: PadelSet, side: PadelSide, delta: 1 | -1): 
 }
 
 export function replaceSet(sets: readonly PadelSet[], index: number, next: PadelSet): PadelSet[] {
-  const visible = visibleSetCount(sets);
-  if (index < 0 || index >= visible) return sets.slice(0, visible);
-  const copy = Array.from({ length: visible }, (_, slot) => sets[slot] ?? emptyPadelSet());
+  const padded = setsForEntry(sets);
+  if (index < 0 || index >= padded.length) return padded;
+  const copy = padded.slice();
   copy[index] = normalizeTiebreak(next);
-  return copy.slice(0, visibleSetCount(copy));
+  return setsForEntry(copy);
 }
 
 export function formatSetLine(set: PadelSet): string {

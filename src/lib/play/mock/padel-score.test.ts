@@ -12,6 +12,7 @@ import {
   matchWinner,
   replaceSet,
   setWinner,
+  setsForEntry,
   setsToSave,
   stepGames,
   stepTiebreak,
@@ -119,6 +120,10 @@ describe("padel best of 3", () => {
     assert.equal(visibleSetCount([setOne, games(6, 2)]), 2);
     assert.equal(visibleSetCount([setOne, setTwo]), 3);
     assert.equal(visibleSetCount([setOne, setTwo, tiebreak]), 3);
+    assert.equal(setsForEntry([setOne, setTwo]).length, 3);
+    assert.equal(setWinner(setsForEntry([setOne, setTwo])[2]!), null);
+    assert.equal(setsForEntry([setOne, games(6, 3)]).length, 2);
+    assert.equal(setsForEntry([emptyPadelSet()]).length, 1);
 
     assert.equal(matchWinner([setOne]), null);
     assert.equal(canSaveMatch([setOne]), false);
