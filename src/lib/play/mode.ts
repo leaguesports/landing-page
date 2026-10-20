@@ -9,7 +9,7 @@ export type PlayMode = (typeof PLAY_MODES)[number];
 export const DEFAULT_PLAY_MODE: PlayMode = "social";
 export const PLAY_MODE_STORAGE_KEY = "leaguesports.play.mode";
 
-/** Live session stats are not wired. The header avatar uses the auth session. */
+/** Live session stats are not wired. Account stays on the site header. */
 export const PLAY_MODE_SESSION_LIVE = false;
 
 export const PLAY_MODE_COPY: Record<

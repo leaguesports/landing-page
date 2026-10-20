@@ -14,18 +14,20 @@ export function ChromeFrame({
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? "";
-  if (isPlayModeAppPath(pathname)) {
-    return (
-      <main className="min-h-dvh min-w-0 flex-1 overflow-x-clip bg-white text-[#09090b]">
-        {children}
-      </main>
-    );
-  }
+  const play = isPlayModeAppPath(pathname);
   return (
     <>
       {nav}
-      <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>
-      {footer}
+      <main
+        className={
+          play
+            ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip bg-white text-[#09090b]"
+            : "min-w-0 flex-1 overflow-x-clip"
+        }
+      >
+        {children}
+      </main>
+      {play ? null : footer}
     </>
   );
 }
