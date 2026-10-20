@@ -1,19 +1,27 @@
-import { PlayHubChrome } from "@/components/play/PlayHubChrome";
-import { PlaySportGrid } from "@/components/play/PlaySportGrid";
-import { SPORT_CATALOG } from "@/lib/sports/catalog";
-import { hubPlayGridItems } from "@/lib/sports/hub-ia";
-import type { Metadata } from "next";
+import { PlayModeApp } from "@/components/play/PlayModeApp";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "Play",
-  description:
-    "Pick padel, golf, or darts to find a place to play.",
+  description: "Switch between Social, Golf, and Padel.",
 };
 
-export default function PlayGridPage() {
-  return (
-    <PlayHubChrome>
-      <PlaySportGrid items={hubPlayGridItems(SPORT_CATALOG)} />
-    </PlayHubChrome>
-  );
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+};
+
+function modeParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+export default async function PlayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  return <PlayModeApp initialModeParam={modeParam(params.mode)} />;
 }

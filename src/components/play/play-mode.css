@@ -1,0 +1,144 @@
+/* Light tokens from golf game day desktop.css (#285): ink, deep green, mint. */
+.play-mode {
+  --ink: #09090b;
+  --sub: #52525c;
+  --line: #d4d4d8;
+  --line2: #e4e4e7;
+  --tint: #e9fff1;
+  --mint: #3dff8a;
+  min-height: 100dvh;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-outfit), Outfit, system-ui, sans-serif;
+}
+
+.play-mode button { font-family: inherit; color: inherit; cursor: pointer; }
+.play-mode .top {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.play-mode .pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 6px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  font-weight: 700;
+  font-size: 17px;
+}
+.play-mode .ic,
+.play-mode .mi { border-radius: 50%; display: grid; place-items: center; flex: none; }
+.play-mode .ic { width: 32px; height: 32px; }
+.play-mode .chev { margin-left: 2px; display: grid; }
+.play-mode .av {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--ink);
+  color: var(--mint);
+  overflow: hidden;
+  text-decoration: none;
+}
+.play-mode .av-guest {
+  background: #f4f4f5;
+  color: #3f3f46;
+}
+.play-mode .av-photo { object-fit: cover; }
+.play-mode .content { padding: 6px 16px 32px; }
+.play-mode h1,
+.play-mode .sheet h2 {
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.9px;
+  line-height: 0.95;
+  color: var(--ink);
+}
+.play-mode h1 { font-size: 42px; margin: 6px 0 0; }
+.play-mode .soon { margin-top: 12px; color: var(--sub); font-size: 15px; font-weight: 500; }
+
+.play-mode dialog.sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.play-mode dialog.sheet::backdrop {
+  background: rgba(9, 9, 11, 0.45);
+  backdrop-filter: blur(2px);
+}
+.play-mode .sheet-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 28px 28px 0 0;
+  padding: 10px 16px max(30px, env(safe-area-inset-bottom));
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.25);
+}
+.play-mode .grab {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  margin: 0 auto 16px;
+}
+.play-mode .sheet-head {
+  margin: 0 4px 14px;
+}
+.play-mode .sheet h2 { font-size: 34px; margin: 0; }
+.play-mode .mrow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  min-height: 70px;
+  text-align: left;
+}
+.play-mode .mrow.cur {
+  border: 2.5px solid var(--ink);
+  background: var(--tint);
+  padding: 12px 13px;
+}
+.play-mode .mrow:disabled {
+  border-style: dashed;
+  border-color: var(--ink);
+  opacity: 1;
+  cursor: default;
+}
+.play-mode .mi { width: 44px; height: 44px; }
+.play-mode .mrow .t { display: block; font-size: 16px; font-weight: 700; }
+.play-mode .mrow .s { display: block; font-size: 13px; color: var(--sub); margin-top: 2px; font-weight: 500; }
+.play-mode .tick {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #006045;
+  font-weight: 700;
+  font-size: 14px;
+}
+.play-mode .rule { height: 1px; background: var(--line2); margin: 14px 4px; }
+.play-mode :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
