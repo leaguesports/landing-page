@@ -206,6 +206,33 @@ export const EVENTS_CMS_ON_DAY_QUERY = `*[
   ${EVENT_CMS_PROJECTION}
 }`;
 
+/**
+ * Watch venues that may list this fixture.
+ * Play-only venues have sports and no broadcasts, so they stay out.
+ * The hub feed is capped; this lookup is how /events/[slug] fills "Where it's on".
+ * JS (`watchVenuesListingEvent`) keeps title, kickoff day, and slug/id matches.
+ */
+export const EVENTS_WATCH_VENUES_FOR_EVENT_QUERY = `*[
+  _type == "venue" &&
+  count(broadcasts) > 0 &&
+  count(upcoming_screenings[
+    (
+      defined($dayStart) &&
+      defined(startsAt) &&
+      startsAt >= $dayStart &&
+      startsAt < $dayEnd
+    ) ||
+    (defined($startsAt) && startsAt == $startsAt) ||
+    (defined($title) && title match $title)
+  ]) > 0
+] | order(name asc) [0...200] {
+  name,
+  "slug": slug.current,
+  ${EVENTS_VENUE_CITY_PROJECTION},
+  "broadcasts": broadcasts[]->{ name, "slug": slug.current },
+  "upcoming_screenings": upcoming_screenings[]{ title, startsAt }
+}`;
+
 export function upcomingNotBeforeIso(now: Date = new Date()): string {
   return new Date(now.getTime() - UPCOMING_GRACE_MS).toISOString();
 }
@@ -830,6 +857,104 @@ export function selectFeaturedFixture(
   });
   if (flagged.length === 0) return null;
   return sortUpcomingFixtures(flagged, now)[0] ?? null;
+}
+
+/** `{series}-{year}-{slug}` document ids, e.g. f1-2026-singapore-grand-prix. */
+const EVENT_DOC_ID_SLUG =
+  /^(?:f1|f2|motogp|psl|sa20|six-nations|premier-league|springboks)-\d{4}-(.+)$/;
+
+/**
+ * Slugs that identify one event: public slug, title slug, and the tail of a
+ * series-year document id. Day suffixes are stripped so `/events/singapore-grand-prix`
+ * matches a screening titled "Singapore Grand Prix".
+ */
+export function eventIdentitySlugs(event: {
+  title?: string | null;
+  slug?: string | null;
+  id?: string | null;
+}): string[] {
+  const slugs = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const text = (value ?? "").trim().toLowerCase();
+    if (!text) return;
+    slugs.add(text);
+    const { baseSlug } = parseFixtureSlug(text);
+    if (baseSlug) slugs.add(baseSlug);
+  };
+
+  const title = typeof event.title === "string" ? event.title : "";
+  if (title.trim()) add(fixtureSlugFromTitle(title));
+  add(event.slug);
+  const idTail = (event.id ?? "")
+    .trim()
+    .toLowerCase()
+    .match(EVENT_DOC_ID_SLUG)?.[1];
+  if (idTail) add(idTail);
+  return [...slugs];
+}
+
+/**
+ * A venue screening is this event when the title or slug identity matches
+ * and both kickoffs fall on the same Africa/Johannesburg day (when both exist).
+ */
+export function screeningMatchesEvent(
+  screening: { title?: unknown; startsAt?: unknown },
+  event: {
+    title: string;
+    startsAt?: string | null;
+    slug?: string | null;
+    id?: string | null;
+  },
+): boolean {
+  const title = asString(screening.title);
+  if (!title || !event.title.trim()) return false;
+
+  const sameTitle =
+    canonicalizeFixtureTitle(title) === canonicalizeFixtureTitle(event.title);
+  const sameIdentity = eventIdentitySlugs(event).includes(
+    fixtureSlugFromTitle(title),
+  );
+  if (!sameTitle && !sameIdentity) return false;
+
+  const screeningDay = fixtureCalendarDay(asIso(screening.startsAt));
+  const eventDay = fixtureCalendarDay(
+    event.startsAt ? asIso(event.startsAt) : null,
+  );
+  if (screeningDay && eventDay) return screeningDay === eventDay;
+  return true;
+}
+
+function venueListsBroadcast(venue: EventsScreeningVenueRow): boolean {
+  return (venue.broadcasts ?? []).some(
+    (item) => asString(item?.name) || asString(item?.slug),
+  );
+}
+
+/**
+ * Watch venues whose `upcoming_screenings` list this event.
+ * Play-only rows (no broadcasts) are dropped even if they carry the title.
+ */
+export function watchVenuesListingEvent(
+  venues: EventsScreeningVenueRow[],
+  event: {
+    title: string;
+    startsAt?: string | null;
+    slug?: string | null;
+    id?: string | null;
+  },
+): FixtureVenue[] {
+  const out = new Map<string, FixtureVenue>();
+  for (const venue of venues) {
+    if (!venueListsBroadcast(venue)) continue;
+    const slug = asString(venue.slug);
+    if (!slug) continue;
+    const listed = (venue.upcoming_screenings ?? []).some((screening) =>
+      screeningMatchesEvent(screening, event),
+    );
+    if (!listed) continue;
+    out.set(slug, venueFromRow(asString(venue.name) || "Venue", slug, venue));
+  }
+  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function findFixtureBySlug(
