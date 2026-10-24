@@ -25,6 +25,7 @@ import { ChevronRight, Globe, Mail, MapPin, MessageCircle, Phone, Star } from "l
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { VenueAbout } from "./VenueAbout";
 import { VenueClaimBar } from "./VenueClaimBar";
 import { VenueFixtureRows } from "./VenueFixtureRows";
 import { VenueFollowButton } from "./VenueFollowButton";
@@ -283,11 +284,7 @@ export async function VenueProfile({
 
           {about.length > 0 ? (
             <Block id="about" title={headings.about}>
-              <div className="space-y-4 text-base leading-relaxed text-zinc-700">
-                {about.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
+              <VenueAbout paragraphs={about} />
             </Block>
           ) : null}
 
