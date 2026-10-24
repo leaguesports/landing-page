@@ -216,6 +216,36 @@ export function resolveIntentIndexPolicy(input: {
   };
 }
 
+function cleanParagraphs(values: readonly string[] | null | undefined): string[] {
+  const paragraphs: string[] = [];
+  for (const value of values ?? []) {
+    const text = value.trim();
+    if (text) paragraphs.push(text);
+  }
+  return paragraphs;
+}
+
+function appendBestFor(paragraphs: readonly string[], bestFor: string): string[] {
+  if (!bestFor || paragraphs.includes(bestFor)) return [...paragraphs];
+  return [...paragraphs, bestFor];
+}
+
+/**
+ * CMS intro when the metro page has paragraphs. `bestFor` is its own
+ * paragraph. Null when the doc has neither, so callers keep the template.
+ */
+export function metroIntroParagraphs(metro: {
+  intro?: readonly string[] | null;
+  bestFor?: string | null;
+} | null | undefined): string[] | null {
+  if (!metro) return null;
+  const intro = cleanParagraphs(metro.intro);
+  const bestFor = metro.bestFor?.trim() ?? "";
+  if (intro.length === 0 && !bestFor) return null;
+  if (intro.length === 0) return [bestFor];
+  return appendBestFor(intro, bestFor);
+}
+
 /** Unique-ish intro paragraphs for the detail hero. */
 export function buildIntentIntroParagraphs(input: {
   intent: IntentKind;
@@ -225,6 +255,11 @@ export function buildIntentIntroParagraphs(input: {
   usedCityFallback: boolean;
   cityTitle?: string | null;
   enrichment: IntentPageEnrichment;
+  /** Published metroPage intro + bestFor. Empty fields keep the template. */
+  metro?: {
+    intro?: readonly string[] | null;
+    bestFor?: string | null;
+  } | null;
 }): string[] {
   const {
     intent,
@@ -234,14 +269,18 @@ export function buildIntentIntroParagraphs(input: {
     usedCityFallback,
     cityTitle,
     enrichment,
+    metro,
   } = input;
+  const cmsIntro = metroIntroParagraphs(metro);
+  if (cmsIntro && cleanParagraphs(metro?.intro).length > 0) return cmsIntro;
+
   const paragraphs: string[] = [];
 
   if (venueCount <= 0) {
     paragraphs.push(
       `We do not have a confirmed ${activity.name} ${intent} venue in ${locationTitle} yet. Browse nearby suburbs below, or check the full venues directory while we expand coverage.`,
     );
-    return paragraphs;
+    return appendBestFor(paragraphs, metro?.bestFor?.trim() ?? "");
   }
 
   // Watch city hubs say the counts once, in the stat strip — not again here.
@@ -258,7 +297,7 @@ export function buildIntentIntroParagraphs(input: {
     paragraphs.push(
       "Open a venue for the address and amenities before you head out.",
     );
-    return paragraphs;
+    return appendBestFor(paragraphs, metro?.bestFor?.trim() ?? "");
   }
 
   if (usedCityFallback && cityTitle) {
@@ -291,5 +330,5 @@ export function buildIntentIntroParagraphs(input: {
     );
   }
 
-  return paragraphs;
+  return appendBestFor(paragraphs, metro?.bestFor?.trim() ?? "");
 }

@@ -16,6 +16,7 @@ import {
 } from "./watch-fixture-card.ts";
 import { mergeVenueUpcomingScreenings } from "../sports/events-path.ts";
 import {
+  canonicalWatchCitySlug,
   formatWatchCalendarStamp,
   venueBroadcastSportSlugs,
 } from "./watch-screenings.ts";
@@ -155,12 +156,7 @@ const BUCKETS: { id: WatchHubBucketId; label: WatchHubBucket["label"] }[] = [
 ];
 
 function normalizeCitySlug(slug: string | null | undefined): string {
-  const city = (slug ?? "").trim().toLowerCase();
-  if (city === "joburg" || city === "jozi" || city === "jhb") return "johannesburg";
-  if (city === "cape town" || city === "capetown" || city === "cpt") return "cape-town";
-  if (city === "dbn") return "durban";
-  if (city === "pta" || city === "tshwane") return "pretoria";
-  return city;
+  return canonicalWatchCitySlug(slug);
 }
 
 function shiftSaDay(ymd: string, days: number): string {

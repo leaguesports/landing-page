@@ -1,5 +1,12 @@
 import { sanityClient } from "@/sanity/client";
 import {
+  METRO_PAGE_QUERY,
+  metroPageFetchParams,
+  pickMetroPage,
+  type MetroPageCopy,
+  type MetroPageRow,
+} from "./metro-page.ts";
+import {
   mapVenueRow,
   VENUE_IN_LOCATION,
   VENUE_PROJECTION,
@@ -69,6 +76,37 @@ async function fetchVenuesForIntent(
   );
 
   return rows.map(mapVenueRow).filter((v): v is VenueDetail => v !== null);
+}
+
+/**
+ * Published metroPage for this directory URL. Drafts are excluded.
+ * Missing env, a query error, or no match returns null so the template stays up.
+ */
+export async function getPublishedMetroPage(input: {
+  intent: IntentKind;
+  activity: IntentActivity;
+  citySlug: string;
+}): Promise<MetroPageCopy | null> {
+  const params = metroPageFetchParams(input);
+  if (!params) return null;
+  if (
+    !process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
+    !process.env.NEXT_PUBLIC_SANITY_DATASET
+  ) {
+    return null;
+  }
+
+  try {
+    const rows = await sanityClient.fetch<MetroPageRow[] | null>(
+      METRO_PAGE_QUERY,
+      params,
+      { perspective: "published" },
+    );
+    return pickMetroPage(rows, input.activity, input.citySlug);
+  } catch (error) {
+    console.error("[metroPage] fetch failed", error);
+    return null;
+  }
 }
 
 export async function getLocationBySlug(
