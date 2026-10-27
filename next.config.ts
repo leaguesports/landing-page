@@ -64,11 +64,6 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      {
-        source: "/athlete-tools",
-        destination: "/athletes",
-        permanent: true,
-      },
       ...HUB_PLAY_DEEP_LINK_REDIRECTS.map((row) => ({
         source: row.source,
         destination: row.destination,

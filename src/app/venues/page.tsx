@@ -75,15 +75,7 @@ export default async function VenuesPage({
     citySlug: filters.citySlug,
   });
 
-  const [fixtures, recommended] = await Promise.all([
-    getUpcomingFixtures({ limit: VENUE_HUB_FIXTURE_FETCH_LIMIT }).catch(
-      () => [],
-    ),
-    getRecommendedVenues({ locationSlug: citySlug }),
-  ]);
-
-  const onNow = buildOnNowCards(fixtures);
-  const eventTiles = filterHubEventTiles(fixtures, filters.sportSlug);
+  const recommended = await getRecommendedVenues({ locationSlug: citySlug, limit: 12 });
   const directories = venueHubDirectoryLinks();
 
   return (
@@ -104,8 +96,8 @@ export default async function VenuesPage({
         </div>
       </section>
 
-      <VenueHubOnNow cards={onNow} />
-      <VenueHubEventTiles fixtures={eventTiles} sportSlug={filters.sportSlug} />
+      {/* <VenueHubOnNow cards={onNow} /> */}
+      {/* <VenueHubEventTiles fixtures={eventTiles} sportSlug={filters.sportSlug} /> */}
       <VenueHubRecommended
         venues={recommended}
         cityLabel={filters.locationLabel ?? cityDisplayName(citySlug)}

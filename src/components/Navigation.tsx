@@ -12,7 +12,7 @@ export default function Navigation() {
     <header className="sticky top-0 z-50 w-full">
       <div className="border-b border-white/6 bg-[#0c0f0c]/80 backdrop-blur-xl">
         <nav
-          className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8"
+          className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8"
           aria-label="Main"
         >
           <Link

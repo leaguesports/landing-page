@@ -78,6 +78,10 @@ export const VENUE_HUB_RECOMMENDED_QUERY = `*[
   && defined(slug.current)
   && defined(name)
   && ($location == "" || ${VENUE_IN_LOCATION})
+  && (
+    defined(hero_image.asset)
+    || count(gallery[defined(asset)]) > 0
+  )
 ] | order(
   select(
     defined(hero_image.asset) => 0,
