@@ -1,10 +1,10 @@
 /**
  * Padel home for /play?mode=padel.
  *
- * PLAY_MODE_SESSION_LIVE is the session API plug-in. While it is false this
- * screen stays empty, and Record a match / Find a game / Join with code only
- * raise a notice. Do not fetch or navigate from here until a later PR
- * replaces beginPadelSession.
+ * PLAY_MODE_SESSION_LIVE is the session API plug-in. While it is false,
+ * Find a game and Join with code only raise a notice. Record a match does
+ * too, unless the mock gate is open. Do not fetch from here.
+ * beginPadelSession stays the session API wiring point.
  */
 
 import { createElement, type ReactElement, type ReactNode } from "react";
@@ -35,6 +35,14 @@ export type PadelHomeAction = "record" | "find" | "join";
 export type PadelHomePress =
   | { live: false; notice: typeof PADEL_HOME_COPY.notice }
   | { live: true; action: PadelHomeAction };
+
+export type PadelRecentItem = {
+  id: string;
+  teams: string;
+  score: string;
+  detail: string;
+  demo: boolean;
+};
 
 /** Local calendar date: `PADEL · MON 19 OCT`. Missing date stays `PADEL`. */
 export function padelEyebrow(date: Date | null): string {
@@ -175,17 +183,30 @@ export function PadelHomeView({
   title,
   notice,
   onAction,
+  recent = [],
+  showDemo = false,
 }: {
   eyebrow: string;
   title: string;
   notice: string | null;
   onAction: (action: PadelHomeAction) => void;
+  recent?: readonly PadelRecentItem[];
+  showDemo?: boolean;
 }): ReactElement {
   const describedBy = notice ? "padel-coming-soon" : undefined;
   return createElement(
     "section",
-    { className: "padel-home", "aria-label": "Padel" },
-    createElement("p", { className: "hello" }, eyebrow),
+    {
+      className: "padel-home",
+      "aria-label": "Padel",
+      "data-padel-mock": showDemo ? "on" : "off",
+    },
+    createElement(
+      "div",
+      { className: "kicker-row" },
+      createElement("p", { className: "hello" }, eyebrow),
+      showDemo ? createElement("span", { className: "demo-tag" }, "Demo") : null,
+    ),
     createElement("h1", null, title),
     createElement(
       "button",
@@ -252,7 +273,28 @@ export function PadelHomeView({
       "section",
       { "aria-labelledby": "padel-recent-label" },
       createElement("h2", { id: "padel-recent-label" }, PADEL_HOME_COPY.recentLabel),
-      createElement("p", { className: "rounds-empty" }, PADEL_HOME_COPY.recentEmpty),
+      recent.length === 0
+        ? createElement("p", { className: "rounds-empty" }, PADEL_HOME_COPY.recentEmpty)
+        : createElement(
+            "ul",
+            { className: "recent-list" },
+            recent.map((match) =>
+              createElement(
+                "li",
+                { key: match.id, className: "recent" },
+                createElement(
+                  "div",
+                  { className: "recent-top" },
+                  createElement("p", { className: "recent-teams" }, match.teams),
+                  match.demo
+                    ? createElement("span", { className: "demo-tag" }, "Demo")
+                    : null,
+                ),
+                createElement("p", { className: "recent-score" }, match.score),
+                createElement("p", { className: "recent-detail" }, match.detail),
+              ),
+            ),
+          ),
     ),
   );
 }
