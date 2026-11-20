@@ -10,10 +10,13 @@ import {
   EVENTS_CMS_QUERY,
   EVENTS_SCREENINGS_ON_DAY_QUERY,
   EVENTS_SCREENINGS_QUERY,
+  EVENTS_WATCH_VENUES_FOR_EVENT_QUERY,
+  fixtureCalendarDay,
   parseFixtureSlug,
   saDayBounds,
   sortUpcomingFixtures,
   upcomingNotBeforeIso,
+  watchVenuesListingEvent,
   type EventsCmsEventRow,
   type EventsScreeningVenueRow,
   type UpcomingFixture,
@@ -71,9 +74,52 @@ export async function getUpcomingFixtures(
 }
 
 /**
+ * Venues are stored on `venue.upcoming_screenings`, not on the event doc.
+ * The hub feed is capped, so a detail page can resolve the event with an
+ * empty venue list. This read is the reverse map for "Where it's on".
+ * A failed lookup leaves whatever the feed already attached.
+ */
+async function withListedWatchVenues(
+  fixture: UpcomingFixture | null,
+  identity: { slug?: string; id?: string | null } = {},
+): Promise<UpcomingFixture | null> {
+  if (!fixture?.title.trim()) return fixture;
+
+  const day = fixtureCalendarDay(fixture.startsAt);
+  const bounds = day ? saDayBounds(day) : null;
+  try {
+    const rows = await sanityClient.fetch<EventsScreeningVenueRow[] | null>(
+      EVENTS_WATCH_VENUES_FOR_EVENT_QUERY,
+      {
+        title: fixture.title,
+        startsAt: fixture.startsAt,
+        dayStart: bounds?.dayStart ?? null,
+        dayEnd: bounds?.dayEnd ?? null,
+      },
+    );
+    const listed = watchVenuesListingEvent(rows ?? [], {
+      title: fixture.title,
+      startsAt: fixture.startsAt,
+      slug: identity.slug || fixture.slug,
+      id: identity.id,
+    });
+    if (listed.length === 0) return fixture;
+    return {
+      ...fixture,
+      venues: listed,
+      kind: fixture.kind === "event" ? "both" : fixture.kind,
+    };
+  } catch (error) {
+    console.error("[events] watch-venue reverse lookup failed", error);
+    return fixture;
+  }
+}
+
+/**
  * Resolve a public /events/[slug] fixture.
  * Day-suffixed slugs query that SA calendar day directly so detail pages
- * are not limited to the truncated upcoming list.
+ * are not limited to the truncated upcoming list. Watch venues that list
+ * the fixture on `upcoming_screenings` are attached afterwards.
  */
 export async function getFixtureBySlug(
   slug: string,
@@ -124,12 +170,12 @@ export async function getFixtureBySlug(
           now: new Date(dayStart),
         },
       );
-      return findFixtureBySlug(fixtures, slug);
+      return withListedWatchVenues(findFixtureBySlug(fixtures, slug), { slug });
     }
 
     const fixtures = await getUpcomingFixtures({ limit: 48 });
     const fromUpcoming = findFixtureBySlug(fixtures, slug);
-    if (fromUpcoming) return fromUpcoming;
+    if (fromUpcoming) return withListedWatchVenues(fromUpcoming, { slug });
 
     const cmsEvent = await sanityClient.fetch<EventsCmsEventRow | null>(
       EVENTS_CMS_BY_SLUG_QUERY,
@@ -140,11 +186,15 @@ export async function getFixtureBySlug(
     const fromCms = cmsEventsToFixtures([cmsEvent], SPORT_CATALOG, {
       includePast: true,
     });
+    const eventId = typeof cmsEvent.id === "string" ? cmsEvent.id : null;
     const cmsDay = fromCms[0]
       ? parseFixtureSlug(fromCms[0].slug).day
       : null;
     if (!cmsDay) {
-      return findFixtureBySlug(fromCms, slug) ?? fromCms[0] ?? null;
+      return withListedWatchVenues(
+        findFixtureBySlug(fromCms, slug) ?? fromCms[0] ?? null,
+        { slug, id: eventId },
+      );
     }
 
     const { dayStart, dayEnd } = saDayBounds(cmsDay);
@@ -174,11 +224,12 @@ export async function getFixtureBySlug(
         now: new Date(dayStart),
       },
     );
-    return (
+    return withListedWatchVenues(
       findFixtureBySlug(dayFixtures, slug) ??
-      findFixtureBySlug(fromCms, slug) ??
-      fromCms[0] ??
-      null
+        findFixtureBySlug(fromCms, slug) ??
+        fromCms[0] ??
+        null,
+      { slug, id: eventId },
     );
   } catch (error) {
     console.error("[events] fixture-by-slug fetch failed", error);
