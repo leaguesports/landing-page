@@ -11,6 +11,7 @@ import {
 
 export const PADEL_CAPTURE_COPY = {
   title: "Record a match",
+  lede: "Who played, and the sets.",
   back: "Back",
   teamA: "Team A",
   teamB: "Team B",
