@@ -75,9 +75,11 @@ function remember(mode: PlayMode) {
 export function PlayModeApp({
   initialModeParam,
   initialFeedParam = null,
+  initialActionParam = null,
 }: {
   initialModeParam: string | null;
   initialFeedParam?: string | null;
+  initialActionParam?: string | null;
 }) {
   const urlPresent = initialModeParam !== null;
   const [sheet, dispatch] = useReducer(
@@ -184,7 +186,7 @@ export function PlayModeApp({
         {mode === "golf" ? (
           <GolfHome />
         ) : mode === "padel" ? (
-          <PadelHome />
+          <PadelHome initialActionParam={initialActionParam} />
         ) : (
           <SocialHome initialFeed={initialFeedParam} />
         )}
