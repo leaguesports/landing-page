@@ -392,3 +392,300 @@
 }
 .play-mode .rule { height: 1px; background: var(--line2); margin: 14px 4px; }
 .play-mode :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.play-mode .padel-capture {
+  position: relative;
+  margin: 0 -4px;
+  padding: 4px 4px 8px;
+  animation: padel-capture-in 320ms ease-out;
+}
+.play-mode .padel-capture::before {
+  content: "";
+  position: absolute;
+  inset: -12px -24px -40px;
+  background:
+    radial-gradient(95% 55% at 8% -5%, rgba(61, 255, 138, 0.28), transparent 58%),
+    radial-gradient(80% 45% at 92% 8%, rgba(0, 96, 69, 0.12), transparent 52%),
+    linear-gradient(180deg, #f3fff8 0%, #fff 42%, #fff 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.play-mode .padel-capture::after {
+  content: "";
+  position: absolute;
+  inset: 120px -24px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 96, 69, 0.18), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+.play-mode .padel-capture > * {
+  position: relative;
+  z-index: 1;
+}
+@keyframes padel-capture-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.play-mode .padel-capture .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sub);
+  font-weight: 700;
+  font-size: 14px;
+}
+.play-mode .padel-capture .capture-hero h1 {
+  font-size: 46px;
+}
+.play-mode .padel-capture .capture-hero .lede {
+  margin: 10px 0 0;
+  color: var(--sub);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  max-width: 18rem;
+}
+.play-mode .padel-capture .format-toggle {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.play-mode .padel-capture .format-label {
+  margin-right: 6px;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sub);
+}
+.play-mode .padel-capture .format {
+  min-width: 44px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2.5px solid transparent;
+  background: transparent;
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.5px;
+  color: #a1a1aa;
+}
+.play-mode .padel-capture .format.on {
+  color: var(--ink);
+  border-bottom-color: var(--mint);
+}
+.play-mode .padel-capture .capture-form {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.play-mode .padel-capture .sides {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.play-mode .padel-capture .side-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--eyebrow);
+}
+.play-mode .padel-capture .side input[type="text"] {
+  width: 100%;
+  margin: 0 0 8px;
+  height: 48px;
+  border: 0;
+  border-bottom: 1.5px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 2px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink);
+}
+.play-mode .padel-capture .side input[type="text"]::placeholder {
+  color: #a1a1aa;
+  font-weight: 600;
+}
+.play-mode .padel-capture .side input[type="text"]:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+.play-mode .padel-capture .versus {
+  margin: 36px 0 0;
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-size: 26px;
+  letter-spacing: 1.5px;
+  color: var(--eyebrow);
+  text-align: center;
+  opacity: 0.55;
+}
+.play-mode .padel-capture .scoreboard {
+  padding-top: 2px;
+}
+.play-mode .padel-capture .score-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.play-mode .padel-capture .score-head .side-label {
+  margin: 0;
+}
+.play-mode .padel-capture .set-links {
+  display: flex;
+  gap: 16px;
+}
+.play-mode .padel-capture .linkish {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--eyebrow);
+  font-weight: 700;
+  font-size: 13px;
+}
+.play-mode .padel-capture .linkish:disabled {
+  color: #a1a1aa;
+  cursor: default;
+}
+.play-mode .padel-capture .score-cols {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 8px;
+  margin: 4px 0 2px;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #a1a1aa;
+  text-align: center;
+}
+.play-mode .padel-capture .sets {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.play-mode .padel-capture .set-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--line2);
+  animation: padel-set-in 280ms ease-out;
+}
+@keyframes padel-set-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.play-mode .padel-capture .set-n {
+  padding-bottom: 10px;
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: #a1a1aa;
+}
+.play-mode .padel-capture .set-row input[type="number"] {
+  width: 100%;
+  height: 64px;
+  border: 0;
+  border-bottom: 2px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-size: 44px;
+  letter-spacing: 1px;
+  line-height: 1;
+  color: var(--ink);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.play-mode .padel-capture .set-row input[type="number"]::-webkit-outer-spin-button,
+.play-mode .padel-capture .set-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.play-mode .padel-capture .set-row input[type="number"]:focus {
+  outline: none;
+  border-bottom-color: var(--mint);
+}
+.play-mode .padel-capture .set-sep {
+  padding-bottom: 14px;
+  text-align: center;
+  font-weight: 700;
+  color: #a1a1aa;
+  font-size: 20px;
+}
+.play-mode .padel-capture .cta {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 64px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.play-mode .padel-capture .cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.play-mode .padel-capture .cta:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.play-mode .padel-capture .cta b {
+  font-size: 18px;
+  font-weight: 700;
+}
+.play-mode .padel-capture .cta:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+.play-mode .padel-capture.is-saved .saved-line {
+  margin: 18px 0 0;
+  font-family: var(--font-bebas), "Bebas Neue", Impact, sans-serif;
+  font-size: 52px;
+  letter-spacing: 1.5px;
+  line-height: 1;
+  color: var(--ink);
+  animation: padel-capture-in 360ms ease-out;
+}
+.play-mode .padel-capture.is-saved .saved-hint {
+  margin: 8px 0 0;
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 600;
+}
+.play-mode .padel-capture.is-saved .cta {
+  margin-top: 22px;
+}
+@media (max-width: 380px) {
+  .play-mode .padel-capture .sides {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .play-mode .padel-capture .versus {
+    margin: 0;
+    text-align: left;
+  }
+  .play-mode .padel-capture .set-row input[type="number"] {
+    font-size: 40px;
+    height: 58px;
+  }
+}

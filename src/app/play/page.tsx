@@ -20,13 +20,18 @@ function firstParam(value: string | string[] | undefined): string | null {
 export default async function PlayPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string | string[]; feed?: string | string[] }>;
+  searchParams: Promise<{
+    mode?: string | string[];
+    feed?: string | string[];
+    action?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   return (
     <PlayModeApp
       initialModeParam={firstParam(params.mode)}
       initialFeedParam={firstParam(params.feed)}
+      initialActionParam={firstParam(params.action)}
     />
   );
 }

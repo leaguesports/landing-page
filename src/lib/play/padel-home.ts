@@ -1,14 +1,15 @@
 /**
  * Padel home for /play?mode=padel.
  *
- * PLAY_MODE_SESSION_LIVE is the session API plug-in. While it is false this
- * screen stays empty, and Record a match / Find a game / Join with code only
- * raise a notice. Do not fetch or navigate from here until a later PR
- * replaces beginPadelSession.
+ * Record a match is live (finished capture). Find a game / Join with code
+ * stay gated on PLAY_MODE_SESSION_LIVE until live sessions ship.
  */
 
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { PLAY_MODE_SESSION_LIVE } from "./mode.ts";
+
+/** Finished-match capture via POST /api/sessions/record. */
+export const PADEL_CAPTURE_LIVE = true;
 
 export const PADEL_HOME_COPY = {
   title: "Game on",
@@ -64,35 +65,48 @@ export function padelTitle(input: { signedIn: boolean; displayName: string }): s
   return name ? `${PADEL_HOME_COPY.title}, ${name}` : PADEL_HOME_COPY.title;
 }
 
-/** `live` defaults to the shared flag. Tests can pass true to exercise the plug-in. */
+function actionIsLive(
+  action: PadelHomeAction,
+  sessionLive: boolean,
+  captureLive: boolean,
+): boolean {
+  if (action === "record") return captureLive;
+  return sessionLive;
+}
+
+/** Record uses capture live; find/join use the shared session flag. */
 export function padelHomePress(
   action: PadelHomeAction,
-  live: boolean = PLAY_MODE_SESSION_LIVE,
+  sessionLive: boolean = PLAY_MODE_SESSION_LIVE,
+  captureLive: boolean = PADEL_CAPTURE_LIVE,
 ): PadelHomePress {
-  if (!live) return { live: false, notice: PADEL_HOME_COPY.notice };
+  if (!actionIsLive(action, sessionLive, captureLive)) {
+    return { live: false, notice: PADEL_HOME_COPY.notice };
+  }
   return { live: true, action };
 }
 
 /**
- * Wiring point for the session API. Returns the action when live, otherwise
- * null. No request and no route.
+ * Wiring point for the session API. Returns the action when that path is live.
  */
 export function beginPadelSession(
   action: PadelHomeAction,
-  live: boolean = PLAY_MODE_SESSION_LIVE,
+  sessionLive: boolean = PLAY_MODE_SESSION_LIVE,
+  captureLive: boolean = PADEL_CAPTURE_LIVE,
 ): PadelHomeAction | null {
-  if (!live) return null;
+  if (!actionIsLive(action, sessionLive, captureLive)) return null;
   return action;
 }
 
 export function reducePadelNotice(
   notice: string | null,
   action: PadelHomeAction,
-  live: boolean = PLAY_MODE_SESSION_LIVE,
+  sessionLive: boolean = PLAY_MODE_SESSION_LIVE,
+  captureLive: boolean = PADEL_CAPTURE_LIVE,
 ): string | null {
-  const result = padelHomePress(action, live);
+  const result = padelHomePress(action, sessionLive, captureLive);
   if (!result.live) return result.notice;
-  beginPadelSession(result.action, live);
+  beginPadelSession(result.action, sessionLive, captureLive);
   return notice;
 }
 

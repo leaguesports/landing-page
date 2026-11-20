@@ -210,11 +210,11 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.equal(hubForYouEmptyCtas("all")[0]?.href, "/events");
   });
 
-  it("filters Play to catalog sports that support play and have a start href", () => {
+  it("filters Play to catalog sports that support play and have a start or capture href", () => {
     const playable = hubPlayableSports(SPORT_CATALOG);
     assert.deepEqual(
       playable.map((sport) => sport.slug),
-      [],
+      ["padel"],
     );
     assert.deepEqual(Object.keys(HUB_PLAY_START_BY_SLUG), []);
     assert.equal(hubPlayStartHref("padel"), null);
@@ -232,7 +232,7 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.equal(isHubPlayableSport(motorsport), false);
     assert.equal(isHubPlayableSport(darts), false);
     assert.equal(isHubPlayableSport(rugby), false);
-    assert.equal(isHubPlayableSport(padel), false);
+    assert.equal(isHubPlayableSport(padel), true);
     assert.ok(!playable.some((sport) => sport.capabilities.includes("watch") && !sport.capabilities.includes("play")));
   });
 
@@ -342,7 +342,8 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
     assert.match(hubPlayModalDescription("organise"), /venue/i);
 
     assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "start"), []);
-    assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "capture"), []);
+    assert.equal(hubPlayModalSportOptions(SPORT_CATALOG, "capture").length, 1);
+    assert.equal(hubPlayModalSportOptions(SPORT_CATALOG, "capture")[0]?.slug, "padel");
     assert.deepEqual(hubPlayModalSportOptions(SPORT_CATALOG, "organise"), []);
     assert.deepEqual(hubPlaySportOptions(SPORT_CATALOG, "motorsport"), []);
   });
@@ -364,25 +365,22 @@ describe("signed-in hub IA (#145 / #150 / #153 / #155 / #157 / #192 / #212)", ()
   });
 
   it("maps Capture results to finished-score routes for padel, golf, and darts", () => {
-    assert.equal(HUB_CAPTURE_PADEL_HREF, "/play/padel");
+    assert.equal(HUB_CAPTURE_PADEL_HREF, "/play?mode=padel&action=record");
     assert.equal(HUB_CAPTURE_GOLF_HREF, "/play/golf");
     assert.equal(HUB_CAPTURE_DARTS_HREF, "/play/darts");
-    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), []);
-    assert.equal(hubPlayCaptureHref("padel"), null);
+    assert.deepEqual(Object.keys(HUB_PLAY_CAPTURE_BY_SLUG), ["padel"]);
+    assert.equal(hubPlayCaptureHref("padel"), "/play?mode=padel&action=record");
     assert.equal(hubPlayCaptureHref("golf"), null);
     assert.equal(hubPlayCaptureHref("darts"), null);
     assert.equal(hubPlayHrefForVerb("padel", "start"), null);
+    assert.equal(hubPlayHrefForVerb("padel", "capture"), "/play?mode=padel&action=record");
     assert.equal(hubPlayHrefForVerb("golf", "capture"), null);
     assert.equal(hubPlayHrefForVerb("motorsport", "capture"), null);
 
-    assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "all", null, "capture"),
-      [],
-    );
-    assert.deepEqual(
-      hubPlaySportOptions(SPORT_CATALOG, "padel", null, "capture"),
-      [],
-    );
+    const padelCapture = hubPlaySportOptions(SPORT_CATALOG, "all", null, "capture");
+    assert.equal(padelCapture.length, 1);
+    assert.equal(padelCapture[0]?.slug, "padel");
+    assert.equal(padelCapture[0]?.href, "/play?mode=padel&action=record");
     assert.deepEqual(
       hubPlaySportOptions(SPORT_CATALOG, "darts", null, "capture"),
       [],

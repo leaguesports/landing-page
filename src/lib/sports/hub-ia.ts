@@ -23,7 +23,7 @@ export { HUB_PLAY_DEEP_LINK_REDIRECTS };
 export const HUB_START_MATCH_HREF = "/play/padel" as const;
 export const HUB_START_GOLF_HREF = "/play/golf" as const;
 export const HUB_START_DARTS_HREF = "/play/darts" as const;
-export const HUB_CAPTURE_PADEL_HREF = "/play/padel" as const;
+export const HUB_CAPTURE_PADEL_HREF = "/play?mode=padel&action=record" as const;
 export const HUB_CAPTURE_GOLF_HREF = "/play/golf" as const;
 export const HUB_CAPTURE_DARTS_HREF = "/play/darts" as const;
 export const HUB_ORGANISE_PADEL_HREF = "/play/padel" as const;
@@ -264,11 +264,17 @@ export const HUB_PLAY_START_BY_SLUG: Readonly<
 > = {};
 
 /**
- * Finished-score capture map. Same playable sports as live start for now.
+ * Finished-score capture map. Padel records set scores without a live card.
  */
 export const HUB_PLAY_CAPTURE_BY_SLUG: Readonly<
   Record<string, HubPlayStartSpec>
-> = {};
+> = {
+  padel: {
+    href: "/play?mode=padel&action=record",
+    label: "Record a match",
+    description: "Scores, sets and who played",
+  },
+};
 
 /**
  * Organise-ahead map. Same playable sports as live start for v1.
@@ -576,7 +582,9 @@ export function hubOrganiseRowBadge(
 export function isHubPlayableSport(sport: SportDefinition): boolean {
   return (
     sport.capabilities.includes("play") &&
-    hubPlayStartHref(sport.slug) !== null
+    (hubPlayStartHref(sport.slug) !== null ||
+      hubPlayCaptureHref(sport.slug) !== null ||
+      hubPlayOrganiseHref(sport.slug) !== null)
   );
 }
 

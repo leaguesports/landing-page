@@ -99,14 +99,14 @@ describe("padel home empty screen", () => {
     assert.doesNotMatch(signedIn, /Create a match|Intermediate|58%|Bloc11|Rosebank/);
   });
 
-  it("shows a coming-soon notice for all three actions", () => {
-    assert.equal(padelHomePress("record").live, false);
-    assert.equal(padelHomePress("find").notice, "Coming soon");
+  it("opens record while find and join stay coming soon", () => {
+    assert.deepEqual(padelHomePress("record"), { live: true, action: "record" });
+    assert.equal(padelHomePress("find").live, false);
     assert.equal(padelHomePress("join").notice, "Coming soon");
-    assert.equal(reducePadelNotice(null, "record"), PADEL_HOME_COPY.notice);
+    assert.equal(reducePadelNotice(null, "record"), null);
     assert.equal(reducePadelNotice(null, "find"), "Coming soon");
     assert.equal(reducePadelNotice(null, "join"), "Coming soon");
-    assert.equal(beginPadelSession("record"), null);
+    assert.equal(beginPadelSession("record"), "record");
     assert.equal(beginPadelSession("find"), null);
     assert.equal(beginPadelSession("join"), null);
 
@@ -117,13 +117,13 @@ describe("padel home empty screen", () => {
     assert.equal(withNotice.match(/aria-describedby="padel-coming-soon"/g)?.length, 3);
     assert.doesNotMatch(withNotice, /Create a match|<a /);
 
-    assert.deepEqual(padelHomePress("record", true), { live: true, action: "record" });
-    assert.equal(beginPadelSession("find", true), "find");
-    assert.equal(reducePadelNotice(null, "record", true), null);
+    assert.deepEqual(padelHomePress("find", true), { live: true, action: "find" });
+    assert.equal(beginPadelSession("join", true), "join");
+    assert.equal(reducePadelNotice(null, "find", true), null);
     assert.equal(reducePadelNotice("Coming soon", "join", true), "Coming soon");
   });
 
-  it("keeps the session API unwired and leaves Social on its home", () => {
+  it("wires record capture and leaves Social on its home", () => {
     const home = readFileSync(new URL("./padel-home.ts", import.meta.url), "utf8");
     const shell = readFileSync(
       new URL("../../components/play/PadelHome.tsx", import.meta.url),
@@ -137,11 +137,9 @@ describe("padel home empty screen", () => {
       new URL("../../components/play/play-mode.css", import.meta.url),
       "utf8",
     );
-    assert.doesNotMatch(
-      home + shell,
-      /fetch\(|poolApi|router\.push|href=|Intermediate|58%|Bloc11|Rosebank/,
-    );
-    assert.match(shell, /reducePadelNotice/);
+    assert.match(home, /PADEL_CAPTURE_LIVE = true/);
+    assert.match(shell, /PadelCapture/);
+    assert.match(shell, /beginPadelSession/);
     assert.match(shell, /useAuth/);
     assert.match(shell, /padelEyebrow/);
     assert.match(app, /mode === "padel"/);
@@ -151,6 +149,7 @@ describe("padel home empty screen", () => {
     assert.match(app, /<SocialHome/);
     assert.doesNotMatch(app, /className="soon">Coming soon/);
     assert.match(css, /\.padel-home[\s\S]*border-radius:\s*999px/);
+    assert.match(css, /\.padel-capture/);
     assert.match(css, /#006045/);
     assert.match(css, /#3dff8a/);
     assert.match(css, /#09090b/);
