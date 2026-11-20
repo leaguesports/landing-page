@@ -5,10 +5,10 @@
 
 import { toSlug } from "../../data/suburbs.ts";
 import { intentPath } from "../intent/paths.ts";
+import { venueAboutParagraphs } from "./about-copy.ts";
 import {
   venueAddressLine,
   venueCourtFacility,
-  venueCustomerSentences,
   venueDistinctPlaySports,
   venueGolfHoles,
   venueGoodForLabels,
@@ -257,8 +257,9 @@ export function venueProfileDescription(venue: VenueProfileInput): string {
   return clamp(venueProfileLede(venue));
 }
 
+/** Full About paragraphs. Meta copy stays on `venueProfileDescription`. */
 export function venueProfileAbout(description: unknown): string[] {
-  return venueCustomerSentences(description).slice(0, 4);
+  return venueAboutParagraphs(description);
 }
 
 export function venueProfileKeywords(venue: VenueProfileInput): string[] {
