@@ -22,6 +22,7 @@ import {
 } from "@/lib/intent/copy";
 import {
   getLocationBySlug,
+  getPublishedMetroPage,
   getVenuesByLocationAndActivityWithFallback,
   getWatchVenuesInLocation,
   listLocationsForActivity,
@@ -34,9 +35,14 @@ import {
 import {
   buildIntentEnrichment,
   buildIntentIntroParagraphs,
+  metroIntroParagraphs,
   resolveIntentIndexPolicy,
   type IntentPageEnrichment,
 } from "@/lib/intent/enrichment";
+import {
+  metroPageHeading,
+  resolveMetroPageSeo,
+} from "@/lib/intent/metro-page";
 import { loadWatchCityFixtures } from "@/lib/intent/watch-fixtures";
 import {
   buildWatchHubModel,
@@ -53,9 +59,9 @@ import {
 } from "@/lib/intent/watch-hub";
 import {
   dedupeVenuesBySlug,
+  metroRelatedLinks,
   watchCalendarScreenings,
   watchEventsHref,
-  watchRelatedGuideLink,
   watchRelatedGuides,
   watchScreeningEmptyBody,
   watchScreeningEmptyCopy,
@@ -171,6 +177,8 @@ function FanzoWatchHub({
   usedCityFallback,
   fallbackSuburb,
   fallbackCity,
+  introParagraphs = [],
+  relatedGuides,
 }: {
   mode: "sport" | "city";
   heading: string;
@@ -192,7 +200,11 @@ function FanzoWatchHub({
   usedCityFallback: boolean;
   fallbackSuburb: string | null;
   fallbackCity: string | null;
+  introParagraphs?: string[];
+  relatedGuides?: { href: string; label: string }[];
 }) {
+  const guides =
+    relatedGuides ?? watchRelatedGuides(sportSlug ?? "", guideCitySlug);
   const model = buildWatchHubModel({
     venues: venues.map(toWatchHubVenue),
     fixtures,
@@ -215,6 +227,7 @@ function FanzoWatchHub({
       <WatchCityExperience
         mode={mode}
         heading={heading}
+        introParagraphs={introParagraphs}
         promise={watchHubPromise({
           sportName,
           hasFixtures: model.fixtureRows.length > 0,
@@ -255,7 +268,7 @@ function FanzoWatchHub({
           eventsHref: sportSlug
             ? watchEventsHref(sportSlug)
             : watchCityEventsHref(guideCitySlug),
-          guide: watchRelatedGuideLink(sportSlug ?? "", guideCitySlug),
+          guide: guides[0] ?? null,
           sibling: siblings[0] ?? null,
         }}
         usedCityFallback={usedCityFallback}
@@ -266,7 +279,7 @@ function FanzoWatchHub({
         sourcePage={sourcePage}
       />
       <WatchCityFooter
-        relatedGuides={watchRelatedGuides(sportSlug ?? "", guideCitySlug)}
+        relatedGuides={guides}
         siblings={siblings}
       />
     </>
@@ -444,7 +457,7 @@ export async function generateIntentMetadata(
     return { title: "Location not found", robots: { index: false, follow: false } };
   }
 
-  const [results, fixtures] = await Promise.all([
+  const [results, fixtures, metro] = await Promise.all([
     getVenuesByLocationAndActivityWithFallback(
       intent,
       resolved.locationSlug,
@@ -452,6 +465,11 @@ export async function generateIntentMetadata(
       location,
     ),
     intent === "watch" ? loadWatchCityFixtures() : Promise.resolve([]),
+    getPublishedMetroPage({
+      intent,
+      activity,
+      citySlug: location.slug,
+    }),
   ]);
   const venues =
     intent === "watch" ? dedupeVenuesBySlug(results.venues) : results.venues;
@@ -468,14 +486,19 @@ export async function generateIntentMetadata(
     venueCount: venues.length,
     usedCityFallback: results.usedCityFallback,
   });
-  const title = intentDetailTitle(intent, activity.name, location.title);
-  const description = intentDetailDescription(
+  const fallbackTitle = intentDetailTitle(intent, activity.name, location.title);
+  const fallbackDescription = intentDetailDescription(
     intent,
     activity.name,
     location.title,
     venues.length,
     metaDescriptionExtras(enrichment, intent),
   );
+  const seo = resolveMetroPageSeo({
+    fallbackTitle,
+    fallbackDescription,
+    metadata: metro?.metadata,
+  });
   const canonical = intentPath(
     intent,
     activity.slug,
@@ -487,12 +510,12 @@ export async function generateIntentMetadata(
   const pageUrl = `${siteUrl}${canonical}`;
 
   return {
-    title,
-    description,
+    title: seo.titleMode === "absolute" ? { absolute: seo.title } : seo.title,
+    description: seo.description,
     alternates: { canonical },
     openGraph: {
-      title,
-      description,
+      title: seo.ogTitle,
+      description: seo.ogDescription,
       url: pageUrl,
       type: "website",
       locale: "en_ZA",
@@ -503,7 +526,7 @@ export async function generateIntentMetadata(
                 url: ogImage,
                 width: 1200,
                 height: 630,
-                alt: title,
+                alt: seo.ogTitle,
               },
             ],
           }
@@ -511,8 +534,8 @@ export async function generateIntentMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: seo.ogTitle,
+      description: seo.ogDescription,
       ...(ogImage ? { images: [ogImage] } : {}),
     },
     robots: {
@@ -678,7 +701,7 @@ export async function IntentSeoPage({
   if (!location) notFound();
 
   const guideCitySlug = location.parentSlug || location.slug;
-  const [results, nearby, fixtures, citySports] = await Promise.all([
+  const [results, nearby, fixtures, citySports, metro] = await Promise.all([
     getVenuesByLocationAndActivityWithFallback(
       intent,
       resolved.locationSlug,
@@ -690,6 +713,11 @@ export async function IntentSeoPage({
     intent === "watch"
       ? listWatchSportsInLocation(guideCitySlug)
       : Promise.resolve([]),
+    getPublishedMetroPage({
+      intent,
+      activity,
+      citySlug: location.slug,
+    }),
   ]);
   const venues =
     intent === "watch" ? dedupeVenuesBySlug(results.venues) : results.venues;
@@ -703,17 +731,29 @@ export async function IntentSeoPage({
   );
   const relatedGuides =
     intent === "watch"
-      ? watchRelatedGuides(activity.sportSlug, guideCitySlug)
-      : [];
-  const heading = intentDetailHeading(intent, activity.name, location.title);
-  const title = intentDetailTitle(intent, activity.name, location.title);
-  const description = intentDetailDescription(
+      ? watchRelatedGuides(
+          activity.sportSlug,
+          guideCitySlug,
+          metro?.relatedLinks,
+        )
+      : metroRelatedLinks(metro?.relatedLinks);
+  const fallbackTitle = intentDetailTitle(intent, activity.name, location.title);
+  const heading = metroPageHeading(
+    intentDetailHeading(intent, activity.name, location.title),
+    metro?.h1,
+  );
+  const fallbackDescription = intentDetailDescription(
     intent,
     activity.name,
     location.title,
     venues.length,
     metaDescriptionExtras(enrichment, intent),
   );
+  const seo = resolveMetroPageSeo({
+    fallbackTitle,
+    fallbackDescription,
+    metadata: metro?.metadata,
+  });
   const introParagraphs = buildIntentIntroParagraphs({
     intent,
     activity,
@@ -722,18 +762,21 @@ export async function IntentSeoPage({
     usedCityFallback: results.usedCityFallback,
     cityTitle: results.cityTitle,
     enrichment,
+    metro,
   });
+  const watchIntro = metroIntroParagraphs(metro) ?? [];
   const faqs = intentDetailFaqs({
     intent,
     activity,
     locationTitle: location.title,
     locationSlug: location.slug,
     venueCount: venues.length,
+    metroFaqs: metro?.faq,
   });
   const jsonLd = buildIntentJsonLd({
     intent,
-    title,
-    description,
+    title: seo.title,
+    description: seo.description,
     activitySlug: activity.slug,
     activityName: activity.name,
     locationSlug: location.slug,
@@ -777,6 +820,8 @@ export async function IntentSeoPage({
         <FanzoWatchHub
           mode="sport"
           heading={heading}
+          introParagraphs={watchIntro}
+          relatedGuides={relatedGuides}
           sportName={activity.name}
           sportSlug={activity.sportSlug}
           locationTitle={location.title}

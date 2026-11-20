@@ -33,6 +33,7 @@ const chipOff =
 export type WatchCityExperienceProps = {
   mode: "sport" | "city";
   heading: string;
+  introParagraphs?: string[];
   promise: string;
   livingCount: string;
   sportName: string | null;
@@ -69,6 +70,7 @@ export type WatchCityExperienceProps = {
 export function WatchCityExperience({
   mode,
   heading,
+  introParagraphs = [],
   promise,
   livingCount,
   sportName,
@@ -186,6 +188,13 @@ export function WatchCityExperience({
           <h1 className="font-display max-w-4xl text-4xl tracking-wide text-white sm:text-5xl">
             {heading}
           </h1>
+          {introParagraphs.length > 0 ? (
+            <div className="mt-3 max-w-2xl space-y-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+              {introParagraphs.map((paragraph) => (
+                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+              ))}
+            </div>
+          ) : null}
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {promise}
           </p>

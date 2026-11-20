@@ -9,6 +9,12 @@ export {
   f1DetailsType,
 } from "./event.ts";
 export {
+  METRO_PAGE_UNIQUE_MESSAGE,
+  metroPageSchemaFieldNames,
+  metroPageSchemaTypes,
+  metroPageType,
+} from "./metroPage.ts";
+export {
   TEE_HANDICAP_INCOMPLETE_MESSAGE,
   golfCourseFieldNames,
   golfCourseSchemaTypes,
