@@ -236,9 +236,11 @@ export function PadelCapture({
                   min={0}
                   max={7}
                   aria-label={`Set ${index + 1} team A`}
-                  value={set.a}
+                  value={Number.isFinite(set.a) ? String(set.a) : "0"}
                   onChange={(event) =>
-                    setDraft((current) => setGames(current, index, "a", Number(event.target.value)))
+                    setDraft((current) =>
+                      setGames(current, index, "a", Number(event.target.value.replace(/^0+(?=\d)/, ""))),
+                    )
                   }
                 />
                 <span className="set-sep" aria-hidden>
@@ -250,9 +252,11 @@ export function PadelCapture({
                   min={0}
                   max={7}
                   aria-label={`Set ${index + 1} team B`}
-                  value={set.b}
+                  value={Number.isFinite(set.b) ? String(set.b) : "0"}
                   onChange={(event) =>
-                    setDraft((current) => setGames(current, index, "b", Number(event.target.value)))
+                    setDraft((current) =>
+                      setGames(current, index, "b", Number(event.target.value.replace(/^0+(?=\d)/, ""))),
+                    )
                   }
                 />
               </li>
