@@ -219,10 +219,17 @@ export function PadelCapture({
             </div>
           </div>
 
+          <div className="score-cols" aria-hidden>
+            <span />
+            <span>A</span>
+            <span />
+            <span>B</span>
+          </div>
+
           <ol className="sets">
             {draft.sets.map((set, index) => (
               <li className="set-row" key={`set-${index}`}>
-                <span className="set-n">Set {index + 1}</span>
+                <span className="set-n">{index + 1}</span>
                 <input
                   type="number"
                   inputMode="numeric"
